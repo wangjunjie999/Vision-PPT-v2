@@ -161,18 +161,13 @@ export function checkPPTReadiness(input: CheckInput): PPTReadinessResult {
         targetId: ws.id,
       });
     } else {
-      // 检查三视图是否已保存
-      const missingViews: string[] = [];
-      if (!layout.front_view_image_url) missingViews.push('正视图');
-      if (!layout.side_view_image_url) missingViews.push('侧视图');
-      if (!layout.top_view_image_url) missingViews.push('俯视图');
-      
-      if (missingViews.length > 0) {
+      // 检查布局概览图是否已保存
+      if (!layout.front_view_image_url) {
         warnings.push({
           level: 'workstation',
           id: ws.id,
           name: ws.name,
-          warning: `未保存三视图：${missingViews.join('、')}`,
+          warning: '未保存布局概览图',
         });
       }
       
