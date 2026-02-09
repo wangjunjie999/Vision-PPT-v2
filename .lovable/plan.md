@@ -1,47 +1,70 @@
 
+# 为8种执行机构生成真实图片并更新数据库
 
-# 修复执行机构编辑对话框图片显示
+## 概述
 
-## 问题分析
+为数据库中的 8 种执行机构（机械臂、气缸、夹爪、顶升机构、定位挡停、传送带、旋转台、视觉支架）各生成 3 张真实风格的工业图片（正视图、侧视图、俯视图），共 24 张图片。生成后上传到云端存储，并更新数据库中的 URL。
 
-编辑对话框中三视图区域显示"正视图"、"侧视图"、"俯视图"的破碎图标，原因是：
+## 当前状态
 
-1. **编辑对话框的 `ImageUploadArea`** 只使用数据库 URL (`form.front_view_image_url`)，当数据库中没有存储 URL 时就显示为空或破碎图标
-2. **卡片列表的 `MechanismImageDisplay`** 正确地优先使用本地资源 (`getMechanismImage`)，所以卡片上图片正常
+- 数据库中 8 条机构记录的图片 URL 都指向本地路径（如 `/src/assets/mechanisms/xxx.png`），这些路径在线上环境无法访问
+- 本地有打包的工程线稿图作为回退，但风格不够真实
 
-## 修复方案
+## 实施步骤
 
-### 修改文件：`src/components/admin/MechanismResourceManager.tsx`
+### 1. 创建边缘函数生成图片
 
-**改动 1：** 修改 `ImageUploadArea` 组件，增加本地资源回退逻辑
+创建一个边缘函数 `generate-mechanism-images`，使用 Lovable AI 支持的图片生成模型（`google/gemini-2.5-flash-image`）为每种机构生成三视图。
 
-- 接收当前 `form.type` 参数
-- 当 `url` 为空时，调用 `getMechanismImage(type, viewType)` 获取本地资源显示
-- 本地资源作为预览展示，不影响上传功能
+每种机构的提示词将针对具体类型定制，例如：
+- **机械臂**: "Industrial 6-axis robot arm, metallic silver, on white background, front/side/top view, photorealistic, clean engineering style"
+- **气缸**: "Industrial pneumatic cylinder actuator, aluminum body, on white background..."
+- **夹爪**: "Industrial pneumatic gripper, parallel jaw type..."
+- 依此类推
 
-**改动 2：** 在 `ImageUploadArea` 使用处传入 `type` 参数
+### 2. 上传到存储桶
 
-修改后效果：
-- 编辑对话框中，如果数据库有 URL 就显示数据库图片
-- 如果数据库没有 URL，回退显示本地打包的工程图
-- 如果本地也没有，显示"未上传"占位
-- 用户仍可点击上传新图片覆盖
+- 确保 `hardware-images` 存储桶存在（已有）
+- 将生成的图片上传到 `hardware-images/mechanisms/` 路径下
+- 文件命名规则：`mechanisms/{type}_{view}.png`（如 `mechanisms/robot_arm_front.png`）
 
-### 技术细节
+### 3. 更新数据库记录
+
+生成并上传完成后，用存储桶的公开 URL 更新 `mechanisms` 表中每条记录的三个图片字段。
+
+### 4. 更新本地资源（可选）
+
+将生成的图片也保存到 `src/assets/mechanisms/` 目录，替换原有的工程线稿，保持本地回退资源也是真实风格。
+
+## 技术细节
+
+### 边缘函数设计
 
 ```text
-图片优先级：
-数据库 URL --> 本地 bundled asset --> "未上传" 占位图标
+generate-mechanism-images/
+  index.ts
+    - 接收参数: { types?: string[] }  (可选，不传则生成全部8种)
+    - 对每种机构的3个视角调用 AI 图片生成
+    - 将 base64 结果上传到 Storage
+    - 更新 mechanisms 表的 URL 字段
+    - 返回生成结果摘要
 ```
 
-`ImageUploadArea` 组件签名变更：
-- 增加 `mechanismType: string` 属性
-- 内部逻辑：`displayUrl = url || getMechanismImage(mechanismType, viewType) || null`
+### 图片生成提示词策略
 
-调用处三处变更（正视图、侧视图、俯视图）：
-```
-<ImageUploadArea viewType="front" label="正视图" url={form.front_view_image_url} mechanismType={form.type} />
-<ImageUploadArea viewType="side" label="侧视图" url={form.side_view_image_url} mechanismType={form.type} />
-<ImageUploadArea viewType="top" label="俯视图" url={form.top_view_image_url} mechanismType={form.type} />
-```
+每张图片使用统一的风格约束 + 具体机构描述：
+- 白色背景、工业产品摄影风格
+- 金属质感、真实光影
+- 明确标注视角（正面/侧面/俯视）
 
+### 文件变更清单
+
+| 文件 | 操作 | 说明 |
+|------|------|------|
+| `supabase/functions/generate-mechanism-images/index.ts` | 新建 | AI 图片生成边缘函数 |
+| `src/components/admin/MechanismResourceManager.tsx` | 修改 | 添加"一键生成真实图片"按钮 |
+| `src/assets/mechanisms/*.png` | 替换 | 用生成的真实图片替换工程线稿 |
+
+### 数据库更新
+
+8 条 mechanisms 记录的 `front_view_image_url`、`side_view_image_url`、`top_view_image_url` 字段将从本地路径更新为存储桶的绝对 URL。
