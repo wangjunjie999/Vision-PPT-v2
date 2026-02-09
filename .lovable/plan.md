@@ -1,44 +1,60 @@
 
-# PPT图片清晰度优化方案
 
-## 问题诊断
+# 修复 extract-template-styles 边缘函数 404 错误
 
-经过代码分析，发现PPT中图片模糊的根本原因是 **图片保存时使用了 `fast` 质量预设**：
+## 问题
 
-| 参数 | fast (当前) | standard (建议) | high (最佳) |
-|------|------------|-----------------|-------------|
-| pixelRatio | 1 | 1.5 | 2 |
-| quality | 0.6 | 0.8 | 0.92 |
-| maxWidth | 1200px | 1800px | 2400px |
-| maxHeight | 800px | 1200px | 1600px |
+前端 `templateStyleExtractor.ts` 调用 `extract-template-styles` 边缘函数，但该函数从未创建，导致 404 错误。此函数在 PPT 生成流程中被调用（当用户选择了模板时），用于提取模板的样式信息（颜色、字体、Logo、背景等）。
 
-`pixelRatio: 1` 意味着不做高清渲染，`quality: 0.6` 的JPEG压缩率过高，导致文字和线条出现明显模糊和压缩伪影。
+## 解决方案
 
-## 修改方案
+创建 `extract-template-styles` 边缘函数，实现以下功能：
 
-### 1. 升级 BatchImageSaveButton 的图片质量
-
-**文件**: `src/components/canvas/BatchImageSaveButton.tsx`
-
-将三视图和示意图的渲染质量从 `'fast'` 改为 `'standard'`：
-
-- 三视图布局渲染: `quality: 'fast'` -> `quality: 'standard'`
-- 示意图渲染: `quality: 'fast'` -> `quality: 'standard'`
-
-这会将分辨率提升约2.25倍（1.5x pixelRatio），JPEG质量从0.6提升到0.8。
-
-### 2. 可选：提供质量选择
-
-在 BatchImageSaveButton 组件中增加一个可选的质量切换，允许用户选择 "标准" 或 "高清" 模式。高清模式使用 `'high'` 预设（pixelRatio: 2, quality: 0.92）。
+1. 从 `ppt-templates` 存储桶下载用户的 PPTX 模板文件
+2. 解析 PPTX（ZIP 格式）中的 XML 文件，提取：
+   - 主题颜色（theme colors）
+   - 字体信息（title/body fonts, 东亚字体）
+   - 背景类型和颜色
+   - Logo 图片
+   - 母版/布局数量
+3. 返回结构化的样式数据，供前端 `convertStylesToGeneratorFormat` 使用
 
 ## 技术细节
 
-- `standard` 预设生成的图片约 1800x1200px，在PPT三视图的 ~3英寸宽容器中可提供约 600 DPI 的有效分辨率，远超打印所需的 150 DPI
-- 内存安全机制不受影响：代码中已有 `pixelRatio` 上限为 2 的限制和低质量重试逻辑
-- 文件大小预计增加约 2-3 倍，但对云存储空间影响可控
+### 新建文件
 
-## 影响范围
+**`supabase/functions/extract-template-styles/index.ts`**
 
-- 仅影响新保存的图片，已保存的图片不会自动更新
-- 用户需要重新点击"批量保存"按钮来生成高清版本
-- PPT生成逻辑（imagePreloader、workstationSlides）无需修改，它们已正确处理各种分辨率的图片
+- 使用 CORS headers 处理跨域
+- 使用 `getClaims()` 验证用户身份
+- 根据 `templateId` 从数据库查询模板记录获取 `file_url`
+- 使用 JSZip（`npm:jszip`）解压 PPTX 文件
+- 解析以下 XML 文件：
+  - `ppt/theme/theme1.xml` - 提取颜色方案和字体
+  - `ppt/slideMasters/*.xml` - 提取背景、Logo
+  - `ppt/slideLayouts/*.xml` - 提取布局信息
+  - `ppt/presentation.xml` - 提取幻灯片尺寸
+  - `[Content_Types].xml` - 枚举内容
+- 使用简单 XML 解析（正则或轻量 XML 解析器）提取关键属性
+
+**`supabase/config.toml`** 更新
+
+- 添加 `[functions.extract-template-styles]` 配置，设置 `verify_jwt = false`
+
+### 返回数据结构
+
+与前端 `ExtractedStyles` 接口对齐：
+- `backgroundType`: solid/gradient/image/none
+- `backgroundColor`: hex 颜色
+- `themeColors`: primary, secondary, accent 等
+- `titleFont` / `bodyFont` / `titleFontEA` / `bodyFontEA`
+- `masterCount` / `layoutCount`
+- `logo`: base64 数据（如有）
+- `slideWidth` / `slideHeight`
+
+### 错误处理
+
+- 模板文件不存在时返回友好错误
+- PPTX 解析失败时返回默认样式
+- 网络超时保护
+
