@@ -122,7 +122,7 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
             const canvasElement = layoutCanvasRef.current?.querySelector('svg');
             if (canvasElement) {
               const blob = await generateImageFromElement(canvasElement as unknown as HTMLElement, {
-                quality: 'fast',
+                quality: 'standard',
                 backgroundColor: '#1e293b',
                 format: 'jpeg',
               });
@@ -167,7 +167,7 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
           const diagramElement = schematicRef.current?.querySelector('.vision-diagram-container');
           if (diagramElement) {
             const blob = await generateImageFromElement(diagramElement as HTMLElement, {
-              quality: 'fast',
+              quality: 'standard',
               backgroundColor: '#1a1a2e',
               format: 'png',
             });
