@@ -13,7 +13,6 @@ import {
 import { toast } from 'sonner';
 import { useData } from '@/contexts/DataContext';
 import { 
-  calculateMissingImages, 
   saveViewToStorage,
   saveSchematicToStorage,
   generateImageFromElement,
@@ -29,6 +28,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { VisionSystemDiagram } from './VisionSystemDiagram';
+import { SimpleLayoutDiagram } from './SimpleLayoutDiagram';
 import { useCameras, useLights, useLenses, useControllers } from '@/hooks/useHardware';
 
 interface BatchImageSaveButtonProps {
@@ -63,7 +63,33 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
   const renderCompleteResolve = useRef<(() => void) | null>(null);
 
   const projectWorkstations = getProjectWorkstations(projectId);
-  const missingImages = calculateMissingImages(projectWorkstations, layouts, getWorkstationModules);
+  
+  // Calculate missing: each workstation needs a layout overview + each module needs a schematic
+  const missingImages = (() => {
+    const missingLayouts: Array<{ workstationId: string; workstationName: string; missingViews: ViewType[] }> = [];
+    const missingSchematics: Array<{ moduleId: string; moduleName: string; workstationName: string }> = [];
+
+    for (const ws of projectWorkstations) {
+      const layout = layouts.find(l => l.workstation_id === ws.id);
+      // Only need front_view for layout overview now
+      if (layout && !layout.front_view_image_url) {
+        missingLayouts.push({
+          workstationId: ws.id,
+          workstationName: ws.name,
+          missingViews: ['front' as ViewType], // Single overview
+        });
+      }
+      const wsModules = getWorkstationModules(ws.id);
+      for (const m of wsModules) {
+        if (!(m as any).schematic_image_url) {
+          missingSchematics.push({ moduleId: m.id, moduleName: m.name, workstationName: ws.name });
+        }
+      }
+    }
+
+    const total = missingLayouts.length + missingSchematics.length;
+    return { layouts: missingLayouts, schematics: missingSchematics, total };
+  })();
 
   // Handle render complete
   useEffect(() => {
@@ -283,12 +309,15 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
               className="fixed left-[-9999px] top-0 w-[1200px] h-[800px] overflow-hidden"
               aria-hidden="true"
             >
-              {/* Layout Canvas Renderer */}
+            {/* Layout Diagram Renderer - uses SimpleLayoutDiagram */}
               {currentRenderWorkstation && (
                 <div ref={layoutCanvasRef}>
-                  <OffscreenLayoutCanvas
+                  <OffscreenSimpleLayout
                     workstationId={currentRenderWorkstation}
-                    currentView={currentView}
+                    cameras={cameras}
+                    lenses={lenses}
+                    lights={lights}
+                    controllers={controllers}
                   />
                 </div>
               )}
@@ -331,19 +360,26 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
 }
 
 /**
- * Simplified offscreen layout canvas for batch rendering
+ * Offscreen renderer using SimpleLayoutDiagram
  */
-function OffscreenLayoutCanvas({ 
-  workstationId, 
-  currentView 
+function OffscreenSimpleLayout({ 
+  workstationId,
+  cameras,
+  lenses,
+  lights,
+  controllers,
 }: { 
-  workstationId: string; 
-  currentView: ViewType;
+  workstationId: string;
+  cameras: any[];
+  lenses: any[];
+  lights: any[];
+  controllers: any[];
 }) {
   const { 
     workstations, 
     layouts,
     getLayoutByWorkstation,
+    getWorkstationModules,
   } = useData();
   
   const workstation = workstations.find(ws => ws.id === workstationId) as any;
@@ -351,138 +387,64 @@ function OffscreenLayoutCanvas({
   
   if (!workstation || !layout) return null;
 
-  const productDimensions = workstation?.product_dimensions as { length: number; width: number; height: number } || { length: 300, width: 200, height: 100 };
-  
-  const canvasWidth = 1200;
-  const canvasHeight = 800;
-  const centerX = canvasWidth / 2;
-  const centerY = canvasHeight / 2;
-  const scale = 1.0;
-  
-  const productW = productDimensions.length * scale;
-  const productH = productDimensions.height * scale;
-  const productD = productDimensions.width * scale;
-
-  // Load objects from layout
-  let objects: any[] = [];
+  // Parse layout objects
+  let layoutObjects: any[] = [];
   if (layout?.layout_objects) {
     try {
-      objects = typeof layout.layout_objects === 'string' 
+      layoutObjects = typeof layout.layout_objects === 'string' 
         ? JSON.parse(layout.layout_objects) 
-        : layout.layout_objects;
+        : (Array.isArray(layout.layout_objects) ? layout.layout_objects : []);
     } catch (e) {
       console.error('Failed to parse layout objects:', e);
     }
   }
 
-  // Project 3D to 2D based on view
-  const project3DTo2D = (posX: number, posY: number, posZ: number, view: ViewType) => {
-    switch (view) {
-      case 'front':
-        return { x: centerX + posX * scale, y: centerY - posZ * scale };
-      case 'side':
-        return { x: centerX + posY * scale, y: centerY - posZ * scale };
-      case 'top':
-        return { x: centerX + posX * scale, y: centerY + posY * scale };
-      default:
-        return { x: centerX, y: centerY };
-    }
-  };
+  const wsModules = getWorkstationModules(workstationId);
+  const mechanisms = Array.isArray(layout?.mechanisms) ? layout.mechanisms : [];
+  const cameraMounts = Array.isArray(layout?.camera_mounts) ? layout.camera_mounts : [];
 
-  // Get product display dimensions based on view
-  const getProductDimensions = (view: ViewType) => {
-    switch (view) {
-      case 'front': return { width: productW, height: productH };
-      case 'side': return { width: productD, height: productH };
-      case 'top': return { width: productW, height: productD };
-      default: return { width: productW, height: productH };
-    }
-  };
+  // Build hardware summary from layout's selected hardware
+  const selectedCameras = Array.isArray(layout?.selected_cameras) ? layout.selected_cameras : [];
+  const selectedLenses = Array.isArray(layout?.selected_lenses) ? layout.selected_lenses : [];
+  const selectedLights = Array.isArray(layout?.selected_lights) ? layout.selected_lights : [];
 
-  const productDims = getProductDimensions(currentView);
+  const hardwareSummary = {
+    cameras: selectedCameras.filter(Boolean).map((c: any) => {
+      const full = cameras.find((fc: any) => fc.id === c.id);
+      return { brand: c.brand, model: c.model, resolution: full?.resolution };
+    }),
+    lenses: selectedLenses.filter(Boolean).map((l: any) => {
+      const full = lenses.find((fl: any) => fl.id === l.id);
+      return { brand: l.brand, model: l.model, focal_length: full?.focal_length };
+    }),
+    lights: selectedLights.filter(Boolean).map((l: any) => {
+      const full = lights.find((fl: any) => fl.id === l.id);
+      return { brand: l.brand, model: l.model, type: full?.type };
+    }),
+    controller: layout?.selected_controller ? {
+      brand: layout.selected_controller.brand,
+      model: layout.selected_controller.model,
+    } : null,
+  };
 
   return (
-    <svg
-      width={canvasWidth}
-      height={canvasHeight}
-      viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
-      className="bg-slate-800"
-    >
-      {/* Grid */}
-      <defs>
-        <pattern id="offscreen-grid" width="20" height="20" patternUnits="userSpaceOnUse">
-          <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#offscreen-grid)" />
-      
-      {/* Product */}
-      <rect
-        x={centerX - productDims.width / 2}
-        y={centerY - productDims.height / 2}
-        width={productDims.width}
-        height={productDims.height}
-        fill="rgba(59, 130, 246, 0.1)"
-        stroke="rgba(59, 130, 246, 0.5)"
-        strokeWidth="2"
-        strokeDasharray="8 4"
-        rx="4"
-      />
-      
-      {/* Objects */}
-      {objects.map((obj: any) => {
-        const pos = project3DTo2D(obj.posX ?? 0, obj.posY ?? 0, obj.posZ ?? 0, currentView);
-        const size = obj.type === 'camera' ? 40 : (obj.width || 60);
-        
-        return (
-          <g key={obj.id} transform={`translate(${pos.x}, ${pos.y})`}>
-            {obj.type === 'camera' ? (
-              <>
-                <rect
-                  x={-size / 2}
-                  y={-size / 2}
-                  width={size}
-                  height={size}
-                  fill="rgba(59, 130, 246, 0.3)"
-                  stroke="#3b82f6"
-                  strokeWidth="2"
-                  rx="4"
-                />
-                <text
-                  y={size / 2 + 14}
-                  textAnchor="middle"
-                  fill="white"
-                  fontSize="10"
-                >
-                  {obj.name}
-                </text>
-              </>
-            ) : (
-              <rect
-                x={-(obj.width || 60) / 2}
-                y={-(obj.height || 40) / 2}
-                width={obj.width || 60}
-                height={obj.height || 40}
-                fill="rgba(168, 85, 247, 0.2)"
-                stroke="#a855f7"
-                strokeWidth="1.5"
-                rx="4"
-              />
-            )}
-          </g>
-        );
-      })}
-      
-      {/* View Label */}
-      <text
-        x="20"
-        y="30"
-        fill="white"
-        fontSize="16"
-        fontWeight="bold"
-      >
-        {getViewLabel(currentView)} - {workstation.name}
-      </text>
-    </svg>
+    <SimpleLayoutDiagram
+      layoutObjects={layoutObjects}
+      mechanisms={mechanisms}
+      cameraMounts={cameraMounts}
+      cameraCount={layout?.camera_count || wsModules.length}
+      workstationName={workstation.name}
+      cycleTime={workstation.cycle_time}
+      shotCount={workstation.shot_count}
+      modules={wsModules.map((m: any) => ({
+        name: m.name,
+        type: m.type || 'positioning',
+        trigger_type: m.trigger_type,
+        processing_time_limit: m.processing_time_limit,
+      }))}
+      hardware={hardwareSummary}
+      width={1200}
+      height={700}
+    />
   );
 }

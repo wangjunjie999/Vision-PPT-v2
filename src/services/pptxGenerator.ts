@@ -10,10 +10,8 @@ import {
   generateBasicInfoSlide,
   generateProductSchematicSlide,
   generateTechnicalRequirementsSlide,
-  generateThreeViewSlide,
-  generateDiagramSlide,
+  generateLayoutAndOpticalSlide,
   generateMotionMethodSlide,
-  generateOpticalSolutionSlide,
   generateVisionListSlide,
   generateBOMSlide,
 } from './pptx/workstationSlides';
@@ -1189,11 +1187,11 @@ export async function generatePPTX(
     ...createAutoPageTableOptions(wsListY + 0.32),
   });
 
-  // ========== WORKSTATION SLIDES (10-Page Fixed Output per Workstation) ==========
-  // Order: 0.标题 → 1.基本信息 → 2.产品示意 → 3.技术要求 → 4.三视图 → 5.示意图 → 6.运动方式 → 7.光学方案 → 8.视觉清单 → 9.BOM
+  // ========== WORKSTATION SLIDES (7-Page Output per Workstation) ==========
+  // Order: 0.标题 → 1.基本信息 → 2.产品示意 → 3.技术要求 → 4.布局与光学 → 5.运动方式 → 6.视觉清单 → 7.BOM
   const totalWsProgress = 65;
   const progressPerWs = totalWsProgress / Math.max(workstations.length, 1);
-  const slideStepsPerWs = 10; // 每个工位有10个页面步骤
+  const slideStepsPerWs = 8; // 每个工位有8个页面步骤
   
   for (let i = 0; i < workstations.length; i++) {
     const ws = workstations[i];
@@ -1310,28 +1308,20 @@ export async function generatePPTX(
     onProgress(wsBaseProgress + stepIncrement * 3, `${ws.name} - ${isZh ? '技术要求' : 'Requirements'}`, `[SLIDE:${ws.name}:4/10] ${isZh ? '技术要求' : 'Technical requirements'}`);
     generateTechnicalRequirementsSlide(ctx, slideData);
     
-    // 4. 机械布局三视图 (Mechanical Layout Three Views - proportional)
-    onProgress(wsBaseProgress + stepIncrement * 4, `${ws.name} - ${isZh ? '三视图' : 'Three Views'}`, `[SLIDE:${ws.name}:5/10] ${isZh ? '机械布局三视图' : 'Three views'}`);
-    await generateThreeViewSlide(ctx, slideData);
+    // 4. 布局与光学方案 (Layout & Optical Solution - merged)
+    onProgress(wsBaseProgress + stepIncrement * 4, `${ws.name} - ${isZh ? '布局与光学' : 'Layout & Optical'}`, `[SLIDE:${ws.name}:5/8] ${isZh ? '布局与光学方案' : 'Layout & Optical'}`);
+    await generateLayoutAndOpticalSlide(ctx, slideData);
     
-    // 5. 示意图/布置图 (Schematic Diagram)
-    onProgress(wsBaseProgress + stepIncrement * 5, `${ws.name} - ${isZh ? '示意图' : 'Diagram'}`, `[SLIDE:${ws.name}:6/10] ${isZh ? '示意图' : 'Schematic diagram'}`);
-    await generateDiagramSlide(ctx, slideData);
-    
-    // 6. 运动/检测方式 (Motion/Detection Method)
-    onProgress(wsBaseProgress + stepIncrement * 6, `${ws.name} - ${isZh ? '运动方式' : 'Motion'}`, `[SLIDE:${ws.name}:7/10] ${isZh ? '运动检测方式' : 'Motion method'}`);
+    // 5. 运动/检测方式 (Motion/Detection Method)
+    onProgress(wsBaseProgress + stepIncrement * 5, `${ws.name} - ${isZh ? '运动方式' : 'Motion'}`, `[SLIDE:${ws.name}:6/8] ${isZh ? '运动检测方式' : 'Motion method'}`);
     generateMotionMethodSlide(ctx, slideData);
     
-    // 7. 光学方案 (Optical Solution)
-    onProgress(wsBaseProgress + stepIncrement * 7, `${ws.name} - ${isZh ? '光学方案' : 'Optical'}`, `[SLIDE:${ws.name}:8/10] ${isZh ? '光学方案' : 'Optical solution'}`);
-    generateOpticalSolutionSlide(ctx, slideData);
-    
-    // 8. 测量方法及视觉清单 (Measurement & Vision List)
-    onProgress(wsBaseProgress + stepIncrement * 8, `${ws.name} - ${isZh ? '视觉清单' : 'Vision List'}`, `[SLIDE:${ws.name}:9/10] ${isZh ? '视觉清单' : 'Vision list'}`);
+    // 6. 测量方法及视觉清单 (Measurement & Vision List)
+    onProgress(wsBaseProgress + stepIncrement * 6, `${ws.name} - ${isZh ? '视觉清单' : 'Vision List'}`, `[SLIDE:${ws.name}:7/8] ${isZh ? '视觉清单' : 'Vision list'}`);
     generateVisionListSlide(ctx, slideData);
     
-    // 9. BOM清单及审核 (BOM List & Review)
-    onProgress(wsBaseProgress + stepIncrement * 9, `${ws.name} - ${isZh ? 'BOM清单' : 'BOM'}`, `[SLIDE:${ws.name}:10/10] ${isZh ? 'BOM清单' : 'BOM list'}`);
+    // 7. BOM清单及审核 (BOM List & Review)
+    onProgress(wsBaseProgress + stepIncrement * 7, `${ws.name} - ${isZh ? 'BOM清单' : 'BOM'}`, `[SLIDE:${ws.name}:8/8] ${isZh ? 'BOM清单' : 'BOM list'}`);
     generateBOMSlide(ctx, slideData);
   }
 

@@ -629,184 +629,164 @@ export function generateTechnicalRequirementsSlide(
 }
 
 /**
- * Slide 4: Mechanical Layout Three Views (机械布局三视图 - 等比例)
- * Critical: Images must maintain original aspect ratio, no stretching
+ * Slide 4: Layout & Optical Solution (布局与光学方案)
+ * Merges former three-view, schematic, and optical slides into one.
+ * Shows simplified layout overview image + key hardware specs table.
  */
-export async function generateThreeViewSlide(
+export async function generateLayoutAndOpticalSlide(
   ctx: SlideContext,
   data: WorkstationSlideData
 ): Promise<void> {
   const slide = ctx.pptx.addSlide({ masterName: 'MASTER_SLIDE' });
-  const { layout } = data;
+  const { layout, modules, hardware } = data;
   
-  addSlideTitle(slide, ctx, ctx.isZh ? '机械布局三视图' : 'Mechanical Layout Views');
+  addSlideTitle(slide, ctx, ctx.isZh ? '布局与光学方案' : 'Layout & Optical Solution');
 
-  // Calculate three-view layout positions
-  const viewContainers = calculateThreeViewLayout(1.1, 3.2, 0.5, 9.0, 0.15);
-  const viewLabels = [
-    { label: ctx.isZh ? '正视图' : 'Front View', url: layout?.front_view_image_url },
-    { label: ctx.isZh ? '侧视图' : 'Side View', url: layout?.side_view_image_url },
-    { label: ctx.isZh ? '俯视图' : 'Top View', url: layout?.top_view_image_url },
-  ];
-
-  for (let i = 0; i < 3; i++) {
-    const container = viewContainers[i];
-    const view = viewLabels[i];
-    
-    // View label
-    slide.addText(view.label, {
-      x: container.x, y: container.y, w: container.width, h: 0.25,
-      fontSize: 10, color: COLORS.dark, bold: true, align: 'center',
-    });
-
-    // Image area (below label)
-    const imageContainer = {
-      x: container.x,
-      y: container.y + 0.28,
-      width: container.width,
-      height: container.height - 0.28,
-    };
-
-    if (view.url) {
-      try {
-        const dataUri = await fetchImageAsDataUri(view.url);
-        if (dataUri) {
-          // Get image dimensions and calculate proportional fit
-          const dims = await getImageDimensions(dataUri).catch(() => ({ width: 800, height: 600 }));
-          const fit = calculateContainFit(dims.width, dims.height, imageContainer);
-          
-          // Add image with calculated dimensions (maintains aspect ratio)
-          slide.addImage({
-            data: dataUri,
-            x: fit.x,
-            y: fit.y,
-            w: fit.width,
-            h: fit.height,
-          });
-        } else {
-          throw new Error('Failed to fetch image');
-        }
-      } catch (e) {
-        console.error(`[PPT] Failed to load view image: ${view.url}`, e);
-        // Enhanced placeholder for failed load with emoji indicator
-        addImagePlaceholder(slide, imageContainer, 
-          ctx.isZh ? '图片加载失败' : 'Image Load Failed', 
-          '❌'
-        );
+  // Left side: Layout overview image (simplified diagram)
+  const layoutImageUrl = layout?.front_view_image_url;
+  
+  if (layoutImageUrl) {
+    try {
+      const dataUri = await fetchImageAsDataUri(layoutImageUrl);
+      if (dataUri) {
+        const dims = await getImageDimensions(dataUri).catch(() => ({ width: 900, height: 500 }));
+        const fit = calculateContainFit(dims.width, dims.height, {
+          x: 0.4, y: 1.1, width: 5.6, height: 3.6
+        });
+        slide.addImage({
+          data: dataUri,
+          x: fit.x, y: fit.y, w: fit.width, h: fit.height,
+        });
+      } else {
+        throw new Error('Failed to fetch image');
       }
-    } else {
-      // Placeholder for missing image with helpful message
-      addImagePlaceholder(slide, imageContainer, 
-        ctx.isZh ? '请先保存三视图' : 'Please Save Views First', 
-        '🔲'
+    } catch (e) {
+      console.error('[PPT] Failed to load layout overview:', e);
+      addImagePlaceholder(slide, { x: 0.4, y: 1.1, width: 5.6, height: 3.6 },
+        ctx.isZh ? '请先保存布局概览图' : 'Please save layout overview',
+        '📐'
       );
     }
+  } else {
+    addImagePlaceholder(slide, { x: 0.4, y: 1.1, width: 5.6, height: 3.6 },
+      ctx.isZh ? '请先保存布局概览图' : 'Please save layout overview',
+      '📐'
+    );
   }
 
-  // Layout dimensions info
+  // Right side: Hardware specs
+  slide.addText(ctx.isZh ? '光学配置' : 'Optical Configuration', {
+    x: 6.2, y: 1.1, w: 3.3, h: 0.28,
+    fontSize: 11, color: COLORS.dark, bold: true,
+  });
+
+  // Camera table
+  const cameraRows: TableRow[] = layout?.selected_cameras?.filter((c: any) => c).map((cam: any) => {
+    const fullCam = hardware?.cameras?.find((c: { id: string }) => c.id === cam.id);
+    return row([`${cam.brand} ${cam.model}`, fullCam?.resolution || '-']);
+  }) || [row(['-', '-'])];
+
+  slide.addTable(cameraRows, {
+    x: 6.2, y: 1.42, w: 3.3, h: Math.min(cameraRows.length * 0.26 + 0.05, 0.9),
+    fontFace: 'Arial', fontSize: 8,
+    colW: [2.1, 1.2],
+    border: { pt: 0.5, color: COLORS.border },
+    fill: { color: COLORS.white },
+  });
+
+  // Lens + Light compact
+  const opticsY = 1.42 + Math.min(cameraRows.length * 0.26 + 0.05, 0.9) + 0.15;
+  const opticsRows: TableRow[] = [];
+  
+  layout?.selected_lenses?.filter((l: any) => l).forEach((lens: any) => {
+    const fullLens = hardware?.lenses?.find((l: { id: string }) => l.id === lens.id);
+    opticsRows.push(row([ctx.isZh ? '镜头' : 'Lens', `${lens.brand} ${lens.model}${fullLens?.focal_length ? ` ${fullLens.focal_length}` : ''}`]));
+  });
+  
+  layout?.selected_lights?.filter((l: any) => l).forEach((light: any) => {
+    const fullLight = hardware?.lights?.find((l: { id: string }) => l.id === light.id);
+    opticsRows.push(row([ctx.isZh ? '光源' : 'Light', `${light.brand} ${light.model}${fullLight?.type ? ` (${fullLight.type})` : ''}`]));
+  });
+  
+  if (layout?.selected_controller) {
+    opticsRows.push(row([ctx.isZh ? '工控机' : 'IPC', `${layout.selected_controller.brand} ${layout.selected_controller.model}`]));
+  }
+
+  if (opticsRows.length > 0) {
+    slide.addTable(opticsRows, {
+      x: 6.2, y: opticsY, w: 3.3, h: Math.min(opticsRows.length * 0.24 + 0.05, 1.2),
+      fontFace: 'Arial', fontSize: 8,
+      colW: [0.8, 2.5],
+      border: { pt: 0.5, color: COLORS.border },
+      fill: { color: COLORS.white },
+    });
+  }
+
+  // Layout info section
+  const layoutInfoY = opticsY + Math.min(opticsRows.length * 0.24 + 0.05, 1.2) + 0.2;
+  const cameraMounts = Array.isArray(layout?.camera_mounts) ? layout.camera_mounts : [];
+  const mechanisms = Array.isArray(layout?.mechanisms) ? layout.mechanisms : [];
+
+  const translatedMounts = cameraMounts.map((m: string) => 
+    getLabel(m, CAMERA_MOUNT_LABELS, ctx.isZh ? 'zh' : 'en')
+  ).join('/') || (ctx.isZh ? '顶部' : 'Top');
+  
+  const translatedMechanisms = mechanisms.map((m: string) => 
+    getLabel(m, MECHANISM_LABELS, ctx.isZh ? 'zh' : 'en')
+  ).join('、') || '-';
+
+  const layoutInfoRows: TableRow[] = [
+    row([ctx.isZh ? '安装方式' : 'Mount', translatedMounts]),
+    row([ctx.isZh ? '执行机构' : 'Mechanisms', translatedMechanisms]),
+    row([ctx.isZh ? '相机数量' : 'Cameras', `${layout?.camera_count || modules.length}`]),
+  ];
+
+  // Working distance from modules
+  modules.forEach(mod => {
+    const cfg = (mod.defect_config || mod.measurement_config || mod.positioning_config) as Record<string, unknown> | null;
+    if (cfg?.workingDistance) {
+      layoutInfoRows.push(row([ctx.isZh ? '工作距离' : 'WD', `${cfg.workingDistance} mm`]));
+    }
+    if (cfg?.fieldOfView) {
+      layoutInfoRows.push(row([ctx.isZh ? '视场' : 'FOV', `${cfg.fieldOfView} mm`]));
+    }
+  });
+
+  slide.addTable(layoutInfoRows.slice(0, 7), {
+    x: 6.2, y: layoutInfoY, w: 3.3, h: Math.min(layoutInfoRows.length * 0.24 + 0.05, 1.6),
+    fontFace: 'Arial', fontSize: 8,
+    colW: [1.1, 2.2],
+    border: { pt: 0.5, color: COLORS.border },
+    fill: { color: COLORS.white },
+  });
+
+  // Layout dimensions at bottom
   if (layout?.width || layout?.height || layout?.depth) {
     slide.addText(
       `${ctx.isZh ? '布局尺寸' : 'Layout Size'}: ${layout.width || '-'} × ${layout.height || '-'} × ${layout.depth || '-'} mm`, 
       {
-        x: 0.5, y: 4.45, w: 9, h: 0.25,
-        fontSize: 9, color: COLORS.secondary,
+        x: 0.4, y: 4.85, w: 5.6, h: 0.22,
+        fontSize: 8, color: COLORS.secondary,
       }
     );
   }
 }
 
-/**
- * Slide 5: Schematic Diagram (示意图/布置图)
- */
+// Keep old functions as exports for backward compatibility but mark deprecated
+/** @deprecated Use generateLayoutAndOpticalSlide instead */
+export async function generateThreeViewSlide(
+  ctx: SlideContext,
+  data: WorkstationSlideData
+): Promise<void> {
+  return generateLayoutAndOpticalSlide(ctx, data);
+}
+
+/** @deprecated Use generateLayoutAndOpticalSlide instead */
 export async function generateDiagramSlide(
   ctx: SlideContext,
   data: WorkstationSlideData
 ): Promise<void> {
-  const slide = ctx.pptx.addSlide({ masterName: 'MASTER_SLIDE' });
-  const { modules, layout } = data;
-  
-  addSlideTitle(slide, ctx, ctx.isZh ? '示意图/布置图' : 'Schematic Diagram');
-
-  // Main schematic image (from first module with schematic)
-  const schematicModule = modules.find(m => m.schematic_image_url);
-  
-  if (schematicModule?.schematic_image_url) {
-    try {
-      const dataUri = await fetchImageAsDataUri(schematicModule.schematic_image_url);
-      if (dataUri) {
-        const dims = await getImageDimensions(dataUri).catch(() => ({ width: 800, height: 600 }));
-        const fit = calculateContainFit(dims.width, dims.height, {
-          x: 0.5, y: 1.1, width: 5.5, height: 3.8
-        });
-        
-        slide.addImage({
-          data: dataUri,
-          x: fit.x, y: fit.y, w: fit.width, h: fit.height,
-        });
-      }
-    } catch (e) {
-      console.error(`[PPT] Failed to load schematic image`, e);
-      addImagePlaceholder(slide, { x: 0.5, y: 1.1, width: 5.5, height: 3.8 },
-        ctx.isZh ? '示意图加载失败' : 'Schematic Load Failed',
-        '❌'
-      );
-    }
-  } else {
-    addImagePlaceholder(slide, { x: 0.5, y: 1.1, width: 5.5, height: 3.8 },
-      ctx.isZh ? '请保存视觉系统示意图' : 'Please save diagram',
-      '📐'
-    );
-  }
-
-  // Right side: Layout info
-  slide.addText(ctx.isZh ? '布局说明' : 'Layout Notes', {
-    x: 6.2, y: 1.1, w: 3.3, h: 0.3,
-    fontSize: 11, color: COLORS.dark, bold: true,
-  });
-
-  // Defensive array checks for camera_mounts and mechanisms - with translation
-  const cameraMounts = Array.isArray(layout?.camera_mounts) ? layout.camera_mounts : [];
-  const mechanisms = Array.isArray(layout?.mechanisms) ? layout.mechanisms : [];
-  
-  // Translate camera mounts and mechanisms to localized labels
-  const translatedMounts = cameraMounts.map(m => 
-    getLabel(m, CAMERA_MOUNT_LABELS, ctx.isZh ? 'zh' : 'en')
-  ).join('/') || (ctx.isZh ? '顶部' : 'Top');
-  
-  const translatedMechanisms = mechanisms.map(m => 
-    getLabel(m, MECHANISM_LABELS, ctx.isZh ? 'zh' : 'en')
-  ).join('、') || '-';
-  
-  const layoutInfo: TableRow[] = [
-    row([ctx.isZh ? '相机数量' : 'Cameras', `${layout?.camera_count || modules.length} ${ctx.isZh ? '台' : ''}`]),
-    row([ctx.isZh ? '安装方式' : 'Mount', translatedMounts]),
-    row([ctx.isZh ? '执行机构' : 'Mechanisms', translatedMechanisms]),
-    row([ctx.isZh ? '相对位置' : 'Position', ctx.isZh ? '见示意图' : 'See diagram']),
-  ];
-
-  slide.addTable(layoutInfo, {
-    x: 6.2, y: 1.45, w: 3.3, h: 1.4,
-    fontFace: 'Arial',
-    fontSize: 9,
-    colW: [1.3, 2],
-    border: { pt: 0.5, color: COLORS.border },
-    fill: { color: COLORS.white },
-  });
-
-  // Camera/Light positions
-  slide.addText(ctx.isZh ? '相机/光源位置' : 'Camera/Light Positions', {
-    x: 6.2, y: 3.0, w: 3.3, h: 0.3,
-    fontSize: 11, color: COLORS.dark, bold: true,
-  });
-
-  const positionInfo = ctx.isZh 
-    ? '• 相机: 见三视图\n• 光源: 见布置图\n• Mark点: 参考示意图'
-    : '• Camera: See views\n• Light: See layout\n• Marks: See diagram';
-
-  slide.addText(positionInfo, {
-    x: 6.2, y: 3.35, w: 3.3, h: 1.0,
-    fontSize: 9, color: COLORS.secondary,
-  });
+  // No-op: merged into generateLayoutAndOpticalSlide
 }
 
 /**
