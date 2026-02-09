@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
+import { ThreeViewLayout, type LayoutObject3D } from './ThreeViewLayout';
 import { toPng } from 'html-to-image';
 import { useData } from '@/contexts/DataContext';
 import { useMechanisms, type Mechanism } from '@/hooks/useMechanisms';
@@ -75,6 +76,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   const layout = getLayoutByWorkstation(workstationId) as any;
   
   const [currentView, setCurrentView] = useState<ViewType>('front');
+  const [overviewMode, setOverviewMode] = useState(false);
   const [objects, setObjects] = useState<LayoutObject[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [gridEnabled, setGridEnabled] = useState(true);
@@ -1132,10 +1134,10 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
           {(['front', 'side', 'top'] as ViewType[]).map(view => (
             <button
               key={view}
-              onClick={() => setCurrentView(view)}
+              onClick={() => { setCurrentView(view); setOverviewMode(false); }}
               className={cn(
                 'px-3 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-1.5',
-                currentView === view 
+                !overviewMode && currentView === view 
                   ? 'bg-primary text-primary-foreground shadow-sm' 
                   : 'bg-muted hover:bg-muted/80 text-muted-foreground'
               )}
@@ -1146,6 +1148,18 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               )}
             </button>
           ))}
+          <button
+            onClick={() => setOverviewMode(!overviewMode)}
+            className={cn(
+              'px-3 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-1.5',
+              overviewMode
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+            )}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+            三合一概览
+          </button>
         </div>
         
         {/* Right: Quality selector, Save buttons and settings toggle */}
@@ -1380,6 +1394,19 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       </div>
       
       {/* Canvas Container */}
+      {overviewMode ? (
+        <div className="flex-1 overflow-auto relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+          <ThreeViewLayout
+            objects={objects as LayoutObject3D[]}
+            mechanisms={Array.isArray((layout as any)?.mechanisms) ? (layout as any).mechanisms : []}
+            cameraMounts={Array.isArray((layout as any)?.camera_mounts) ? (layout as any).camera_mounts : []}
+            workstationName={workstation?.name || ''}
+            productDimensions={productDimensions}
+            width={1200}
+            height={700}
+          />
+        </div>
+      ) : (
       <div 
         ref={containerRef}
         className="flex-1 overflow-hidden relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
@@ -1862,6 +1889,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
           onPanModeChange={setPanMode}
         />
       </div>
+      )}
     </div>
   );
 }
