@@ -1,60 +1,113 @@
 
+# 简化布局图 + 整合 PPT 关键信息
 
-# 修复 extract-template-styles 边缘函数 404 错误
+## 目标
 
-## 问题
+将当前按真实尺寸渲染的三视图布局（使用照片级机构图片 + 1:1 比例）简化为**示意性布局图**，用小图标表达布局意图，并在同一画面中整合 PPT 关键参数信息。
 
-前端 `templateStyleExtractor.ts` 调用 `extract-template-styles` 边缘函数，但该函数从未创建，导致 404 错误。此函数在 PPT 生成流程中被调用（当用户选择了模板时），用于提取模板的样式信息（颜色、字体、Logo、背景等）。
+## 当前问题
 
-## 解决方案
+1. `DraggableLayoutCanvas` 使用 `scale = 1.0 px/mm` 的真实比例渲染，导致画面拥挤或稀疏
+2. `MechanismSVG` 优先加载照片级资源图片（`useImage = true`），在概览图中细节过多
+3. 三视图保存到 PPT 后只有布局图，缺少关键参数信息（相机型号、光学参数等）
+4. 用户需要在 PPT 中翻多页才能理解一个工位的完整方案
 
-创建 `extract-template-styles` 边缘函数，实现以下功能：
+## 方案设计
 
-1. 从 `ppt-templates` 存储桶下载用户的 PPTX 模板文件
-2. 解析 PPTX（ZIP 格式）中的 XML 文件，提取：
-   - 主题颜色（theme colors）
-   - 字体信息（title/body fonts, 东亚字体）
-   - 背景类型和颜色
-   - Logo 图片
-   - 母版/布局数量
-3. 返回结构化的样式数据，供前端 `convertStylesToGeneratorFormat` 使用
+### 1. 新建 SimpleLayoutDiagram 组件
+
+**文件**: `src/components/canvas/SimpleLayoutDiagram.tsx`
+
+创建一个专用于 PPT 和概览的简化布局图组件：
+
+- 固定画布尺寸（如 900x500），不按真实毫米比例
+- 机构用 **小图标 + 标签** 表示（约 40x40px 的简笔 SVG 图标）
+- 相机用统一的小相机图标 + 编号表示
+- 产品用简单矩形 + "待测件" 标签居中表示
+- 自动排列：产品居中，相机在上方，机构按类型分布在周围
+- 连接线表示相对位置关系（虚线箭头）
+
+图标样式：
+- 机器人 → 简笔机械臂图标
+- 传送带 → 简笔皮带线图标
+- 气缸 → 简笔活塞图标
+- 夹爪 → 简笔夹爪图标
+- 升降台 → 上下箭头图标
+- 转台 → 旋转圆盘图标
+- 挡停 → 方块图标
+- 相机支架 → L 型支架图标
+
+### 2. 在布局图中整合 PPT 关键信息
+
+在同一 SVG 画面的右侧或底部区域，以信息卡片形式显示：
+
+- **光学方案摘要**: 相机型号 + 分辨率、镜头焦距、光源类型
+- **关键参数**: 视野宽度、工作距离、像素精度
+- **节拍信息**: 目标节拍、拍照次数、触发方式
+- **检测方式**: 模块类型列表（定位/缺陷/OCR 等）
+
+### 3. 修改 BatchImageSaveButton
+
+**文件**: `src/components/canvas/BatchImageSaveButton.tsx`
+
+- 用 `SimpleLayoutDiagram` 替代 `OffscreenLayoutCanvas`，生成一张**综合布局概览图**（而非三张独立三视图）
+- 合并原来的三视图保存为单一的"布局概览图"
+
+### 4. 修改 PPT 生成逻辑
+
+**文件**: `src/services/pptx/workstationSlides.ts`
+
+- 将原来的三视图页（Slide 4）和示意图页（Slide 5）合并为一页 **"布局与光学方案"**
+- 使用新的综合布局图作为主图
+- 在同一 Slide 中放置关键硬件参数表格
+- 减少 PPT 总页数，信息更集中
+
+### 5. 保留现有编辑功能
+
+- `DraggableLayoutCanvas` 保持不变，用于精确编辑
+- `SimpleLayoutDiagram` 仅用于导出和预览，是只读的
+- 用户在编辑器中仍使用完整功能的拖拽画布
 
 ## 技术细节
 
-### 新建文件
+### SimpleLayoutDiagram 数据流
 
-**`supabase/functions/extract-template-styles/index.ts`**
+```text
+layout_objects (JSON) → 解析 3D 坐标 → 自动布局算法 → 简化 SVG 渲染
+                                                          ↓
+modules + hardware data ────────────────────→ 右侧信息面板
+```
 
-- 使用 CORS headers 处理跨域
-- 使用 `getClaims()` 验证用户身份
-- 根据 `templateId` 从数据库查询模板记录获取 `file_url`
-- 使用 JSZip（`npm:jszip`）解压 PPTX 文件
-- 解析以下 XML 文件：
-  - `ppt/theme/theme1.xml` - 提取颜色方案和字体
-  - `ppt/slideMasters/*.xml` - 提取背景、Logo
-  - `ppt/slideLayouts/*.xml` - 提取布局信息
-  - `ppt/presentation.xml` - 提取幻灯片尺寸
-  - `[Content_Types].xml` - 枚举内容
-- 使用简单 XML 解析（正则或轻量 XML 解析器）提取关键属性
+### 自动布局算法
 
-**`supabase/config.toml`** 更新
+不按真实坐标渲染，而是根据对象类型自动排列：
+- 产品固定在画面中央
+- 相机排列在上方，均匀分布
+- 机构按类型分组排列在左右两侧
+- 使用箭头和标注线表示安装关系
 
-- 添加 `[functions.extract-template-styles]` 配置，设置 `verify_jwt = false`
+### PPT Slide 结构变化
 
-### 返回数据结构
+| 原有结构 | 新结构 |
+|---------|--------|
+| Slide 4: 三视图 (3 张图) | Slide 4: 布局与光学方案 (1 张综合图 + 参数表) |
+| Slide 5: 示意图/布置图 | (合并到 Slide 4) |
+| Slide 6: 运动/检测方式 | Slide 5: 运动/检测方式 (不变) |
+| Slide 7: 光学方案 | (合并到 Slide 4) |
+| ... | ... |
 
-与前端 `ExtractedStyles` 接口对齐：
-- `backgroundType`: solid/gradient/image/none
-- `backgroundColor`: hex 颜色
-- `themeColors`: primary, secondary, accent 等
-- `titleFont` / `bodyFont` / `titleFontEA` / `bodyFontEA`
-- `masterCount` / `layoutCount`
-- `logo`: base64 数据（如有）
-- `slideWidth` / `slideHeight`
+这样每个工位的 PPT 从 10 页减少到约 **7-8 页**。
 
-### 错误处理
+### 需要修改的文件
 
-- 模板文件不存在时返回友好错误
-- PPTX 解析失败时返回默认样式
-- 网络超时保护
+1. **新建** `src/components/canvas/SimpleLayoutDiagram.tsx` - 简化布局图组件
+2. **修改** `src/components/canvas/BatchImageSaveButton.tsx` - 使用新组件生成图片
+3. **修改** `src/services/pptx/workstationSlides.ts` - 合并 Slide 并整合信息
+4. **修改** `src/services/pptxGenerator.ts` - 调整幻灯片生成调用顺序
+5. **修改** `src/components/canvas/ModuleSchematic.tsx` - 预览中使用简化图
 
+### 向后兼容
+
+- 已保存的三视图 URL 仍然有效
+- PPT 生成时如果检测到旧的三视图 URL，仍然可以使用
+- 新保存的图片使用综合布局图格式
