@@ -19,7 +19,7 @@ import {
   Search,
   X
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -267,6 +267,22 @@ export function ProjectTree() {
 
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set(projects.map(p => p.id)));
   const [expandedWorkstations, setExpandedWorkstations] = useState<Set<string>>(new Set());
+
+  // Auto-expand tree nodes during guide steps
+  useEffect(() => {
+    if (!isGuideActive) return;
+    if (currentStep === 'workstation' && projects.length > 0) {
+      setExpandedProjects(prev => new Set([...prev, projects[0].id]));
+    }
+    if (currentStep === 'module' && workstations.length > 0) {
+      setExpandedWorkstations(prev => new Set([...prev, workstations[0].id]));
+      // Also expand the parent project
+      const ws = workstations[0];
+      if (ws) {
+        setExpandedProjects(prev => new Set([...prev, ws.project_id]));
+      }
+    }
+  }, [currentStep, isGuideActive, projects, workstations]);
   
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -813,29 +829,81 @@ export function ProjectTree() {
                                 })}
                               </div>
                             )}
+
+                            {/* Add module guide tip - show when workstation expanded and no modules */}
+                            {wsExpanded && displayModules.length === 0 && (
+                              <div className="relative ml-4 pl-2 border-l-2 border-border/30">
+                                <GuideHighlight
+                                  active={isGuideActive && currentStep === 'module'}
+                                  pulseColor="accent"
+                                >
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className={cn(
+                                      'w-full justify-start mt-1 text-muted-foreground',
+                                      'hover:text-primary hover:bg-primary/5',
+                                      'gap-2 h-8 text-xs font-medium',
+                                      'border border-dashed border-border/50 hover:border-primary/30',
+                                      'active:animate-click-shake'
+                                    )}
+                                    onClick={() => {
+                                      setContextWorkstationId(ws.id);
+                                      setShowNewModule(true);
+                                    }}
+                                  >
+                                    <Plus className="h-3.5 w-3.5" />
+                                    添加模块
+                                  </Button>
+                                </GuideHighlight>
+                                <GuideTip
+                                  message="为工位添加功能模块，选择检测类型"
+                                  direction="right"
+                                  visible={isGuideActive && currentStep === 'module' && displayModules.length === 0}
+                                  onDismiss={dismissGuide}
+                                  stepNumber={3}
+                                  totalSteps={4}
+                                />
+                              </div>
+                            )}
                           </div>
                         );
                       })}
                       
-                      {/* Add workstation button */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={cn(
-                          'w-full justify-start mt-1 text-muted-foreground',
-                          'hover:text-primary hover:bg-primary/5',
-                          'gap-2 h-8 text-xs font-medium',
-                          'border border-dashed border-border/50 hover:border-primary/30',
-                          'active:animate-click-shake'
-                        )}
-                        onClick={() => {
-                          setContextProjectId(project.id);
-                          setShowNewWorkstation(true);
-                        }}
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        添加工位
-                      </Button>
+                      {/* Add workstation button with guide */}
+                      <div className="relative">
+                        <GuideHighlight
+                          active={isGuideActive && currentStep === 'workstation' && displayWorkstations.length === 0}
+                          pulseColor="primary"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={cn(
+                              'w-full justify-start mt-1 text-muted-foreground',
+                              'hover:text-primary hover:bg-primary/5',
+                              'gap-2 h-8 text-xs font-medium',
+                              'border border-dashed border-border/50 hover:border-primary/30',
+                              'active:animate-click-shake'
+                            )}
+                            onClick={() => {
+                              setContextProjectId(project.id);
+                              setShowNewWorkstation(true);
+                            }}
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            添加工位
+                          </Button>
+                        </GuideHighlight>
+                        <GuideTip
+                          message="为项目添加检测工位，配置机械布局"
+                          direction="right"
+                          visible={isGuideActive && currentStep === 'workstation' && displayWorkstations.length === 0}
+                          onDismiss={dismissGuide}
+                          stepNumber={2}
+                          totalSteps={4}
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
