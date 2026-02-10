@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Camera, CircleDot, Lightbulb, Monitor, FileText, Cog, CloudUpload, Database, Users, Lock, Loader2 } from 'lucide-react';
+import { Camera, CircleDot, Lightbulb, Monitor, FileText, Cog, CloudUpload, Database, Users, Lock, Loader2, KeyRound } from 'lucide-react';
 import { HardwareResourceManager } from '../admin/HardwareResourceManager';
 import { PPTTemplateManager } from '../admin/PPTTemplateManager';
 import { MechanismResourceManager } from '../admin/MechanismResourceManager';
@@ -9,6 +9,7 @@ import { HardwareImageMigration } from '../admin/HardwareImageMigration';
 import { DataExportTool } from '../admin/DataExportTool';
 import { StorageMigrationTool } from '../admin/StorageMigrationTool';
 import { UserManagement } from '../admin/UserManagement';
+import { ChangePasswordCard } from '../admin/ChangePasswordCard';
 import { useAdminRole } from '@/hooks/useAdminRole';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -91,7 +92,7 @@ export function AdminCenter() {
         </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-          <TabsList className={`grid w-full max-w-5xl ${isAdmin ? 'grid-cols-9' : 'grid-cols-8'}`}>
+          <TabsList className={`grid w-full max-w-5xl ${isAdmin ? 'grid-cols-10' : 'grid-cols-9'}`}>
             <TabsTrigger value="cameras" className="gap-2">
               <Camera className="h-4 w-4" />
               相机
@@ -123,6 +124,10 @@ export function AdminCenter() {
             <TabsTrigger value="data-migration" className="gap-2">
               <Database className="h-4 w-4" />
               数据迁移
+            </TabsTrigger>
+            <TabsTrigger value="password" className="gap-2">
+              <KeyRound className="h-4 w-4" />
+              修改密码
             </TabsTrigger>
             {isAdmin && (
               <TabsTrigger value="users" className="gap-2">
@@ -159,6 +164,9 @@ export function AdminCenter() {
                 <DataExportTool />
                 <StorageMigrationTool />
               </div>
+            </TabsContent>
+            <TabsContent value="password">
+              <ChangePasswordCard />
             </TabsContent>
             {isAdmin && (
               <TabsContent value="users">
