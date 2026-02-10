@@ -831,7 +831,7 @@ export function ProjectTree() {
                             )}
 
                             {/* Add module guide tip - show when workstation expanded and no modules */}
-                            {wsExpanded && displayModules.length === 0 && (
+                            {(wsExpanded || (isGuideActive && currentStep === 'module')) && displayModules.length === 0 && (
                               <div className="relative ml-4 pl-2 border-l-2 border-border/30">
                                 <GuideHighlight
                                   active={isGuideActive && currentStep === 'module'}
