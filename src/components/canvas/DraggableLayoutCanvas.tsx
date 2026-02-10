@@ -61,6 +61,98 @@ const AUTO_ARRANGE_CONFIG = {
   startOffsetX: -150, // start offset from center for first object
 };
 
+// ===== Overview Zoom/Pan Container =====
+function OverviewZoomContainer({
+  objects,
+  layout,
+  workstation,
+  productDimensions,
+}: {
+  objects: LayoutObject3D[];
+  layout: any;
+  workstation: any;
+  productDimensions: { length: number; width: number; height: number };
+}) {
+  const [ovZoom, setOvZoom] = useState(1);
+  const [ovPan, setOvPan] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const ovContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    const rect = ovContainerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    const newZoom = Math.min(3, Math.max(0.5, ovZoom + delta));
+    const ratio = newZoom / ovZoom;
+    setOvPan(prev => ({
+      x: mouseX - ratio * (mouseX - prev.x),
+      y: mouseY - ratio * (mouseY - prev.y),
+    }));
+    setOvZoom(newZoom);
+  }, [ovZoom]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    setDragging(true);
+    setDragStart({ x: e.clientX - ovPan.x, y: e.clientY - ovPan.y });
+  }, [ovPan]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!dragging) return;
+    setOvPan({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+  }, [dragging, dragStart]);
+
+  const handleMouseUp = useCallback(() => setDragging(false), []);
+
+  const reset = useCallback(() => { setOvZoom(1); setOvPan({ x: 0, y: 0 }); }, []);
+
+  return (
+    <div
+      ref={ovContainerRef}
+      className="flex-1 overflow-hidden relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
+      onWheel={handleWheel}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onDoubleClick={reset}
+      style={{ cursor: dragging ? 'grabbing' : 'grab' }}
+    >
+      <div style={{
+        transform: `translate(${ovPan.x}px, ${ovPan.y}px) scale(${ovZoom})`,
+        transformOrigin: '0 0',
+        width: '100%',
+        height: '100%',
+      }}>
+        <ThreeViewLayout
+          objects={objects}
+          mechanisms={Array.isArray(layout?.mechanisms) ? layout.mechanisms : []}
+          cameraMounts={Array.isArray(layout?.camera_mounts) ? layout.camera_mounts : []}
+          workstationName={workstation?.name || ''}
+          productDimensions={productDimensions}
+          width={1600}
+          height={900}
+        />
+      </div>
+      {/* Zoom controls */}
+      <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-slate-800/90 backdrop-blur rounded-lg px-2 py-1 border border-slate-600/50 z-10">
+        <button onClick={(e) => { e.stopPropagation(); setOvZoom(z => Math.max(0.5, z - 0.1)); }}
+          className="w-7 h-7 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700 rounded text-sm font-bold">−</button>
+        <span className="text-xs text-slate-300 w-12 text-center select-none">{Math.round(ovZoom * 100)}%</span>
+        <button onClick={(e) => { e.stopPropagation(); setOvZoom(z => Math.min(3, z + 0.1)); }}
+          className="w-7 h-7 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700 rounded text-sm font-bold">+</button>
+        <div className="w-px h-4 bg-slate-600 mx-1" />
+        <button onClick={(e) => { e.stopPropagation(); reset(); }}
+          className="px-2 h-7 flex items-center justify-center text-xs text-slate-300 hover:text-white hover:bg-slate-700 rounded">重置</button>
+      </div>
+    </div>
+  );
+}
+
 export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasProps) {
   const { 
     workstations, 
@@ -1395,17 +1487,12 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       
       {/* Canvas Container */}
       {overviewMode ? (
-        <div className="flex-1 overflow-hidden relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-2">
-          <ThreeViewLayout
-            objects={objects as LayoutObject3D[]}
-            mechanisms={Array.isArray((layout as any)?.mechanisms) ? (layout as any).mechanisms : []}
-            cameraMounts={Array.isArray((layout as any)?.camera_mounts) ? (layout as any).camera_mounts : []}
-            workstationName={workstation?.name || ''}
-            productDimensions={productDimensions}
-            width={1600}
-            height={900}
-          />
-        </div>
+        <OverviewZoomContainer
+          objects={objects as LayoutObject3D[]}
+          layout={layout}
+          workstation={workstation}
+          productDimensions={productDimensions}
+        />
       ) : (
       <div 
         ref={containerRef}
