@@ -318,7 +318,7 @@ export function ThreeViewLayout({
                 key={`conn-${view}-${cam.id}`}
                 x1={cp.x * transform.scale} y1={cp.y * transform.scale}
                 x2={pp.x * transform.scale} y2={pp.y * transform.scale}
-                stroke="#475569" strokeWidth={0.8} strokeDasharray="3 3" opacity={0.4}
+                stroke="#475569" strokeWidth={1.2} strokeDasharray="4 3" opacity={0.5}
               />
             );
           })}
@@ -356,9 +356,9 @@ export function ThreeViewLayout({
           x1={fx} y1={halfH - 2}
           x2={tx2} y2={halfH + 4}
           stroke={obj.color}
-          strokeWidth={0.5}
-          strokeDasharray="3 4"
-          opacity={0.3}
+          strokeWidth={1.2}
+          strokeDasharray="4 3"
+          opacity={0.45}
         />
       );
 
@@ -372,9 +372,9 @@ export function ThreeViewLayout({
           x1={halfW - 2} y1={fy}
           x2={halfW + 4} y2={sy}
           stroke={obj.color}
-          strokeWidth={0.5}
-          strokeDasharray="3 4"
-          opacity={0.3}
+          strokeWidth={1.2}
+          strokeDasharray="4 3"
+          opacity={0.45}
         />
       );
     });
