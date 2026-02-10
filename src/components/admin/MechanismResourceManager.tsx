@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Pencil, Trash2, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Plus, Pencil, Trash2, Upload, Loader2, Image as ImageIcon, Search } from 'lucide-react';
 import { useMechanisms, type MechanismInsert, type MechanismUpdate } from '@/hooks/useMechanisms';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -74,6 +74,7 @@ export function MechanismResourceManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [uploadingView, setUploadingView] = useState<'front' | 'side' | 'top' | null>(null);
 
   const [form, setForm] = useState({
@@ -246,10 +247,16 @@ export function MechanismResourceManager() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <p className="text-sm text-muted-foreground">
-          共 {mechanisms.length} 种执行机构，用于三视图布局
-        </p>
+      <div className="flex justify-between items-center gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={`搜索 ${mechanisms.length} 种执行机构...`}
+            className="pl-9"
+          />
+        </div>
         <Dialog open={dialogOpen} onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) resetForm();
@@ -365,7 +372,12 @@ export function MechanismResourceManager() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {mechanisms.map((mech) => (
+        {mechanisms.filter(m => {
+          if (!searchQuery.trim()) return true;
+          const q = searchQuery.toLowerCase();
+          const typeLabel = MECHANISM_TYPES.find(t => t.value === m.type)?.label || '';
+          return m.name.toLowerCase().includes(q) || typeLabel.toLowerCase().includes(q) || (m.description || '').toLowerCase().includes(q);
+        }).map((mech) => (
           <Card key={mech.id} className={mech.enabled === false ? 'opacity-50' : ''}>
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
