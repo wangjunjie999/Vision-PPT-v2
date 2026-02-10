@@ -1395,15 +1395,15 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       
       {/* Canvas Container */}
       {overviewMode ? (
-        <div className="flex-1 overflow-auto relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+        <div className="flex-1 overflow-hidden relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-2">
           <ThreeViewLayout
             objects={objects as LayoutObject3D[]}
             mechanisms={Array.isArray((layout as any)?.mechanisms) ? (layout as any).mechanisms : []}
             cameraMounts={Array.isArray((layout as any)?.camera_mounts) ? (layout as any).camera_mounts : []}
             workstationName={workstation?.name || ''}
             productDimensions={productDimensions}
-            width={1200}
-            height={700}
+            width={1600}
+            height={900}
           />
         </div>
       ) : (
