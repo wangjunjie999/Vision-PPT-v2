@@ -1,50 +1,46 @@
 
 
-# 三合一概览缩放功能优化
+# 用户管理界面
 
-## 问题
+## 功能说明
 
-从截图可以看到，三合一概览图被固定在容器内，没有缩放和平移功能，导致：
-1. 整体图太小，硬件图标和标签看不清
-2. 尺寸说明表字体太小，内容难以阅读
-3. 无法放大查看局部细节
+在管理中心新增"用户管理"标签页，仅管理员可见和使用。管理员可以：
+- 查看所有已注册用户列表（通过 `user_roles` 表 + `auth.users` 的邮箱信息）
+- 为用户分配或移除管理员角色
+- 搜索用户
 
-## 修改方案
+## 实现方案
 
-### 修改文件：`src/components/canvas/DraggableLayoutCanvas.tsx`
+### 1. 创建后端函数获取用户列表
 
-将概览模式的容器从简单的 `overflow-hidden` 改为支持**鼠标滚轮缩放 + 拖拽平移**的交互式容器：
+由于前端无法直接查询 `auth.users` 表，需要创建一个 Edge Function `admin-users` 来：
+- 验证调用者是否为管理员（通过 `has_role` 函数）
+- 使用 service_role key 调用 `supabase.auth.admin.listUsers()` 获取用户列表
+- 支持添加/移除角色的操作
 
-1. **添加缩放/平移状态**：新增 `overviewZoom`（默认 1.0）和 `overviewPan`（默认 {x:0, y:0}）状态变量
-2. **鼠标滚轮缩放**：在概览容器上监听 `onWheel` 事件，以鼠标位置为中心进行缩放（范围 0.5x ~ 3.0x）
-3. **拖拽平移**：按住鼠标拖拽可平移视图，与现有编辑模式的平移逻辑类似
-4. **缩放控制按钮**：在概览右下角添加缩放控制条（放大/缩小/重置按钮 + 缩放百分比显示）
-5. **容器改为 `overflow-hidden`**，内部 SVG 通过 CSS `transform: scale() translate()` 实现缩放平移
+### 2. 新建组件 `src/components/admin/UserManagement.tsx`
 
-### 具体实现
+界面包含：
+- 搜索框：按邮箱筛选用户
+- 用户列表表格：显示邮箱、注册时间、角色状态
+- 角色切换：每行一个开关，控制是否为管理员
+- 加载和空状态处理
 
-- 概览容器的 `ThreeViewLayout` 外包一层 `div`，使用 `transform: scale(zoom) translate(panX, panY)` 控制视图
-- 双击可重置到默认视图（fit to container）
-- 缩放时以鼠标指针为中心点，体验更自然
-- 添加 `+` `-` `重置` 三个浮动按钮在右下角
+### 3. 修改 `src/components/layout/AdminCenter.tsx`
+
+- 新增"用户管理"标签（使用 `Users` 图标）
+- 标签栏从 8 列改为 9 列
+- 仅当当前用户是管理员时显示该标签
 
 ### 技术细节
 
-```text
-概览容器结构：
-+--------------------------------------------------+
-| [overflow-hidden container]                       |
-|   [transform wrapper: scale + translate]          |
-|     <ThreeViewLayout ... />                       |
-|   [/transform wrapper]                            |
-|                                                   |
-|                          [+] [-] [100%] [重置]    |
-+--------------------------------------------------+
-```
+**Edge Function `admin-users`**：
+- `GET`：返回所有用户列表（含邮箱、ID、创建时间）及其角色
+- `POST`：添加角色（body: `{ user_id, role, action: 'add' }`）
+- `DELETE`/POST with `action: 'remove'`：移除角色
 
-- 缩放范围：50% ~ 300%
-- 缩放步进：滚轮每次 10%
-- 平移：鼠标左键拖拽
-- 双击：重置缩放和平移
-- 快捷键：Ctrl+0 重置
+**安全保障**：
+- Edge Function 内使用 service_role key 验证调用者的 admin 身份
+- 前端通过 `useAdminRole` hook 控制界面可见性
+- RLS 策略已存在：只有管理员可以管理 `user_roles` 表
 
