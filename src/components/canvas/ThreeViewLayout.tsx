@@ -236,14 +236,14 @@ function CoordinateAxes({ ox, oy, vw, vh, headerH, view }: {
   const labels = axisLabels[view];
 
   return (
-    <g opacity={0.25}>
+    <g opacity={0.3}>
       {/* Horizontal axis */}
-      <line x1={ox + 20} y1={cyView} x2={ox + vw - 20} y2={cyView} stroke="#475569" strokeWidth={0.5} strokeDasharray="4 4" />
+      <line x1={ox + 12} y1={cyView} x2={ox + vw - 12} y2={cyView} stroke="#475569" strokeWidth={0.7} strokeDasharray="4 4" />
       {/* Vertical axis */}
-      <line x1={cxView} y1={oy + headerH + 10} x2={cxView} y2={oy + vh - 10} stroke="#475569" strokeWidth={0.5} strokeDasharray="4 4" />
+      <line x1={cxView} y1={oy + headerH + 6} x2={cxView} y2={oy + vh - 6} stroke="#475569" strokeWidth={0.7} strokeDasharray="4 4" />
       {/* Labels */}
-      <text x={ox + vw - 16} y={cyView - 4} fill="#64748b" fontSize={9} fontWeight="bold">{labels.h}</text>
-      <text x={cxView + 6} y={oy + headerH + 18} fill="#64748b" fontSize={9} fontWeight="bold">{labels.v}</text>
+      <text x={ox + vw - 14} y={cyView - 5} fill="#64748b" fontSize={11} fontWeight="bold">{labels.h}</text>
+      <text x={cxView + 7} y={oy + headerH + 18} fill="#64748b" fontSize={11} fontWeight="bold">{labels.v}</text>
     </g>
   );
 }

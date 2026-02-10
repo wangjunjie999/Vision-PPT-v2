@@ -61,7 +61,7 @@ export function ResizeHandles({
         let newY = currentStartSize.y;
 
         // Scale factor for mouse movement
-        const scaleFactor = 0.5;
+        const scaleFactor = 1.0;
 
         switch (position) {
           case 'e':
@@ -118,7 +118,7 @@ export function ResizeHandles({
   // Early return AFTER all hooks
   if (!isSelected || object?.locked) return null;
 
-  const handleSize = 8;
+  const handleSize = 10;
   const halfW = object.width / 2;
   const halfH = object.height / 2;
 
@@ -136,20 +136,31 @@ export function ResizeHandles({
   return (
     <g className="resize-handles">
       {handles.map(({ position, x, y }) => (
-        <rect
-          key={position}
-          x={x - handleSize / 2}
-          y={y - handleSize / 2}
-          width={handleSize}
-          height={handleSize}
-          fill="#3b82f6"
-          stroke="#fff"
-          strokeWidth="1.5"
-          rx={2}
-          style={{ cursor: handleCursors[position] }}
-          onMouseDown={(e) => handleMouseDown(e, position)}
-          className="transition-transform hover:scale-125"
-        />
+        <g key={position}>
+          {/* Larger invisible hit area */}
+          <rect
+            x={x - 12}
+            y={y - 12}
+            width={24}
+            height={24}
+            fill="transparent"
+            style={{ cursor: handleCursors[position] }}
+            onMouseDown={(e) => handleMouseDown(e, position)}
+          />
+          <rect
+            x={x - handleSize / 2}
+            y={y - handleSize / 2}
+            width={handleSize}
+            height={handleSize}
+            fill="#3b82f6"
+            stroke="#fff"
+            strokeWidth="1.5"
+            rx={2}
+            style={{ cursor: handleCursors[position] }}
+            onMouseDown={(e) => handleMouseDown(e, position)}
+            className="transition-transform hover:scale-125"
+          />
+        </g>
       ))}
     </g>
   );

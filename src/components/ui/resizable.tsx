@@ -29,9 +29,9 @@ const ResizableHandle = ({
     }}
     className={cn(
       "resizable-handle group relative flex w-1 items-center justify-center",
-      "bg-border/50 transition-all duration-300 ease-out",
-      "hover:bg-primary/30 hover:w-1.5",
-      "data-[resize-handle-state=drag]:bg-primary data-[resize-handle-state=drag]:w-1.5",
+      "bg-border/50 transition-colors duration-200 ease-out",
+      "hover:bg-primary/30",
+      "data-[resize-handle-state=drag]:bg-primary",
       "data-[resize-handle-state=hover]:bg-primary/40",
       "after:absolute after:inset-y-0 after:left-1/2 after:w-4 after:-translate-x-1/2",
       "data-[panel-group-direction=vertical]:h-1 data-[panel-group-direction=vertical]:w-full",
