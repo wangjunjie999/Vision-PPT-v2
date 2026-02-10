@@ -40,8 +40,8 @@ export const CoordinateSystem = memo(function CoordinateSystem({
   // Scale ruler settings
   const rulerTickInterval = 100; // mm
   const tickPixels = rulerTickInterval * scale;
-  const majorTickLength = 12;
-  const minorTickLength = 6;
+  const majorTickLength = 16;
+  const minorTickLength = 10;
   
   // Generate ruler ticks
   const horizontalTicks: { pos: number; value: number; isMajor: boolean }[] = [];
@@ -138,42 +138,42 @@ export const CoordinateSystem = memo(function CoordinateSystem({
       </defs>
       
       {/* Horizontal axis label */}
-      <g transform={`translate(${canvasWidth - 35}, ${centerY + 25})`}>
-        <rect x="-14" y="-11" width="28" height="22" rx="4" fill="hsl(220 60% 50%)" opacity="0.9" />
+      <g transform={`translate(${canvasWidth - 35}, ${centerY + 28})`}>
+        <rect x="-18" y="-14" width="36" height="28" rx="5" fill="hsl(220 60% 50%)" opacity="0.9" />
         <text 
           textAnchor="middle" 
           fill="white" 
-          fontSize="13" 
+          fontSize="15" 
           fontWeight="700"
-          y="5"
+          y="6"
         >
           {axisLabels.horizontal}
         </text>
       </g>
       
       {/* Vertical axis label */}
-      <g transform={`translate(${centerX - 30}, 35)`}>
-        <rect x="-14" y="-11" width="28" height="22" rx="4" fill="hsl(142 60% 45%)" opacity="0.9" />
+      <g transform={`translate(${centerX - 32}, 35)`}>
+        <rect x="-18" y="-14" width="36" height="28" rx="5" fill="hsl(142 60% 45%)" opacity="0.9" />
         <text 
           textAnchor="middle" 
           fill="white" 
-          fontSize="13" 
+          fontSize="15" 
           fontWeight="700"
-          y="5"
+          y="6"
         >
           {axisLabels.vertical}
         </text>
       </g>
       
       {/* Origin label */}
-      <g transform={`translate(${centerX + 20}, ${centerY + 20})`}>
-        <rect x="-12" y="-10" width="24" height="20" rx="4" fill="hsl(var(--muted))" opacity="0.9" />
+      <g transform={`translate(${centerX + 22}, ${centerY + 22})`}>
+        <rect x="-15" y="-13" width="30" height="26" rx="5" fill="hsl(var(--muted))" opacity="0.9" />
         <text 
           textAnchor="middle" 
           fill="hsl(var(--muted-foreground))" 
-          fontSize="11" 
+          fontSize="13" 
           fontWeight="600"
-          y="4"
+          y="5"
         >
           O
         </text>
@@ -235,28 +235,28 @@ export const CoordinateSystem = memo(function CoordinateSystem({
       
       {/* Scale bar at bottom left */}
       <g transform={`translate(60, ${canvasHeight - 50})`}>
-        <rect x="-10" y="-18" width={tickPixels + 80} height="36" rx="6" fill="rgba(30, 41, 59, 0.95)" />
+        <rect x="-12" y="-22" width={tickPixels + 90} height="44" rx="7" fill="rgba(30, 41, 59, 0.95)" />
         
-        <line x1="0" y1="0" x2={tickPixels} y2="0" stroke="white" strokeWidth="2" />
-        <line x1="0" y1="-6" x2="0" y2="6" stroke="white" strokeWidth="2" />
-        <line x1={tickPixels} y1="-6" x2={tickPixels} y2="6" stroke="white" strokeWidth="2" />
+        <line x1="0" y1="0" x2={tickPixels} y2="0" stroke="white" strokeWidth="2.5" />
+        <line x1="0" y1="-8" x2="0" y2="8" stroke="white" strokeWidth="2.5" />
+        <line x1={tickPixels} y1="-8" x2={tickPixels} y2="8" stroke="white" strokeWidth="2.5" />
         
-        <text x={tickPixels / 2} y="-6" textAnchor="middle" fill="white" fontSize="11" fontWeight="600">
+        <text x={tickPixels / 2} y="-8" textAnchor="middle" fill="white" fontSize="13" fontWeight="600">
           {rulerTickInterval}mm
         </text>
         
-        <text x={tickPixels + 15} y="4" fill="hsl(var(--muted-foreground))" fontSize="9">
+        <text x={tickPixels + 18} y="5" fill="hsl(var(--muted-foreground))" fontSize="11">
           比例 1:{Math.round(1 / scale)}
         </text>
       </g>
       
       {/* View plane indicator */}
-      <g transform={`translate(${canvasWidth - 90}, ${canvasHeight - 50})`}>
-        <rect x="-45" y="-18" width="90" height="36" rx="6" fill="rgba(30, 41, 59, 0.95)" />
-        <text textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize="9" y="-4">
+      <g transform={`translate(${canvasWidth - 95}, ${canvasHeight - 50})`}>
+        <rect x="-50" y="-22" width="100" height="44" rx="7" fill="rgba(30, 41, 59, 0.95)" />
+        <text textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize="11" y="-5">
           当前平面
         </text>
-        <text textAnchor="middle" fill="white" fontSize="12" fontWeight="600" y="12">
+        <text textAnchor="middle" fill="white" fontSize="14" fontWeight="600" y="14">
           {currentView === 'front' ? 'X-Z' : currentView === 'side' ? 'Y-Z' : 'X-Y'}
         </text>
       </g>
