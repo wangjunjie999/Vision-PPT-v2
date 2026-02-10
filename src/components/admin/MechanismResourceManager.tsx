@@ -253,7 +253,7 @@ export function MechanismResourceManager() {
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={`搜索 ${mechanisms.length} 种执行机构...`}
+            placeholder="搜索执行机构..."
             className="pl-9"
           />
         </div>
