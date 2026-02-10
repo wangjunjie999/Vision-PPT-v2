@@ -133,11 +133,23 @@ function project(obj: LayoutObject3D, view: ViewProjection): { x: number; y: num
 
 // ===== Fixed-Size Icon Components =====
 
-function ViewLabel({ label, x, y, color }: { label: string; x: number; y: number; color: string }) {
+function ViewLabel({ label, x, y, color, fullName }: { label: string; x: number; y: number; color: string; fullName?: string }) {
+  const displayText = fullName || label;
+  const textWidth = displayText.length * 7 + 12;
+  const isShort = displayText.length <= 2;
   return (
     <g>
-      <circle cx={x} cy={y} r={11} fill={color} fillOpacity={0.9} />
-      <text x={x} y={y + 4} textAnchor="middle" fill="#fff" fontSize={9} fontWeight="bold">{label}</text>
+      {isShort ? (
+        <>
+          <circle cx={x} cy={y} r={11} fill={color} fillOpacity={0.9} />
+          <text x={x} y={y + 4} textAnchor="middle" fill="#fff" fontSize={9} fontWeight="bold">{displayText}</text>
+        </>
+      ) : (
+        <>
+          <rect x={x - textWidth / 2} y={y - 9} width={textWidth} height={18} rx={9} fill={color} fillOpacity={0.9} />
+          <text x={x} y={y + 4} textAnchor="middle" fill="#fff" fontSize={8} fontWeight="bold">{displayText}</text>
+        </>
+      )}
     </g>
   );
 }
@@ -166,7 +178,7 @@ function ProductShape({ x, y }: { x: number; y: number }) {
   );
 }
 
-function MechanismShape({ x, y, label, color, mechType }: { x: number; y: number; label: string; color: string; mechType: string }) {
+function MechanismShape({ x, y, label, color, mechType, displayName }: { x: number; y: number; label: string; color: string; mechType: string; displayName?: string }) {
   const shapes: Record<string, JSX.Element> = {
     conveyor: <rect x={x - 18} y={y - 5} width={36} height={10} rx={5} fill="none" stroke={color} strokeWidth={1.5} />,
     cylinder: <rect x={x - 5} y={y - 14} width={10} height={28} rx={2} fill="none" stroke={color} strokeWidth={1.5} />,
@@ -204,7 +216,7 @@ function MechanismShape({ x, y, label, color, mechType }: { x: number; y: number
   return (
     <g>
       {shapes[mechType] || shapes.stopper}
-      <ViewLabel label={label} x={x} y={y - 24} color={color} />
+      <ViewLabel label={label} x={x} y={y - 24} color={color} fullName={displayName} />
     </g>
   );
 }
@@ -322,7 +334,7 @@ export function ThreeViewLayout({
             if (obj.type === 'product') return <ProductShape key={`${view}-${obj.id}`} x={sx} y={sy} />;
             if (obj.type === 'camera') return <CameraShape key={`${view}-${obj.id}`} x={sx} y={sy} label={obj.label} color={obj.color} />;
             const mechType = obj.mechanismType || obj.type;
-            return <MechanismShape key={`${view}-${obj.id}`} x={sx} y={sy} label={obj.label} color={obj.color} mechType={mechType} />;
+            return <MechanismShape key={`${view}-${obj.id}`} x={sx} y={sy} label={obj.label} color={obj.color} mechType={mechType} displayName={obj.displayName} />;
           })}
         </g>
       </g>
