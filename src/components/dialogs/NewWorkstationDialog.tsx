@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useData } from '@/contexts/DataContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -26,11 +26,14 @@ export function NewWorkstationDialog({ open, onOpenChange, projectId }: { open: 
     return `${project.code}.${String(nextIndex).padStart(2, '0')}`;
   };
   
-  // Reset form with new default code when dialog opens or projectId changes
-  const handleOpenChange = (newOpen: boolean) => {
-    if (newOpen && projectId) {
+  // Auto-generate code when dialog opens externally or projectId changes
+  useEffect(() => {
+    if (open && projectId) {
       setForm(prev => ({ ...prev, code: generateWorkstationCode() }));
     }
+  }, [open, projectId]);
+
+  const handleOpenChange = (newOpen: boolean) => {
     onOpenChange(newOpen);
   };
 
