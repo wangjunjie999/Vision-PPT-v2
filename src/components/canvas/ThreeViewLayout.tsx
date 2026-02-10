@@ -386,7 +386,7 @@ export function ThreeViewLayout({
     const tableX = halfW + 10;
     const tableY = halfH + headerH + 10;
     const tableW = halfW - 20;
-    const rowH = 20;
+    const rowH = 24;
     const colWidths = [
       tableW * 0.08,  // Label
       tableW * 0.20,  // Name
@@ -438,7 +438,7 @@ export function ThreeViewLayout({
           return (
             <g key={`header-${i}`}>
               <rect x={hx} y={tableY} width={colWidths[i]} height={rowH} fill="#1b3b70" fillOpacity={0.5} stroke="#334155" strokeWidth={0.5} />
-              <text x={hx + colWidths[i] / 2} y={tableY + 14} textAnchor="middle" fill="#93c5fd" fontSize={9} fontWeight="bold">{h}</text>
+              <text x={hx + colWidths[i] / 2} y={tableY + 16} textAnchor="middle" fill="#93c5fd" fontSize={11} fontWeight="bold">{h}</text>
             </g>
           );
         })}
@@ -463,10 +463,10 @@ export function ThreeViewLayout({
                   fill={rowIdx % 2 === 0 ? '#0f172a' : '#1e293b'} stroke="#334155" strokeWidth={0.5} />
                 <text
                   x={cx + (ci === 0 ? colWidths[ci] / 2 : 6)}
-                  y={ry + 14}
+                  y={ry + 16}
                   textAnchor={ci === 0 ? 'middle' : 'start'}
                   fill={ci === 0 ? obj.color : '#cbd5e1'}
-                  fontSize={9}
+                  fontSize={11}
                   fontWeight={ci === 0 ? 'bold' : 'normal'}
                 >
                   {cellText.length > 16 ? cellText.slice(0, 15) + '…' : cellText}
