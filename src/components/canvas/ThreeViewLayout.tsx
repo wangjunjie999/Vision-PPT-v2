@@ -135,19 +135,19 @@ function project(obj: LayoutObject3D, view: ViewProjection): { x: number; y: num
 
 function ViewLabel({ label, x, y, color, fullName }: { label: string; x: number; y: number; color: string; fullName?: string }) {
   const displayText = fullName || label;
-  const textWidth = displayText.length * 7 + 12;
+  const textWidth = displayText.length * 8 + 16;
   const isShort = displayText.length <= 2;
   return (
     <g>
       {isShort ? (
         <>
-          <circle cx={x} cy={y} r={11} fill={color} fillOpacity={0.9} />
-          <text x={x} y={y + 4} textAnchor="middle" fill="#fff" fontSize={9} fontWeight="bold">{displayText}</text>
+          <circle cx={x} cy={y} r={14} fill={color} fillOpacity={0.9} />
+          <text x={x} y={y + 5} textAnchor="middle" fill="#fff" fontSize={12} fontWeight="bold">{displayText}</text>
         </>
       ) : (
         <>
-          <rect x={x - textWidth / 2} y={y - 9} width={textWidth} height={18} rx={9} fill={color} fillOpacity={0.9} />
-          <text x={x} y={y + 4} textAnchor="middle" fill="#fff" fontSize={8} fontWeight="bold">{displayText}</text>
+          <rect x={x - textWidth / 2} y={y - 11} width={textWidth} height={22} rx={11} fill={color} fillOpacity={0.9} />
+          <text x={x} y={y + 5} textAnchor="middle" fill="#fff" fontSize={11} fontWeight="bold">{displayText}</text>
         </>
       )}
     </g>
