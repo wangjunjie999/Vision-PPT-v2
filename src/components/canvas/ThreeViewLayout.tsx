@@ -242,8 +242,8 @@ function CoordinateAxes({ ox, oy, vw, vh, headerH, view }: {
       {/* Vertical axis */}
       <line x1={cxView} y1={oy + headerH + 6} x2={cxView} y2={oy + vh - 6} stroke="#475569" strokeWidth={0.7} strokeDasharray="4 4" />
       {/* Labels */}
-      <text x={ox + vw - 14} y={cyView - 5} fill="#64748b" fontSize={11} fontWeight="bold">{labels.h}</text>
-      <text x={cxView + 7} y={oy + headerH + 18} fill="#64748b" fontSize={11} fontWeight="bold">{labels.v}</text>
+      <text x={ox + vw - 14} y={cyView - 5} fill="#64748b" fontSize={12} fontWeight="bold">{labels.h}</text>
+      <text x={cxView + 7} y={oy + headerH + 18} fill="#64748b" fontSize={12} fontWeight="bold">{labels.v}</text>
     </g>
   );
 }
@@ -299,7 +299,7 @@ export function ThreeViewLayout({
       <g key={view}>
         <rect x={tx} y={ty} width={vw} height={vh} fill="#0f172a" stroke="#334155" strokeWidth={1} />
         <rect x={tx} y={ty} width={vw} height={headerH} fill="#1e293b" />
-        <text x={tx + vw / 2} y={ty + 20} textAnchor="middle" fill="#94a3b8" fontSize={12} fontWeight="bold">
+        <text x={tx + vw / 2} y={ty + 21} textAnchor="middle" fill="#94a3b8" fontSize={14} fontWeight="bold">
           {viewLabel}
         </text>
 
@@ -428,7 +428,7 @@ export function ThreeViewLayout({
       <g>
         <rect x={halfW} y={halfH} width={halfW} height={halfH} fill="#0f172a" stroke="#334155" strokeWidth={1} />
         <rect x={halfW} y={halfH} width={halfW} height={headerH} fill="#1e293b" />
-        <text x={halfW + halfW / 2} y={halfH + 20} textAnchor="middle" fill="#94a3b8" fontSize={12} fontWeight="bold">
+        <text x={halfW + halfW / 2} y={halfH + 21} textAnchor="middle" fill="#94a3b8" fontSize={14} fontWeight="bold">
           尺寸说明表
         </text>
 
@@ -489,7 +489,7 @@ export function ThreeViewLayout({
       style={{ backgroundColor: '#0f172a' }}
     >
       {/* Title */}
-      <text x={width / 2} y={18} textAnchor="middle" fill="#f1f5f9" fontSize={14} fontWeight="bold">
+      <text x={width / 2} y={20} textAnchor="middle" fill="#f1f5f9" fontSize={16} fontWeight="bold">
         {workstationName} - 三合一布局概览
       </text>
 
