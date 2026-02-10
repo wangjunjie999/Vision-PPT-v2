@@ -73,11 +73,34 @@ function OverviewZoomContainer({
   workstation: any;
   productDimensions: { length: number; width: number; height: number };
 }) {
+  const SVG_W = 1600;
+  const SVG_H = 900;
   const [ovZoom, setOvZoom] = useState(1);
   const [ovPan, setOvPan] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [fitted, setFitted] = useState(false);
   const ovContainerRef = useRef<HTMLDivElement>(null);
+
+  // Fit to container on mount and when container resizes
+  const fitToContainer = useCallback(() => {
+    const rect = ovContainerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const scaleX = rect.width / SVG_W;
+    const scaleY = rect.height / SVG_H;
+    const fitZoom = Math.min(scaleX, scaleY) * 0.95;
+    const panX = (rect.width - SVG_W * fitZoom) / 2;
+    const panY = (rect.height - SVG_H * fitZoom) / 2;
+    setOvZoom(fitZoom);
+    setOvPan({ x: panX, y: panY });
+  }, []);
+
+  useEffect(() => {
+    if (!fitted && ovContainerRef.current) {
+      // Small delay to ensure container has rendered with final size
+      requestAnimationFrame(() => { fitToContainer(); setFitted(true); });
+    }
+  }, [fitted, fitToContainer]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -86,7 +109,7 @@ function OverviewZoomContainer({
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    const newZoom = Math.min(3, Math.max(0.5, ovZoom + delta));
+    const newZoom = Math.min(3, Math.max(0.3, ovZoom + delta));
     const ratio = newZoom / ovZoom;
     setOvPan(prev => ({
       x: mouseX - ratio * (mouseX - prev.x),
@@ -108,7 +131,7 @@ function OverviewZoomContainer({
 
   const handleMouseUp = useCallback(() => setDragging(false), []);
 
-  const reset = useCallback(() => { setOvZoom(1); setOvPan({ x: 0, y: 0 }); }, []);
+  const reset = useCallback(() => { fitToContainer(); }, [fitToContainer]);
 
   return (
     <div
@@ -125,8 +148,8 @@ function OverviewZoomContainer({
       <div style={{
         transform: `translate(${ovPan.x}px, ${ovPan.y}px) scale(${ovZoom})`,
         transformOrigin: '0 0',
-        width: '100%',
-        height: '100%',
+        width: SVG_W,
+        height: SVG_H,
       }}>
         <ThreeViewLayout
           objects={objects}
@@ -134,8 +157,8 @@ function OverviewZoomContainer({
           cameraMounts={Array.isArray(layout?.camera_mounts) ? layout.camera_mounts : []}
           workstationName={workstation?.name || ''}
           productDimensions={productDimensions}
-          width={1600}
-          height={900}
+          width={SVG_W}
+          height={SVG_H}
         />
       </div>
       {/* Zoom controls */}
