@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Camera, CircleDot, Lightbulb, Monitor, FileText, Cog, CloudUpload, Database } from 'lucide-react';
+import { Camera, CircleDot, Lightbulb, Monitor, FileText, Cog, CloudUpload, Database, Users } from 'lucide-react';
 import { HardwareResourceManager } from '../admin/HardwareResourceManager';
 import { PPTTemplateManager } from '../admin/PPTTemplateManager';
 import { MechanismResourceManager } from '../admin/MechanismResourceManager';
 import { HardwareImageMigration } from '../admin/HardwareImageMigration';
 import { DataExportTool } from '../admin/DataExportTool';
 import { StorageMigrationTool } from '../admin/StorageMigrationTool';
+import { UserManagement } from '../admin/UserManagement';
+import { useAdminRole } from '@/hooks/useAdminRole';
 
 export function AdminCenter() {
   const [activeTab, setActiveTab] = useState('cameras');
+  const { isAdmin } = useAdminRole();
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
@@ -24,7 +27,7 @@ export function AdminCenter() {
         </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-          <TabsList className="grid w-full max-w-5xl grid-cols-8">
+          <TabsList className={`grid w-full max-w-5xl ${isAdmin ? 'grid-cols-9' : 'grid-cols-8'}`}>
             <TabsTrigger value="cameras" className="gap-2">
               <Camera className="h-4 w-4" />
               相机
@@ -57,6 +60,12 @@ export function AdminCenter() {
               <Database className="h-4 w-4" />
               数据迁移
             </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="users" className="gap-2">
+                <Users className="h-4 w-4" />
+                用户管理
+              </TabsTrigger>
+            )}
           </TabsList>
           
           <div className="mt-6">
@@ -87,6 +96,11 @@ export function AdminCenter() {
                 <StorageMigrationTool />
               </div>
             </TabsContent>
+            {isAdmin && (
+              <TabsContent value="users">
+                <UserManagement />
+              </TabsContent>
+            )}
           </div>
         </Tabs>
         </div>
