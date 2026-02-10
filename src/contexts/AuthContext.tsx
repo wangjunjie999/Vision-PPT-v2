@@ -38,7 +38,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const toInternalEmail = (username: string) => `${username.trim().toLowerCase()}@internal.local`;
+  const toInternalEmail = (username: string) => {
+    const trimmed = username.trim().toLowerCase();
+    if (trimmed.includes('@')) return trimmed;
+    return `${trimmed}@internal.local`;
+  };
 
   const signUp = async (username: string, password: string, displayName?: string) => {
     const { error } = await supabase.auth.signUp({

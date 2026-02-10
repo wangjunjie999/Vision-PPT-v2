@@ -11,7 +11,7 @@ import { ParticleBackground } from '@/components/effects/ParticleBackground';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const authSchema = z.object({
-  username: z.string().trim().min(2, { message: '账号至少需要2个字符' }).max(30, { message: '账号最多30个字符' }).regex(/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/, { message: '账号只能包含字母、数字、下划线或中文' }),
+  username: z.string().trim().min(2, { message: '账号至少需要2个字符' }).max(100, { message: '账号最多100个字符' }).regex(/^[a-zA-Z0-9_\u4e00-\u9fa5@.\-+]+$/, { message: '账号只能包含字母、数字、下划线、中文或邮箱格式' }),
   password: z.string().min(6, { message: '密码至少需要6个字符' }),
   displayName: z.string().trim().max(50, { message: '显示名称最多50个字符' }).optional(),
 });
