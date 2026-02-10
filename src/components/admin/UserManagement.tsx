@@ -69,9 +69,11 @@ export function UserManagement() {
     }
   };
 
+  const toDisplayName = (email: string) => email?.replace(/@internal\.local$/, '') || '';
+
   const filteredUsers = users.filter(u => {
     if (!searchQuery.trim()) return true;
-    return (u.email || '').toLowerCase().includes(searchQuery.toLowerCase());
+    return toDisplayName(u.email).toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   return (
@@ -87,7 +89,7 @@ export function UserManagement() {
         <div className="flex items-center gap-2 mb-4">
           <Search className="h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="搜索用户邮箱..."
+            placeholder="搜索账号..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="max-w-sm h-9"
@@ -109,7 +111,7 @@ export function UserManagement() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>邮箱</TableHead>
+                  <TableHead>账号</TableHead>
                   <TableHead>注册时间</TableHead>
                   <TableHead className="text-center">管理员</TableHead>
                 </TableRow>
@@ -120,7 +122,7 @@ export function UserManagement() {
                   const isToggling = togglingUser === user.id;
                   return (
                     <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.email}</TableCell>
+                      <TableCell className="font-medium">{toDisplayName(user.email)}</TableCell>
                       <TableCell className="text-muted-foreground">
                         {new Date(user.created_at).toLocaleDateString('zh-CN')}
                       </TableCell>

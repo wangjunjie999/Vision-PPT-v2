@@ -11,7 +11,7 @@ import { ParticleBackground } from '@/components/effects/ParticleBackground';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const authSchema = z.object({
-  email: z.string().trim().email({ message: '请输入有效的邮箱地址' }),
+  username: z.string().trim().min(2, { message: '账号至少需要2个字符' }).max(30, { message: '账号最多30个字符' }).regex(/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/, { message: '账号只能包含字母、数字、下划线或中文' }),
   password: z.string().min(6, { message: '密码至少需要6个字符' }),
   displayName: z.string().trim().max(50, { message: '显示名称最多50个字符' }).optional(),
 });
@@ -21,7 +21,7 @@ export default function Auth() {
   const { user, signUp, signIn } = useAuth();
   const { toast } = useToast();
   
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -37,7 +37,7 @@ export default function Auth() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const validation = authSchema.safeParse({ email, password });
+    const validation = authSchema.safeParse({ username, password });
     if (!validation.success) {
       toast({
         title: '验证失败',
@@ -48,7 +48,7 @@ export default function Auth() {
     }
 
     setLoading(true);
-    const { error } = await signIn(email, password);
+    const { error } = await signIn(username, password);
     setLoading(false);
 
     if (error) {
@@ -73,7 +73,7 @@ export default function Auth() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const validation = authSchema.safeParse({ email, password, displayName });
+    const validation = authSchema.safeParse({ username, password, displayName });
     if (!validation.success) {
       toast({
         title: '验证失败',
@@ -84,7 +84,7 @@ export default function Auth() {
     }
 
     setLoading(true);
-    const { error } = await signUp(email, password, displayName || undefined);
+    const { error } = await signUp(username, password, displayName || undefined);
     setLoading(false);
 
     if (error) {
@@ -211,16 +211,16 @@ export default function Auth() {
                   className="space-y-5"
                 >
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email" className="text-white/70 text-sm font-medium" style={{ fontFamily: "'Outfit', sans-serif" }}>
-                      邮箱地址
+                    <Label htmlFor="signin-username" className="text-white/70 text-sm font-medium" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                      账号
                     </Label>
                     <div className="relative group">
                       <Input
-                        id="signin-email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        id="signin-username"
+                        type="text"
+                        placeholder="请输入账号"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
                         required
                         className="h-12 bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 rounded-xl focus:border-primary/50 focus:ring-primary/20 transition-all"
                         style={{ fontFamily: "'Outfit', sans-serif" }}
@@ -302,16 +302,16 @@ export default function Auth() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email" className="text-white/70 text-sm font-medium" style={{ fontFamily: "'Outfit', sans-serif" }}>
-                      邮箱地址
+                    <Label htmlFor="signup-username" className="text-white/70 text-sm font-medium" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                      账号
                     </Label>
                     <div className="relative group">
                       <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        id="signup-username"
+                        type="text"
+                        placeholder="请输入账号"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
                         required
                         className="h-12 bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 rounded-xl focus:border-primary/50 focus:ring-primary/20 transition-all"
                         style={{ fontFamily: "'Outfit', sans-serif" }}

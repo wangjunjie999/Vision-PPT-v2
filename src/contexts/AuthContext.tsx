@@ -6,8 +6,8 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, displayName?: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (username: string, password: string, displayName?: string) => Promise<{ error: Error | null }>;
+  signIn: (username: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -38,16 +38,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, displayName?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
+  const toInternalEmail = (username: string) => `${username.trim().toLowerCase()}@internal.local`;
+
+  const signUp = async (username: string, password: string, displayName?: string) => {
     const { error } = await supabase.auth.signUp({
-      email,
+      email: toInternalEmail(username),
       password,
       options: {
-        emailRedirectTo: redirectUrl,
         data: {
-          display_name: displayName,
+          display_name: displayName || username,
         },
       },
     });
@@ -55,9 +54,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (username: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: toInternalEmail(username),
       password,
     });
     
