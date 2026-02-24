@@ -238,9 +238,9 @@ function CoordinateAxes({ ox, oy, vw, vh, headerH, view }: {
   return (
     <g opacity={0.3}>
       {/* Horizontal axis */}
-      <line x1={ox + 12} y1={cyView} x2={ox + vw - 12} y2={cyView} stroke="#475569" strokeWidth={0.7} strokeDasharray="4 4" />
+      <line x1={ox + 12} y1={cyView} x2={ox + vw - 12} y2={cyView} stroke="#475569" strokeWidth={1.2} strokeDasharray="4 3" />
       {/* Vertical axis */}
-      <line x1={cxView} y1={oy + headerH + 6} x2={cxView} y2={oy + vh - 6} stroke="#475569" strokeWidth={0.7} strokeDasharray="4 4" />
+      <line x1={cxView} y1={oy + headerH + 6} x2={cxView} y2={oy + vh - 6} stroke="#475569" strokeWidth={1.2} strokeDasharray="4 3" />
       {/* Labels */}
       <text x={ox + vw - 14} y={cyView - 5} fill="#64748b" fontSize={12} fontWeight="bold">{labels.h}</text>
       <text x={cxView + 7} y={oy + headerH + 18} fill="#64748b" fontSize={12} fontWeight="bold">{labels.v}</text>
