@@ -233,33 +233,7 @@ export const CoordinateSystem = memo(function CoordinateSystem({
         </g>
       ))}
       
-      {/* Scale bar at bottom left */}
-      <g transform={`translate(60, ${canvasHeight - 50})`}>
-        <rect x="-12" y="-22" width={tickPixels + 90} height="44" rx="7" fill="rgba(30, 41, 59, 0.95)" />
-        
-        <line x1="0" y1="0" x2={tickPixels} y2="0" stroke="white" strokeWidth="2.5" />
-        <line x1="0" y1="-8" x2="0" y2="8" stroke="white" strokeWidth="2.5" />
-        <line x1={tickPixels} y1="-8" x2={tickPixels} y2="8" stroke="white" strokeWidth="2.5" />
-        
-        <text x={tickPixels / 2} y="-8" textAnchor="middle" fill="white" fontSize="13" fontWeight="600">
-          {rulerTickInterval}mm
-        </text>
-        
-        <text x={tickPixels + 18} y="5" fill="hsl(var(--muted-foreground))" fontSize="11">
-          比例 1:{Math.round(1 / scale)}
-        </text>
-      </g>
-      
-      {/* View plane indicator */}
-      <g transform={`translate(${canvasWidth - 95}, ${canvasHeight - 50})`}>
-        <rect x="-50" y="-22" width="100" height="44" rx="7" fill="rgba(30, 41, 59, 0.95)" />
-        <text textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize="11" y="-5">
-          当前平面
-        </text>
-        <text textAnchor="middle" fill="white" fontSize="14" fontWeight="600" y="14">
-          {currentView === 'front' ? 'X-Z' : currentView === 'side' ? 'Y-Z' : 'X-Y'}
-        </text>
-      </g>
+      {/* Scale bar and plane indicator moved to viewport-fixed overlay */}
     </g>
   );
 });

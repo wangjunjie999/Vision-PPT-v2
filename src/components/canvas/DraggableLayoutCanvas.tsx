@@ -1655,35 +1655,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 </text>
               </g>
               
-              {/* Axis legend in corner */}
-              <g transform="translate(80, 80)">
-                <rect x={-50} y={-30} width={100} height={60} rx={8} fill="rgba(30, 41, 59, 0.9)" stroke="rgba(148, 163, 184, 0.3)" strokeWidth="1" />
-                <text x={0} y={-10} textAnchor="middle" fill="#94a3b8" fontSize="10" fontWeight="500">坐标系</text>
-                {currentView === 'front' && (
-                  <>
-                    <line x1={-20} y1={10} x2={30} y2={10} stroke="#ef4444" strokeWidth="2" markerEnd="url(#arrow-red)" />
-                    <text x={35} y={14} fill="#ef4444" fontSize="11" fontWeight="600">X</text>
-                    <line x1={0} y1={25} x2={0} y2={-5} stroke="#3b82f6" strokeWidth="2" markerEnd="url(#arrow-blue)" />
-                    <text x={0} y={-12} textAnchor="middle" fill="#3b82f6" fontSize="11" fontWeight="600">Z</text>
-                  </>
-                )}
-                {currentView === 'side' && (
-                  <>
-                    <line x1={-20} y1={10} x2={30} y2={10} stroke="#22c55e" strokeWidth="2" />
-                    <text x={35} y={14} fill="#22c55e" fontSize="11" fontWeight="600">Y</text>
-                    <line x1={0} y1={25} x2={0} y2={-5} stroke="#3b82f6" strokeWidth="2" />
-                    <text x={0} y={-12} textAnchor="middle" fill="#3b82f6" fontSize="11" fontWeight="600">Z</text>
-                  </>
-                )}
-                {currentView === 'top' && (
-                  <>
-                    <line x1={-20} y1={10} x2={30} y2={10} stroke="#ef4444" strokeWidth="2" />
-                    <text x={35} y={14} fill="#ef4444" fontSize="11" fontWeight="600">X</text>
-                    <line x1={0} y1={-5} x2={0} y2={25} stroke="#22c55e" strokeWidth="2" />
-                    <text x={0} y={32} textAnchor="middle" fill="#22c55e" fontSize="11" fontWeight="600">Y</text>
-                  </>
-                )}
-              </g>
+              {/* Axis legend moved to viewport-fixed overlay below */}
               
               {/* Product (center reference) */}
               <g filter="url(#drop-shadow)">
@@ -1929,22 +1901,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 );
               })}
               
-              <g transform={`translate(20, ${canvasHeight - 30})`}>
-                <rect x={-8} y={-14} width={500} height={24} rx={6} fill="rgba(30, 41, 59, 0.9)" />
-                <text fill="#94a3b8" fontSize="11">
-                  <tspan>点击选择</tspan>
-                  <tspan dx="8" fill="#64748b">|</tspan>
-                  <tspan dx="8">拖拽移动</tspan>
-                  <tspan dx="8" fill="#64748b">|</tspan>
-                  <tspan dx="8">Shift+点击测距</tspan>
-                  <tspan dx="8" fill="#64748b">|</tspan>
-                  <tspan dx="8">拖角调整大小</tspan>
-                  <tspan dx="8" fill="#64748b">|</tspan>
-                  <tspan dx="8">滚轮缩放</tspan>
-                  <tspan dx="8" fill="#64748b">|</tspan>
-                  <tspan dx="8">空格+拖拽平移</tspan>
-                </text>
-              </g>
+              {/* Operation hints moved to viewport-fixed overlay below */}
             </svg>
           </ContextMenuTrigger>
           
@@ -1983,6 +1940,64 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
             </ContextMenuItem>
           </ContextMenuContent>
         </ContextMenu>
+        
+        {/* Viewport-fixed HUD overlays - stay at window edges during zoom/pan */}
+        {/* Top-left: Coordinate system legend */}
+        <div className="absolute top-4 left-4 pointer-events-none z-10">
+          <svg width={100} height={60} viewBox="0 0 100 60">
+            <rect x={0} y={0} width={100} height={60} rx={8} fill="rgba(30, 41, 59, 0.9)" stroke="rgba(148, 163, 184, 0.3)" strokeWidth={1} />
+            <text x={50} y={18} textAnchor="middle" fill="#94a3b8" fontSize={10} fontWeight="500">坐标系</text>
+            {currentView === 'front' && (
+              <>
+                <line x1={30} y1={38} x2={80} y2={38} stroke="#ef4444" strokeWidth={2} />
+                <text x={85} y={42} fill="#ef4444" fontSize={11} fontWeight="600">X</text>
+                <line x1={50} y1={52} x2={50} y2={24} stroke="#3b82f6" strokeWidth={2} />
+                <text x={50} y={16} textAnchor="middle" fill="#3b82f6" fontSize={11} fontWeight="600">Z</text>
+              </>
+            )}
+            {currentView === 'side' && (
+              <>
+                <line x1={30} y1={38} x2={80} y2={38} stroke="#22c55e" strokeWidth={2} />
+                <text x={85} y={42} fill="#22c55e" fontSize={11} fontWeight="600">Y</text>
+                <line x1={50} y1={52} x2={50} y2={24} stroke="#3b82f6" strokeWidth={2} />
+                <text x={50} y={16} textAnchor="middle" fill="#3b82f6" fontSize={11} fontWeight="600">Z</text>
+              </>
+            )}
+            {currentView === 'top' && (
+              <>
+                <line x1={30} y1={38} x2={80} y2={38} stroke="#ef4444" strokeWidth={2} />
+                <text x={85} y={42} fill="#ef4444" fontSize={11} fontWeight="600">X</text>
+                <line x1={50} y1={24} x2={50} y2={52} stroke="#22c55e" strokeWidth={2} />
+                <text x={50} y={58} textAnchor="middle" fill="#22c55e" fontSize={11} fontWeight="600">Y</text>
+              </>
+            )}
+          </svg>
+        </div>
+
+        {/* Bottom-left: Scale bar + operation hints */}
+        <div className="absolute bottom-4 left-4 pointer-events-none z-10 flex flex-col gap-1">
+          <svg width={Math.max(100 * scale + 90, 160)} height={44} viewBox={`0 0 ${Math.max(100 * scale + 90, 160)} 44`}>
+            <rect x={0} y={0} width={Math.max(100 * scale + 90, 160)} height={44} rx={7} fill="rgba(30, 41, 59, 0.95)" />
+            <line x1={12} y1={22} x2={12 + 100 * scale} y2={22} stroke="white" strokeWidth={2.5} />
+            <line x1={12} y1={14} x2={12} y2={30} stroke="white" strokeWidth={2.5} />
+            <line x1={12 + 100 * scale} y1={14} x2={12 + 100 * scale} y2={30} stroke="white" strokeWidth={2.5} />
+            <text x={12 + 50 * scale} y={14} textAnchor="middle" fill="white" fontSize={13} fontWeight="600">100mm</text>
+            <text x={12 + 100 * scale + 18} y={27} fill="#94a3b8" fontSize={11}>比例 1:{Math.round(1 / scale)}</text>
+          </svg>
+          <div className="bg-slate-800/90 rounded-md px-2 py-1 text-[11px] text-slate-400">
+            点击选择 | 拖拽移动 | Shift+点击测距 | 拖角调整大小 | 滚轮缩放 | 空格+拖拽平移
+          </div>
+        </div>
+
+        {/* Bottom-right: Plane indicator */}
+        <div className="absolute bottom-4 right-4 pointer-events-none z-10">
+          <div className="bg-slate-800/95 rounded-lg px-4 py-2 border border-slate-600/30 text-center">
+            <div className="text-[11px] text-slate-400">当前平面</div>
+            <div className="text-sm font-semibold text-white">
+              {currentView === 'front' ? 'X-Z' : currentView === 'side' ? 'Y-Z' : 'X-Y'}
+            </div>
+          </div>
+        </div>
         
         {/* Object List Panel */}
         {showObjectList && (
