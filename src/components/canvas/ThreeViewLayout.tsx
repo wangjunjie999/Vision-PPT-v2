@@ -385,6 +385,7 @@ export function ThreeViewLayout({
   const labeled = useMemo(() => assignLabels(objects), [objects]);
 
   // Compute auto-scale to fit all objects in each view
+  // exported as getViewTransform below for overlay use
   const computeViewTransform = (view: ViewProjection, vw: number, vh: number) => {
     if (labeled.length === 0) return { scale: 1, offsetX: vw / 2, offsetY: vh / 2 };
 
@@ -421,11 +422,7 @@ export function ThreeViewLayout({
           {viewLabel}
         </text>
 
-        {/* Coordinate axes with ticks */}
-        <CoordinateAxes ox={tx} oy={ty} vw={vw} vh={vh} headerH={headerH} view={view} scale={transform.scale} offsetX={transform.offsetX} offsetY={transform.offsetY} />
-
-        {/* HUD: scale bar + plane indicator */}
-        <ViewHUD ox={tx} oy={ty} vw={vw} vh={vh} view={view} scale={transform.scale} />
+        {/* CoordinateAxes and ViewHUD are now rendered in ThreeViewOverlay (viewport-fixed) */}
 
         {/* Connection lines (camera to product) */}
         <g transform={`translate(${tx + transform.offsetX}, ${ty + transform.offsetY})`}>
@@ -633,6 +630,51 @@ export function ThreeViewLayout({
       )}
     </svg>
   );
+}
+
+// Export a standalone version of computeViewTransform for overlay use
+export function getViewTransforms(
+  objects: LayoutObject3D[],
+  width: number,
+  height: number,
+  productDimensions?: { length: number; width: number; height: number }
+) {
+  const halfW = width / 2;
+  const halfH = height / 2;
+  const headerH = 32;
+  const padding = 40;
+
+  const labeled = assignLabels(objects);
+
+  const compute = (view: ViewProjection, vw: number, vh: number) => {
+    if (labeled.length === 0) return { scale: 1, offsetX: vw / 2, offsetY: vh / 2 };
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const obj of labeled) {
+      const p = project(obj, view);
+      minX = Math.min(minX, p.x - 40);
+      maxX = Math.max(maxX, p.x + 40);
+      minY = Math.min(minY, p.y - 40);
+      maxY = Math.max(maxY, p.y + 40);
+    }
+
+    const rangeX = maxX - minX || 200;
+    const rangeY = maxY - minY || 200;
+    const availW = vw - padding * 2;
+    const availH = vh - padding * 2 - headerH;
+    const s = Math.min(availW / rangeX, availH / rangeY, 1.5) * 0.7;
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+
+    return { scale: s, offsetX: vw / 2 - cx * s, offsetY: (vh + headerH) / 2 - cy * s };
+  };
+
+  return {
+    front: { ...compute('front', halfW, halfH), panelX: 0, panelY: 0, panelW: halfW, panelH: halfH },
+    side: { ...compute('side', halfW, halfH), panelX: halfW, panelY: 0, panelW: halfW, panelH: halfH },
+    top: { ...compute('top', halfW, halfH), panelX: 0, panelY: halfH, panelW: halfW, panelH: halfH },
+    headerH,
+  };
 }
 
 export type { ViewProjection };

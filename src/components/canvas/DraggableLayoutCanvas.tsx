@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
-import { ThreeViewLayout, type LayoutObject3D } from './ThreeViewLayout';
+import { ThreeViewLayout, type LayoutObject3D, getViewTransforms } from './ThreeViewLayout';
+import { ThreeViewOverlay, type ViewPanelInfo } from './ThreeViewOverlay';
 import { toPng } from 'html-to-image';
 import { useData } from '@/contexts/DataContext';
 import { useMechanisms, type Mechanism } from '@/hooks/useMechanisms';
@@ -80,6 +81,7 @@ function OverviewZoomContainer({
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [fitted, setFitted] = useState(false);
+  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
   const ovContainerRef = useRef<HTMLDivElement>(null);
 
   // Fit to container on mount and when container resizes
@@ -93,14 +95,26 @@ function OverviewZoomContainer({
     const panY = (rect.height - SVG_H * fitZoom) / 2;
     setOvZoom(fitZoom);
     setOvPan({ x: panX, y: panY });
+    setContainerSize({ w: rect.width, h: rect.height });
   }, []);
 
   useEffect(() => {
     if (!fitted && ovContainerRef.current) {
-      // Small delay to ensure container has rendered with final size
       requestAnimationFrame(() => { fitToContainer(); setFitted(true); });
     }
   }, [fitted, fitToContainer]);
+
+  // Track container size on resize
+  useEffect(() => {
+    const el = ovContainerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      const rect = el.getBoundingClientRect();
+      setContainerSize({ w: rect.width, h: rect.height });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -133,6 +147,16 @@ function OverviewZoomContainer({
 
   const reset = useCallback(() => { fitToContainer(); }, [fitToContainer]);
 
+  // Compute view transforms for overlay
+  const overlayPanels = useMemo<ViewPanelInfo[]>(() => {
+    const t = getViewTransforms(objects, SVG_W, SVG_H, productDimensions);
+    return [
+      { view: 'front' as const, label: '正视图', panelX: t.front.panelX, panelY: t.front.panelY, panelW: t.front.panelW, panelH: t.front.panelH, headerH: t.headerH, scale: t.front.scale, offsetX: t.front.offsetX, offsetY: t.front.offsetY },
+      { view: 'side' as const, label: '左视图', panelX: t.side.panelX, panelY: t.side.panelY, panelW: t.side.panelW, panelH: t.side.panelH, headerH: t.headerH, scale: t.side.scale, offsetX: t.side.offsetX, offsetY: t.side.offsetY },
+      { view: 'top' as const, label: '俯视图', panelX: t.top.panelX, panelY: t.top.panelY, panelW: t.top.panelW, panelH: t.top.panelH, headerH: t.headerH, scale: t.top.scale, offsetX: t.top.offsetX, offsetY: t.top.offsetY },
+    ];
+  }, [objects, productDimensions]);
+
   return (
     <div
       ref={ovContainerRef}
@@ -145,6 +169,7 @@ function OverviewZoomContainer({
       onDoubleClick={reset}
       style={{ cursor: dragging ? 'grabbing' : 'grab' }}
     >
+      {/* Zoomable content layer */}
       <div style={{
         transform: `translate(${ovPan.x}px, ${ovPan.y}px) scale(${ovZoom})`,
         transformOrigin: '0 0',
@@ -161,6 +186,16 @@ function OverviewZoomContainer({
           height={SVG_H}
         />
       </div>
+
+      {/* Viewport-fixed overlay: coordinate axes + HUD */}
+      <ThreeViewOverlay
+        panels={overlayPanels}
+        ovZoom={ovZoom}
+        ovPan={ovPan}
+        containerWidth={containerSize.w}
+        containerHeight={containerSize.h}
+      />
+
       {/* Zoom controls */}
       <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-slate-800/90 backdrop-blur rounded-lg px-2 py-1 border border-slate-600/50 z-10">
         <button onClick={(e) => { e.stopPropagation(); setOvZoom(z => Math.max(0.5, z - 0.1)); }}
