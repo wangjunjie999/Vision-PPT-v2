@@ -1,86 +1,95 @@
 
 
-# 三视图坐标系与状态栏贴合图边、跟随缩放
+# 三视图坐标轴和状态栏紧靠窗口边缘
 
-## 问题分析
+## 问题
 
-当前三视图（ThreeViewLayout）中：
-- 坐标轴是简单的虚线十字线，未延伸到视图边缘
-- 没有比例尺、当前平面指示器等状态信息
-- 这些元素已经跟随缩放（因为在同一个 SVG 内），但位置不够贴合边缘
+当前坐标轴（刻度、轴标签）和状态栏（比例尺、平面指示器）是渲染在 SVG viewBox 内部的固定坐标位置。当用户缩放/平移画布时，这些元素会跟着内容一起移动，导致缩放后它们不再贴合可见窗口的边缘。
 
-而单视图画布（DraggableLayoutCanvas）拥有完整的坐标系统（CoordinateSystem 组件），包含刻度尺、比例尺、当前平面指示等，可作为参考。
+用户期望：无论怎么缩放平移，坐标轴始终沿着每个视图面板的可见边缘延伸，HUD 状态栏始终固定在可见区域的角落。
 
-## 修改方案
+## 解决方案
 
-### 1. 增强 CoordinateAxes 组件（ThreeViewLayout.tsx 内）
+将坐标轴和 HUD 元素从 SVG 内部移到 `OverviewZoomContainer` 的 HTML 层，作为绝对定位的覆盖层渲染。
 
-将每个视图面板的坐标轴改为贴合面板边缘的完整坐标系：
-
-- **坐标轴延伸到面板边缘**：水平轴从左边缘到右边缘，垂直轴从上边缘（header下方）到下边缘
-- **添加刻度标记**：在轴上显示 mm 刻度（根据 auto-scale 计算的比例），每隔固定间距标注数值
-- **轴标签贴合边缘**：X/Y/Z 标签放在轴末端，紧贴面板右边缘和上边缘
-
-### 2. 为每个视图面板添加状态信息栏
-
-在每个视图面板的边角位置添加：
-
-- **比例尺**（左下角）：显示当前视图的缩放比例，样式参照单视图的 CoordinateSystem 比例尺
-- **当前平面指示器**（右下角）：显示 "X-Z" / "Y-Z" / "X-Y"
-
-这些元素直接渲染在每个视图面板的 SVG 坐标空间内，自然跟随外层 OverviewZoomContainer 的缩放和平移。
-
-### 3. 尺寸说明表面板同步处理
-
-尺寸说明表（右下象限）的表头和边框已经贴合面板边缘，无需修改。
-
-## 技术细节
-
-### CoordinateAxes 组件改造
+### 核心思路
 
 ```text
-当前：
-  - 简单虚线十字 + 两个文字标签
-  - opacity 0.3，不够突出
+当前架构：
+  OverviewZoomContainer (div, CSS transform: scale + translate)
+    └── ThreeViewLayout (SVG viewBox 1600x900)
+          ├── 视图面板背景 + 内容
+          ├── CoordinateAxes (SVG 内，跟随缩放) ← 问题所在
+          └── ViewHUD (SVG 内，跟随缩放) ← 问题所在
 
 改为：
-  - 轴线延伸到面板完整宽高（边距 6px）
-  - 轴末端加箭头标记（复用 marker defs）
-  - 每 100mm（按当前 scale 换算为像素）添加刻度线和数值
-  - 轴标签改为带背景色的标签（蓝色背景 X，绿色背景 Z 等）
-  - opacity 提升到 0.5
+  OverviewZoomContainer (div, position: relative)
+    ├── 缩放层 (div, CSS transform: scale + translate)
+    │     └── ThreeViewLayout (SVG，不含坐标轴和HUD)
+    └── 覆盖层 (div, position: absolute, inset: 0, pointer-events: none)
+          ├── 左上视图坐标轴 + HUD (根据缩放/平移计算可见区域)
+          ├── 右上视图坐标轴 + HUD
+          └── 左下视图坐标轴 + HUD
 ```
 
-### 状态栏元素
+### 具体实现
 
-每个视图面板底部添加两个固定位置元素：
+#### 1. ThreeViewLayout.tsx 变更
+
+- 从 `renderView` 中移除 `CoordinateAxes` 和 `ViewHUD` 的调用
+- 导出 `computeViewTransform` 函数和相关类型，供外部覆盖层使用
+- SVG 只负责渲染内容（对象、对齐线、尺寸表）
+
+#### 2. DraggableLayoutCanvas.tsx 变更（OverviewZoomContainer）
+
+- 在缩放的 div 之后，增加一个 `position: absolute` 的覆盖层 div
+- 覆盖层内为每个视图面板渲染独立的坐标轴 SVG 和 HUD
+- 坐标轴的位置根据以下公式计算：
 
 ```text
-左下角 - 比例尺：
-  [---|  100mm  |---]  比例 1:N
-  背景: rgba(30,41,59,0.95)，圆角矩形
+面板在屏幕上的可见区域:
+  screenLeft  = ovPan.x + panelOriginX * ovZoom
+  screenTop   = ovPan.y + panelOriginY * ovZoom
+  screenWidth = panelWidth * ovZoom
+  screenHeight = panelHeight * ovZoom
 
-右下角 - 平面指示：
-  当前平面
-    X-Z
-  背景: rgba(30,41,59,0.95)，圆角矩形
+坐标原点在屏幕上的位置:
+  originScreenX = screenLeft + offsetX * ovZoom
+  originScreenY = screenTop + offsetY * ovZoom
+
+裁剪到容器可见范围:
+  visibleLeft   = max(0, screenLeft)
+  visibleRight  = min(containerWidth, screenLeft + screenWidth)
+  visibleTop    = max(0, screenTop)
+  visibleBottom = min(containerHeight, screenTop + screenHeight)
 ```
+
+- 坐标轴线从 visibleLeft 延伸到 visibleRight（水平轴），从 visibleTop 延伸到 visibleBottom（垂直轴）
+- 刻度标记根据 `scale * ovZoom` 计算间距
+- HUD 元素（比例尺、平面指示器）固定在 visibleLeft+10/visibleBottom-40 和 visibleRight-60/visibleBottom-40
+
+#### 3. 每个视图的覆盖层内容
+
+每个视图面板的覆盖 SVG 包含：
+- 沿可见边缘的坐标轴虚线
+- 沿轴的 mm 刻度标记和数值
+- 轴端的彩色标签（X 蓝色、Y 绿色、Z 黄色）
+- 左下角比例尺
+- 右下角平面指示器
+
+所有元素使用 `clip-path` 或覆盖 SVG 的边界自动裁剪到各自面板的可见区域。
 
 ### 涉及文件
 
-| 文件 | 变更内容 |
-|------|---------|
-| src/components/canvas/ThreeViewLayout.tsx | 重写 CoordinateAxes 组件，增加刻度、比例尺和平面指示器 |
+| 文件 | 变更 |
+|------|------|
+| src/components/canvas/ThreeViewLayout.tsx | 移除 CoordinateAxes 和 ViewHUD 调用；导出 computeViewTransform 等 |
+| src/components/canvas/DraggableLayoutCanvas.tsx | 在 OverviewZoomContainer 中添加覆盖层，渲染视口固定的坐标轴和 HUD |
 
-仅需修改一个文件，所有改动集中在 CoordinateAxes 函数和 renderView 函数内。
+### 视觉效果
 
-### 刻度计算逻辑
-
-```text
-1. 从 computeViewTransform 获取当前 scale 值
-2. 将 scale 传入 CoordinateAxes
-3. 根据 scale 计算：tickInterval = 选择合适的 mm 间距（50/100/200mm）
-4. 在轴上按 tickInterval * scale 像素间距绘制刻度线
-5. 在主刻度旁标注 mm 数值
-```
+- 缩放时：坐标轴始终贴合窗口可见边缘，刻度间距随缩放自动调整
+- 平移时：坐标轴跟随面板移动但始终延伸到可见边界
+- HUD 比例尺和平面指示器固定在每个面板可见区域的角落
+- 面板移出视口时，其坐标轴和 HUD 自动隐藏
 
