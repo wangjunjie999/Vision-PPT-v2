@@ -1,55 +1,86 @@
 
-## Fix Plan: Four Improvements to the Workstation Canvas
 
-### 1. Fix Border Flickering on Three-View Hover
+# 三视图坐标系与状态栏贴合图边、跟随缩放
 
-**Root cause**: The `ResizableHandle` component in `resizable.tsx` has complex hover effects (opacity transitions on `::before` pseudo-elements, scale changes, and a `handle-pulse` animation) that cause rapid style recalculations when the mouse hovers near the border between the resizable panels and the three-view canvas. This triggers the visible "flickering" seen in the session replay.
+## 问题分析
 
-**Fix**:
-- In `src/components/ui/resizable.tsx`: Remove `transition-all` from the handle (which transitions ALL properties including width, causing layout thrashing). Replace with targeted `transition-colors` and `transition-opacity`.
-- Remove the width change on hover (`hover:w-1.5`) which causes layout shifts and flickering.
-- In `src/index.css`: Remove the `handle-pulse` animation that continuously changes `box-shadow`.
+当前三视图（ThreeViewLayout）中：
+- 坐标轴是简单的虚线十字线，未延伸到视图边缘
+- 没有比例尺、当前平面指示器等状态信息
+- 这些元素已经跟随缩放（因为在同一个 SVG 内），但位置不够贴合边缘
 
-### 2. Optimize Drag-to-Resize Experience
+而单视图画布（DraggableLayoutCanvas）拥有完整的坐标系统（CoordinateSystem 组件），包含刻度尺、比例尺、当前平面指示等，可作为参考。
 
-**Current issue**: The `ResizeHandles.tsx` component uses a `scaleFactor = 0.5`, making resize feel sluggish. The handles are small (8px) and hard to grab.
+## 修改方案
 
-**Fix in `src/components/canvas/ResizeHandles.tsx`**:
-- Increase `scaleFactor` from `0.5` to `1.0` for 1:1 mouse-to-resize mapping.
-- Increase handle size from `8` to `10` pixels for easier grabbing.
-- Add a larger invisible hit area around each handle for easier interaction.
+### 1. 增强 CoordinateAxes 组件（ThreeViewLayout.tsx 内）
 
-### 3. Increase Default Mechanism Sizes
+将每个视图面板的坐标轴改为贴合面板边缘的完整坐标系：
 
-**Current**: Default mechanism dimensions are `100x80` pixels (line 849 in DraggableLayoutCanvas.tsx), with the camera at `50x60`.
+- **坐标轴延伸到面板边缘**：水平轴从左边缘到右边缘，垂直轴从上边缘（header下方）到下边缘
+- **添加刻度标记**：在轴上显示 mm 刻度（根据 auto-scale 计算的比例），每隔固定间距标注数值
+- **轴标签贴合边缘**：X/Y/Z 标签放在轴末端，紧贴面板右边缘和上边缘
 
-**Fix in `src/components/canvas/DraggableLayoutCanvas.tsx`**:
-- Change default mechanism size from `100x80` to `140x110` (40% larger).
-- Change default camera size from `50x60` to `70x80` (40% larger).
+### 2. 为每个视图面板添加状态信息栏
 
-### 4. Enlarge the Coordinate System
+在每个视图面板的边角位置添加：
 
-**Two coordinate systems to update**:
+- **比例尺**（左下角）：显示当前视图的缩放比例，样式参照单视图的 CoordinateSystem 比例尺
+- **当前平面指示器**（右下角）：显示 "X-Z" / "Y-Z" / "X-Y"
 
-**a. Single-view CoordinateSystem (`src/components/canvas/CoordinateSystem.tsx`)**:
-- Increase axis label badge sizes (from 28x22 to 36x28).
-- Increase axis label font size from 13 to 15.
-- Increase origin label size.
-- Increase ruler tick lengths (major from 12 to 16, minor from 6 to 10).
-- Increase scale bar size and text.
+这些元素直接渲染在每个视图面板的 SVG 坐标空间内，自然跟随外层 OverviewZoomContainer 的缩放和平移。
 
-**b. Three-view CoordinateAxes (`src/components/canvas/ThreeViewLayout.tsx`)**:
-- Increase axis dash lines to extend further into each view panel.
-- Increase axis label font size from 9 to 11.
-- Reduce padding from edges (from 20px to 12px) to make axes longer.
+### 3. 尺寸说明表面板同步处理
 
-### Files to modify
+尺寸说明表（右下象限）的表头和边框已经贴合面板边缘，无需修改。
 
-| File | Change |
-|------|--------|
-| `src/components/ui/resizable.tsx` | Remove layout-shifting hover effects |
-| `src/index.css` | Remove handle-pulse animation |
-| `src/components/canvas/ResizeHandles.tsx` | Increase scaleFactor to 1.0, enlarge handles |
-| `src/components/canvas/DraggableLayoutCanvas.tsx` | Increase default mechanism/camera sizes |
-| `src/components/canvas/CoordinateSystem.tsx` | Enlarge axis labels, ticks, scale bar |
-| `src/components/canvas/ThreeViewLayout.tsx` | Enlarge coordinate axes in overview |
+## 技术细节
+
+### CoordinateAxes 组件改造
+
+```text
+当前：
+  - 简单虚线十字 + 两个文字标签
+  - opacity 0.3，不够突出
+
+改为：
+  - 轴线延伸到面板完整宽高（边距 6px）
+  - 轴末端加箭头标记（复用 marker defs）
+  - 每 100mm（按当前 scale 换算为像素）添加刻度线和数值
+  - 轴标签改为带背景色的标签（蓝色背景 X，绿色背景 Z 等）
+  - opacity 提升到 0.5
+```
+
+### 状态栏元素
+
+每个视图面板底部添加两个固定位置元素：
+
+```text
+左下角 - 比例尺：
+  [---|  100mm  |---]  比例 1:N
+  背景: rgba(30,41,59,0.95)，圆角矩形
+
+右下角 - 平面指示：
+  当前平面
+    X-Z
+  背景: rgba(30,41,59,0.95)，圆角矩形
+```
+
+### 涉及文件
+
+| 文件 | 变更内容 |
+|------|---------|
+| src/components/canvas/ThreeViewLayout.tsx | 重写 CoordinateAxes 组件，增加刻度、比例尺和平面指示器 |
+
+仅需修改一个文件，所有改动集中在 CoordinateAxes 函数和 renderView 函数内。
+
+### 刻度计算逻辑
+
+```text
+1. 从 computeViewTransform 获取当前 scale 值
+2. 将 scale 传入 CoordinateAxes
+3. 根据 scale 计算：tickInterval = 选择合适的 mm 间距（50/100/200mm）
+4. 在轴上按 tickInterval * scale 像素间距绘制刻度线
+5. 在主刻度旁标注 mm 数值
+```
+
