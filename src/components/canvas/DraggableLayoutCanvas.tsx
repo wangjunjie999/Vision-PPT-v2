@@ -288,15 +288,81 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   // Canvas dimensions
   const canvasWidth = 1200;
   const canvasHeight = 800;
-  const centerX = canvasWidth / 2;
-  const centerY = canvasHeight / 2;
   
   // Product dimensions from workstation
   const productDimensions = workstation?.product_dimensions as { length: number; width: number; height: number } || { length: 300, width: 200, height: 100 };
   
-  // Scale factor: pixels per mm - increased from 0.5 to 1.0 for better spacing
-  // This makes objects appear larger and further apart
-  const scale = 1.0; // pixels per mm (doubled for better visibility)
+  // ===== Auto-scale: compute optimal scale and center based on object positions =====
+  const autoScaleResult = useMemo(() => {
+    const padding = 120; // px total padding (60 each side)
+    const iconMargin = 60; // mm margin for icon sizes
+    
+    // Collect all 3D positions
+    const allPoints: { x: number; y: number }[] = [];
+    
+    // Always include product at origin
+    const projectForView = (px: number, py: number, pz: number, view: ViewType) => {
+      switch (view) {
+        case 'front': return { x: px, y: -pz };
+        case 'side': return { x: py, y: -pz };
+        case 'top': return { x: px, y: py };
+      }
+    };
+    
+    // Add product boundary points
+    const pHalfL = productDimensions.length / 2;
+    const pHalfW = productDimensions.width / 2;
+    const pHalfH = productDimensions.height / 2;
+    const productCorners = [
+      { x: -pHalfL, y: -pHalfW, z: -pHalfH },
+      { x: pHalfL, y: pHalfW, z: pHalfH },
+    ];
+    productCorners.forEach(c => {
+      allPoints.push(projectForView(c.x, c.y, c.z, currentView));
+    });
+    
+    // Add all object positions
+    objects.forEach(obj => {
+      const p = projectForView(obj.posX ?? 0, obj.posY ?? 0, obj.posZ ?? 0, currentView);
+      allPoints.push({ x: p.x - iconMargin, y: p.y - iconMargin });
+      allPoints.push({ x: p.x + iconMargin, y: p.y + iconMargin });
+    });
+    
+    if (allPoints.length < 2) {
+      return { scale: 1.0, centerX: canvasWidth / 2, centerY: canvasHeight / 2 };
+    }
+    
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    allPoints.forEach(p => {
+      minX = Math.min(minX, p.x);
+      maxX = Math.max(maxX, p.x);
+      minY = Math.min(minY, p.y);
+      maxY = Math.max(maxY, p.y);
+    });
+    
+    const rangeX = maxX - minX || 200;
+    const rangeY = maxY - minY || 200;
+    
+    const availW = canvasWidth - padding;
+    const availH = canvasHeight - padding;
+    
+    let s = Math.min(availW / rangeX, availH / rangeY, 2.0);
+    s = Math.max(s, 0.3);
+    
+    // Center offset: map the center of the bounding box to canvas center
+    const mmCenterX = (minX + maxX) / 2;
+    const mmCenterY = (minY + maxY) / 2;
+    
+    return {
+      scale: s,
+      centerX: canvasWidth / 2 - mmCenterX * s,
+      centerY: canvasHeight / 2 - mmCenterY * s,
+    };
+  }, [objects, currentView, productDimensions, canvasWidth, canvasHeight]);
+  
+  const scale = autoScaleResult.scale;
+  const centerX = autoScaleResult.centerX;
+  const centerY = autoScaleResult.centerY;
   
   const productW = productDimensions.length * scale;
   const productH = productDimensions.height * scale;
@@ -835,8 +901,8 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       posZ: defaultPosZ,
       x: canvasPos.x,
       y: canvasPos.y,
-      width: 70,
-      height: 80,
+      width: 50,
+      height: 55,
       rotation: 0,
       locked: false,
       cameraIndex: cameraCount + 1,
@@ -881,8 +947,8 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       posZ: defaultPosZ,
       x: canvasPos.x,
       y: canvasPos.y,
-      width: (mechanism.default_width || 140) * scale,
-      height: (mechanism.default_height || 110) * scale,
+      width: 80,
+      height: 60,
       rotation: 0,
       locked: false,
     };
