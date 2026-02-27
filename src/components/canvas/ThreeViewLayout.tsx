@@ -413,12 +413,42 @@ export function ThreeViewLayout({
   const sideT = computeViewTransform('side', halfW, halfH);
   const topT = computeViewTransform('top', halfW, halfH);
 
+  // Per-view color themes
+  const VIEW_THEMES: Record<ViewProjection, { accent: string; headerBg: string; headerBorder: string; label: string; panelBorder: string; iconPath: string }> = {
+    front: {
+      accent: '#3b82f6', headerBg: 'rgba(30,58,95,0.95)', headerBorder: 'rgba(59,130,246,0.4)',
+      label: '#93c5fd', panelBorder: 'rgba(59,130,246,0.3)',
+      iconPath: 'M4,8 L12,4 L20,8 L20,16 L12,20 L4,16 Z',
+    },
+    side: {
+      accent: '#22c55e', headerBg: 'rgba(20,83,45,0.95)', headerBorder: 'rgba(34,197,94,0.4)',
+      label: '#86efac', panelBorder: 'rgba(34,197,94,0.3)',
+      iconPath: 'M6,6 L18,6 L18,18 L6,18 Z M6,6 L10,3 L22,3 L22,15 L18,18',
+    },
+    top: {
+      accent: '#f59e0b', headerBg: 'rgba(120,53,15,0.95)', headerBorder: 'rgba(245,158,11,0.4)',
+      label: '#fcd34d', panelBorder: 'rgba(245,158,11,0.3)',
+      iconPath: 'M4,14 L12,6 L20,14 L12,22 Z',
+    },
+  };
+
   const renderView = (view: ViewProjection, tx: number, ty: number, vw: number, vh: number, transform: ReturnType<typeof computeViewTransform>, viewLabel: string) => {
+    const theme = VIEW_THEMES[view];
     return (
       <g key={view}>
-        <rect x={tx} y={ty} width={vw} height={vh} fill="#0f172a" stroke="#334155" strokeWidth={1} />
-        <rect x={tx} y={ty} width={vw} height={headerH} fill="#1e293b" />
-        <text x={tx + vw / 2} y={ty + 21} textAnchor="middle" fill="#94a3b8" fontSize={14} fontWeight="bold">
+        {/* Panel background with themed border */}
+        <rect x={tx} y={ty} width={vw} height={vh} fill="#0f172a" stroke={theme.panelBorder} strokeWidth={1.5} />
+        {/* Accent top line */}
+        <line x1={tx} y1={ty} x2={tx + vw} y2={ty} stroke={theme.accent} strokeWidth={2} opacity={0.7} />
+        {/* Header with gradient feel */}
+        <rect x={tx} y={ty} width={vw} height={headerH} fill={theme.headerBg} />
+        <line x1={tx} y1={ty + headerH} x2={tx + vw} y2={ty + headerH} stroke={theme.headerBorder} strokeWidth={0.5} />
+        {/* View icon */}
+        <g transform={`translate(${tx + 10}, ${ty + 6})`}>
+          <path d={theme.iconPath} fill="none" stroke={theme.accent} strokeWidth={1.2} opacity={0.8} transform="scale(0.8)" />
+        </g>
+        {/* View title */}
+        <text x={tx + vw / 2} y={ty + 21} textAnchor="middle" fill={theme.label} fontSize={14} fontWeight="bold" letterSpacing="0.5">
           {viewLabel}
         </text>
 
