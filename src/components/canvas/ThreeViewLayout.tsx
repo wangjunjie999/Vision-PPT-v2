@@ -223,27 +223,145 @@ function MechanismShape({ x, y, label, color, mechType, displayName }: { x: numb
 
 // ===== Coordinate Axes =====
 
-function CoordinateAxes({ ox, oy, vw, vh, headerH, view }: {
+const AXIS_COLORS: Record<string, string> = { X: '#3b82f6', Y: '#22c55e', Z: '#f59e0b' };
+
+function chooseTickInterval(scale: number): number {
+  const candidates = [10, 20, 50, 100, 200, 500, 1000];
+  const targetPx = 60;
+  for (const c of candidates) {
+    if (c * scale >= targetPx) return c;
+  }
+  return 1000;
+}
+
+function CoordinateAxes({ ox, oy, vw, vh, headerH, view, scale, offsetX, offsetY }: {
   ox: number; oy: number; vw: number; vh: number; headerH: number; view: ViewProjection;
+  scale: number; offsetX: number; offsetY: number;
 }) {
-  const cxView = ox + vw / 2;
-  const cyView = oy + headerH + (vh - headerH) / 2;
+  const margin = 6;
+  const left = ox + margin;
+  const right = ox + vw - margin;
+  const top = oy + headerH + margin;
+  const bottom = oy + vh - margin;
+  const cxView = ox + offsetX;
+  const cyView = oy + offsetY;
+
   const axisLabels: Record<ViewProjection, { h: string; v: string }> = {
     front: { h: 'X', v: 'Z' },
     side: { h: 'Y', v: 'Z' },
     top: { h: 'X', v: 'Y' },
   };
   const labels = axisLabels[view];
+  const hColor = AXIS_COLORS[labels.h];
+  const vColor = AXIS_COLORS[labels.v];
+
+  const tickInterval = chooseTickInterval(scale);
+  const pxInterval = tickInterval * scale;
+
+  // Generate ticks along horizontal axis
+  const hTicks: JSX.Element[] = [];
+  if (pxInterval > 10) {
+    // positive direction
+    for (let px = cxView + pxInterval; px < right - 20; px += pxInterval) {
+      const mmVal = Math.round((px - cxView) / scale);
+      hTicks.push(
+        <g key={`ht-${mmVal}`}>
+          <line x1={px} y1={cyView - 4} x2={px} y2={cyView + 4} stroke={hColor} strokeWidth={0.8} opacity={0.6} />
+          <text x={px} y={cyView + 14} textAnchor="middle" fill="#64748b" fontSize={8}>{mmVal}</text>
+        </g>
+      );
+    }
+    // negative direction
+    for (let px = cxView - pxInterval; px > left + 20; px -= pxInterval) {
+      const mmVal = Math.round((px - cxView) / scale);
+      hTicks.push(
+        <g key={`ht-${mmVal}`}>
+          <line x1={px} y1={cyView - 4} x2={px} y2={cyView + 4} stroke={hColor} strokeWidth={0.8} opacity={0.6} />
+          <text x={px} y={cyView + 14} textAnchor="middle" fill="#64748b" fontSize={8}>{mmVal}</text>
+        </g>
+      );
+    }
+  }
+
+  // Generate ticks along vertical axis
+  const vTicks: JSX.Element[] = [];
+  if (pxInterval > 10) {
+    for (let py = cyView + pxInterval; py < bottom - 14; py += pxInterval) {
+      const mmVal = Math.round((py - cyView) / scale);
+      vTicks.push(
+        <g key={`vt-${mmVal}`}>
+          <line x1={cxView - 4} y1={py} x2={cxView + 4} y2={py} stroke={vColor} strokeWidth={0.8} opacity={0.6} />
+          <text x={cxView - 8} y={py + 3} textAnchor="end" fill="#64748b" fontSize={8}>{mmVal}</text>
+        </g>
+      );
+    }
+    for (let py = cyView - pxInterval; py > top + 14; py -= pxInterval) {
+      const mmVal = Math.round((py - cyView) / scale);
+      vTicks.push(
+        <g key={`vt-${mmVal}`}>
+          <line x1={cxView - 4} y1={py} x2={cxView + 4} y2={py} stroke={vColor} strokeWidth={0.8} opacity={0.6} />
+          <text x={cxView - 8} y={py + 3} textAnchor="end" fill="#64748b" fontSize={8}>{mmVal}</text>
+        </g>
+      );
+    }
+  }
 
   return (
-    <g opacity={0.3}>
-      {/* Horizontal axis */}
-      <line x1={ox + 12} y1={cyView} x2={ox + vw - 12} y2={cyView} stroke="#475569" strokeWidth={1.2} strokeDasharray="4 3" />
-      {/* Vertical axis */}
-      <line x1={cxView} y1={oy + headerH + 6} x2={cxView} y2={oy + vh - 6} stroke="#475569" strokeWidth={1.2} strokeDasharray="4 3" />
-      {/* Labels */}
-      <text x={ox + vw - 14} y={cyView - 5} fill="#64748b" fontSize={12} fontWeight="bold">{labels.h}</text>
-      <text x={cxView + 7} y={oy + headerH + 18} fill="#64748b" fontSize={12} fontWeight="bold">{labels.v}</text>
+    <g opacity={0.5}>
+      {/* Horizontal axis full-width */}
+      <line x1={left} y1={cyView} x2={right} y2={cyView} stroke={hColor} strokeWidth={1} strokeDasharray="6 3" opacity={0.4} />
+      {/* Vertical axis full-height */}
+      <line x1={cxView} y1={top} x2={cxView} y2={bottom} stroke={vColor} strokeWidth={1} strokeDasharray="6 3" opacity={0.4} />
+
+      {/* Ticks */}
+      {hTicks}
+      {vTicks}
+
+      {/* Axis labels with colored background */}
+      <rect x={right - 22} y={cyView - 18} width={20} height={16} rx={4} fill={hColor} fillOpacity={0.85} />
+      <text x={right - 12} y={cyView - 6} textAnchor="middle" fill="#fff" fontSize={11} fontWeight="bold">{labels.h}</text>
+
+      <rect x={cxView + 6} y={top} width={20} height={16} rx={4} fill={vColor} fillOpacity={0.85} />
+      <text x={cxView + 16} y={top + 12} textAnchor="middle" fill="#fff" fontSize={11} fontWeight="bold">{labels.v}</text>
+    </g>
+  );
+}
+
+// Scale bar and plane indicator HUD
+function ViewHUD({ ox, oy, vw, vh, view, scale }: {
+  ox: number; oy: number; vw: number; vh: number; view: ViewProjection; scale: number;
+}) {
+  const planeLabels: Record<ViewProjection, string> = { front: 'X-Z', side: 'Y-Z', top: 'X-Y' };
+
+  // Scale bar: pick a nice mm length that maps to ~80px
+  const candidates = [10, 20, 50, 100, 200, 500, 1000];
+  let barMM = 100;
+  for (const c of candidates) {
+    if (c * scale >= 40 && c * scale <= 140) { barMM = c; break; }
+  }
+  const barPx = barMM * scale;
+  const ratio = Math.round(1 / scale * 10) / 10;
+
+  const blX = ox + 10;
+  const blY = oy + vh - 10;
+
+  const brX = ox + vw - 10;
+  const brY = oy + vh - 10;
+
+  return (
+    <g>
+      {/* Bottom-left: scale bar */}
+      <rect x={blX} y={blY - 30} width={Math.max(barPx + 40, 90)} height={28} rx={6} fill="#1e293b" fillOpacity={0.92} stroke="#334155" strokeWidth={0.5} />
+      <line x1={blX + 8} y1={blY - 12} x2={blX + 8 + barPx} y2={blY - 12} stroke="#94a3b8" strokeWidth={1.5} />
+      <line x1={blX + 8} y1={blY - 16} x2={blX + 8} y2={blY - 8} stroke="#94a3b8" strokeWidth={1} />
+      <line x1={blX + 8 + barPx} y1={blY - 16} x2={blX + 8 + barPx} y2={blY - 8} stroke="#94a3b8" strokeWidth={1} />
+      <text x={blX + 8 + barPx / 2} y={blY - 18} textAnchor="middle" fill="#cbd5e1" fontSize={8}>{barMM}mm</text>
+      <text x={blX + 8 + barPx + 6} y={blY - 9} textAnchor="start" fill="#64748b" fontSize={7}>1:{ratio}</text>
+
+      {/* Bottom-right: plane indicator */}
+      <rect x={brX - 50} y={brY - 30} width={48} height={28} rx={6} fill="#1e293b" fillOpacity={0.92} stroke="#334155" strokeWidth={0.5} />
+      <text x={brX - 26} y={brY - 18} textAnchor="middle" fill="#64748b" fontSize={7}>当前平面</text>
+      <text x={brX - 26} y={brY - 7} textAnchor="middle" fill="#93c5fd" fontSize={12} fontWeight="bold">{planeLabels[view]}</text>
     </g>
   );
 }
@@ -303,8 +421,11 @@ export function ThreeViewLayout({
           {viewLabel}
         </text>
 
-        {/* Coordinate axes */}
-        <CoordinateAxes ox={tx} oy={ty} vw={vw} vh={vh} headerH={headerH} view={view} />
+        {/* Coordinate axes with ticks */}
+        <CoordinateAxes ox={tx} oy={ty} vw={vw} vh={vh} headerH={headerH} view={view} scale={transform.scale} offsetX={transform.offsetX} offsetY={transform.offsetY} />
+
+        {/* HUD: scale bar + plane indicator */}
+        <ViewHUD ox={tx} oy={ty} vw={vw} vh={vh} view={view} scale={transform.scale} />
 
         {/* Connection lines (camera to product) */}
         <g transform={`translate(${tx + transform.offsetX}, ${ty + transform.offsetY})`}>
