@@ -1,43 +1,41 @@
 
 
-# 优化三视图布局图比例与图标显示
+# 优化单视图布局图比例
 
 ## 问题分析
 
-当前三视图中图符占比过小，原因有二：
-1. **缩放因子过保守**：`computeViewTransform` 中 `scale` 计算使用了 `* 0.7` 的缩减系数，且最大比例限制为 `1.5`，导致图标只占面板可用区域的约 50%
-2. **图标尺寸固定且偏小**：机构图标（MechanismShape）和相机图标（CameraShape）使用固定像素尺寸（约 14-18px），不随缩放变化
-
-用户期望：放大图符占比，简化机构为小图标，突出相机安装位置。
+从截图可以看到，单视图模式下：
+- 相机位于 Z=300 位置（画面上方），机构在 Z=0 位置（中心），大量空间在下方浪费
+- 比例因子固定为 `scale = 1.0` 像素/mm，不会根据内容自适应
+- 画布固定 1200x800，中心在 (600, 400)，对象分布在中心偏上区域
+- 机构图标尺寸过大（140x110 像素），相机图标也偏大（70x80），导致图标重叠且视觉杂乱
 
 ## 修改方案
 
-### 1. 调整缩放参数，放大图符占比
+### 1. 自适应缩放 -- 根据内容自动调整比例
 
-在 `ThreeViewLayout.tsx` 的 `computeViewTransform` 和 `getViewTransforms` 中：
-- 将 `* 0.7` 缩减系数改为 `* 0.88`
-- 将最大比例从 `1.5` 提高到 `2.5`
-- 将对象边界扩展从 `±40` 缩小到 `±25`，让内容更紧凑
+新增 `computeAutoScale` 函数，根据所有对象的 3D 坐标范围计算最优比例因子：
 
-### 2. 简化机构图标，缩小尺寸
+```text
+计算逻辑:
+  1. 遍历所有对象，找出当前视图投影后的坐标范围（含产品尺寸）
+  2. 在坐标范围两侧留出 padding（80px）
+  3. scale = min(可用宽度 / 坐标范围X, 可用高度 / 坐标范围Y)
+  4. 限制 scale 在 0.3 ~ 2.0 之间
+  5. 重新计算 centerX/centerY 使内容居中
+```
 
-重构 `MechanismShape` 组件：
-- 缩小机构图形尺寸约 40%（线条更细、形状更紧凑）
-- 标签改为小号编号标签（如 M1），不再默认显示全名
-- 使用更淡的颜色，降低视觉权重
+这样无论对象分布在 300mm 还是 3000mm 范围内，都能自动适配画布。
 
-### 3. 突出相机安装位置
+### 2. 缩小图标默认尺寸
 
-增强 `CameraShape` 组件：
-- 放大相机图标约 50%（矩形 + 镜头圆圈更大）
-- 添加脉冲动画光环（橙色虚线圆圈）
-- 标签使用醒目的蓝色背景 + 白色文字
-- 相机到产品的连接线加粗（从 1.2 改为 1.8），使用蓝色
+- 相机图标：从 70x80 缩小到 50x55
+- 机构图标：从 `defaultWidth * scale` 改为固定合理值 80x60（不再乘以 scale，因为 scale 现在是动态的）
+- 产品矩形也使用 scale 动态调整
 
-### 4. 调整产品图标
+### 3. 视图切换时重新计算
 
-- 产品矩形改为按实际比例缩放（使用 `productDimensions`），而非固定 60x36
-- 保持虚线边框样式但加粗边框
+当 `currentView` 或 `objects` 变化时，重新计算自适应缩放参数，确保每个视图都有最佳布局。
 
 ## 技术细节
 
@@ -45,42 +43,56 @@
 
 | 文件 | 变更 |
 |------|------|
-| src/components/canvas/ThreeViewLayout.tsx | 修改缩放参数、重构图标组件、调整连接线样式 |
+| src/components/canvas/DraggableLayoutCanvas.tsx | 添加自适应缩放逻辑、调整图标默认尺寸、动态居中 |
 
-### 缩放参数对比
+### 缩放计算（伪代码）
 
 ```text
-修改前:
-  boundingBox: ±40px
-  scaleFactor: min(availW/rangeX, availH/rangeY, 1.5) * 0.7
-  => 图符约占面板 40-50%
+function computeAutoScale(objects, currentView, canvasWidth, canvasHeight):
+  // 收集所有对象在当前视图下的投影坐标
+  points = objects.map(obj => project3DTo2D_mm(obj, currentView))
+  // 加入产品尺寸
+  points.push(产品边界点)
 
-修改后:
-  boundingBox: ±25px
-  scaleFactor: min(availW/rangeX, availH/rangeY, 2.5) * 0.88
-  => 图符约占面板 70-80%
+  // 计算坐标范围（mm 单位）
+  rangeX_mm = max(points.x) - min(points.x) + 图标尺寸余量
+  rangeY_mm = max(points.y) - min(points.y) + 图标尺寸余量
+
+  // 计算最优比例（像素/mm）
+  padding = 120  // 两侧各60px
+  scale = min(
+    (canvasWidth - padding) / rangeX_mm,
+    (canvasHeight - padding) / rangeY_mm,
+    2.0  // 上限
+  )
+  scale = max(scale, 0.3)  // 下限
+
+  // 计算居中偏移
+  centerX_mm = (min_x + max_x) / 2
+  centerY_mm = (min_y + max_y) / 2
+  return { scale, centerOffsetX, centerOffsetY }
 ```
 
 ### 图标尺寸对比
 
 ```text
-CameraShape (相机):
-  修改前: rect 28x22, 镜头 r=7, 标签 r=14
-  修改后: rect 36x28, 镜头 r=10, 标签 r=16, 添加脉冲光环 r=24
+相机图标:
+  修改前: width=70, height=80 (固定)
+  修改后: width=50, height=55 (固定，更紧凑)
 
-MechanismShape (机构):
-  修改前: 各种形状 ~28px, 全名标签
-  修改后: 各种形状 ~18px, 仅显示编号标签(M1), 线条更细(1px)
+机构图标:
+  修改前: width = (defaultWidth || 140) * scale  // scale=1.0 时为 140
+  修改后: width = 80, height = 60 (固定合理值，不随 scale 变化)
 
-ProductShape (产品):
-  修改前: 固定 60x36
-  修改后: 保持固定但稍大 70x42, 十字线更明显
+产品矩形:
+  修改前: productDimensions * scale (scale=1.0)
+  修改后: productDimensions * autoScale (动态缩放)
 ```
 
-### 连接线样式
+### 预期效果
 
-```text
-修改前: stroke="#475569" strokeWidth=1.2 opacity=0.5
-修改后: stroke="#3b82f6" strokeWidth=1.8 opacity=0.6, 终点加小箭头
-```
+- 对象自动居中显示，充分利用画布空间
+- 缩放适配：少量对象时放大显示，大量分散对象时缩小
+- 图标比例更合理，不再出现大面积空白
+- 切换视图时自动重新适配
 
