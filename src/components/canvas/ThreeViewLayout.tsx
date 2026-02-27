@@ -157,11 +157,20 @@ function ViewLabel({ label, x, y, color, fullName }: { label: string; x: number;
 function CameraShape({ x, y, label, color }: { x: number; y: number; label: string; color: string }) {
   return (
     <g>
-      <rect x={x - 14} y={y - 11} width={28} height={22} rx={3}
-        fill={color} fillOpacity={0.15} stroke={color} strokeWidth={1.5} />
-      <circle cx={x} cy={y} r={7} fill="none" stroke={color} strokeWidth={1.5} />
-      <circle cx={x} cy={y} r={3} fill={color} />
-      <ViewLabel label={label} x={x} y={y - 20} color={color} />
+      {/* Pulsing halo */}
+      <circle cx={x} cy={y} r={24} fill="none" stroke="#f59e0b" strokeWidth={1.2} strokeDasharray="4 3" opacity={0.5}>
+        <animate attributeName="r" values="22;28;22" dur="2s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.5;0.2;0.5" dur="2s" repeatCount="indefinite" />
+      </circle>
+      {/* Camera body - enlarged */}
+      <rect x={x - 18} y={y - 14} width={36} height={28} rx={4}
+        fill={color} fillOpacity={0.2} stroke={color} strokeWidth={2} />
+      {/* Lens */}
+      <circle cx={x} cy={y} r={10} fill="none" stroke={color} strokeWidth={2} />
+      <circle cx={x} cy={y} r={4} fill={color} />
+      {/* Label with blue bg */}
+      <rect x={x - 16} y={y - 32} width={32} height={18} rx={9} fill={color} fillOpacity={0.95} />
+      <text x={x} y={y - 19} textAnchor="middle" fill="#fff" fontSize={12} fontWeight="bold">{label}</text>
     </g>
   );
 }
@@ -169,46 +178,48 @@ function CameraShape({ x, y, label, color }: { x: number; y: number; label: stri
 function ProductShape({ x, y }: { x: number; y: number }) {
   return (
     <g>
-      <rect x={x - 30} y={y - 18} width={60} height={36} rx={4}
-        fill="#1e3a5f" stroke="#06b6d4" strokeWidth={2} strokeDasharray="6 3" />
-      <line x1={x - 10} y1={y} x2={x + 10} y2={y} stroke="#06b6d4" strokeWidth={0.5} opacity={0.5} />
-      <line x1={x} y1={y - 10} x2={x} y2={y + 10} stroke="#06b6d4" strokeWidth={0.5} opacity={0.5} />
-      <ViewLabel label="P" x={x} y={y - 28} color="#06b6d4" />
+      <rect x={x - 35} y={y - 21} width={70} height={42} rx={4}
+        fill="#1e3a5f" stroke="#06b6d4" strokeWidth={2.5} strokeDasharray="6 3" />
+      <line x1={x - 16} y1={y} x2={x + 16} y2={y} stroke="#06b6d4" strokeWidth={0.8} opacity={0.6} />
+      <line x1={x} y1={y - 14} x2={x} y2={y + 14} stroke="#06b6d4" strokeWidth={0.8} opacity={0.6} />
+      <ViewLabel label="P" x={x} y={y - 32} color="#06b6d4" />
     </g>
   );
 }
 
-function MechanismShape({ x, y, label, color, mechType, displayName }: { x: number; y: number; label: string; color: string; mechType: string; displayName?: string }) {
+function MechanismShape({ x, y, label, color, mechType }: { x: number; y: number; label: string; color: string; mechType: string; displayName?: string }) {
+  const c = color;
+  const sw = 1;
+  const op = 0.7;
   const shapes: Record<string, JSX.Element> = {
-    conveyor: <rect x={x - 18} y={y - 5} width={36} height={10} rx={5} fill="none" stroke={color} strokeWidth={1.5} />,
-    cylinder: <rect x={x - 5} y={y - 14} width={10} height={28} rx={2} fill="none" stroke={color} strokeWidth={1.5} />,
+    conveyor: <rect x={x - 11} y={y - 3} width={22} height={6} rx={3} fill="none" stroke={c} strokeWidth={sw} opacity={op} />,
+    cylinder: <rect x={x - 3} y={y - 9} width={6} height={18} rx={1.5} fill="none" stroke={c} strokeWidth={sw} opacity={op} />,
     gripper: (
       <>
-        <rect x={x - 3} y={y - 10} width={6} height={12} rx={1} fill="none" stroke={color} strokeWidth={1.5} />
-        <line x1={x - 7} y1={y + 2} x2={x - 3} y2={y - 2} stroke={color} strokeWidth={1.5} />
-        <line x1={x + 7} y1={y + 2} x2={x + 3} y2={y - 2} stroke={color} strokeWidth={1.5} />
+        <rect x={x - 2} y={y - 7} width={4} height={8} rx={1} fill="none" stroke={c} strokeWidth={sw} opacity={op} />
+        <line x1={x - 5} y1={y + 1} x2={x - 2} y2={y - 2} stroke={c} strokeWidth={sw} opacity={op} />
+        <line x1={x + 5} y1={y + 1} x2={x + 2} y2={y - 2} stroke={c} strokeWidth={sw} opacity={op} />
       </>
     ),
     lift: (
       <>
-        <rect x={x - 12} y={y - 3} width={24} height={6} rx={2} fill="none" stroke={color} strokeWidth={1.5} />
-        <polygon points={`${x - 3},${y - 10} ${x + 3},${y - 10} ${x},${y - 14}`} fill={color} />
-        <line x1={x} y1={y - 10} x2={x} y2={y - 3} stroke={color} strokeWidth={1} />
+        <rect x={x - 8} y={y - 2} width={16} height={4} rx={1.5} fill="none" stroke={c} strokeWidth={sw} opacity={op} />
+        <polygon points={`${x - 2},${y - 7} ${x + 2},${y - 7} ${x},${y - 10}`} fill={c} opacity={op} />
       </>
     ),
-    turntable: <circle cx={x} cy={y} r={14} fill="none" stroke={color} strokeWidth={1.5} />,
-    stopper: <rect x={x - 8} y={y - 10} width={16} height={20} rx={2} fill="none" stroke={color} strokeWidth={1.5} />,
+    turntable: <circle cx={x} cy={y} r={9} fill="none" stroke={c} strokeWidth={sw} opacity={op} />,
+    stopper: <rect x={x - 5} y={y - 7} width={10} height={14} rx={1.5} fill="none" stroke={c} strokeWidth={sw} opacity={op} />,
     robot_arm: (
       <>
-        <line x1={x} y1={y - 12} x2={x - 8} y2={y} stroke={color} strokeWidth={2} strokeLinecap="round" />
-        <line x1={x - 8} y1={y} x2={x + 4} y2={y + 8} stroke={color} strokeWidth={2} strokeLinecap="round" />
-        <circle cx={x} cy={y - 12} r={2.5} fill={color} />
+        <line x1={x} y1={y - 8} x2={x - 5} y2={y} stroke={c} strokeWidth={1.2} strokeLinecap="round" opacity={op} />
+        <line x1={x - 5} y1={y} x2={x + 3} y2={y + 5} stroke={c} strokeWidth={1.2} strokeLinecap="round" opacity={op} />
+        <circle cx={x} cy={y - 8} r={1.8} fill={c} opacity={op} />
       </>
     ),
     camera_mount: (
       <>
-        <line x1={x} y1={y - 14} x2={x} y2={y + 4} stroke={color} strokeWidth={2} />
-        <line x1={x} y1={y + 4} x2={x + 12} y2={y + 4} stroke={color} strokeWidth={2} />
+        <line x1={x} y1={y - 9} x2={x} y2={y + 3} stroke={c} strokeWidth={1.2} opacity={op} />
+        <line x1={x} y1={y + 3} x2={x + 8} y2={y + 3} stroke={c} strokeWidth={1.2} opacity={op} />
       </>
     ),
   };
@@ -216,7 +227,9 @@ function MechanismShape({ x, y, label, color, mechType, displayName }: { x: numb
   return (
     <g>
       {shapes[mechType] || shapes.stopper}
-      <ViewLabel label={label} x={x} y={y - 24} color={color} fullName={displayName} />
+      {/* Small numbered label only */}
+      <circle cx={x} cy={y - 16} r={8} fill={c} fillOpacity={0.6} />
+      <text x={x} y={y - 12.5} textAnchor="middle" fill="#fff" fontSize={8} fontWeight="bold">{label}</text>
     </g>
   );
 }
@@ -392,17 +405,17 @@ export function ThreeViewLayout({
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     for (const obj of labeled) {
       const p = project(obj, view);
-      minX = Math.min(minX, p.x - 40);
-      maxX = Math.max(maxX, p.x + 40);
-      minY = Math.min(minY, p.y - 40);
-      maxY = Math.max(maxY, p.y + 40);
+      minX = Math.min(minX, p.x - 25);
+      maxX = Math.max(maxX, p.x + 25);
+      minY = Math.min(minY, p.y - 25);
+      maxY = Math.max(maxY, p.y + 25);
     }
 
     const rangeX = maxX - minX || 200;
     const rangeY = maxY - minY || 200;
     const availW = vw - padding * 2;
     const availH = vh - padding * 2 - headerH;
-    const s = Math.min(availW / rangeX, availH / rangeY, 1.5) * 0.7;
+    const s = Math.min(availW / rangeX, availH / rangeY, 2.5) * 0.88;
     const cx = (minX + maxX) / 2;
     const cy = (minY + maxY) / 2;
 
@@ -466,7 +479,8 @@ export function ThreeViewLayout({
                 key={`conn-${view}-${cam.id}`}
                 x1={cp.x * transform.scale} y1={cp.y * transform.scale}
                 x2={pp.x * transform.scale} y2={pp.y * transform.scale}
-                stroke="#475569" strokeWidth={1.2} strokeDasharray="4 3" opacity={0.5}
+                stroke="#3b82f6" strokeWidth={1.8} strokeDasharray="6 3" opacity={0.6}
+                markerEnd="url(#arrowBlue)"
               />
             );
           })}
@@ -636,6 +650,12 @@ export function ThreeViewLayout({
       xmlns="http://www.w3.org/2000/svg"
       style={{ backgroundColor: '#0f172a' }}
     >
+      {/* Arrow marker for connection lines */}
+      <defs>
+        <marker id="arrowBlue" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6" fill="none" stroke="#3b82f6" strokeWidth={1} />
+        </marker>
+      </defs>
       {/* Title */}
       <text x={width / 2} y={20} textAnchor="middle" fill="#f1f5f9" fontSize={16} fontWeight="bold">
         {workstationName} - 三合一布局概览
@@ -682,17 +702,17 @@ export function getViewTransforms(
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     for (const obj of labeled) {
       const p = project(obj, view);
-      minX = Math.min(minX, p.x - 40);
-      maxX = Math.max(maxX, p.x + 40);
-      minY = Math.min(minY, p.y - 40);
-      maxY = Math.max(maxY, p.y + 40);
+      minX = Math.min(minX, p.x - 25);
+      maxX = Math.max(maxX, p.x + 25);
+      minY = Math.min(minY, p.y - 25);
+      maxY = Math.max(maxY, p.y + 25);
     }
 
     const rangeX = maxX - minX || 200;
     const rangeY = maxY - minY || 200;
     const availW = vw - padding * 2;
     const availH = vh - padding * 2 - headerH;
-    const s = Math.min(availW / rangeX, availH / rangeY, 1.5) * 0.7;
+    const s = Math.min(availW / rangeX, availH / rangeY, 2.5) * 0.88;
     const cx = (minX + maxX) / 2;
     const cy = (minY + maxY) / 2;
 
