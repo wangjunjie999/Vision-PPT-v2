@@ -143,17 +143,29 @@ export function Product3DViewer({ modelUrl, imageUrls = [], onReady }: Product3D
 
   // Expose screenshot function to parent
   useEffect(() => {
-    if (onReady) {
+    if (!onReady) return;
+    if (!hasModel && hasImages) {
+      // Image mode: return image URL directly (avoids CORS toDataURL issues)
+      onReady({
+        takeScreenshot: () => imageUrls[currentImageIndex] || null,
+      });
+    } else {
+      // 3D mode: use screenshotFnRef from ScreenshotHelper
       onReady({
         takeScreenshot: () => {
           if (screenshotFnRef.current) {
-            return screenshotFnRef.current();
+            try {
+              return screenshotFnRef.current();
+            } catch (e) {
+              console.warn('3D screenshot failed:', e);
+              return null;
+            }
           }
           return null;
         },
       });
     }
-  }, [onReady]);
+  }, [onReady, hasModel, hasImages, currentImageIndex, imageUrls]);
 
   // If only images and no model, show image gallery
   if (!hasModel && hasImages) {
@@ -180,28 +192,6 @@ export function Product3DViewer({ modelUrl, imageUrls = [], onReady }: Product3D
             </div>
           )}
         </div>
-        <canvas 
-          ref={(canvas) => {
-            if (canvas && onReady) {
-              const ctx = canvas.getContext('2d');
-              const img = new Image();
-              img.crossOrigin = 'anonymous';
-              img.onload = () => {
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx?.drawImage(img, 0, 0);
-              };
-              img.src = imageUrls[currentImageIndex];
-              
-              onReady({
-                takeScreenshot: () => {
-                  return canvas.toDataURL('image/png');
-                },
-              });
-            }
-          }}
-          className="hidden"
-        />
       </div>
     );
   }
