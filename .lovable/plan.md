@@ -1,134 +1,109 @@
 
+# 修复截图标注功能 -- 点击按钮后中间画布不切换
 
-# 截图标注界面 -- 中间画布区域展示
+## 问题根因
 
-## 概述
+`ProductAnnotationPanel` 中的 `handleTakeScreenshot` 函数依赖 `viewerRef.takeScreenshot()` 返回截图数据，但在以下情况下会静默失败：
 
-点击"截图并标注"按钮后，中间画布区域切换为标注编辑界面（替换当前布局图），右侧面板显示标注记录列表。完成标注后可返回布局图视图。
+1. **图片模式下 `viewerRef` 未正确设置**：`Product3DViewer` 的 `useEffect`（调用 `onReady`）在组件挂载时执行，但图片模式下真正的截图函数是在隐藏 canvas 的 `ref` 回调中设置的，两者时序冲突导致 `screenshotFnRef` 为 null。
+2. **CORS 导致 `toDataURL` 失败**：即使 canvas 成功渲染了跨域图片，调用 `canvas.toDataURL()` 会因安全策略抛出异常，但没有 try-catch 捕获。
+3. **无错误提示**：`handleTakeScreenshot` 在截图失败时不显示任何提示，用户点击按钮后没有任何反馈。
 
-## 交互流程
+## 修复方案
+
+### 1. Product3DViewer.tsx -- 修复图片模式截图
+
+**图片模式**（无 3D 模型时）：不再依赖隐藏 canvas 的 `toDataURL`，改为直接返回图片 URL。`AnnotationCanvas` 本身支持加载远程图片 URL，所以不需要转为 data URL。
 
 ```text
-当前状态:  [项目树] | [布局图画布] | [表单面板(含产品3D)]
-                              |
-           点击 "截图并标注" 按钮
-                              |
-标注状态:  [项目树] | [标注画布(大画面)] | [表单面板(标注记录列表)]
-                              |
-           点击 "完成/返回" 按钮
-                              |
-恢复状态:  [项目树] | [布局图画布] | [表单面板(含产品3D)]
+修改前:
+  hidden canvas → drawImage → toDataURL (CORS 失败)
+
+修改后:
+  直接返回当前显示的 imageUrl 作为截图数据
+  同时移除隐藏的 canvas 元素
 ```
 
-## 修改方案
+**3D 模式**：添加 try-catch 包裹 `toDataURL` 调用，防止异常。
 
-### 1. 全局状态 -- 新增标注模式标志
+### 2. Product3DViewer.tsx -- 修复 onReady 时序
 
-在 `useAppStore` (Zustand store) 中添加：
-- `annotationMode: boolean` -- 是否处于标注模式
-- `annotationSnapshot: string | null` -- 截图数据 URL
-- `annotationAssetId: string | null` -- 关联的产品素材 ID
-- `annotationScope: 'workstation' | 'module'` -- 标注作用域
-- `enterAnnotationMode(snapshot, assetId, scope)` -- 进入标注
-- `exitAnnotationMode()` -- 退出标注
+将图片模式下的 `onReady` 调用移到 `useEffect` 中（依赖 `hasModel`, `hasImages`, `currentImageIndex`），确保在组件渲染后正确设置截图函数。
 
-### 2. 中间画布区域 -- 标注编辑视图
+### 3. ProductAnnotationPanel.tsx -- 添加失败提示和回退
 
-修改 `CanvasArea.tsx`，当 `annotationMode === true` 时渲染全尺寸 `AnnotationCanvas`：
-- 顶部工具栏：标注工具（点/矩形/箭头/文本/编号）+ 返回按钮 + 保存按钮
-- 中间区域：`AnnotationCanvas` 组件充满画布，利用更大的操作空间
-- 底部状态栏：当前标注数量、提示信息
+在 `handleTakeScreenshot` 中：
+- 添加 `viewerRef` 为 null 时的错误提示
+- 添加 `takeScreenshot()` 返回 null 时的错误提示
+- 添加回退逻辑：如果截图失败但有图片 URL，直接使用图片 URL 进入标注模式
 
-### 3. 右侧面板 -- 标注记录列表
+### 4. ModuleAnnotationPanel.tsx -- 同样添加失败处理
 
-修改 `FormPanel.tsx`，当 `annotationMode === true` 时渲染标注记录面板：
-- 显示已保存的标注记录列表（缩略图 + 版本号 + 时间）
-- 支持查看、设为默认、删除等操作
-- 保存成功后自动刷新列表
-
-### 4. 触发入口
-
-在 `ProductAnnotationPanel` 和 `ModuleAnnotationPanel` 中，"截图并标注"按钮改为调用 `enterAnnotationMode()`，将截图数据传入全局状态，不再在右侧面板内切换 Tab。
-
-### 5. 新建组件
-
-| 组件 | 用途 |
-|------|------|
-| `src/components/canvas/AnnotationEditor.tsx` | 中间画布区的标注编辑器，包装 AnnotationCanvas + 工具栏 + 保存逻辑 |
-| `src/components/forms/AnnotationRecordsPanel.tsx` | 右侧面板的标注记录列表 |
-
-## 技术细节
-
-### Store 变更 (useAppStore.ts)
-
-```typescript
-// 新增状态
-annotationMode: false,
-annotationSnapshot: null as string | null,
-annotationAssetId: null as string | null,
-annotationScope: 'workstation' as 'workstation' | 'module',
-
-enterAnnotationMode: (snapshot, assetId, scope) => set({
-  annotationMode: true,
-  annotationSnapshot: snapshot,
-  annotationAssetId: assetId,
-  annotationScope: scope,
-}),
-
-exitAnnotationMode: () => set({
-  annotationMode: false,
-  annotationSnapshot: null,
-  annotationAssetId: null,
-}),
-```
-
-### CanvasArea.tsx 变更
-
-```typescript
-// 新增判断
-const { annotationMode } = useAppStore();
-
-if (annotationMode) {
-  return <AnnotationEditor />;
-}
-// ... 原有逻辑
-```
-
-### FormPanel.tsx 变更
-
-```typescript
-const { annotationMode } = useAppStore();
-
-if (annotationMode) {
-  return <AnnotationRecordsPanel />;
-}
-// ... 原有逻辑
-```
-
-### AnnotationEditor 组件
-
-- 全屏利用画布区域渲染 `AnnotationCanvas`（aspect-ratio 改为自适应容器高度）
-- 顶部：返回按钮 + 标注工具栏 + 保存按钮
-- 保存时上传截图到 storage，创建 product_annotations 记录
-- 保存成功后自动退出标注模式
-
-### AnnotationRecordsPanel 组件
-
-- 从 `product_annotations` 表查询当前 asset 的记录
-- 以列表/网格形式显示缩略图、版本号、备注、时间
-- 支持：查看详情、设为 PPT 默认、删除
-- 实时监听保存事件刷新列表
+与 ProductAnnotationPanel 相同的防护逻辑。
 
 ## 涉及文件
 
-| 文件 | 操作 |
+| 文件 | 变更 |
 |------|------|
-| src/store/useAppStore.ts | 新增标注模式状态和方法 |
-| src/components/canvas/AnnotationEditor.tsx | 新建 - 画布区标注编辑器 |
-| src/components/forms/AnnotationRecordsPanel.tsx | 新建 - 右侧标注记录面板 |
-| src/components/layout/CanvasArea.tsx | 修改 - 标注模式分支 |
-| src/components/layout/FormPanel.tsx | 修改 - 标注模式分支 |
-| src/components/product/ProductAnnotationPanel.tsx | 修改 - 截图按钮调用全局 store |
-| src/components/product/ModuleAnnotationPanel.tsx | 修改 - 截图按钮调用全局 store |
-| src/components/product/AnnotationCanvas.tsx | 修改 - 移除固定 aspect-ratio，支持自适应容器 |
+| src/components/product/Product3DViewer.tsx | 修复图片模式截图逻辑、修复 onReady 时序、添加 try-catch |
+| src/components/product/ProductAnnotationPanel.tsx | 添加截图失败提示和回退逻辑 |
+| src/components/product/ModuleAnnotationPanel.tsx | 同上 |
 
+## 技术细节
+
+### Product3DViewer 图片模式修复
+
+```typescript
+// 图片模式：useEffect 中设置截图函数
+useEffect(() => {
+  if (!hasModel && hasImages && onReady) {
+    onReady({
+      takeScreenshot: () => {
+        // 直接返回图片 URL，AnnotationCanvas 可以加载远程图片
+        return imageUrls[currentImageIndex] || null;
+      },
+    });
+  }
+}, [hasModel, hasImages, currentImageIndex, imageUrls, onReady]);
+```
+
+### ProductAnnotationPanel 回退逻辑
+
+```typescript
+const handleTakeScreenshot = () => {
+  if (!asset) {
+    toast.error('请先上传产品素材');
+    return;
+  }
+
+  let dataUrl: string | null = null;
+
+  // 尝试从 viewerRef 获取截图
+  if (viewerRef) {
+    try {
+      dataUrl = viewerRef.takeScreenshot();
+    } catch (e) {
+      console.warn('Screenshot failed:', e);
+    }
+  }
+
+  // 回退：直接使用图片 URL
+  if (!dataUrl && asset.preview_images?.length > 0) {
+    dataUrl = asset.preview_images[0];
+  }
+
+  if (dataUrl) {
+    useAppStore.getState().enterAnnotationMode(dataUrl, asset.id, 'workstation');
+    toast.success('已进入标注模式');
+  } else {
+    toast.error('截图失败，请确保已上传素材');
+  }
+};
+```
+
+## 预期效果
+
+- 图片模式下点击"截图并标注"能正确进入标注模式，中间画布切换为标注编辑器
+- 3D 模型模式下截图功能正常工作
+- 截图失败时有明确的错误提示
+- 即使截图函数异常，也能通过回退使用原始图片 URL 进入标注
