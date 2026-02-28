@@ -26,7 +26,6 @@ import {
   Hash,
   Trash2,
   Edit3,
-  Move,
   MousePointer,
 } from 'lucide-react';
 
@@ -52,9 +51,7 @@ interface AnnotationCanvasProps {
   annotations: Annotation[];
   onChange: (annotations: Annotation[]) => void;
   readOnly?: boolean;
-  /** When true, canvas fills parent container height instead of using aspect-ratio */
   fillContainer?: boolean;
-  /** Highlight a specific annotation by ID (pulsing border) */
   highlightId?: string | null;
 }
 
@@ -80,6 +77,13 @@ const CATEGORIES = [
   { value: 'other', label: '其他' },
 ];
 
+interface ImageBounds {
+  renderWidth: number;
+  renderHeight: number;
+  offsetX: number;
+  offsetY: number;
+}
+
 export function AnnotationCanvas({
   imageUrl,
   annotations,
@@ -98,6 +102,7 @@ export function AnnotationCanvas({
   const [tempAnnotation, setTempAnnotation] = useState<Partial<Annotation> | null>(null);
   const [nextNumber, setNextNumber] = useState(1);
   const [imageSize, setImageSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [imageBounds, setImageBounds] = useState<ImageBounds>({ renderWidth: 0, renderHeight: 0, offsetX: 0, offsetY: 0 });
   const [dragging, setDragging] = useState<{ id: string; offsetX: number; offsetY: number; origAnnotation: Annotation } | null>(null);
 
   // Calculate next number
@@ -108,15 +113,45 @@ export function AnnotationCanvas({
     setNextNumber(maxNumber + 1);
   }, [annotations]);
 
-  // Get relative coordinates
+  // Calculate image bounds for object-contain alignment
+  const calcImageBounds = useCallback(() => {
+    if (!containerRef.current || !imageSize.width || !imageSize.height) return;
+    const container = containerRef.current.getBoundingClientRect();
+    const containerAspect = container.width / container.height;
+    const imageAspect = imageSize.width / imageSize.height;
+
+    let renderWidth: number, renderHeight: number, offsetX: number, offsetY: number;
+    if (imageAspect > containerAspect) {
+      renderWidth = container.width;
+      renderHeight = container.width / imageAspect;
+      offsetX = 0;
+      offsetY = (container.height - renderHeight) / 2;
+    } else {
+      renderHeight = container.height;
+      renderWidth = container.height * imageAspect;
+      offsetX = (container.width - renderWidth) / 2;
+      offsetY = 0;
+    }
+    setImageBounds({ renderWidth, renderHeight, offsetX, offsetY });
+  }, [imageSize]);
+
+  useEffect(() => {
+    calcImageBounds();
+    window.addEventListener('resize', calcImageBounds);
+    return () => window.removeEventListener('resize', calcImageBounds);
+  }, [calcImageBounds]);
+
+  // Get coordinates relative to the actual rendered image area
   const getRelativeCoords = useCallback((e: React.MouseEvent): { x: number; y: number } => {
-    if (!containerRef.current) return { x: 0, y: 0 };
-    const rect = containerRef.current.getBoundingClientRect();
+    if (!containerRef.current || !imageBounds.renderWidth || !imageBounds.renderHeight) return { x: 0, y: 0 };
+    const container = containerRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - container.left - imageBounds.offsetX;
+    const mouseY = e.clientY - container.top - imageBounds.offsetY;
     return {
-      x: ((e.clientX - rect.left) / rect.width) * 100,
-      y: ((e.clientY - rect.top) / rect.height) * 100,
+      x: (mouseX / imageBounds.renderWidth) * 100,
+      y: (mouseY / imageBounds.renderHeight) * 100,
     };
-  }, []);
+  }, [imageBounds]);
 
   // Handle mouse down
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -124,7 +159,6 @@ export function AnnotationCanvas({
     const coords = getRelativeCoords(e);
 
     if (tool === 'select') {
-      // Check if clicking on an annotation
       const clicked = annotations.find(a => {
         if (a.type === 'point' || a.type === 'number') {
           return Math.abs(a.x - coords.x) < 3 && Math.abs(a.y - coords.y) < 3;
@@ -138,10 +172,9 @@ export function AnnotationCanvas({
         }
         return false;
       });
-      
+
       if (clicked) {
         setSelectedId(clicked.id);
-        // Start dragging
         setDragging({
           id: clicked.id,
           offsetX: coords.x - clicked.x,
@@ -157,8 +190,8 @@ export function AnnotationCanvas({
     setIsDrawing(true);
     setDrawStart(coords);
 
+    // For point-based tools: add immediately without opening dialog
     if (tool === 'point' || tool === 'text' || tool === 'number') {
-      // Create immediately for point-based tools
       const newAnnotation: Annotation = {
         id: `ann_${Date.now()}`,
         type: tool,
@@ -169,18 +202,16 @@ export function AnnotationCanvas({
         description: '',
         category: 'other',
       };
-      setEditingAnnotation(newAnnotation);
-      setEditDialogOpen(true);
+      onChange([...annotations, newAnnotation]);
       setIsDrawing(false);
     }
-  }, [tool, annotations, readOnly, getRelativeCoords, nextNumber]);
+  }, [tool, annotations, readOnly, getRelativeCoords, nextNumber, onChange]);
 
   // Handle mouse move
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (readOnly) return;
     const coords = getRelativeCoords(e);
 
-    // Handle dragging existing annotations
     if (dragging) {
       const newX = coords.x - dragging.offsetX;
       const newY = coords.y - dragging.offsetY;
@@ -230,6 +261,7 @@ export function AnnotationCanvas({
     const coords = getRelativeCoords(e);
     setIsDrawing(false);
 
+    // For rect/arrow: add immediately without opening dialog
     if (tool === 'rect' || tool === 'arrow') {
       const newAnnotation: Annotation = {
         id: `ann_${Date.now()}`,
@@ -244,25 +276,24 @@ export function AnnotationCanvas({
         description: '',
         category: 'other',
       };
-      setEditingAnnotation(newAnnotation);
-      setEditDialogOpen(true);
+      onChange([...annotations, newAnnotation]);
     }
 
     setTempAnnotation(null);
     setDrawStart(null);
-  }, [isDrawing, drawStart, tool, readOnly, getRelativeCoords, dragging]);
+  }, [isDrawing, drawStart, tool, readOnly, getRelativeCoords, dragging, annotations, onChange]);
 
   // Save annotation from dialog
   const handleSaveAnnotation = () => {
     if (!editingAnnotation) return;
-    
+
     const existing = annotations.find(a => a.id === editingAnnotation.id);
     if (existing) {
       onChange(annotations.map(a => a.id === editingAnnotation.id ? editingAnnotation : a));
     } else {
       onChange([...annotations, editingAnnotation]);
     }
-    
+
     setEditDialogOpen(false);
     setEditingAnnotation(null);
   };
@@ -275,7 +306,7 @@ export function AnnotationCanvas({
     }
   };
 
-  // Edit selected annotation
+  // Edit selected annotation (manual trigger only)
   const handleEdit = () => {
     const selected = annotations.find(a => a.id === selectedId);
     if (selected) {
@@ -283,6 +314,16 @@ export function AnnotationCanvas({
       setEditDialogOpen(true);
     }
   };
+
+  // Double-click to edit
+  const handleDoubleClick = useCallback((annId: string) => {
+    const ann = annotations.find(a => a.id === annId);
+    if (ann && !readOnly) {
+      setSelectedId(annId);
+      setEditingAnnotation({ ...ann });
+      setEditDialogOpen(true);
+    }
+  }, [annotations, readOnly]);
 
   // Render annotation
   const renderAnnotation = (ann: Annotation) => {
@@ -302,6 +343,7 @@ export function AnnotationCanvas({
             className={cn(baseClass, "w-4 h-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary border-2 border-white shadow-lg")}
             style={{ left: `${ann.x}%`, top: `${ann.y}%` }}
             onClick={() => setSelectedId(ann.id)}
+            onDoubleClick={() => handleDoubleClick(ann.id)}
             title={ann.name || '标注点'}
           />
         );
@@ -313,6 +355,7 @@ export function AnnotationCanvas({
             className={cn(baseClass, "w-6 h-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold border-2 border-white shadow-lg")}
             style={{ left: `${ann.x}%`, top: `${ann.y}%` }}
             onClick={() => setSelectedId(ann.id)}
+            onDoubleClick={() => handleDoubleClick(ann.id)}
             title={ann.name || `标注${ann.number}`}
           >
             {ann.number}
@@ -331,16 +374,17 @@ export function AnnotationCanvas({
               height: `${ann.height}%`,
             }}
             onClick={() => setSelectedId(ann.id)}
+            onDoubleClick={() => handleDoubleClick(ann.id)}
             title={ann.name || '区域'}
           />
         );
 
-      case 'arrow':
+      case 'arrow': {
         const dx = (ann.endX || ann.x) - ann.x;
         const dy = (ann.endY || ann.y) - ann.y;
         const length = Math.sqrt(dx * dx + dy * dy);
         const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-        
+
         return (
           <div
             key={ann.id}
@@ -352,13 +396,15 @@ export function AnnotationCanvas({
               transform: `rotate(${angle}deg)`,
             }}
             onClick={() => setSelectedId(ann.id)}
+            onDoubleClick={() => handleDoubleClick(ann.id)}
             title={ann.name || '箭头'}
           >
-            <div 
+            <div
               className="absolute right-0 top-1/2 -translate-y-1/2 border-l-8 border-l-primary border-y-4 border-y-transparent"
             />
           </div>
         );
+      }
 
       case 'text':
         return (
@@ -367,6 +413,7 @@ export function AnnotationCanvas({
             className={cn(baseClass, "px-2 py-1 bg-background/90 border border-primary rounded text-xs whitespace-nowrap")}
             style={{ left: `${ann.x}%`, top: `${ann.y}%` }}
             onClick={() => setSelectedId(ann.id)}
+            onDoubleClick={() => handleDoubleClick(ann.id)}
           >
             {ann.name || '文本'}
           </div>
@@ -436,7 +483,7 @@ export function AnnotationCanvas({
               </Button>
             ))}
           </div>
-          
+
           {selectedId && (
             <div className="flex gap-1">
               <Button variant="outline" size="sm" className="h-8" onClick={handleEdit}>
@@ -482,15 +529,23 @@ export function AnnotationCanvas({
             setImageSize({ width: img.naturalWidth, height: img.naturalHeight });
           }}
         />
-        
-        {/* Annotations layer */}
-        <div className="absolute inset-0 pointer-events-none">
+
+        {/* Annotations layer — aligned to actual rendered image area */}
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            left: `${imageBounds.offsetX}px`,
+            top: `${imageBounds.offsetY}px`,
+            width: `${imageBounds.renderWidth}px`,
+            height: `${imageBounds.renderHeight}px`,
+          }}
+        >
           {annotations.map(renderAnnotation)}
           {renderTempAnnotation()}
         </div>
       </div>
 
-      {/* Edit Dialog */}
+      {/* Edit Dialog — only opened manually via edit button or double-click */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -530,7 +585,7 @@ export function AnnotationCanvas({
                   </Select>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label>说明</Label>
                 <Textarea
