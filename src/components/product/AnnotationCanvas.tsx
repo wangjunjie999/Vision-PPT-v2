@@ -153,26 +153,32 @@ export function AnnotationCanvas({
     };
   }, [imageBounds]);
 
-  // Handle mouse down
+  // Hit-test: find annotation under cursor
+  const hitTest = useCallback((coords: { x: number; y: number }) => {
+    // Search in reverse so top-most (last drawn) annotations are found first
+    for (let i = annotations.length - 1; i >= 0; i--) {
+      const a = annotations[i];
+      if (a.type === 'point' || a.type === 'number') {
+        if (Math.abs(a.x - coords.x) < 3 && Math.abs(a.y - coords.y) < 3) return a;
+      } else if (a.type === 'rect') {
+        if (coords.x >= a.x && coords.x <= a.x + (a.width || 0) &&
+            coords.y >= a.y && coords.y <= a.y + (a.height || 0)) return a;
+      } else if (a.type === 'arrow' || a.type === 'text') {
+        if (Math.abs(a.x - coords.x) < 3 && Math.abs(a.y - coords.y) < 3) return a;
+      }
+    }
+    return null;
+  }, [annotations]);
+
+  // Handle mouse down — any tool can select/drag existing annotations
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (readOnly) return;
     const coords = getRelativeCoords(e);
 
-    if (tool === 'select') {
-      const clicked = annotations.find(a => {
-        if (a.type === 'point' || a.type === 'number') {
-          return Math.abs(a.x - coords.x) < 3 && Math.abs(a.y - coords.y) < 3;
-        }
-        if (a.type === 'rect') {
-          return coords.x >= a.x && coords.x <= a.x + (a.width || 0) &&
-                 coords.y >= a.y && coords.y <= a.y + (a.height || 0);
-        }
-        if (a.type === 'arrow' || a.type === 'text') {
-          return Math.abs(a.x - coords.x) < 3 && Math.abs(a.y - coords.y) < 3;
-        }
-        return false;
-      });
+    // Try to hit-test existing annotations first (works in any tool)
+    const clicked = hitTest(coords);
 
+    if (tool === 'select') {
       if (clicked) {
         setSelectedId(clicked.id);
         setDragging({
@@ -187,6 +193,20 @@ export function AnnotationCanvas({
       return;
     }
 
+    // For drawing tools: if clicking on an existing annotation, select it instead of drawing
+    if (clicked) {
+      setSelectedId(clicked.id);
+      setDragging({
+        id: clicked.id,
+        offsetX: coords.x - clicked.x,
+        offsetY: coords.y - clicked.y,
+        origAnnotation: { ...clicked },
+      });
+      return;
+    }
+
+    // Not clicking on annotation — start drawing
+    setSelectedId(null);
     setIsDrawing(true);
     setDrawStart(coords);
 
@@ -205,7 +225,7 @@ export function AnnotationCanvas({
       onChange([...annotations, newAnnotation]);
       setIsDrawing(false);
     }
-  }, [tool, annotations, readOnly, getRelativeCoords, nextNumber, onChange]);
+  }, [tool, annotations, readOnly, getRelativeCoords, nextNumber, onChange, hitTest]);
 
   // Handle mouse move
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -299,12 +319,26 @@ export function AnnotationCanvas({
   };
 
   // Delete selected annotation
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     if (selectedId) {
       onChange(annotations.filter(a => a.id !== selectedId));
       setSelectedId(null);
     }
-  };
+  }, [selectedId, annotations, onChange]);
+
+  // Keyboard shortcuts: Delete/Backspace to remove selected annotation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (readOnly || !selectedId) return;
+      if (editDialogOpen) return; // Don't delete while editing
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        handleDelete();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [readOnly, selectedId, editDialogOpen, handleDelete]);
 
   // Edit selected annotation (manual trigger only)
   const handleEdit = () => {
