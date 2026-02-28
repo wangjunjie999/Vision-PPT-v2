@@ -1,12 +1,24 @@
 import { useData } from '@/contexts/DataContext';
+import { useAppStore } from '@/store/useAppStore';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { EmptyState } from '../canvas/EmptyState';
 import { ProjectDashboard } from '../canvas/ProjectDashboard';
 import { WorkstationCanvas } from '../canvas/WorkstationCanvas';
 import { ModuleSchematic } from '../canvas/ModuleSchematic';
+import { AnnotationEditor } from '../canvas/AnnotationEditor';
 
 export function CanvasArea() {
   const { selectedProjectId, selectedWorkstationId, selectedModuleId } = useData();
+  const { annotationMode } = useAppStore();
+
+  // Annotation mode takes priority
+  if (annotationMode) {
+    return (
+      <ErrorBoundary fallbackTitle="标注编辑器加载失败">
+        <AnnotationEditor />
+      </ErrorBoundary>
+    );
+  }
 
   // Determine what to show - Module view shows 2D workstation schematic
   if (selectedModuleId) {
