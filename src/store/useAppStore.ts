@@ -32,6 +32,14 @@ interface Store {
   pptProgress: number;
   pptImageQuality: 'standard' | 'high' | 'ultra';
   
+  // Annotation mode
+  annotationMode: boolean;
+  annotationSnapshot: string | null;
+  annotationAssetId: string | null;
+  annotationScope: 'workstation' | 'module';
+  enterAnnotationMode: (snapshot: string, assetId: string, scope: 'workstation' | 'module') => void;
+  exitAnnotationMode: () => void;
+  
   // Quality mapping helper
   getPixelRatio: () => number;
   
@@ -131,6 +139,23 @@ export const useAppStore = create<Store>()(
       isGeneratingPPT: false,
       pptProgress: 0,
       pptImageQuality: 'high',
+      
+      // Annotation mode
+      annotationMode: false,
+      annotationSnapshot: null,
+      annotationAssetId: null,
+      annotationScope: 'workstation',
+      enterAnnotationMode: (snapshot, assetId, scope) => set({
+        annotationMode: true,
+        annotationSnapshot: snapshot,
+        annotationAssetId: assetId,
+        annotationScope: scope,
+      }),
+      exitAnnotationMode: () => set({
+        annotationMode: false,
+        annotationSnapshot: null,
+        annotationAssetId: null,
+      }),
       
       // Quality mapping helper
       getPixelRatio: () => {

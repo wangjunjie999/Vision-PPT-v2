@@ -35,6 +35,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Product3DViewer } from './Product3DViewer';
 import { AnnotationCanvas, Annotation } from './AnnotationCanvas';
+import { useAppStore } from '@/store/useAppStore';
 
 interface ProductAsset {
   id: string;
@@ -232,16 +233,14 @@ export function ModuleAnnotationPanel({ moduleId, workstationId }: ModuleAnnotat
     }
   };
 
-  // Take screenshot from viewer
+  // Take screenshot from viewer and enter annotation mode
   const handleTakeScreenshot = () => {
-    if (viewerRef) {
+    const assetId = moduleAsset?.id || workstationAsset?.id;
+    if (viewerRef && assetId) {
       const dataUrl = viewerRef.takeScreenshot();
       if (dataUrl) {
-        setCurrentSnapshot(dataUrl);
-        setCurrentAnnotations([]);
-        setIsAnnotating(true);
-        setActiveTab('annotate');
-        toast.success('截图成功，请进行标注');
+        useAppStore.getState().enterAnnotationMode(dataUrl, assetId, 'module');
+        toast.success('已进入标注模式');
       }
     }
   };

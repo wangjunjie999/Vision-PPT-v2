@@ -1,10 +1,12 @@
 import { memo } from 'react';
 import { useData } from '@/contexts/DataContext';
+import { useAppStore } from '@/store/useAppStore';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { EmptyFormState } from '../forms/EmptyFormState';
 import { ProjectForm } from '../forms/ProjectForm';
 import { WorkstationForm } from '../forms/WorkstationForm';
 import { ModuleForm } from '../forms/ModuleForm';
+import { AnnotationRecordsPanel } from '../forms/AnnotationRecordsPanel';
 
 // Memoized form components to prevent unnecessary re-renders
 const MemoizedModuleForm = memo(ModuleForm);
@@ -13,6 +15,16 @@ const MemoizedProjectForm = memo(ProjectForm);
 
 export function FormPanel() {
   const { selectedProjectId, selectedWorkstationId, selectedModuleId } = useData();
+  const { annotationMode } = useAppStore();
+
+  // Annotation mode - show records panel
+  if (annotationMode) {
+    return (
+      <ErrorBoundary fallbackTitle="标注记录加载失败" compact>
+        <AnnotationRecordsPanel />
+      </ErrorBoundary>
+    );
+  }
 
   if (selectedModuleId) {
     return (

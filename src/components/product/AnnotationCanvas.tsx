@@ -52,6 +52,8 @@ interface AnnotationCanvasProps {
   annotations: Annotation[];
   onChange: (annotations: Annotation[]) => void;
   readOnly?: boolean;
+  /** When true, canvas fills parent container height instead of using aspect-ratio */
+  fillContainer?: boolean;
 }
 
 type Tool = 'select' | 'point' | 'rect' | 'arrow' | 'text' | 'number';
@@ -81,6 +83,7 @@ export function AnnotationCanvas({
   annotations,
   onChange,
   readOnly = false,
+  fillContainer = false,
 }: AnnotationCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<Tool>('point');
@@ -414,7 +417,10 @@ export function AnnotationCanvas({
       {/* Canvas */}
       <div
         ref={containerRef}
-        className="relative aspect-video bg-muted rounded-lg overflow-hidden cursor-crosshair select-none"
+        className={cn(
+          "relative bg-muted rounded-lg overflow-hidden cursor-crosshair select-none",
+          fillContainer ? "h-full" : "aspect-video"
+        )}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
