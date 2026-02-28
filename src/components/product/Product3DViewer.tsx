@@ -17,6 +17,7 @@ interface Product3DViewerProps {
   modelUrl: string | null;
   imageUrls?: string[];
   onReady?: (ref: { takeScreenshot: () => string | null }) => void;
+  fillContainer?: boolean;
 }
 
 // View presets
@@ -133,7 +134,7 @@ function LoadingFallback() {
   );
 }
 
-export function Product3DViewer({ modelUrl, imageUrls = [], onReady }: Product3DViewerProps) {
+export function Product3DViewer({ modelUrl, imageUrls = [], onReady, fillContainer }: Product3DViewerProps) {
   const [viewPreset, setViewPreset] = useState<keyof typeof VIEW_PRESETS | null>('isometric');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const screenshotFnRef = useRef<(() => string | null) | null>(null);
@@ -170,21 +171,24 @@ export function Product3DViewer({ modelUrl, imageUrls = [], onReady }: Product3D
   // If only images and no model, show image gallery
   if (!hasModel && hasImages) {
     return (
-      <div className="space-y-2">
-        <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+      <div className={fillContainer ? "h-full w-full flex items-center justify-center bg-muted" : "space-y-2"}>
+        <div className={cn(
+          "relative overflow-hidden",
+          fillContainer ? "h-full w-full flex items-center justify-center" : "aspect-video bg-muted rounded-lg"
+        )}>
           <img
             src={imageUrls[currentImageIndex]}
             alt={`产品图片 ${currentImageIndex + 1}`}
-            className="w-full h-full object-contain"
+            className={fillContainer ? "max-w-full max-h-full object-contain" : "w-full h-full object-contain"}
           />
           {imageUrls.length > 1 && (
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
               {imageUrls.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setCurrentImageIndex(i)}
                   className={cn(
-                    "w-2 h-2 rounded-full transition-colors",
+                    "w-2.5 h-2.5 rounded-full transition-colors",
                     i === currentImageIndex ? "bg-primary" : "bg-primary/30"
                   )}
                 />
@@ -197,9 +201,9 @@ export function Product3DViewer({ modelUrl, imageUrls = [], onReady }: Product3D
   }
 
   return (
-    <div className="space-y-2">
+    <div className={fillContainer ? "h-full w-full flex flex-col" : "space-y-2"}>
       {/* View Preset Buttons */}
-      <div className="flex gap-1 justify-center">
+      <div className={cn("flex gap-1 justify-center", fillContainer ? "py-2 shrink-0" : "")}>
         {(Object.keys(VIEW_PRESETS) as (keyof typeof VIEW_PRESETS)[]).map((key) => (
           <Button
             key={key}
@@ -214,11 +218,14 @@ export function Product3DViewer({ modelUrl, imageUrls = [], onReady }: Product3D
       </div>
 
       {/* 3D Canvas */}
-      <div className="relative aspect-video bg-gradient-to-b from-background to-muted rounded-lg overflow-hidden border">
+      <div className={cn(
+        "relative bg-gradient-to-b from-background to-muted overflow-hidden border",
+        fillContainer ? "flex-1 min-h-0" : "aspect-video rounded-lg"
+      )}>
         <Canvas
           gl={{ preserveDrawingBuffer: true }}
           shadows
-          dpr={[1, 2]}
+          dpr={fillContainer ? [2, 3] : [1, 2]}
         >
           <PerspectiveCamera makeDefault position={[5, 5, 5]} fov={50} />
           <CameraController viewPreset={viewPreset} />

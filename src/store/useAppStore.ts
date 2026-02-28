@@ -40,6 +40,12 @@ interface Store {
   enterAnnotationMode: (snapshot: string, assetId: string, scope: 'workstation' | 'module') => void;
   exitAnnotationMode: () => void;
   
+  // Viewer mode (3D/image in central canvas)
+  viewerMode: boolean;
+  viewerAssetData: { modelUrl: string | null; imageUrls: string[]; assetId: string; scope: 'workstation' | 'module' } | null;
+  enterViewerMode: (modelUrl: string | null, imageUrls: string[], assetId: string, scope: 'workstation' | 'module') => void;
+  exitViewerMode: () => void;
+  
   // Quality mapping helper
   getPixelRatio: () => number;
   
@@ -155,6 +161,18 @@ export const useAppStore = create<Store>()(
         annotationMode: false,
         annotationSnapshot: null,
         annotationAssetId: null,
+      }),
+      
+      // Viewer mode
+      viewerMode: false,
+      viewerAssetData: null,
+      enterViewerMode: (modelUrl, imageUrls, assetId, scope) => set({
+        viewerMode: true,
+        viewerAssetData: { modelUrl, imageUrls, assetId, scope },
+      }),
+      exitViewerMode: () => set({
+        viewerMode: false,
+        viewerAssetData: null,
       }),
       
       // Quality mapping helper

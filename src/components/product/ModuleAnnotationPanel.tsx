@@ -31,6 +31,7 @@ import {
   Clock,
   Link2,
   Plus,
+  Maximize2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Product3DViewer } from './Product3DViewer';
@@ -506,15 +507,44 @@ export function ModuleAnnotationPanel({ moduleId, workstationId }: ModuleAnnotat
 
             {displayAsset ? (
               <div className="space-y-2">
-                <Product3DViewer
-                  modelUrl={displayAsset.model_file_url}
-                  imageUrls={[
-                    ...(moduleAsset?.preview_images || []),
-                    ...(workstationAsset?.preview_images || []),
-                  ]}
-                  onReady={setViewerRef}
-                />
-                <div className="flex justify-center">
+                {/* Thumbnail preview */}
+                <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+                  {(moduleAsset?.preview_images?.length || workstationAsset?.preview_images?.length) ? (
+                    <img
+                      src={(moduleAsset?.preview_images?.[0] || workstationAsset?.preview_images?.[0])!}
+                      alt="产品预览"
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                      <Box className="h-8 w-8" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2 justify-center">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const images = [
+                        ...(moduleAsset?.preview_images || []),
+                        ...(workstationAsset?.preview_images || []),
+                      ];
+                      const assetId = moduleAsset?.id || workstationAsset?.id;
+                      if (assetId) {
+                        useAppStore.getState().enterViewerMode(
+                          displayAsset.model_file_url,
+                          images,
+                          assetId,
+                          'module'
+                        );
+                      }
+                    }}
+                    className="gap-1"
+                  >
+                    <Maximize2 className="h-4 w-4" />
+                    在画布中查看
+                  </Button>
                   <Button size="sm" onClick={handleTakeScreenshot} className="gap-1">
                     <Camera className="h-4 w-4" />
                     截图并标注

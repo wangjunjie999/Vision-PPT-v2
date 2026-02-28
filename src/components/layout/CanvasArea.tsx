@@ -6,12 +6,22 @@ import { ProjectDashboard } from '../canvas/ProjectDashboard';
 import { WorkstationCanvas } from '../canvas/WorkstationCanvas';
 import { ModuleSchematic } from '../canvas/ModuleSchematic';
 import { AnnotationEditor } from '../canvas/AnnotationEditor';
+import { ProductViewerCanvas } from '../canvas/ProductViewerCanvas';
 
 export function CanvasArea() {
   const { selectedProjectId, selectedWorkstationId, selectedModuleId } = useData();
-  const { annotationMode } = useAppStore();
+  const { annotationMode, viewerMode } = useAppStore();
 
-  // Annotation mode takes priority
+  // Viewer mode takes priority over annotation
+  if (viewerMode) {
+    return (
+      <ErrorBoundary fallbackTitle="产品查看器加载失败">
+        <ProductViewerCanvas />
+      </ErrorBoundary>
+    );
+  }
+
+  // Annotation mode
   if (annotationMode) {
     return (
       <ErrorBoundary fallbackTitle="标注编辑器加载失败">
