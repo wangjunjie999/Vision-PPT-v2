@@ -7,6 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -17,10 +25,25 @@ import {
 import { AnnotationCanvas, Annotation } from '@/components/product/AnnotationCanvas';
 import {
   ArrowLeft,
+  ArrowRight,
   Save,
   Loader2,
   Edit3,
+  ChevronLeft,
+  ChevronRight,
+  Check,
 } from 'lucide-react';
+
+const CATEGORIES = [
+  { value: 'mark', label: 'Mark点' },
+  { value: 'qrcode', label: '二维码' },
+  { value: 'hole', label: '定位孔' },
+  { value: 'pole', label: '极柱' },
+  { value: 'edge', label: '边缘' },
+  { value: 'surface', label: '表面' },
+  { value: 'defect', label: '缺陷检测区' },
+  { value: 'other', label: '其他' },
+];
 
 export function AnnotationEditor() {
   const { user } = useAuth();
@@ -29,13 +52,69 @@ export function AnnotationEditor() {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveRemark, setSaveRemark] = useState('');
   const [saving, setSaving] = useState(false);
+  
+  // Sequential edit mode
+  const [sequentialMode, setSequentialMode] = useState(false);
+  const [currentEditIndex, setCurrentEditIndex] = useState(0);
+  const [editingAnnotations, setEditingAnnotations] = useState<Annotation[]>([]);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+
+  const handleStartSave = useCallback(() => {
+    if (annotations.length === 0) return;
+    
+    // Check for unnamed annotations
+    const unnamed = annotations.filter(a => !a.name);
+    if (unnamed.length > 0) {
+      // Enter sequential edit mode
+      setEditingAnnotations([...annotations]);
+      setCurrentEditIndex(0);
+      setHighlightId(annotations[0].id);
+      setSequentialMode(true);
+    } else {
+      // All named, go directly to save dialog
+      setSaveDialogOpen(true);
+    }
+  }, [annotations]);
+
+  const handleSequentialUpdate = (field: string, value: string) => {
+    setEditingAnnotations(prev => prev.map((a, i) => {
+      // Find by current annotation id
+      if (a.id === editingAnnotations[currentEditIndex]?.id) {
+        return { ...a, [field]: value };
+      }
+      return a;
+    }));
+  };
+
+  const handleSequentialNext = () => {
+    if (currentEditIndex < editingAnnotations.length - 1) {
+      const nextIdx = currentEditIndex + 1;
+      setCurrentEditIndex(nextIdx);
+      setHighlightId(editingAnnotations[nextIdx].id);
+    }
+  };
+
+  const handleSequentialPrev = () => {
+    if (currentEditIndex > 0) {
+      const prevIdx = currentEditIndex - 1;
+      setCurrentEditIndex(prevIdx);
+      setHighlightId(editingAnnotations[prevIdx].id);
+    }
+  };
+
+  const handleSequentialFinish = () => {
+    // Apply edits back to annotations
+    setAnnotations(editingAnnotations);
+    setSequentialMode(false);
+    setHighlightId(null);
+    setSaveDialogOpen(true);
+  };
 
   const handleSave = useCallback(async () => {
     if (!annotationSnapshot || !annotationAssetId || !user) return;
 
     setSaving(true);
     try {
-      // Upload snapshot to storage
       const blob = await fetch(annotationSnapshot).then(r => r.blob());
       const path = `annotations/${annotationAssetId}/${Date.now()}.png`;
       const { error: uploadError } = await supabase.storage
@@ -47,7 +126,6 @@ export function AnnotationEditor() {
       const { data: urlData } = supabase.storage.from('product-snapshots').getPublicUrl(path);
       const snapshotUrl = urlData.publicUrl;
 
-      // Get next version
       const { data: existing } = await supabase
         .from('product_annotations')
         .select('version')
@@ -59,7 +137,6 @@ export function AnnotationEditor() {
         ? existing[0].version + 1
         : 1;
 
-      // Insert annotation record
       const { error } = await supabase.from('product_annotations').insert({
         asset_id: annotationAssetId,
         snapshot_url: snapshotUrl,
@@ -75,7 +152,6 @@ export function AnnotationEditor() {
       setSaveDialogOpen(false);
       setSaveRemark('');
       toast.success('标注已保存');
-      // Stay in annotation mode so user can see records panel update
     } catch (error) {
       console.error('Save annotation failed:', error);
       toast.error('保存失败');
@@ -91,6 +167,8 @@ export function AnnotationEditor() {
       </div>
     );
   }
+
+  const currentEditAnnotation = sequentialMode ? editingAnnotations[currentEditIndex] : null;
 
   return (
     <div className="flex flex-col h-full">
@@ -113,7 +191,7 @@ export function AnnotationEditor() {
           </span>
           <Button
             size="sm"
-            onClick={() => setSaveDialogOpen(true)}
+            onClick={handleStartSave}
             disabled={annotations.length === 0}
             className="gap-1"
           >
@@ -123,17 +201,104 @@ export function AnnotationEditor() {
         </div>
       </div>
 
-      {/* Canvas area - fill remaining space */}
-      <div className="flex-1 p-4 overflow-hidden">
+      {/* Canvas area */}
+      <div className="flex-1 p-4 overflow-hidden relative">
         <div className="h-full">
           <AnnotationCanvas
             imageUrl={annotationSnapshot}
-            annotations={annotations}
-            onChange={setAnnotations}
-            readOnly={false}
+            annotations={sequentialMode ? editingAnnotations : annotations}
+            onChange={sequentialMode ? setEditingAnnotations : setAnnotations}
+            readOnly={sequentialMode}
             fillContainer
+            highlightId={highlightId}
           />
         </div>
+
+        {/* Sequential edit floating panel */}
+        {sequentialMode && currentEditAnnotation && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[480px] max-w-[90%] bg-card border rounded-xl shadow-xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <Badge variant="outline" className="text-xs">
+                {currentEditIndex + 1} / {editingAnnotations.length}
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                逐个标注特征点
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">名称 *</Label>
+                <Input
+                  value={currentEditAnnotation.name}
+                  onChange={(e) => handleSequentialUpdate('name', e.target.value)}
+                  placeholder="例如：Mark点1"
+                  className="h-8 text-sm"
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">类型</Label>
+                <Select
+                  value={currentEditAnnotation.category}
+                  onValueChange={(v) => handleSequentialUpdate('category', v)}
+                >
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map(c => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">说明</Label>
+              <Input
+                value={currentEditAnnotation.description}
+                onChange={(e) => handleSequentialUpdate('description', e.target.value)}
+                placeholder="简要说明..."
+                className="h-8 text-sm"
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSequentialPrev}
+                disabled={currentEditIndex === 0}
+                className="gap-1"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                上一个
+              </Button>
+
+              {currentEditIndex < editingAnnotations.length - 1 ? (
+                <Button
+                  size="sm"
+                  onClick={handleSequentialNext}
+                  className="gap-1"
+                >
+                  下一个
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={handleSequentialFinish}
+                  className="gap-1"
+                >
+                  <Check className="h-4 w-4" />
+                  完成
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Save dialog */}

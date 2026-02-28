@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,9 +37,13 @@ export function AnnotationRecordsPanel() {
   const [loading, setLoading] = useState(true);
   const [defaultRecordId, setDefaultRecordId] = useState<string | null>(null);
 
+  const isInitialLoad = useRef(true);
+
   const loadRecords = useCallback(async () => {
     if (!annotationAssetId || !user) return;
-    setLoading(true);
+    if (isInitialLoad.current) {
+      setLoading(true);
+    }
     try {
       const { data, error } = await supabase
         .from('product_annotations')
@@ -62,6 +66,7 @@ export function AnnotationRecordsPanel() {
       console.error('Failed to load annotation records:', error);
     } finally {
       setLoading(false);
+      isInitialLoad.current = false;
     }
   }, [annotationAssetId, user]);
 

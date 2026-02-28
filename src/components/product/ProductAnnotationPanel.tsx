@@ -256,6 +256,26 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
 
       await loadData();
       toast.success('文件上传成功');
+      
+      // Auto enter viewer mode after upload
+      // Need to re-fetch to get latest asset data
+      const { data: latestAsset } = await supabase
+        .from('product_assets')
+        .select('*')
+        .eq('workstation_id', workstationId)
+        .eq('scope_type', 'workstation')
+        .maybeSingle();
+      if (latestAsset) {
+        const images = Array.isArray(latestAsset.preview_images) ? latestAsset.preview_images as string[] : [];
+        if (latestAsset.model_file_url || images.length > 0) {
+          useAppStore.getState().enterViewerMode(
+            latestAsset.model_file_url,
+            images,
+            latestAsset.id,
+            'workstation'
+          );
+        }
+      }
     } catch (error) {
       console.error('Upload failed:', error);
       toast.error('上传失败');
@@ -498,10 +518,6 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
                   >
                     <Maximize2 className="h-4 w-4" />
                     在画布中查看
-                  </Button>
-                  <Button size="sm" onClick={handleTakeScreenshot} className="gap-1">
-                    <Camera className="h-4 w-4" />
-                    截图并标注
                   </Button>
                 </div>
               </div>
