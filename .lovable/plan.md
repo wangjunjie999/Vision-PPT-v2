@@ -1,136 +1,123 @@
 
 
-# 优化标注交互流程 + 修复闪烁问题
+# 修复标注位置偏差 + 优化标注工具交互
 
 ## 问题分析
 
-1. **上传后自动弹出查看入口**：上传完成后应自动进入画布查看模式，而非手动点击
-2. **截图按钮位置**：截图按钮已在中间画布工具栏，但右侧面板的截图按钮需移除
-3. **标注框可拖动**：当前 AnnotationCanvas 中标注放置后无法拖动位置，需添加拖拽支持
-4. **保存时逐个标注**：保存时弹出逐个特征点标注的流程（依次为每个标注填写名称/类型信息）
-5. **记录列表闪烁**：`AnnotationRecordsPanel` 每 3 秒轮询时都执行 `setLoading(true)`，导致整个列表被替换为 loading spinner 再恢复，造成闪烁
+### 1. 位置偏差根因
 
-## 修改方案
-
-### 1. 上传后自动进入画布查看 (ProductAnnotationPanel.tsx)
-
-上传成功后自动调用 `enterViewerMode()`，用户无需手动点击"在画布中查看"按钮：
+`AnnotationCanvas` 使用 `containerRef.getBoundingClientRect()` 计算相对坐标（占容器宽高的百分比），但图片使用了 `object-contain` 模式——图片实际渲染区域小于容器，两侧/上下有留白。标注坐标是相对于容器算的，但标注层覆盖整个容器，导致标注偏离图片上的实际位置。
 
 ```text
-上传完成 → loadData() → 检测到 asset 有图片/模型 → 自动 enterViewerMode()
+容器:     [  留白  |  实际图片  |  留白  ]
+点击位置:           ↓ (图片上某点)
+计算坐标: ← 基于容器宽度算百分比 (包含了留白，所以偏了)
 ```
 
-同时移除右侧面板中的"截图并标注"按钮（截图功能只在中间画布工具栏提供）。
+### 2. 点击立即弹窗问题
 
-### 2. 标注框拖拽支持 (AnnotationCanvas.tsx)
+当前代码中，点/文本/编号工具在 `mouseDown` 时就创建标注并立即打开编辑 Dialog；矩形/箭头工具在 `mouseUp` 时也立即弹出 Dialog。用户期望的流程是：先把所有框和点都画好，最后统一填写信息。
 
-在 select 工具模式下，允许用户拖拽已有标注到新位置：
-- 鼠标按下选中标注时记录偏移量
-- 鼠标移动时实时更新标注坐标
-- 鼠标释放时确认新位置
-- 矩形标注移动整体位置，箭头标注移动起点和终点
+## 修复方案
 
-### 3. 保存时逐个特征点标注 (AnnotationEditor.tsx)
+### 1. AnnotationCanvas.tsx -- 修复坐标计算
 
-点击"保存标注"后，如果存在未命名的标注项，弹出逐个编辑流程：
-- 显示当前标注序号/总数（如 "1/5"）
-- 高亮当前正在编辑的标注
-- 填写名称、类型、说明后点"下一个"
-- 全部完成后统一保存到数据库
+关键修改：计算图片在容器中的实际渲染区域（考虑 `object-contain` 的留白），坐标相对于图片实际区域计算。
 
-### 4. 修复记录列表闪烁 (AnnotationRecordsPanel.tsx)
+```typescript
+// 计算 object-contain 模式下图片的实际渲染区域
+const getImageBounds = useCallback(() => {
+  if (!containerRef.current || !imageSize.width || !imageSize.height) return null;
+  const container = containerRef.current.getBoundingClientRect();
+  const containerAspect = container.width / container.height;
+  const imageAspect = imageSize.width / imageSize.height;
+  
+  let renderWidth, renderHeight, offsetX, offsetY;
+  if (imageAspect > containerAspect) {
+    // 图片更宽，上下留白
+    renderWidth = container.width;
+    renderHeight = container.width / imageAspect;
+    offsetX = 0;
+    offsetY = (container.height - renderHeight) / 2;
+  } else {
+    // 图片更高，左右留白
+    renderHeight = container.height;
+    renderWidth = container.height * imageAspect;
+    offsetX = (container.width - renderWidth) / 2;
+    offsetY = 0;
+  }
+  return { renderWidth, renderHeight, offsetX, offsetY, container };
+}, [imageSize]);
 
-根本原因：每 3 秒轮询调用 `loadRecords()`，每次都 `setLoading(true)` 导致 UI 闪烁。
+// 修正后的坐标计算
+const getRelativeCoords = useCallback((e: React.MouseEvent) => {
+  const bounds = getImageBounds();
+  if (!bounds) return { x: 0, y: 0 };
+  const { renderWidth, renderHeight, offsetX, offsetY, container } = bounds;
+  const mouseX = e.clientX - container.left - offsetX;
+  const mouseY = e.clientY - container.top - offsetY;
+  return {
+    x: (mouseX / renderWidth) * 100,
+    y: (mouseY / renderHeight) * 100,
+  };
+}, [getImageBounds]);
+```
 
-修复方案：
-- 仅首次加载时显示 loading spinner
-- 后续轮询静默更新数据，不触发 loading 状态
-- 使用 `useRef` 标记是否为首次加载
+同时，标注的渲染层也需要调整为仅覆盖图片实际区域（而非整个容器），确保百分比坐标与渲染位置一致。
+
+### 2. AnnotationCanvas.tsx -- 取消即时弹窗
+
+改为"画完即添加、不弹窗"模式：
+- 点/编号工具：点击后直接添加标注到列表（默认空名称），不弹 Dialog
+- 矩形/箭头工具：松开鼠标后直接添加标注，不弹 Dialog
+- 删除原有的自动弹出编辑 Dialog 的逻辑
+- 保留手动双击或选择后点"编辑"按钮打开 Dialog 的能力
+
+```typescript
+// 之前：
+if (tool === 'point') {
+  setEditingAnnotation(newAnnotation);
+  setEditDialogOpen(true);  // ← 立即弹窗
+}
+
+// 之后：
+if (tool === 'point') {
+  onChange([...annotations, newAnnotation]);  // ← 直接添加，不弹窗
+}
+```
+
+### 3. AnnotationCanvas.tsx -- 标注渲染层对齐
+
+将标注层从 `absolute inset-0` 改为动态计算的偏移和尺寸，与图片实际渲染区域对齐：
+
+```typescript
+<div 
+  className="absolute pointer-events-none"
+  style={{
+    left: `${imageBounds.offsetX}px`,
+    top: `${imageBounds.offsetY}px`,
+    width: `${imageBounds.renderWidth}px`,
+    height: `${imageBounds.renderHeight}px`,
+  }}
+>
+  {annotations.map(renderAnnotation)}
+</div>
+```
+
+### 4. 添加窗口 resize 监听
+
+容器大小变化时重新计算 imageBounds，确保标注始终与图片对齐。
 
 ## 涉及文件
 
-| 文件 | 操作 |
+| 文件 | 变更 |
 |------|------|
-| src/components/product/ProductAnnotationPanel.tsx | 上传后自动进入画布查看；移除截图按钮 |
-| src/components/product/ModuleAnnotationPanel.tsx | 同上 |
-| src/components/product/AnnotationCanvas.tsx | 添加标注拖拽功能 |
-| src/components/canvas/AnnotationEditor.tsx | 保存时逐个特征点标注流程 |
-| src/components/forms/AnnotationRecordsPanel.tsx | 修复轮询闪烁问题 |
+| src/components/product/AnnotationCanvas.tsx | 修复坐标计算、标注层对齐、取消即时弹窗 |
 
-## 技术细节
+## 预期效果
 
-### AnnotationCanvas 拖拽实现
-
-```typescript
-// 新增状态
-const [dragging, setDragging] = useState<{ id: string; offsetX: number; offsetY: number } | null>(null);
-
-// select 模式下 mouseDown 时：
-if (tool === 'select' && clicked) {
-  setDragging({
-    id: clicked.id,
-    offsetX: coords.x - clicked.x,
-    offsetY: coords.y - clicked.y,
-  });
-}
-
-// mouseMove 时更新位置：
-if (dragging) {
-  const newX = coords.x - dragging.offsetX;
-  const newY = coords.y - dragging.offsetY;
-  onChange(annotations.map(a =>
-    a.id === dragging.id
-      ? { ...a, x: newX, y: newY,
-          endX: a.endX !== undefined ? newX + ((a.endX - a.x)) : undefined,
-          endY: a.endY !== undefined ? newY + ((a.endY - a.y)) : undefined }
-      : a
-  ));
-}
-
-// mouseUp 时结束拖拽：
-setDragging(null);
-```
-
-### AnnotationEditor 逐个标注流程
-
-```typescript
-// 保存按钮点击后检查未命名标注
-const unnamedAnnotations = annotations.filter(a => !a.name);
-
-if (unnamedAnnotations.length > 0) {
-  // 进入逐个编辑模式
-  setSequentialEditMode(true);
-  setCurrentEditIndex(0);
-} else {
-  // 全部已命名，直接保存
-  setSaveDialogOpen(true);
-}
-```
-
-逐个编辑界面显示在画布底部或作为浮动面板：
-- 画布上高亮当前编辑的标注（闪烁边框）
-- 右侧显示编辑表单（名称、类型、说明）
-- "上一个" / "下一个" / "完成" 按钮
-
-### 闪烁修复
-
-```typescript
-const isInitialLoad = useRef(true);
-
-const loadRecords = useCallback(async () => {
-  if (!annotationAssetId || !user) return;
-  // 仅首次加载显示 loading
-  if (isInitialLoad.current) {
-    setLoading(true);
-  }
-  try {
-    const { data, error } = await supabase...
-    // 更新数据
-    setRecords(mapped);
-  } finally {
-    setLoading(false);
-    isInitialLoad.current = false;
-  }
-}, [...]);
-```
+- 标注精确落在图片上鼠标点击的位置，无偏差
+- 画矩形/点/箭头时不再弹出编辑窗口，可以连续绘制多个标注
+- 所有标注画完后，通过 AnnotationEditor 的"保存标注"按钮触发逐个填写流程
+- 双击已有标注或选中后点"编辑"仍可单独修改
 
