@@ -54,6 +54,8 @@ interface AnnotationCanvasProps {
   readOnly?: boolean;
   /** When true, canvas fills parent container height instead of using aspect-ratio */
   fillContainer?: boolean;
+  /** Highlight a specific annotation by ID (pulsing border) */
+  highlightId?: string | null;
 }
 
 type Tool = 'select' | 'point' | 'rect' | 'arrow' | 'text' | 'number';
@@ -84,6 +86,7 @@ export function AnnotationCanvas({
   onChange,
   readOnly = false,
   fillContainer = false,
+  highlightId = null,
 }: AnnotationCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<Tool>('point');
@@ -95,6 +98,7 @@ export function AnnotationCanvas({
   const [tempAnnotation, setTempAnnotation] = useState<Partial<Annotation> | null>(null);
   const [nextNumber, setNextNumber] = useState(1);
   const [imageSize, setImageSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [dragging, setDragging] = useState<{ id: string; offsetX: number; offsetY: number; origAnnotation: Annotation } | null>(null);
 
   // Calculate next number
   useEffect(() => {
@@ -137,6 +141,13 @@ export function AnnotationCanvas({
       
       if (clicked) {
         setSelectedId(clicked.id);
+        // Start dragging
+        setDragging({
+          id: clicked.id,
+          offsetX: coords.x - clicked.x,
+          offsetY: coords.y - clicked.y,
+          origAnnotation: { ...clicked },
+        });
       } else {
         setSelectedId(null);
       }
@@ -166,8 +177,29 @@ export function AnnotationCanvas({
 
   // Handle mouse move
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDrawing || !drawStart || readOnly) return;
+    if (readOnly) return;
     const coords = getRelativeCoords(e);
+
+    // Handle dragging existing annotations
+    if (dragging) {
+      const newX = coords.x - dragging.offsetX;
+      const newY = coords.y - dragging.offsetY;
+      const orig = dragging.origAnnotation;
+      onChange(annotations.map(a =>
+        a.id === dragging.id
+          ? {
+              ...a,
+              x: newX,
+              y: newY,
+              endX: a.endX !== undefined ? newX + ((orig.endX || 0) - orig.x) : undefined,
+              endY: a.endY !== undefined ? newY + ((orig.endY || 0) - orig.y) : undefined,
+            }
+          : a
+      ));
+      return;
+    }
+
+    if (!isDrawing || !drawStart) return;
 
     if (tool === 'rect') {
       setTempAnnotation({
@@ -186,10 +218,14 @@ export function AnnotationCanvas({
         endY: coords.y,
       });
     }
-  }, [isDrawing, drawStart, tool, readOnly, getRelativeCoords]);
+  }, [isDrawing, drawStart, tool, readOnly, getRelativeCoords, dragging, annotations, onChange]);
 
   // Handle mouse up
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
+    if (dragging) {
+      setDragging(null);
+      return;
+    }
     if (!isDrawing || !drawStart || readOnly) return;
     const coords = getRelativeCoords(e);
     setIsDrawing(false);
@@ -214,7 +250,7 @@ export function AnnotationCanvas({
 
     setTempAnnotation(null);
     setDrawStart(null);
-  }, [isDrawing, drawStart, tool, readOnly, getRelativeCoords]);
+  }, [isDrawing, drawStart, tool, readOnly, getRelativeCoords, dragging]);
 
   // Save annotation from dialog
   const handleSaveAnnotation = () => {
@@ -251,9 +287,11 @@ export function AnnotationCanvas({
   // Render annotation
   const renderAnnotation = (ann: Annotation) => {
     const isSelected = selectedId === ann.id;
+    const isHighlighted = highlightId === ann.id;
     const baseClass = cn(
       "absolute pointer-events-auto cursor-pointer transition-all",
-      isSelected && "ring-2 ring-primary ring-offset-1"
+      isSelected && "ring-2 ring-primary ring-offset-1",
+      isHighlighted && "ring-2 ring-primary ring-offset-1 animate-pulse"
     );
 
     switch (ann.type) {
@@ -429,6 +467,9 @@ export function AnnotationCanvas({
             setIsDrawing(false);
             setTempAnnotation(null);
             setDrawStart(null);
+          }
+          if (dragging) {
+            setDragging(null);
           }
         }}
       >
