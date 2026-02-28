@@ -236,12 +236,32 @@ export function ModuleAnnotationPanel({ moduleId, workstationId }: ModuleAnnotat
   // Take screenshot from viewer and enter annotation mode
   const handleTakeScreenshot = () => {
     const assetId = moduleAsset?.id || workstationAsset?.id;
-    if (viewerRef && assetId) {
-      const dataUrl = viewerRef.takeScreenshot();
-      if (dataUrl) {
-        useAppStore.getState().enterAnnotationMode(dataUrl, assetId, 'module');
-        toast.success('已进入标注模式');
+    if (!assetId) {
+      toast.error('请先上传产品素材');
+      return;
+    }
+
+    let dataUrl: string | null = null;
+
+    if (viewerRef) {
+      try {
+        dataUrl = viewerRef.takeScreenshot();
+      } catch (e) {
+        console.warn('Screenshot failed:', e);
       }
+    }
+
+    // Fallback: use image URL directly
+    const images = moduleAsset?.preview_images || workstationAsset?.preview_images;
+    if (!dataUrl && images && images.length > 0) {
+      dataUrl = images[0];
+    }
+
+    if (dataUrl) {
+      useAppStore.getState().enterAnnotationMode(dataUrl, assetId, 'module');
+      toast.success('已进入标注模式');
+    } else {
+      toast.error('截图失败，请确保已上传素材');
     }
   };
 

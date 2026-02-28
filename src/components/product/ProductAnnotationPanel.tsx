@@ -266,12 +266,31 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
 
   // Take screenshot from 3D viewer and enter annotation mode
   const handleTakeScreenshot = () => {
-    if (viewerRef && asset) {
-      const dataUrl = viewerRef.takeScreenshot();
-      if (dataUrl) {
-        useAppStore.getState().enterAnnotationMode(dataUrl, asset.id, 'workstation');
-        toast.success('已进入标注模式');
+    if (!asset) {
+      toast.error('请先上传产品素材');
+      return;
+    }
+
+    let dataUrl: string | null = null;
+
+    if (viewerRef) {
+      try {
+        dataUrl = viewerRef.takeScreenshot();
+      } catch (e) {
+        console.warn('Screenshot failed:', e);
       }
+    }
+
+    // Fallback: use image URL directly
+    if (!dataUrl && asset.preview_images?.length > 0) {
+      dataUrl = asset.preview_images[0];
+    }
+
+    if (dataUrl) {
+      useAppStore.getState().enterAnnotationMode(dataUrl, asset.id, 'workstation');
+      toast.success('已进入标注模式');
+    } else {
+      toast.error('截图失败，请确保已上传素材');
     }
   };
 
