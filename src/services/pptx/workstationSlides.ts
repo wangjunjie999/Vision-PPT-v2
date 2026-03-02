@@ -190,7 +190,7 @@ interface WorkstationSlideData {
   }>;
   annotation?: {
     snapshot_url: string;
-    annotations_json: Array<{ labelNumber?: number; label?: string }>;
+    annotations_json: Array<{ labelNumber?: number; label?: string; number?: number; name?: string; category?: string; description?: string }>;
     remark?: string | null;
   };
   productAsset?: {
@@ -420,10 +420,16 @@ export async function generateProductSchematicSlide(
   });
 
   // Defensive array check for annotations_json
+  // Support both legacy (labelNumber/label) and new (number/name/category/description) formats
   const annotItems = Array.isArray(annotation?.annotations_json) ? annotation.annotations_json : [];
   const legendRows: TableRow[] = annotItems
-    .filter(item => item.labelNumber && item.label)
-    .map(item => row([`#${item.labelNumber}`, item.label || '']));
+    .filter(item => (item.labelNumber || item.number) && (item.label || item.name))
+    .map(item => {
+      const num = item.labelNumber || item.number || 0;
+      const label = item.label || item.name || '';
+      const detail = item.category ? `[${item.category}] ${label}` : label;
+      return row([`#${num}`, detail]);
+    });
 
   if (legendRows.length > 0) {
     slide.addTable(legendRows, {
