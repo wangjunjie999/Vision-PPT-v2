@@ -167,7 +167,7 @@ interface HardwareData {
 
 interface AnnotationItem {
   id: string;
-  type: 'rect' | 'circle' | 'arrow' | 'text';
+  type: 'rect' | 'circle' | 'arrow' | 'text' | 'point' | 'number';
   x: number;
   y: number;
   width?: number;
@@ -177,6 +177,11 @@ interface AnnotationItem {
   color?: string;
   labelNumber?: number;
   label?: string;
+  // New fields from AnnotationCanvas
+  number?: number;
+  name?: string;
+  category?: string;
+  description?: string;
 }
 
 interface AnnotationData {
