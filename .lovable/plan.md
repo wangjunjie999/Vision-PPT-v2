@@ -1,138 +1,82 @@
 
+# PPT 生成历史记录与管理功能
 
-# 重构PPT生成页面顺序和样式
+## 概述
 
-## 目标
+为生成的文档（PPT/Word/PDF）添加持久化存储，用户可以查看历史生成记录、下载以前的版本、删除不需要的记录。
 
-按照标准PPT写法重新组织幻灯片顺序，每个工位的页数根据模块数量动态变化。
+## 数据库设计
 
-## 当前 vs 目标结构对比
+创建新表 `generated_documents`:
 
-```text
-当前结构:                          目标结构:
-─────────                          ─────────
-1. 封面                            1. 封面 (不变)
-2. 变更履历                        2. 项目说明 (合并现有的项目描述+概览)
-3. 相机安装方向说明                 3. 变更履历
-4. (草案)缺失项                    4. 基础配置 (相机安装方向等)
-5. 项目描述                        5~N. 每个工位循环:
-6. 项目概览                           a. 基本信息+检测要求 (合并为1页)
-7~N. 每工位(8页固定):                 b. 产品截图标注 (页数不定, 按标注数)
-   - 工位标题                         c. 机械布局三视图 (1页, 纯图+尺寸)
-   - 基本信息                         d. 光学方案 x N (每个模块1页)
-   - 产品示意                         e. BOM清单+审核 (1页)
-   - 技术要求                      N+1. 硬件汇总
-   - 布局与光学(合并)               N+2. 附录
-   - 运动方式
-   - 视觉清单
-   - BOM
-N+1. 硬件详情
-N+2. 硬件汇总
-N+3. 附录
-```
+| 列名 | 类型 | 说明 |
+|------|------|------|
+| id | uuid | 主键 |
+| project_id | uuid | 关联项目 |
+| user_id | uuid | 创建者 |
+| file_url | text | Storage 中的文件路径 |
+| file_name | text | 文件名（如 DB260101_XXX_方案.pptx）|
+| file_size | integer | 文件大小（字节）|
+| format | text | 输出格式：ppt / word / pdf |
+| generation_method | text | 生成方式：scratch / template |
+| template_id | text | 使用的模板ID（可空）|
+| page_count | integer | 页数 |
+| metadata | jsonb | 生成配置（语言、质量、范围等）|
+| created_at | timestamptz | 生成时间 |
 
-## 具体改动
+RLS 策略：用户只能查看/删除自己的记录。
 
-### 1. pptxGenerator.ts -- 调整项目级页面顺序
+## 存储桶
 
-- 封面保持不变
-- 将"项目描述"页移到第2位（封面之后）
-- 将"项目概览"的工位清单内容合并进项目描述页
-- 变更履历移到第3位
-- 相机安装方向说明保留在第4位
-- 删除单独的"项目概览"页
+创建 `generated-documents` 存储桶（公开），用于存放生成的文件。
 
-### 2. pptxGenerator.ts -- 调整工位级页面生成循环
+## 前端改动
 
-删除以下独立页面:
-- 工位标题页 (`generateWorkstationTitleSlide`)
-- 运动/检测方式页 (`generateMotionMethodSlide`)
-- 测量方法及视觉清单页 (`generateVisionListSlide`)
+### 1. PPTGenerationDialog.tsx -- 生成后自动保存
 
-保留并修改:
-- 基本信息 + 技术要求合并为1页
-- 产品示意图保留（支持多页）
-- 三视图独立为1页（纯图片+尺寸标注）
-- 光学方案改为按模块循环生成
-- BOM + 审核保留
+在 `handleGenerate` 完成后（`setStage('complete')` 之前），将生成的 Blob 上传到 Storage，并在 `generated_documents` 表中插入一条记录。上传路径格式：`{user_id}/{project_id}/{timestamp}_{filename}`。
 
-### 3. workstationSlides.ts -- 新增/修改幻灯片函数
+### 2. 新增 GenerationHistoryDialog 组件
 
-#### 3a. 合并"基本信息+检测要求"为一页
+- 入口放在 ProjectDashboard 的"快捷操作"区域，新增一个"生成历史"按钮
+- 对话框内展示当前项目的历史生成记录列表
+- 每条记录显示：文件名、格式图标（PPT/Word/PDF）、生成时间、文件大小、页数
+- 操作按钮：下载、删除
+- 删除时弹出确认对话框（复用 DeleteConfirmDialog）
+- 按时间倒序排列
+- 空状态提示"暂无生成记录"
 
-新函数 `generateBasicInfoAndRequirementsSlide`:
-- 上半部分: 工位编号、名称、类型、节拍、兼容尺寸
-- 下半部分: 检测项/缺陷项列表、配置参数、精度要求
-- 合并现有 `generateBasicInfoSlide` 和 `generateTechnicalRequirementsSlide` 的核心内容
+### 3. ProjectDashboard.tsx -- 添加入口
 
-#### 3b. 新增独立的"机械布局三视图"页
+在快捷操作区域新增"生成历史"按钮（History 图标），点击打开 GenerationHistoryDialog。
 
-新函数 `generateMechanicalThreeViewSlide`:
-- 1页放正视图、侧视图、俯视图三张图
-- 不加文字说明，只有图片和尺寸标注
-- 图片等比例缩放，三张图合理排列
-- 底部显示总体尺寸 (宽x高x深)
+## 技术细节
 
-#### 3c. 新增按模块生成的"光学方案"页
-
-新函数 `generateModuleOpticalSlide(ctx, module, hardware)`:
-- 参考上传图片的布局: 左侧光学示意图 + 右侧参数说明
-- 标题格式: `DB编号 模块名称`
-- 左半部分"光学方案":
-  - 相机图标 + 型号规格（像素、分辨率、靶面）
-  - 镜头图标 + 型号（焦距、靶面匹配）
-  - 光源图标 + 型号（距离范围、角度）
-  - 工作距离标注线
-  - 底部产品示意
-- 右半部分"测量方法及视觉清单":
-  - 编号列表：运动方式、视野范围、像素精度、相机安装方向、节拍
-  - 测量方法的文字描述
-- 如果工位有多个模块，为每个模块生成一页
-
-### 4. 光学方案页的布局设计（参考用户上传图）
+### 上传流程（在 PPTGenerationDialog 的 handleGenerate 中）
 
 ```text
-┌──────────────────────────────────────────────────┐
-│  DB2531500.402 贴胶检测人工处理          TECH-SHINE│
-├────────────────────┬─────────────────────────────┤
-│     光学方案        │    测量方法及视觉清单         │
-│                    │                             │
-│  ┌─相机─┐          │  1. 运动方式: 2D*4固定...    │
-│  │      │ 型号参数  │  2. 视野范围: 130*86mm      │
-│  └──────┘          │  3. 像素精度: 0.023mm/pixel  │
-│  ┌─镜头─┐          │  4. 相机安装: ...            │
-│  │      │ 型号参数  │  5. 节拍: 1S/次             │
-│  └──────┘          │                             │
-│  ┌─光源─┐          │  测量方法:                    │
-│  │      │ 型号参数  │  1. 两个相机一组...           │
-│  └──────┘          │  2. 对每个电芯...             │
-│  ↕ 工作距离        │                             │
-│  ┌─产品─┐          │                             │
-└────────────────────┴─────────────────────────────┘
+生成完成 -> 上传 Blob 到 Storage -> 插入 generated_documents 记录 -> 显示完成状态
 ```
 
-- 使用系统中的示意图风格（pptxgenjs绘制简化的光路图）
-- 相机/镜头/光源使用矩形色块 + 文字标注
-- 工作距离用带箭头的标注线表示
+上传失败不阻断用户下载（仍保留 blob 在内存中），仅 toast 提示"历史记录保存失败"。
+
+### 查询与删除
+
+- 查询：`supabase.from('generated_documents').select('*').eq('project_id', projectId).order('created_at', { ascending: false })`
+- 删除：先删 Storage 文件，再删数据库记录
 
 ## 涉及文件
 
-| 文件 | 变更 |
+| 文件 | 操作 |
 |------|------|
-| src/services/pptxGenerator.ts | 调整项目级页面顺序，修改工位循环逻辑 |
-| src/services/pptx/workstationSlides.ts | 新增合并页函数、独立三视图函数、按模块光学方案函数 |
+| 数据库迁移 | 新建 `generated_documents` 表 + RLS + `generated-documents` 存储桶 |
+| src/components/dialogs/GenerationHistoryDialog.tsx | 新建，历史记录列表UI |
+| src/components/dialogs/PPTGenerationDialog.tsx | 修改，生成完成后上传并保存记录 |
+| src/components/canvas/ProjectDashboard.tsx | 修改，添加"生成历史"按钮入口 |
 
 ## 实施步骤
 
-1. 在 `workstationSlides.ts` 中新增三个函数:
-   - `generateBasicInfoAndRequirementsSlide` (合并)
-   - `generateMechanicalThreeViewSlide` (独立三视图)
-   - `generateModuleOpticalSlide` (按模块光学方案)
-
-2. 在 `pptxGenerator.ts` 中:
-   - 重新排列项目级页面（项目说明 -> 变更履历 -> 基础配置）
-   - 修改工位循环，使用新函数，并按模块数量动态生成光学方案页
-   - 更新进度计算逻辑
-
-3. 导出新函数并清理不再使用的旧函数引用
-
+1. 创建数据库表 `generated_documents` 和存储桶 `generated-documents`，配置 RLS
+2. 修改 `PPTGenerationDialog.tsx`，在生成完成后上传文件到 Storage 并插入记录
+3. 新建 `GenerationHistoryDialog.tsx`，展示历史记录列表，支持下载和删除
+4. 在 `ProjectDashboard.tsx` 添加"生成历史"按钮入口
