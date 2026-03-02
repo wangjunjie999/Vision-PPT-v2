@@ -308,7 +308,7 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
     }
 
     if (dataUrl) {
-      useAppStore.getState().enterAnnotationMode(dataUrl, asset.id, 'workstation');
+      useAppStore.getState().enterAnnotationMode(dataUrl, asset.id, 'workstation', workstationId);
       toast.success('已进入标注模式');
     } else {
       toast.error('截图失败，请确保已上传素材');

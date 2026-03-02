@@ -37,7 +37,8 @@ interface Store {
   annotationSnapshot: string | null;
   annotationAssetId: string | null;
   annotationScope: 'workstation' | 'module';
-  enterAnnotationMode: (snapshot: string, assetId: string, scope: 'workstation' | 'module') => void;
+  annotationWorkstationId: string | null;
+  enterAnnotationMode: (snapshot: string, assetId: string, scope: 'workstation' | 'module', workstationId?: string) => void;
   exitAnnotationMode: () => void;
   
   // Viewer mode (3D/image in central canvas)
@@ -151,16 +152,19 @@ export const useAppStore = create<Store>()(
       annotationSnapshot: null,
       annotationAssetId: null,
       annotationScope: 'workstation',
-      enterAnnotationMode: (snapshot, assetId, scope) => set({
+      annotationWorkstationId: null,
+      enterAnnotationMode: (snapshot, assetId, scope, workstationId) => set({
         annotationMode: true,
         annotationSnapshot: snapshot,
         annotationAssetId: assetId,
         annotationScope: scope,
+        annotationWorkstationId: workstationId || null,
       }),
       exitAnnotationMode: () => set({
         annotationMode: false,
         annotationSnapshot: null,
         annotationAssetId: null,
+        annotationWorkstationId: null,
       }),
       
       // Viewer mode

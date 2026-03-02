@@ -1,0 +1,1 @@
+ALTER TABLE public.product_annotations ADD COLUMN workstation_id uuid;

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { renderAnnotationsToCanvas } from '@/utils/annotationRenderer';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,7 +48,7 @@ const CATEGORIES = [
 
 export function AnnotationEditor() {
   const { user } = useAuth();
-  const { annotationSnapshot, annotationAssetId, exitAnnotationMode } = useAppStore();
+  const { annotationSnapshot, annotationAssetId, annotationWorkstationId, exitAnnotationMode } = useAppStore();
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveRemark, setSaveRemark] = useState('');
@@ -115,7 +116,8 @@ export function AnnotationEditor() {
 
     setSaving(true);
     try {
-      const blob = await fetch(annotationSnapshot).then(r => r.blob());
+      // Render annotations onto image using Canvas compositing
+      const blob = await renderAnnotationsToCanvas(annotationSnapshot, annotations);
       const path = `annotations/${annotationAssetId}/${Date.now()}.png`;
       const { error: uploadError } = await supabase.storage
         .from('product-snapshots')
@@ -137,7 +139,7 @@ export function AnnotationEditor() {
         ? existing[0].version + 1
         : 1;
 
-      const { error } = await supabase.from('product_annotations').insert({
+      const insertData: Record<string, unknown> = {
         asset_id: annotationAssetId,
         snapshot_url: snapshotUrl,
         annotations_json: annotations as unknown as any,
@@ -145,7 +147,14 @@ export function AnnotationEditor() {
         version: nextVersion,
         remark: saveRemark || null,
         user_id: user.id,
-      });
+      };
+
+      // Include workstation_id if available
+      if (annotationWorkstationId) {
+        insertData.workstation_id = annotationWorkstationId;
+      }
+
+      const { error } = await supabase.from('product_annotations').insert(insertData as any);
 
       if (error) throw error;
 
@@ -158,7 +167,7 @@ export function AnnotationEditor() {
     } finally {
       setSaving(false);
     }
-  }, [annotationSnapshot, annotationAssetId, annotations, saveRemark, user]);
+  }, [annotationSnapshot, annotationAssetId, annotationWorkstationId, annotations, saveRemark, user]);
 
   if (!annotationSnapshot) {
     return (
