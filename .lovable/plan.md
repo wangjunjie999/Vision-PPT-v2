@@ -1,123 +1,138 @@
 
 
-# 修复标注位置偏差 + 优化标注工具交互
+# 重构PPT生成页面顺序和样式
 
-## 问题分析
+## 目标
 
-### 1. 位置偏差根因
+按照标准PPT写法重新组织幻灯片顺序，每个工位的页数根据模块数量动态变化。
 
-`AnnotationCanvas` 使用 `containerRef.getBoundingClientRect()` 计算相对坐标（占容器宽高的百分比），但图片使用了 `object-contain` 模式——图片实际渲染区域小于容器，两侧/上下有留白。标注坐标是相对于容器算的，但标注层覆盖整个容器，导致标注偏离图片上的实际位置。
+## 当前 vs 目标结构对比
 
 ```text
-容器:     [  留白  |  实际图片  |  留白  ]
-点击位置:           ↓ (图片上某点)
-计算坐标: ← 基于容器宽度算百分比 (包含了留白，所以偏了)
+当前结构:                          目标结构:
+─────────                          ─────────
+1. 封面                            1. 封面 (不变)
+2. 变更履历                        2. 项目说明 (合并现有的项目描述+概览)
+3. 相机安装方向说明                 3. 变更履历
+4. (草案)缺失项                    4. 基础配置 (相机安装方向等)
+5. 项目描述                        5~N. 每个工位循环:
+6. 项目概览                           a. 基本信息+检测要求 (合并为1页)
+7~N. 每工位(8页固定):                 b. 产品截图标注 (页数不定, 按标注数)
+   - 工位标题                         c. 机械布局三视图 (1页, 纯图+尺寸)
+   - 基本信息                         d. 光学方案 x N (每个模块1页)
+   - 产品示意                         e. BOM清单+审核 (1页)
+   - 技术要求                      N+1. 硬件汇总
+   - 布局与光学(合并)               N+2. 附录
+   - 运动方式
+   - 视觉清单
+   - BOM
+N+1. 硬件详情
+N+2. 硬件汇总
+N+3. 附录
 ```
 
-### 2. 点击立即弹窗问题
+## 具体改动
 
-当前代码中，点/文本/编号工具在 `mouseDown` 时就创建标注并立即打开编辑 Dialog；矩形/箭头工具在 `mouseUp` 时也立即弹出 Dialog。用户期望的流程是：先把所有框和点都画好，最后统一填写信息。
+### 1. pptxGenerator.ts -- 调整项目级页面顺序
 
-## 修复方案
+- 封面保持不变
+- 将"项目描述"页移到第2位（封面之后）
+- 将"项目概览"的工位清单内容合并进项目描述页
+- 变更履历移到第3位
+- 相机安装方向说明保留在第4位
+- 删除单独的"项目概览"页
 
-### 1. AnnotationCanvas.tsx -- 修复坐标计算
+### 2. pptxGenerator.ts -- 调整工位级页面生成循环
 
-关键修改：计算图片在容器中的实际渲染区域（考虑 `object-contain` 的留白），坐标相对于图片实际区域计算。
+删除以下独立页面:
+- 工位标题页 (`generateWorkstationTitleSlide`)
+- 运动/检测方式页 (`generateMotionMethodSlide`)
+- 测量方法及视觉清单页 (`generateVisionListSlide`)
 
-```typescript
-// 计算 object-contain 模式下图片的实际渲染区域
-const getImageBounds = useCallback(() => {
-  if (!containerRef.current || !imageSize.width || !imageSize.height) return null;
-  const container = containerRef.current.getBoundingClientRect();
-  const containerAspect = container.width / container.height;
-  const imageAspect = imageSize.width / imageSize.height;
-  
-  let renderWidth, renderHeight, offsetX, offsetY;
-  if (imageAspect > containerAspect) {
-    // 图片更宽，上下留白
-    renderWidth = container.width;
-    renderHeight = container.width / imageAspect;
-    offsetX = 0;
-    offsetY = (container.height - renderHeight) / 2;
-  } else {
-    // 图片更高，左右留白
-    renderHeight = container.height;
-    renderWidth = container.height * imageAspect;
-    offsetX = (container.width - renderWidth) / 2;
-    offsetY = 0;
-  }
-  return { renderWidth, renderHeight, offsetX, offsetY, container };
-}, [imageSize]);
+保留并修改:
+- 基本信息 + 技术要求合并为1页
+- 产品示意图保留（支持多页）
+- 三视图独立为1页（纯图片+尺寸标注）
+- 光学方案改为按模块循环生成
+- BOM + 审核保留
 
-// 修正后的坐标计算
-const getRelativeCoords = useCallback((e: React.MouseEvent) => {
-  const bounds = getImageBounds();
-  if (!bounds) return { x: 0, y: 0 };
-  const { renderWidth, renderHeight, offsetX, offsetY, container } = bounds;
-  const mouseX = e.clientX - container.left - offsetX;
-  const mouseY = e.clientY - container.top - offsetY;
-  return {
-    x: (mouseX / renderWidth) * 100,
-    y: (mouseY / renderHeight) * 100,
-  };
-}, [getImageBounds]);
+### 3. workstationSlides.ts -- 新增/修改幻灯片函数
+
+#### 3a. 合并"基本信息+检测要求"为一页
+
+新函数 `generateBasicInfoAndRequirementsSlide`:
+- 上半部分: 工位编号、名称、类型、节拍、兼容尺寸
+- 下半部分: 检测项/缺陷项列表、配置参数、精度要求
+- 合并现有 `generateBasicInfoSlide` 和 `generateTechnicalRequirementsSlide` 的核心内容
+
+#### 3b. 新增独立的"机械布局三视图"页
+
+新函数 `generateMechanicalThreeViewSlide`:
+- 1页放正视图、侧视图、俯视图三张图
+- 不加文字说明，只有图片和尺寸标注
+- 图片等比例缩放，三张图合理排列
+- 底部显示总体尺寸 (宽x高x深)
+
+#### 3c. 新增按模块生成的"光学方案"页
+
+新函数 `generateModuleOpticalSlide(ctx, module, hardware)`:
+- 参考上传图片的布局: 左侧光学示意图 + 右侧参数说明
+- 标题格式: `DB编号 模块名称`
+- 左半部分"光学方案":
+  - 相机图标 + 型号规格（像素、分辨率、靶面）
+  - 镜头图标 + 型号（焦距、靶面匹配）
+  - 光源图标 + 型号（距离范围、角度）
+  - 工作距离标注线
+  - 底部产品示意
+- 右半部分"测量方法及视觉清单":
+  - 编号列表：运动方式、视野范围、像素精度、相机安装方向、节拍
+  - 测量方法的文字描述
+- 如果工位有多个模块，为每个模块生成一页
+
+### 4. 光学方案页的布局设计（参考用户上传图）
+
+```text
+┌──────────────────────────────────────────────────┐
+│  DB2531500.402 贴胶检测人工处理          TECH-SHINE│
+├────────────────────┬─────────────────────────────┤
+│     光学方案        │    测量方法及视觉清单         │
+│                    │                             │
+│  ┌─相机─┐          │  1. 运动方式: 2D*4固定...    │
+│  │      │ 型号参数  │  2. 视野范围: 130*86mm      │
+│  └──────┘          │  3. 像素精度: 0.023mm/pixel  │
+│  ┌─镜头─┐          │  4. 相机安装: ...            │
+│  │      │ 型号参数  │  5. 节拍: 1S/次             │
+│  └──────┘          │                             │
+│  ┌─光源─┐          │  测量方法:                    │
+│  │      │ 型号参数  │  1. 两个相机一组...           │
+│  └──────┘          │  2. 对每个电芯...             │
+│  ↕ 工作距离        │                             │
+│  ┌─产品─┐          │                             │
+└────────────────────┴─────────────────────────────┘
 ```
 
-同时，标注的渲染层也需要调整为仅覆盖图片实际区域（而非整个容器），确保百分比坐标与渲染位置一致。
-
-### 2. AnnotationCanvas.tsx -- 取消即时弹窗
-
-改为"画完即添加、不弹窗"模式：
-- 点/编号工具：点击后直接添加标注到列表（默认空名称），不弹 Dialog
-- 矩形/箭头工具：松开鼠标后直接添加标注，不弹 Dialog
-- 删除原有的自动弹出编辑 Dialog 的逻辑
-- 保留手动双击或选择后点"编辑"按钮打开 Dialog 的能力
-
-```typescript
-// 之前：
-if (tool === 'point') {
-  setEditingAnnotation(newAnnotation);
-  setEditDialogOpen(true);  // ← 立即弹窗
-}
-
-// 之后：
-if (tool === 'point') {
-  onChange([...annotations, newAnnotation]);  // ← 直接添加，不弹窗
-}
-```
-
-### 3. AnnotationCanvas.tsx -- 标注渲染层对齐
-
-将标注层从 `absolute inset-0` 改为动态计算的偏移和尺寸，与图片实际渲染区域对齐：
-
-```typescript
-<div 
-  className="absolute pointer-events-none"
-  style={{
-    left: `${imageBounds.offsetX}px`,
-    top: `${imageBounds.offsetY}px`,
-    width: `${imageBounds.renderWidth}px`,
-    height: `${imageBounds.renderHeight}px`,
-  }}
->
-  {annotations.map(renderAnnotation)}
-</div>
-```
-
-### 4. 添加窗口 resize 监听
-
-容器大小变化时重新计算 imageBounds，确保标注始终与图片对齐。
+- 使用系统中的示意图风格（pptxgenjs绘制简化的光路图）
+- 相机/镜头/光源使用矩形色块 + 文字标注
+- 工作距离用带箭头的标注线表示
 
 ## 涉及文件
 
 | 文件 | 变更 |
 |------|------|
-| src/components/product/AnnotationCanvas.tsx | 修复坐标计算、标注层对齐、取消即时弹窗 |
+| src/services/pptxGenerator.ts | 调整项目级页面顺序，修改工位循环逻辑 |
+| src/services/pptx/workstationSlides.ts | 新增合并页函数、独立三视图函数、按模块光学方案函数 |
 
-## 预期效果
+## 实施步骤
 
-- 标注精确落在图片上鼠标点击的位置，无偏差
-- 画矩形/点/箭头时不再弹出编辑窗口，可以连续绘制多个标注
-- 所有标注画完后，通过 AnnotationEditor 的"保存标注"按钮触发逐个填写流程
-- 双击已有标注或选中后点"编辑"仍可单独修改
+1. 在 `workstationSlides.ts` 中新增三个函数:
+   - `generateBasicInfoAndRequirementsSlide` (合并)
+   - `generateMechanicalThreeViewSlide` (独立三视图)
+   - `generateModuleOpticalSlide` (按模块光学方案)
+
+2. 在 `pptxGenerator.ts` 中:
+   - 重新排列项目级页面（项目说明 -> 变更履历 -> 基础配置）
+   - 修改工位循环，使用新函数，并按模块数量动态生成光学方案页
+   - 更新进度计算逻辑
+
+3. 导出新函数并清理不再使用的旧函数引用
 
