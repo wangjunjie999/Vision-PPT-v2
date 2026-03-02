@@ -463,6 +463,42 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
     }
   };
 
+  // Upload generated blob to storage and save record
+  const saveToHistory = async (blob: Blob, fileName: string, format: OutputFormat, method: GenerationMethod, pageCount: number) => {
+    try {
+      if (!user?.id || !selectedProjectId) return;
+      const timestamp = Date.now();
+      const filePath = `${user.id}/${selectedProjectId}/${timestamp}_${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('generated-documents')
+        .upload(filePath, blob);
+      
+      if (uploadError) throw uploadError;
+
+      const { error: insertError } = await supabase
+        .from('generated_documents')
+        .insert({
+          project_id: selectedProjectId,
+          user_id: user.id,
+          file_url: filePath,
+          file_name: fileName,
+          file_size: blob.size,
+          format,
+          generation_method: method,
+          template_id: selectedTemplateId || null,
+          page_count: pageCount,
+          metadata: { language, quality, mode, scope },
+        } as any);
+
+      if (insertError) throw insertError;
+      addLog('success', '已保存到生成历史');
+    } catch (err) {
+      console.error('Failed to save to history:', err);
+      toast.warning('历史记录保存失败，但文件仍可下载');
+    }
+  };
+
   const handleGenerate = async () => {
     if (!project) return;
     
@@ -783,6 +819,9 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
           fileUrl: '',
         });
 
+        const wordFileName = `${projectData.code}_${projectData.name}_方案.docx`;
+        await saveToHistory(blob, wordFileName, 'word', generationMethod, 1);
+
         addLog('success', `Word文档生成完成，包含 ${imageCount} 张图片`);
         setStage('complete');
         setIsGenerating(false);
@@ -902,14 +941,18 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
 
         // Count images included
         const imageCount = productAssetData.reduce((acc, a) => acc + (a.preview_images?.length || 0), 0) + annotationData.length;
+        const pdfPageCount = Math.ceil((wsToProcess.length + 3) * 1.5);
 
         setGenerationResult({
-          pageCount: Math.ceil((wsToProcess.length + 3) * 1.5), // Estimate
+          pageCount: pdfPageCount,
           layoutImages: imageCount,
           parameterTables: wsToProcess.length + modsToProcess.length,
           hardwareList: 1,
           fileUrl: '',
         });
+
+        const pdfFileName = `${projectData.code}_${projectData.name}_方案.pdf`;
+        await saveToHistory(blob, pdfFileName, 'pdf', generationMethod, pdfPageCount);
 
         addLog('success', `PDF文档生成完成，包含 ${imageCount} 张图片`);
         setStage('complete');
@@ -1037,14 +1080,18 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
 
         generatedBlobRef.current = blob;
 
+        const pptPageCount = 2 + wsToProcess.length + modsToProcess.length + 2;
         // Set result
         setGenerationResult({
-          pageCount: 2 + wsToProcess.length + modsToProcess.length + 2,
+          pageCount: pptPageCount,
           layoutImages: wsToProcess.length * 3,
           parameterTables: wsToProcess.length + modsToProcess.length,
           hardwareList: 1,
           fileUrl: '',
         });
+
+        const pptFileName = `${projectData.code}_${projectData.name}_方案.pptx`;
+        await saveToHistory(blob, pptFileName, 'ppt', 'scratch', pptPageCount);
 
         addLog('success', `成功生成PPT文件`);
         setStage('complete');

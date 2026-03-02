@@ -292,6 +292,51 @@ export type Database = {
           },
         ]
       }
+      generated_documents: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_size: number | null
+          file_url: string
+          format: string
+          generation_method: string
+          id: string
+          metadata: Json | null
+          page_count: number | null
+          project_id: string
+          template_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_size?: number | null
+          file_url: string
+          format?: string
+          generation_method?: string
+          id?: string
+          metadata?: Json | null
+          page_count?: number | null
+          project_id: string
+          template_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_size?: number | null
+          file_url?: string
+          format?: string
+          generation_method?: string
+          id?: string
+          metadata?: Json | null
+          page_count?: number | null
+          project_id?: string
+          template_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       lenses: {
         Row: {
           aperture: string

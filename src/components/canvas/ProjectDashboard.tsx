@@ -10,10 +10,12 @@ import {
   AlertTriangle,
   Plus,
   CheckCircle2,
-  FileText
+  FileText,
+  History
 } from 'lucide-react';
 import { useState } from 'react';
 import { NewWorkstationDialog } from '@/components/dialogs/NewWorkstationDialog';
+import { GenerationHistoryDialog } from '@/components/dialogs/GenerationHistoryDialog';
 import {
   Select,
   SelectContent,
@@ -42,6 +44,7 @@ export function ProjectDashboard() {
   const { templates, isLoading: templatesLoading } = usePPTTemplates();
   
   const [showNewWorkstation, setShowNewWorkstation] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const project = projects.find(p => p.id === selectedProjectId);
   if (!project) return null;
@@ -427,6 +430,14 @@ export function ProjectDashboard() {
                 <FileCheck className="h-4 w-4" />
                 运行生成前检查
               </Button>
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={() => setShowHistory(true)}
+              >
+                <History className="h-4 w-4" />
+                生成历史
+              </Button>
             </div>
             
             {/* Batch Save Button - New Component */}
@@ -448,6 +459,12 @@ export function ProjectDashboard() {
         open={showNewWorkstation} 
         onOpenChange={setShowNewWorkstation} 
         projectId={selectedProjectId} 
+      />
+      
+      <GenerationHistoryDialog
+        open={showHistory}
+        onOpenChange={setShowHistory}
+        projectId={selectedProjectId!}
       />
     </div>
   );
