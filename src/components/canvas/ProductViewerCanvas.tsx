@@ -6,7 +6,7 @@ import { ArrowLeft, Camera, Maximize2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function ProductViewerCanvas() {
-  const { viewerAssetData, exitViewerMode, enterAnnotationMode } = useAppStore();
+  const { viewerAssetData, exitViewerMode, enterAnnotationMode, selectedWorkstationId } = useAppStore();
   const [viewerRef, setViewerRef] = useState<{ takeScreenshot: () => string | null } | null>(null);
 
   const handleScreenshot = useCallback(() => {
@@ -28,7 +28,7 @@ export function ProductViewerCanvas() {
 
     if (dataUrl) {
       exitViewerMode();
-      enterAnnotationMode(dataUrl, viewerAssetData.assetId, viewerAssetData.scope);
+      enterAnnotationMode(dataUrl, viewerAssetData.assetId, viewerAssetData.scope, selectedWorkstationId || undefined);
       toast.success('已进入标注模式');
     } else {
       toast.error('截图失败');

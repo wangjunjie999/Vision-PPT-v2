@@ -32,7 +32,7 @@ interface AnnotationRecord {
 
 export function AnnotationRecordsPanel() {
   const { user } = useAuth();
-  const { annotationAssetId, exitAnnotationMode } = useAppStore();
+  const { annotationAssetId, annotationWorkstationId, exitAnnotationMode } = useAppStore();
   const [records, setRecords] = useState<AnnotationRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [defaultRecordId, setDefaultRecordId] = useState<string | null>(null);
@@ -45,11 +45,17 @@ export function AnnotationRecordsPanel() {
       setLoading(true);
     }
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('product_annotations')
         .select('*')
-        .eq('asset_id', annotationAssetId)
-        .order('version', { ascending: false });
+        .eq('asset_id', annotationAssetId);
+
+      // Filter by workstation_id if available for strict isolation
+      if (annotationWorkstationId) {
+        query = query.eq('workstation_id', annotationWorkstationId);
+      }
+
+      const { data, error } = await query.order('version', { ascending: false });
 
       if (error) throw error;
 

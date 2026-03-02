@@ -653,6 +653,7 @@ export type Database = {
           user_id: string
           version: number
           view_meta: Json | null
+          workstation_id: string | null
         }
         Insert: {
           annotations_json?: Json
@@ -664,6 +665,7 @@ export type Database = {
           user_id: string
           version?: number
           view_meta?: Json | null
+          workstation_id?: string | null
         }
         Update: {
           annotations_json?: Json
@@ -675,6 +677,7 @@ export type Database = {
           user_id?: string
           version?: number
           view_meta?: Json | null
+          workstation_id?: string | null
         }
         Relationships: [
           {
