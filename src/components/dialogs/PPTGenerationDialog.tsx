@@ -971,73 +971,9 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
         return;
       }
       
-      // PPT生成逻辑
-      if (generationMethod === 'template' && selectedTemplate?.file_url) {
-        // 基于用户上传的PPTX模板生成
-        addLog('info', '使用用户上传的PPTX模板生成...');
-        setProgress(10);
-        setCurrentStep('调用模板生成服务');
-
-        const result = await generateFromUserTemplate({
-          templateId: selectedTemplateId,
-          data: {
-            project: projectData,
-            workstations: workstationData,
-            modules: moduleData,
-            hardware: hardwareData,
-            language,
-          },
-          outputFileName: `${projectData.code}_${projectData.name}_方案.pptx`,
-          onProgress: (msg) => {
-            addLog('info', msg);
-          },
-        });
-
-        if (result.success && result.fileUrl) {
-          addLog('success', `成功生成PPT: ${result.slideCount} 页`);
-          
-          // 设置结果并允许下载
-          setGenerationResult({
-            pageCount: result.slideCount || 0,
-            layoutImages: 0,
-            parameterTables: 0,
-            hardwareList: 0,
-            fileUrl: result.fileUrl,
-          });
-
-          // 下载文件
-          generatedBlobRef.current = null; // 模板方法不使用blob
-          setProgress(100);
-          setStage('complete');
-          setIsGenerating(false);
-          toast.success('PPT生成完成');
-        } else {
-          throw new Error(result.error || '模板生成失败');
-        }
-      } else {
-        // 从零生成（使用pptxgenjs）
-        addLog('info', '使用内置生成器从零创建PPT...');
-
-        // 如果选择了模板，先提取其样式
-        let extractedStyles = null;
-        if (selectedTemplate?.file_url) {
-          addLog('info', '正在从模板提取样式...');
-          setProgress(8);
-          setCurrentStep('提取模板样式');
-          
-          const styleResult = await extractTemplateStyles({
-            templateId: selectedTemplate.id,
-            onProgress: (msg) => addLog('info', msg),
-          });
-          
-          if (styleResult.success && styleResult.styles) {
-            extractedStyles = convertStylesToGeneratorFormat(styleResult.styles);
-            addLog('success', `成功提取模板样式: ${styleResult.styles.masterCount} 个母版, ${styleResult.styles.layoutCount} 个布局`);
-          } else {
-            addLog('warning', `模板样式提取失败，将使用默认样式: ${styleResult.error || '未知错误'}`);
-          }
-        }
-
+      // PPT生成逻辑 - 始终使用硬编码企业风格从零生成
+      {
+        addLog('info', '使用企业VI风格生成PPT...');
         setProgress(10);
         setCurrentStep('生成PPT内容');
 
@@ -1050,14 +986,6 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
             language, 
             quality, 
             mode,
-            template: selectedTemplate ? {
-              id: selectedTemplate.id,
-              name: selectedTemplate.name,
-              file_url: selectedTemplate.file_url,
-              background_image_url: selectedTemplate.background_image_url,
-            } : null,
-            // 传入提取的样式
-            extractedStyles: extractedStyles,
           },
           (prog, step, log) => {
             // Adjust progress to start from 10%
@@ -1270,58 +1198,8 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
               </>
             )}
 
-            {/* Template Selection - only for PPT */}
-            {outputFormat === 'ppt' && (
-              <div className="space-y-3">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <FileStack className="h-4 w-4" />
-                  选择PPT母版
-                </Label>
-                <Select 
-                  value={selectedTemplateId} 
-                  onValueChange={setSelectedTemplateId}
-                  disabled={templatesLoading}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={templatesLoading ? "加载中..." : "选择模板"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {templates.length === 0 ? (
-                      <div className="p-2 text-sm text-muted-foreground text-center">
-                        暂无模板，请在管理中心添加
-                      </div>
-                    ) : (
-                      templates.filter(t => t.enabled !== false).map(template => (
-                        <SelectItem key={template.id} value={template.id}>
-                          <div className="flex items-center gap-2">
-                            <span>{template.name}</span>
-                            {template.is_default && (
-                              <Badge variant="secondary" className="text-xs">默认</Badge>
-                            )}
-                            {template.scope && (
-                              <Badge variant="outline" className="text-xs">{template.scope}</Badge>
-                            )}
-                          </div>
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-                {selectedTemplateId && templates.find(t => t.id === selectedTemplateId)?.description && (
-                  <p className="text-xs text-muted-foreground">
-                    {templates.find(t => t.id === selectedTemplateId)?.description}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* 从零生成提示信息 - 仅当选择了模板文件时显示 */}
-            {outputFormat === 'ppt' && selectedTemplate?.file_url && (
-              <p className="text-xs text-primary flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3" />
-                将提取 "{selectedTemplate?.name}" 的样式并应用到生成的PPT
-              </p>
-            )}
+            {/* Template selection removed - using hardcoded corporate style */}
+            {/* Interface preserved in usePPTTemplates.ts for future restoration */}
 
             {/* Delivery Check Panel */}
             {(missing.length > 0 || warnings.length > 0) && (

@@ -117,16 +117,10 @@ function addSlideTitle(
   ctx: SlideContext,
   subtitle: string
 ): void {
-  // Deep blue accent bar on left
-  slide.addShape('rect', {
-    x: 0.5, y: 0.55, w: 0.08, h: 0.35,
-    fill: { color: COLORS.primary },
-  });
-  
-  // Title text
+  // Title text overlaid on the navy header bar (white text, matches master deep blue bar)
   slide.addText(`${ctx.wsCode} ${ctx.wsName} - ${subtitle}`, {
-    x: 0.7, y: 0.55, w: 8.5, h: 0.4,
-    fontSize: 18, color: COLORS.dark, bold: true,
+    x: 0.4, y: 0.05, w: 7.5, h: 0.38,
+    fontSize: 16, color: COLORS.white, bold: true,
   });
 }
 
