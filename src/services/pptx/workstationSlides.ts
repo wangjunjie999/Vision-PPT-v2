@@ -1416,11 +1416,11 @@ export async function generateMechanicalThreeViewSlide(
  * Left: Optical diagram (camera/lens/light/working distance)
  * Right: Measurement method & vision checklist
  */
-export function generateModuleOpticalSlide(
+export async function generateModuleOpticalSlide(
   ctx: SlideContext,
   data: WorkstationSlideData,
   moduleIndex: number
-): void {
+): Promise<void> {
   const slide = ctx.pptx.addSlide({ masterName: 'MASTER_SLIDE' });
   const { modules, layout, hardware } = data;
   const mod = modules[moduleIndex];
@@ -1432,125 +1432,51 @@ export function generateModuleOpticalSlide(
   // Title: DB code + module name
   addSlideTitle(slide, ctx, `${typeLabel} - ${mod.name}`);
 
-  // ===== LEFT HALF: Optical Diagram =====
+  // ===== LEFT HALF: Optical Diagram (use schematic screenshot) =====
   const leftX = 0.4;
   const leftW = 4.6;
+  const imgContainerY = 1.1;
+  const imgContainerH = 3.8;
 
   slide.addText(ctx.isZh ? '光学方案' : 'Optical Solution', {
-    x: leftX, y: 1.1, w: leftW, h: 0.25,
+    x: leftX, y: imgContainerY, w: leftW, h: 0.25,
     fontSize: 11, color: COLORS.primary, bold: true,
   });
 
-  // Find hardware for this module's workstation layout
-  const selectedCams = layout?.selected_cameras?.filter(c => c) || [];
-  const selectedLenses = layout?.selected_lenses?.filter(l => l) || [];
-  const selectedLights = layout?.selected_lights?.filter(l => l) || [];
+  const imageArea = { x: leftX, y: imgContainerY + 0.35, width: leftW, height: imgContainerH - 0.35 };
 
-  // Draw optical components as colored blocks with specs
-  let compY = 1.5;
-  const compH = 0.55;
-  const compGap = 0.12;
-  const blockW = 1.2;
-  const specX = leftX + blockW + 0.15;
-  const specW = leftW - blockW - 0.15;
-
-  // Camera block
-  slide.addShape('rect', {
-    x: leftX, y: compY, w: blockW, h: compH,
-    fill: { color: '4A90D9' },
-    shadow: { type: 'outer', blur: 2, offset: 1, angle: 45, opacity: 0.15 },
-  });
-  slide.addText(`📷 ${ctx.isZh ? '相机' : 'Camera'}`, {
-    x: leftX, y: compY, w: blockW, h: compH,
-    fontSize: 8, color: COLORS.white, align: 'center', valign: 'middle', bold: true,
-  });
-  
-  // Camera specs
-  const cam = selectedCams[0];
-  const fullCam = cam ? hardware?.cameras?.find(c => c.id === cam.id) : null;
-  const camSpec = cam 
-    ? `${cam.brand} ${cam.model}\n${fullCam?.resolution || '-'} | ${fullCam?.sensor_size || '-'}` 
-    : (ctx.isZh ? '待选型' : 'TBD');
-  slide.addText(camSpec, {
-    x: specX, y: compY, w: specW, h: compH,
-    fontSize: 7, color: COLORS.dark,
-  });
-
-  // Lens block
-  compY += compH + compGap;
-  slide.addShape('rect', {
-    x: leftX, y: compY, w: blockW, h: compH,
-    fill: { color: '7B68EE' },
-    shadow: { type: 'outer', blur: 2, offset: 1, angle: 45, opacity: 0.15 },
-  });
-  slide.addText(`🔍 ${ctx.isZh ? '镜头' : 'Lens'}`, {
-    x: leftX, y: compY, w: blockW, h: compH,
-    fontSize: 8, color: COLORS.white, align: 'center', valign: 'middle', bold: true,
-  });
-  
-  const lens = selectedLenses[0];
-  const fullLens = lens ? hardware?.lenses?.find(l => l.id === lens.id) : null;
-  const lensSpec = lens 
-    ? `${lens.brand} ${lens.model}\n${fullLens?.focal_length || '-'} | ${fullLens?.aperture || '-'}` 
-    : (ctx.isZh ? '待选型' : 'TBD');
-  slide.addText(lensSpec, {
-    x: specX, y: compY, w: specW, h: compH,
-    fontSize: 7, color: COLORS.dark,
-  });
-
-  // Light block
-  compY += compH + compGap;
-  slide.addShape('rect', {
-    x: leftX, y: compY, w: blockW, h: compH,
-    fill: { color: 'F5A623' },
-    shadow: { type: 'outer', blur: 2, offset: 1, angle: 45, opacity: 0.15 },
-  });
-  slide.addText(`💡 ${ctx.isZh ? '光源' : 'Light'}`, {
-    x: leftX, y: compY, w: blockW, h: compH,
-    fontSize: 8, color: COLORS.white, align: 'center', valign: 'middle', bold: true,
-  });
-  
-  const light = selectedLights[0];
-  const fullLight = light ? hardware?.lights?.find(l => l.id === light.id) : null;
-  const lightSpec = light 
-    ? `${light.brand} ${light.model}\n${fullLight?.type || '-'} | ${fullLight?.power || '-'}` 
-    : (ctx.isZh ? '待选型' : 'TBD');
-  slide.addText(lightSpec, {
-    x: specX, y: compY, w: specW, h: compH,
-    fontSize: 7, color: COLORS.dark,
-  });
-
-  // Working distance annotation line
-  compY += compH + compGap;
-  const cfg = (mod.defect_config || mod.measurement_config || mod.positioning_config || mod.ocr_config) as Record<string, unknown> | null;
-  const wd = cfg?.workingDistance ? `${cfg.workingDistance} mm` : (ctx.isZh ? '待定' : 'TBD');
-  
-  // Arrow line for working distance
-  slide.addShape('rect', {
-    x: leftX + blockW / 2 - 0.02, y: compY, w: 0.04, h: 0.6,
-    fill: { color: COLORS.primary },
-  });
-  // Arrow heads
-  slide.addText('▼', {
-    x: leftX + blockW / 2 - 0.15, y: compY + 0.4, w: 0.3, h: 0.2,
-    fontSize: 10, color: COLORS.primary, align: 'center',
-  });
-  slide.addText(`${ctx.isZh ? '工作距离' : 'WD'}: ${wd}`, {
-    x: leftX + blockW / 2 + 0.2, y: compY + 0.15, w: 2.5, h: 0.2,
-    fontSize: 8, color: COLORS.primary, bold: true,
-  });
-
-  // Product at bottom
-  compY += 0.7;
-  slide.addShape('rect', {
-    x: leftX, y: compY, w: blockW * 1.5, h: 0.4,
-    fill: { color: COLORS.lightGray },
-    line: { color: COLORS.border, width: 0.5 },
-  });
-  slide.addText(`📦 ${ctx.isZh ? '产品' : 'Product'}`, {
-    x: leftX, y: compY, w: blockW * 1.5, h: 0.4,
-    fontSize: 8, color: COLORS.dark, align: 'center', valign: 'middle',
-  });
+  if (mod.schematic_image_url) {
+    try {
+      const dataUri = await fetchImageAsDataUri(mod.schematic_image_url);
+      if (dataUri) {
+        const dims = await getImageDimensions(dataUri);
+        const fit = calculateContainFit(dims.width, dims.height, imageArea);
+        slide.addImage({ data: dataUri, x: fit.x, y: fit.y, w: fit.width, h: fit.height });
+      } else {
+        throw new Error('Failed to fetch image');
+      }
+    } catch (err) {
+      console.warn('[PPT] 光学方案图片加载失败，使用占位符', err);
+      slide.addShape('rect', {
+        x: imageArea.x, y: imageArea.y, w: imageArea.width, h: imageArea.height,
+        fill: { color: COLORS.lightGray }, line: { color: COLORS.border, width: 0.5 },
+      });
+      slide.addText(ctx.isZh ? '请先在系统中保存光路示意图' : 'Please save the optical diagram first', {
+        x: imageArea.x, y: imageArea.y, w: imageArea.width, h: imageArea.height,
+        fontSize: 10, color: COLORS.secondary, align: 'center', valign: 'middle',
+      });
+    }
+  } else {
+    // No schematic_image_url — show placeholder
+    slide.addShape('rect', {
+      x: imageArea.x, y: imageArea.y, w: imageArea.width, h: imageArea.height,
+      fill: { color: COLORS.lightGray }, line: { color: COLORS.border, width: 0.5 },
+    });
+    slide.addText(ctx.isZh ? '请先在系统中保存光路示意图' : 'Please save the optical diagram first', {
+      x: imageArea.x, y: imageArea.y, w: imageArea.width, h: imageArea.height,
+      fontSize: 10, color: COLORS.secondary, align: 'center', valign: 'middle',
+    });
+  }
 
   // ===== RIGHT HALF: Measurement Method & Vision Checklist =====
   const rightX = 5.2;
@@ -1562,6 +1488,8 @@ export function generateModuleOpticalSlide(
   });
 
   // Numbered checklist
+  const cfg = (mod.defect_config || mod.measurement_config || mod.positioning_config || mod.ocr_config) as Record<string, unknown> | null;
+  const wd = cfg?.workingDistance ? `${cfg.workingDistance} mm` : (ctx.isZh ? '待定' : 'TBD');
   const cameraMounts = Array.isArray(layout?.camera_mounts) ? layout.camera_mounts : [];
   const mountText = cameraMounts.map(m => 
     getLabel(m, CAMERA_MOUNT_LABELS, ctx.isZh ? 'zh' : 'en')
