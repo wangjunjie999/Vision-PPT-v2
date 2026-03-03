@@ -4,7 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useData } from '@/contexts/DataContext';
 import { useState, useMemo, useEffect } from 'react';
-import { CheckCircle2, XCircle, Eye, ImageIcon, Layers, Camera } from 'lucide-react';
+import { CheckCircle2, XCircle, Eye, ImageIcon, Layers, Camera, Box } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -33,6 +33,7 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLabel, setPreviewLabel] = useState('');
   const [annotations, setAnnotations] = useState<Map<string, AnnotationInfo[]>>(new Map());
+  const [productImages, setProductImages] = useState<Map<string, string[]>>(new Map());
 
   const projectWorkstations = selectedProjectId ? getProjectWorkstations(selectedProjectId) : [];
 
@@ -42,27 +43,48 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
 
     const wsIds = projectWorkstations.map(ws => ws.id);
 
-    async function fetchAnnotations() {
-      const { data } = await supabase
+    async function fetchData() {
+      // Fetch annotations
+      const { data: annoData } = await supabase
         .from('product_annotations')
         .select('id, snapshot_url, remark, workstation_id')
         .in('workstation_id', wsIds)
         .order('created_at', { ascending: false });
 
-      if (!data) return;
-
-      const grouped = new Map<string, AnnotationInfo[]>();
-      for (const row of data) {
-        const wsId = row.workstation_id;
-        if (!wsId) continue;
-        const arr = grouped.get(wsId) || [];
-        arr.push(row);
-        grouped.set(wsId, arr);
+      if (annoData) {
+        const grouped = new Map<string, AnnotationInfo[]>();
+        for (const row of annoData) {
+          const wsId = row.workstation_id;
+          if (!wsId) continue;
+          const arr = grouped.get(wsId) || [];
+          arr.push(row);
+          grouped.set(wsId, arr);
+        }
+        setAnnotations(grouped);
       }
-      setAnnotations(grouped);
+
+      // Fetch product assets preview images
+      const { data: assetData } = await supabase
+        .from('product_assets')
+        .select('workstation_id, preview_images')
+        .in('workstation_id', wsIds);
+
+      if (assetData) {
+        const grouped = new Map<string, string[]>();
+        for (const row of assetData) {
+          const wsId = row.workstation_id;
+          if (!wsId) continue;
+          const imgs = Array.isArray(row.preview_images) ? (row.preview_images as string[]) : [];
+          if (imgs.length === 0) continue;
+          const existing = grouped.get(wsId) || [];
+          existing.push(...imgs);
+          grouped.set(wsId, existing);
+        }
+        setProductImages(grouped);
+      }
     }
 
-    fetchAnnotations();
+    fetchData();
   }, [open, selectedProjectId, projectWorkstations.length]);
 
   const imageData = useMemo(() => {
@@ -73,6 +95,7 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
       const layout = allLayouts.find(l => l.workstation_id === ws.id);
       const modules = getWorkstationModules(ws.id);
       const wsAnnotations = annotations.get(ws.id) || [];
+      const wsProductImages = productImages.get(ws.id) || [];
 
       const layoutImages = [
         { label: '正视图', url: layout?.front_view_image_url || null },
@@ -89,12 +112,13 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
       layoutImages.forEach(img => img.url ? totalSaved++ : totalMissing++);
       moduleImages.forEach(img => img.url ? totalSaved++ : totalMissing++);
       totalSaved += wsAnnotations.length;
+      totalSaved += wsProductImages.length;
 
-      return { workstation: ws, layoutImages, moduleImages, annotations: wsAnnotations };
+      return { workstation: ws, layoutImages, moduleImages, annotations: wsAnnotations, productImages: wsProductImages };
     });
 
     return { groups, totalSaved, totalMissing };
-  }, [projectWorkstations, allLayouts, getWorkstationModules, annotations]);
+  }, [projectWorkstations, allLayouts, getWorkstationModules, annotations, productImages]);
 
   const handlePreview = (url: string, label: string) => {
     setPreviewUrl(url);
@@ -131,7 +155,7 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
 
           <ScrollArea className="h-[60vh] pr-2">
             <div className="space-y-6">
-              {imageData.groups.map(({ workstation, layoutImages, moduleImages, annotations: wsAnnotations }) => (
+              {imageData.groups.map(({ workstation, layoutImages, moduleImages, annotations: wsAnnotations, productImages: wsProductImages }) => (
                 <div key={workstation.id} className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Layers className="h-4 w-4 text-primary" />
@@ -165,6 +189,26 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
                             label={img.moduleName}
                             url={img.url}
                             onPreview={() => img.url && handlePreview(img.url, `${img.moduleName} - ${img.label}`)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Product preview images */}
+                  {wsProductImages.length > 0 && (
+                    <div className="ml-6">
+                      <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                        <Box className="h-3 w-3" />
+                        产品预览图
+                      </p>
+                      <div className="grid grid-cols-3 gap-3">
+                        {wsProductImages.map((url, i) => (
+                          <ImageThumbnail
+                            key={`prod-${i}`}
+                            label={`预览图 ${i + 1}`}
+                            url={url}
+                            onPreview={() => handlePreview(url, `${workstation.name} - 产品预览图 ${i + 1}`)}
                           />
                         ))}
                       </div>
