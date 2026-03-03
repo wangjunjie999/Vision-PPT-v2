@@ -1,34 +1,30 @@
 
 
-# 修复 PPT 图片预览对话框
+# 修复 PPT 图片预览 — 显示产品3D截图
 
-## 修改内容
+## 问题
+
+当前 `PPTImagePreviewDialog` 只显示三类图片：三视图、模块光学方案图、产品标注截图（`product_annotations`）。但产品的3D预览图存储在 `product_assets.preview_images`（JSON数组，包含上传的产品图片URL），这部分数据完全没有被加载和展示。
+
+## 修改方案
 
 ### `src/components/dialogs/PPTImagePreviewDialog.tsx`
 
-两项改动：
+1. **新增数据获取**：在现有 `useEffect` 中同时查询 `product_assets` 表，按 `workstation_id` 和 `module_id` 获取 `preview_images` 字段
+2. **按工位分组展示**：在每个工位的"产品标注截图"上方，新增"产品预览图"区域，展示 `preview_images` 中的所有图片缩略图
+3. **计入统计**：将产品预览图数量计入"已保存"总数
 
-1. **滚动功能修复**：当前 `ScrollArea` 在 `flex-1` 容器内，但 `DialogContent` 使用 `max-h-[85vh]`，需要确保 ScrollArea 有明确高度约束。给 ScrollArea 设置 `className="h-[60vh]"` 替代 `flex-1`，确保内容可滚动。
-
-2. **添加产品标注截图**：
-   - 从 DataContext 获取当前项目的 `product_annotations` 数据（通过 supabase 直接查询，因为 DataContext 中没有现成的 annotations 数据）
-   - 或者更简单：直接在组件中用 supabase 查询 `product_assets` 和 `product_annotations`
-   - 在每个工位分组下，增加"产品标注截图"区域，显示该工位关联的 annotations 的 `snapshot_url`
-
-**数据获取方式**：
-- 使用 `useEffect` + supabase 查询 `product_assets`（按 project_id）和 `product_annotations`（按 asset_id）
-- 按 workstation_id 分组，在每个工位的模块光学方案图下方添加"产品标注截图"栏
-
-**UI 结构**（每个工位下）：
+**UI 结构（每个工位下）**：
 ```
 三视图: [正视图] [侧视图] [俯视图]
 模块光学方案图: [模块1] [模块2] ...
-产品标注截图: [标注1] [标注2] ...   ← 新增
+产品预览图: [图片1] [图片2] ...    ← 新增
+产品标注截图: [标注1] [标注2] ...
 ```
 
 ### 涉及文件
 
 | 文件 | 修改 |
 |------|------|
-| `src/components/dialogs/PPTImagePreviewDialog.tsx` | 修复滚动 + 添加产品标注截图区域 |
+| `src/components/dialogs/PPTImagePreviewDialog.tsx` | 新增 product_assets 查询和产品预览图展示区域 |
 
