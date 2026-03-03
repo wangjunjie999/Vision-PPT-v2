@@ -114,7 +114,7 @@ export function TopToolbar({ onAdminClick, showBackButton, isMobile, onOpenLeftD
   return (
     <>
       <header className={cn(
-        "border-b border-border/60 bg-card/95 backdrop-blur-md flex items-center justify-between gap-2 shrink-0 relative overflow-hidden",
+        "border-b border-border bg-card flex items-center justify-between gap-2 shrink-0 relative overflow-hidden",
         isMobile ? "h-14 px-3" : "h-16 px-5 gap-4"
       )}>
         {/* Subtle gradient overlay */}
