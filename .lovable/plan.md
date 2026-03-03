@@ -1,55 +1,70 @@
 
-# 创建全覆盖测试项目：半导体芯片封装视觉检测系统
+# 为测试项目生成模拟图片
 
-## 目标
+## 问题
 
-通过数据库直接插入一个完整的模拟项目，覆盖系统所有表单字段、全部5种模块类型（defect/positioning/ocr/measurement/deeplearning）、机械布局配置、以及光学方案参数，用于端到端测试。
+测试项目 DB260301 的 5 个工位目前缺少所有图片数据：
+- 15 张三视图（5 工位 x 正视图/侧视图/俯视图）
+- 5 张光学方案示意图（每个模块的 schematic_image_url）
+- 没有产品标注图
 
-## 项目设计
+PPT 生成器在没有图片时只会显示占位框，无法验证图片布局、缩放和居中是否正确。
 
-**项目**: 半导体芯片封装外观检测系统
-- 编号: DB260301
-- 客户: 长电科技
-- 工艺: 总装检测
-- 包含环境条件、质量策略等完整字段
+## 解决方案
 
-**工位规划**（5个工位，每个对应一种模块类型）：
+创建一个临时边缘函数 `generate-test-images`，用 SVG 生成简单但有意义的工程示意图，转换为 PNG 后上传到对应的存储桶，并更新数据库记录。
 
-| 工位 | 类型 | 模块类型 | 检测内容 |
-|------|------|----------|----------|
-| WS-SC-01 引线框架定位工位 | line | positioning | 芯片引脚定位引导 |
-| WS-SC-02 焊点外观检测工位 | turntable | defect | 焊点裂纹/虚焊检测 |
-| WS-SC-03 标记字符识别工位 | line | ocr | 芯片批次号/型号识别 |
-| WS-SC-04 封装尺寸测量工位 | platform | measurement | 引脚间距/共面性测量 |
-| WS-SC-05 AI异常检测工位 | robot | deeplearning | 深度学习异常检测 |
+### 生成的图片内容
 
-## 数据内容
+**三视图（workstation-views 桶）**：
+- 正视图：绘制相机、光源、待测件的正面布局示意
+- 侧视图：绘制侧面视角的设备排列
+- 俯视图：绘制俯视角度的设备分布
+- 每张图包含工位名称、坐标轴标注、设备轮廓
 
-每个工位将包含：
-1. **完整工位表单字段**: code, name, type, cycle_time, product_dimensions, install_space, enclosed, process_stage, observation_target 等
-2. **机械布局 (mechanical_layouts)**: 含 mechanisms JSON, camera_mounts, selected_cameras/lenses/lights, layout_objects, 三视图标记
-3. **功能模块 (function_modules)**: 完整的 type-specific config（positioning_config, defect_config, ocr_config, measurement_config, deep_learning_config），含成像参数（FOV, working distance, resolution per pixel）、硬件选择、ROI策略、输出类型等
+**光学方案图（module-schematics 桶）**：
+- 绘制视觉系统示意图：相机+镜头在上方，光源在侧面，待测件在中央
+- 标注检测类型（定位/缺陷/OCR/测量/深度学习）
+- 包含光路示意线
 
-## 实现步骤
+### 实现步骤
 
-1. **插入项目记录** - projects 表，填充所有字段
-2. **插入5个工位记录** - workstations 表，每个工位填充不同的 type 和完整参数
-3. **插入5个机械布局** - mechanical_layouts 表，每个工位对应一个布局，包含 mechanisms JSON 和硬件选择
-4. **插入5个功能模块** - function_modules 表，每种类型一个，包含完整的检测配置 JSON 和成像参数
+1. **创建边缘函数** `supabase/functions/generate-test-images/index.ts`
+   - 接收 project_code 参数
+   - 查询该项目的所有工位、布局和模块
+   - 为每个布局生成 3 张三视图 SVG（使用纯 SVG 字符串，含设备图标和标注）
+   - 为每个模块生成 1 张光学方案 SVG
+   - 将 SVG 直接上传为 SVG 文件（PPT 的 `fetchImageAsDataUri` 支持 SVG）
+   - 更新 `mechanical_layouts` 表的 `front/side/top_view_image_url` 和 `*_view_saved` 字段
+   - 更新 `function_modules` 表的 `schematic_image_url` 字段
 
-## 技术细节
+2. **SVG 设计**（每张约 800x600 尺寸）
+   - 深色工业风背景（#0f172a），与画布截图风格一致
+   - 设备用简单几何图形表示（矩形=相机, 圆形=镜头, 三角=光源）
+   - 包含坐标轴、尺寸标注、设备标签
+   - 每个工位根据其 mechanisms 配置生成不同的布局
 
-- 所有记录的 user_id 将使用当前登录用户的 ID（需要先查询确认）
-- 使用 SQL 迁移工具批量插入数据
-- 各 config JSON 将包含视野参数（fieldOfView, workingDistance, resolutionPerPixel）以测试 PPT 中视野参数显示
-- 不会修改任何现有代码，仅插入测试数据
+3. **部署并调用**
+   - 部署边缘函数
+   - 通过 curl 调用一次完成所有图片生成
+   - 验证数据库记录已更新
 
-## 验证范围
+### 技术细节
 
-插入数据后可验证：
-- 项目表单所有字段的加载和编辑
-- 工位表单（4种工位类型）
-- 模块表单（5种检测类型的专属配置表单）
-- 机械布局画布的渲染
-- PPT 生成（含封面、布局图、光学方案、视野参数、硬件清单）
-- 数据完整性检查（pptReadiness）
+- SVG 字符串在边缘函数中用模板字符串拼接，无需额外依赖
+- 上传到 `workstation-views` 和 `module-schematics` 桶，文件名格式与现有代码一致
+- 使用 service_role_key 绕过 RLS 进行数据库更新
+- 函数执行完毕后可删除，仅用于一次性测试数据生成
+
+## 涉及文件
+
+| 文件 | 操作 |
+|------|------|
+| `supabase/functions/generate-test-images/index.ts` | 新建 - 生成 SVG 并上传到存储桶 |
+
+## 预期结果
+
+执行后：
+- 5 个工位各有 3 张三视图 URL（共 15 张）
+- 5 个模块各有 1 张光学方案图 URL（共 5 张）
+- PPT 生成时将加载这些真实图片，验证布局、缩放、居中是否正确
