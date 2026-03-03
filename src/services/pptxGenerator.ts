@@ -1238,7 +1238,7 @@ export async function generatePPTX(
       step++;
       const modName = wsModules[mi].name;
       onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '光学方案' : 'Optical'}: ${modName}`, `[SLIDE:${ws.name}:d${mi + 1}] ${isZh ? '光学方案' : 'Optical'}: ${modName}`);
-      generateModuleOpticalSlide(ctx, slideData, mi);
+      await generateModuleOpticalSlide(ctx, slideData, mi);
     }
     
     // e. BOM清单+审核
