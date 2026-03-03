@@ -1621,16 +1621,16 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
                 <div className="space-y-1">
                   <div className="flex items-center justify-center gap-1">
                     <Table className="h-4 w-4 text-chart-3" />
-                    <span className="text-lg font-bold">{generationPreview.wsCount + generationPreview.modCount}</span>
+                    <span className="text-lg font-bold">{generationPreview.wsCount}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">参数表</p>
+                  <p className="text-xs text-muted-foreground">工位</p>
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-center gap-1">
-                    <Table className="h-4 w-4 text-chart-3" />
-                    <span className="text-lg font-bold">{generationPreview.wsCount + generationPreview.modCount}</span>
+                    <Table className="h-4 w-4 text-chart-4" />
+                    <span className="text-lg font-bold">{generationPreview.modCount}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">参数表</p>
+                  <p className="text-xs text-muted-foreground">检测模块</p>
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-center gap-1">
