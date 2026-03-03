@@ -1,24 +1,40 @@
 
 
-# 更新 PPT 封面背景图片
+# PPT 风格调整：白色底色 + 深蓝色调
 
-## 目标
+## 问题
 
-将 PPT 生成的封面页背景替换为用户上传的新图片（德星云智能公司最新封面设计）。
+用户反馈：
+1. PPT 背景应以白色为主（当前代码已是白色背景，无需改动）
+2. 蓝色太浅，需要更深的深蓝色
 
 ## 修改方案
 
-### 1. 替换封面背景图片文件
+### 调整蓝色色值（slideLabels.ts）
 
-将用户上传的图片 `user-uploads://image-55.png` 复制到 `public/ppt-covers/tech-shine-cover.png`，覆盖原有封面图片。
+将当前的 `#0066CC`（科技正蓝，偏亮）改为更深的深蓝 `#003D7A`，视觉上更沉稳、更有科技感。
 
-### 2. 无需修改代码
+```
+primary:   '003D7A'  （原 0066CC）
+secondary: '003D7A'  （原 0066CC）
+accent:    '003D7A'  （原 0066CC）
+```
 
-当前 `src/services/pptxGenerator.ts` 第 803 行已经从 `public/ppt-covers/tech-shine-cover.png` 加载封面背景并以全屏 cover 模式显示，逻辑完全不需要改动。替换图片文件后，所有 PPT 生成都会自动使用新封面。
+其余颜色保持不变：
+- background: FFFFFF（白色底色）
+- dark/textPrimary: 000000（纯黑文字）
+- textSecondary: 333333（深灰辅助文字）
+- border: E6E6E6（浅灰线条）
+
+### 无需修改的部分
+
+- Master slide 已使用白色背景（line 784: `activeColors.background` = FFFFFF）
+- 页眉为白色底 + 深蓝细线（符合白色为主的要求）
+- 封面页使用独立背景图，不受影响
 
 ## 涉及文件
 
-| 文件 | 操作 |
+| 文件 | 修改 |
 |------|------|
-| public/ppt-covers/tech-shine-cover.png | 替换为用户上传的新封面图片 |
+| `src/services/pptx/slideLabels.ts` | 将 primary/secondary/accent 从 `0066CC` 改为 `003D7A` |
 
