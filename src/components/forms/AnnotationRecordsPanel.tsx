@@ -8,6 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog';
+import {
   Star,
   Trash2,
   Eye,
@@ -36,6 +40,7 @@ export function AnnotationRecordsPanel() {
   const [records, setRecords] = useState<AnnotationRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [defaultRecordId, setDefaultRecordId] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const isInitialLoad = useRef(true);
 
@@ -143,11 +148,15 @@ export function AnnotationRecordsPanel() {
                   )}
                 >
                   {/* Thumbnail */}
-                  <div className="aspect-video rounded overflow-hidden bg-muted">
+                  <div
+                    className="aspect-video rounded overflow-hidden bg-muted cursor-pointer group"
+                    onClick={() => setPreviewUrl(record.snapshot_url)}
+                    title="点击放大查看"
+                  >
                     <img
                       src={record.snapshot_url}
                       alt={`标注版本${record.version}`}
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
                     />
                   </div>
                   
@@ -209,6 +218,19 @@ export function AnnotationRecordsPanel() {
           </ScrollArea>
         )}
       </CardContent>
+
+      {/* Lightbox Dialog */}
+      <Dialog open={!!previewUrl} onOpenChange={(open) => !open && setPreviewUrl(null)}>
+        <DialogContent className="max-w-[90vw] max-h-[90vh] p-2">
+          {previewUrl && (
+            <img
+              src={previewUrl}
+              alt="标注大图"
+              className="w-full h-full object-contain max-h-[85vh]"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
