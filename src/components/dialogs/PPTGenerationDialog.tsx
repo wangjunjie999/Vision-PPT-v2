@@ -242,15 +242,23 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
       setSelectedModules(modIds);
     }
   }, [selectedProjectId, open, projectWorkstations, getWorkstationModules]);
+
+  // Use refs to avoid infinite loop in the fetch effect below
+  const projectWorkstationsRef = useRef(projectWorkstations);
+  projectWorkstationsRef.current = projectWorkstations;
+  const getWorkstationModulesRef = useRef(getWorkstationModules);
+  getWorkstationModulesRef.current = getWorkstationModules;
   
   // Fetch annotations and product assets when dialog opens
   useEffect(() => {
     if (open && user?.id && selectedProjectId) {
       const fetchAnnotationsAndAssets = async () => {
-        const wsIds = projectWorkstations.map(ws => ws.id);
+        const ws = projectWorkstationsRef.current;
+        const gwm = getWorkstationModulesRef.current;
+        const wsIds = ws.map(w => w.id);
         const modIds: string[] = [];
-        projectWorkstations.forEach(ws => {
-          getWorkstationModules(ws.id).forEach(m => modIds.push(m.id));
+        ws.forEach(w => {
+          gwm(w.id).forEach(m => modIds.push(m.id));
         });
         
         if (wsIds.length === 0) return;
@@ -306,7 +314,7 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
       };
       fetchAnnotationsAndAssets();
     }
-  }, [open, user?.id, selectedProjectId, projectWorkstations, getWorkstationModules]);
+  }, [open, user?.id, selectedProjectId]);
 
   const addLog = (type: GenerationLog['type'], message: string) => {
     setLogs(prev => [...prev, { type, message, timestamp: new Date() }]);
@@ -820,12 +828,13 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
         });
 
         const wordFileName = `${projectData.code}_${projectData.name}_方案.docx`;
-        await saveToHistory(blob, wordFileName, 'word', generationMethod, 1);
 
         addLog('success', `Word文档生成完成，包含 ${imageCount} 张图片`);
         setStage('complete');
         setIsGenerating(false);
         toast.success('Word文档生成完成');
+        // 非阻塞保存历史记录
+        saveToHistory(blob, wordFileName, 'word', generationMethod, 1).catch(e => console.warn('保存历史记录失败:', e));
         return;
       }
 
@@ -952,12 +961,13 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
         });
 
         const pdfFileName = `${projectData.code}_${projectData.name}_方案.pdf`;
-        await saveToHistory(blob, pdfFileName, 'pdf', generationMethod, pdfPageCount);
 
         addLog('success', `PDF文档生成完成，包含 ${imageCount} 张图片`);
         setStage('complete');
         setIsGenerating(false);
         toast.success('PDF文档生成完成');
+        // 非阻塞保存历史记录
+        saveToHistory(blob, pdfFileName, 'pdf', generationMethod, pdfPageCount).catch(e => console.warn('保存历史记录失败:', e));
         return;
       }
       
@@ -1091,12 +1101,13 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
         });
 
         const pptFileName = `${projectData.code}_${projectData.name}_方案.pptx`;
-        await saveToHistory(blob, pptFileName, 'ppt', 'scratch', pptPageCount);
 
         addLog('success', `成功生成PPT文件`);
         setStage('complete');
         setIsGenerating(false);
         toast.success('PPT生成完成');
+        // 非阻塞保存历史记录
+        saveToHistory(blob, pptFileName, 'ppt', 'scratch', pptPageCount).catch(e => console.warn('保存历史记录失败:', e));
       }
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
