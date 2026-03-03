@@ -139,12 +139,27 @@ export function ModuleSchematic() {
     try {
       toast.loading('正在生成PNG...');
       const pixelRatio = getPixelRatio();
-      const dataUrl = await toPng(diagramRef.current, {
+      
+      // 临时设置固定尺寸确保完整截取
+      const el = diagramRef.current;
+      const originalStyle = el.style.cssText;
+      el.style.width = '1200px';
+      el.style.height = '750px';
+      el.style.maxWidth = 'none';
+      el.style.overflow = 'hidden';
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      
+      const dataUrl = await toPng(el, {
+        width: 1200,
+        height: 750,
         quality: 1,
         pixelRatio,
         backgroundColor: '#1a1a2e',
         skipFonts: true,
       });
+      
+      // 恢复原始样式
+      el.style.cssText = originalStyle;
       
       // Download the image
       const link = document.createElement('a');
@@ -168,12 +183,27 @@ export function ModuleSchematic() {
     try {
       toast.loading('正在生成PDF...');
       const pixelRatio = getPixelRatio();
-      const dataUrl = await toPng(diagramRef.current, {
+      
+      // 临时设置固定尺寸确保完整截取
+      const el = diagramRef.current;
+      const originalStyle = el.style.cssText;
+      el.style.width = '1200px';
+      el.style.height = '750px';
+      el.style.maxWidth = 'none';
+      el.style.overflow = 'hidden';
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      
+      const dataUrl = await toPng(el, {
+        width: 1200,
+        height: 750,
         quality: 1,
         pixelRatio,
         backgroundColor: '#1a1a2e',
         skipFonts: true,
       });
+      
+      // 恢复原始样式
+      el.style.cssText = originalStyle;
       
       const pdf = new jsPDF({
         orientation: 'landscape',
@@ -224,12 +254,29 @@ export function ModuleSchematic() {
       });
       
       const pixelRatio = getPixelRatio();
-      const dataUrl = await toPng(diagramRef.current, {
+      
+      // 截图前：临时设置固定尺寸确保完整截取，避免响应式布局导致内容偏移
+      const el = diagramRef.current;
+      const originalStyle = el.style.cssText;
+      el.style.width = '1200px';
+      el.style.height = '750px';
+      el.style.maxWidth = 'none';
+      el.style.overflow = 'hidden';
+      
+      // 等待布局重排完成
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      
+      const dataUrl = await toPng(el, {
+        width: 1200,
+        height: 750,
         quality: 1,
         pixelRatio,
         backgroundColor: '#1a1a2e',
         skipFonts: true,
       });
+      
+      // 截图后恢复原始样式
+      el.style.cssText = originalStyle;
       
       // Convert base64 to blob
       const response = await fetch(dataUrl);

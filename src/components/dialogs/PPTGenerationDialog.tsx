@@ -36,7 +36,7 @@ import { generatePDF } from '@/services/pdfGenerator';
 import { toast } from 'sonner';
 import { useCameras, useLenses, useLights, useControllers } from '@/hooks/useHardware';
 import { checkPPTReadiness } from '@/services/pptReadiness';
-import { ChevronDown, ChevronUp, ExternalLink, ImageOff } from 'lucide-react';
+import { ChevronDown, ChevronUp, ExternalLink, ImageOff, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePPTTemplates } from '@/hooks/usePPTTemplates';
@@ -55,6 +55,7 @@ import {
 import { resetFailedUrlsCache } from '@/services/pptx/imagePreloader';
 import { useBatchImageCache } from '@/hooks/useImageCache';
 import type { ImageCacheType } from '@/services/imageLocalCache';
+import { PPTImagePreviewDialog } from './PPTImagePreviewDialog';
 
 type GenerationScope = 'full' | 'workstations' | 'modules';
 type OutputLanguage = 'zh' | 'en';
@@ -132,6 +133,7 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
   });
   const generatedBlobRef = useRef<Blob | null>(null);
   const [checkPanelOpen, setCheckPanelOpen] = useState(true);
+  const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
   // 默认使用"从零生成"，因为模板生成需要Edge Function支持
   const [generationMethod, setGenerationMethod] = useState<GenerationMethod>('scratch');
   const [outputFormat, setOutputFormat] = useState<OutputFormat>('ppt'); // 输出格式
@@ -1107,6 +1109,7 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
@@ -1522,6 +1525,10 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
 
             {/* Actions */}
             <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setImagePreviewOpen(true)} className="gap-1 mr-auto">
+                <Eye className="h-4 w-4" />
+                查看已保存图片
+              </Button>
               <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
               <Button 
                 onClick={handleGenerate} 
@@ -1707,5 +1714,7 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
         )}
       </DialogContent>
     </Dialog>
+    <PPTImagePreviewDialog open={imagePreviewOpen} onOpenChange={setImagePreviewOpen} />
+    </>
   );
 }
