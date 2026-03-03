@@ -1,58 +1,53 @@
 
 
-# 修复 PPT 生成完成后卡在 spinner 无法下载
+# PPT 光学方案页使用系统截图替代简易色块
 
-## 问题分析
+## 当前问题
 
-在三个生成路径（Word、PDF、PPT from scratch）中，`await saveToHistory(blob, ...)` 在 `setStage('complete')` **之前**被调用。`saveToHistory` 需要将 blob 上传到存储桶再插入数据库记录，如果上传缓慢或失败，UI 就会卡在 spinner 状态，用户无法看到下载按钮。
+`generateModuleOpticalSlide` 函数（workstationSlides.ts 第1419行）在 PPT 光学方案页左侧用 pptxgenjs 绘制简单的彩色色块（相机蓝色块、镜头紫色块、光源橙色块），效果粗糙。
 
-具体位置：
-- Word 生成：第 823 行 `await saveToHistory(...)` 在第 826 行 `setStage('complete')` 之前
-- PDF 生成：第 955 行 `await saveToHistory(...)` 在第 958 行 `setStage('complete')` 之前  
-- PPT scratch：第 1094 行 `await saveToHistory(...)` 在第 1097 行 `setStage('complete')` 之前
+而系统中已有完整的 VisionSystemDiagram 组件渲染（如图2所示），且每个模块的截图已保存在 `schematic_image_url` 字段中。应直接使用这张截图作为光学方案的图示。
 
 ## 修改方案
 
-### 文件：src/components/dialogs/PPTGenerationDialog.tsx
+### 文件：src/services/pptx/workstationSlides.ts
 
-**核心改动**：在三个生成路径中，将 `setStage('complete')` 和 `setIsGenerating(false)` 移到 `saveToHistory` 之前，并将 `saveToHistory` 改为非阻塞的 fire-and-forget 调用。
+**将 `generateModuleOpticalSlide` 从同步改为异步函数**，以支持图片加载。
 
-#### 1. Word 生成路径（约第 822-828 行）
+**替换左半区内容**：删除当前用色块绘制的相机/镜头/光源/工作距离/产品等元素（约第1449-1553行），改为：
 
-将：
+1. 检查 `mod.schematic_image_url` 是否存在
+2. 如果存在：使用 `fetchImageAsDataUri` 加载图片，用 `calculateContainFit` 按比例放置在左半区（约 4.6 x 3.8 英寸区域）
+3. 如果不存在：显示占位矩形和提示文字"请先在系统中保存光路示意图"
+
+**保留右半区**（测量方法及视觉清单）完全不变。
+
+### 文件：src/services/pptxGenerator.ts
+
+**更新调用处**：`generateModuleOpticalSlide` 变为异步后，调用处需要加 `await`。搜索所有调用点添加 `await`。
+
+### 文件：src/services/pptx/workstationSlides.ts（导出签名）
+
+函数签名从：
+```typescript
+export function generateModuleOpticalSlide(ctx, data, moduleIndex): void
 ```
-await saveToHistory(blob, wordFileName, 'word', generationMethod, 1);
-addLog('success', ...);
-setStage('complete');
-setIsGenerating(false);
-```
-
 改为：
-```
-addLog('success', ...);
-setStage('complete');
-setIsGenerating(false);
-// 非阻塞保存历史记录
-saveToHistory(blob, wordFileName, 'word', generationMethod, 1);
+```typescript
+export async function generateModuleOpticalSlide(ctx, data, moduleIndex): Promise<void>
 ```
 
-#### 2. PDF 生成路径（约第 954-959 行）
+## 技术细节
 
-同理，先 `setStage('complete')`，再 fire-and-forget `saveToHistory`。
-
-#### 3. PPT scratch 路径（约第 1093-1098 行）
-
-同理，先 `setStage('complete')`，再 fire-and-forget `saveToHistory`。
-
-### 附加修复：product_assets 无限查询循环（第 247 行 useEffect）
-
-当前 `useEffect` 的依赖数组包含 `projectWorkstations` 和 `getWorkstationModules`，这两个值在每次渲染都会产生新引用，导致 effect 无限触发，产生 150+ 并发请求。
-
-修复方式：使用 `useRef` 存储 `projectWorkstations` 和 `getWorkstationModules` 的引用，在 effect 内部通过 ref 访问，依赖数组仅保留 `open`、`user?.id`、`selectedProjectId`。
+- 图片容器区域：x=0.4, y=1.4, w=4.6, h=3.6（与左半区一致）
+- 使用已有的 `fetchImageAsDataUri` 和 `calculateContainFit` 工具函数保持等比例缩放
+- 图片加载失败时回退到占位符，不影响整体生成流程
+- 右半区的硬件参数清单保持不变，确保技术信息完整
 
 ## 涉及文件
 
 | 文件 | 操作 |
 |------|------|
-| src/components/dialogs/PPTGenerationDialog.tsx | 将 saveToHistory 改为非阻塞；修复 useEffect 依赖导致的无限循环 |
+| src/services/pptx/workstationSlides.ts | 重写 generateModuleOpticalSlide 左半区，用 schematic_image_url 替代色块 |
+| src/services/pptxGenerator.ts | 调用处加 await |
 
