@@ -250,13 +250,6 @@ interface GenerationOptions {
   language: 'zh' | 'en';
   quality: 'standard' | 'high' | 'ultra';
   mode?: 'draft' | 'final';
-  template?: {
-    id: string;
-    name: string;
-    file_url?: string | null;
-    background_image_url?: string | null;
-  } | null;
-  extractedStyles?: ExtractedTemplateStyles | null;
 }
 
 type ProgressCallback = (progress: number, step: string, log: string) => void;
@@ -658,19 +651,8 @@ export async function generatePPTX(
   const pptx = new pptxgen();
   const isZh = options.language === 'zh';
 
-  // Merge extracted styles with default colors
-  const extractedColors = options.extractedStyles?.colors || {};
-  const activeColors = {
-    primary: extractedColors.primary || COLORS.primary,
-    secondary: extractedColors.secondary || COLORS.secondary,
-    accent: extractedColors.accent || COLORS.accent,
-    background: extractedColors.background || COLORS.background,
-    dark: extractedColors.text || COLORS.dark,
-    white: COLORS.white,
-    border: COLORS.border,
-    warning: COLORS.warning,
-    destructive: COLORS.destructive,
-  };
+  // Use hardcoded corporate colors directly
+  const activeColors = { ...COLORS };
 
   // Set presentation properties
   pptx.author = project.responsible || 'Vision System';
@@ -681,112 +663,51 @@ export async function generatePPTX(
   // Explicitly set 16:9 layout
   pptx.layout = SLIDE_LAYOUT.name;
 
-  // Determine background: priority is extractedStyles > template background_image_url > default
-  let templateBackground: string | null = null;
-  
-  // First check extracted styles for background image
-  if (options.extractedStyles?.background?.data) {
-    templateBackground = options.extractedStyles.background.data;
-    console.log('Using extracted template background image');
-  } 
-  // Fall back to template background_image_url
-  else if (options.template?.background_image_url) {
-    try {
-      templateBackground = await fetchImageAsDataUri(options.template.background_image_url);
-      console.log('Loaded template background image:', options.template.name);
-    } catch (e) {
-      console.warn('Failed to load template background:', e);
-    }
-  }
-
-  // Define master slide dynamically based on template or use default
+  // Define master slide with hardcoded corporate style
   type MasterObject = NonNullable<PptxGenJS.SlideMasterProps['objects']>[number];
   const footerY = SLIDE_LAYOUT.height - SLIDE_LAYOUT.margin.bottom;
   
-  // Extract logo and footer info from template styles
-  const templateLogo = options.extractedStyles?.logo;
-  const templateFooter = options.extractedStyles?.footer;
-  
-  // Master objects can be customized based on parsed template structure
   const masterObjects: MasterObject[] = [];
   
-  // Load company logo for watermark
+  // Load company logo for header
   let companyLogoData: string | null = null;
   const logoUrl = `${window.location.origin}/ppt-covers/tech-shine-logo.png`;
   try {
     companyLogoData = await fetchImageAsDataUri(logoUrl);
-    console.log('Company logo loaded for PPT watermark');
   } catch (err) {
     console.warn('Failed to load company logo:', err);
   }
   
-  // Add company logo to top-right corner if loaded
-  if (companyLogoData && !templateBackground) {
+  // === Corporate VI Style: Deep navy header bar + white background ===
+  masterObjects.push(
+    // Header: full-width deep navy blue bar (0.45" tall)
+    { rect: { x: 0, y: 0, w: '100%', h: 0.45, fill: { color: activeColors.primary } } },
+    // Footer: white bar
+    { rect: { x: 0, y: footerY, w: '100%', h: SLIDE_LAYOUT.margin.bottom, fill: { color: activeColors.white } } },
+    // Footer: thin deep blue accent line
+    { rect: { x: 0, y: footerY, w: '100%', h: 0.02, fill: { color: activeColors.primary } } },
+    // Company name in footer
+    { text: { text: isZh ? COMPANY_NAME_ZH : COMPANY_NAME_EN, options: { x: 0.3, y: footerY + 0.06, w: 4, h: 0.18, fontSize: 7, color: activeColors.dark } } },
+    // Customer name in footer (right aligned)
+    { text: { text: project.customer, options: { x: SLIDE_LAYOUT.width - 2.5, y: footerY + 0.06, w: 2.2, h: 0.18, fontSize: 7, color: activeColors.dark, align: 'right' } } },
+  );
+  
+  // Add company logo to header bar (right side, white logo on navy)
+  if (companyLogoData) {
     masterObjects.push({
       image: { 
-        x: SLIDE_LAYOUT.width - 1.8,  // Right side with margin
-        y: 0.08,  // Aligned with header
-        w: 1.5,   // Logo width
-        h: 0.35,  // Logo height
+        x: SLIDE_LAYOUT.width - 1.8,
+        y: 0.05,
+        w: 1.5,
+        h: 0.35,
         data: companyLogoData,
       }
     });
   }
-  
-  // Add logo if extracted from template (override company logo)
-  if (templateLogo?.data) {
-    const logoX = templateLogo.position?.x ?? 0.2;
-    const logoY = templateLogo.position?.y ?? 0.1;
-    // Convert EMU to inches if needed, otherwise use reasonable defaults
-    const logoW = templateLogo.width ? templateLogo.width / 914400 : 1.2;
-    const logoH = templateLogo.height ? templateLogo.height / 914400 : 0.4;
-    
-    masterObjects.push({
-      image: { 
-        x: logoX, 
-        y: logoY, 
-        w: Math.min(logoW, 2), // Cap at 2 inches
-        h: Math.min(logoH, 0.8), // Cap at 0.8 inches
-        data: templateLogo.data,
-      }
-    });
-    console.log(`Added template logo at (${logoX}, ${logoY}), size: ${logoW}x${logoH}`);
-  }
-  
-  // Tech-Shine corporate style: Clean header with deep blue accent line, white background
-  if (!templateBackground) {
-    masterObjects.push(
-      // Header: thin deep blue accent line at top
-      { rect: { x: 0, y: 0, w: '100%', h: 0.04, fill: { color: activeColors.primary } } },
-      // Header: white bar with company branding area
-      { rect: { x: 0, y: 0.04, w: '100%', h: 0.42, fill: { color: activeColors.white } } },
-      // Footer: white bar
-      { rect: { x: 0, y: footerY, w: '100%', h: SLIDE_LAYOUT.margin.bottom, fill: { color: activeColors.white } } },
-      // Footer: thin deep blue accent line
-      { rect: { x: 0, y: footerY, w: '100%', h: 0.02, fill: { color: activeColors.primary } } },
-      // Company name in footer
-      { text: { text: isZh ? COMPANY_NAME_ZH : COMPANY_NAME_EN, options: { x: 0.3, y: footerY + 0.06, w: 4, h: 0.18, fontSize: 7, color: activeColors.dark } } },
-      // Customer name in footer (right aligned)
-      { text: { text: project.customer, options: { x: SLIDE_LAYOUT.width - 2.5, y: footerY + 0.06, w: 2.2, h: 0.18, fontSize: 7, color: activeColors.dark, align: 'right' } } },
-    );
-  } else if (templateFooter) {
-    // Template has its own design, but we can add page numbers if template expects them
-    console.log(`Template footer config: pageNum=${templateFooter.hasPageNumber}, date=${templateFooter.hasDate}`);
-  }
-
-  // Determine background color/image for master
-  let masterBackground: { color?: string; data?: string };
-  if (templateBackground) {
-    masterBackground = { data: templateBackground };
-  } else if (options.extractedStyles?.background?.color) {
-    masterBackground = { color: options.extractedStyles.background.color };
-  } else {
-    masterBackground = { color: activeColors.background };
-  }
 
   pptx.defineSlideMaster({
     title: 'MASTER_SLIDE',
-    background: masterBackground,
+    background: { color: activeColors.background },
     objects: masterObjects,
   });
 
@@ -839,9 +760,10 @@ export async function generatePPTX(
 
   const descSlide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
   
+  // Title overlaid on navy header bar
   descSlide.addText(isZh ? '项目说明' : 'Project Description', {
-    x: SLIDE_LAYOUT.contentLeft, y: SLIDE_LAYOUT.contentTop, w: SLIDE_LAYOUT.contentWidth, h: 0.4,
-    fontSize: 18, color: COLORS.dark, bold: true,
+    x: 0.4, y: 0.05, w: 5, h: 0.38,
+    fontSize: 18, color: COLORS.white, bold: true,
   });
 
   // Project basic info table
@@ -925,39 +847,64 @@ export async function generatePPTX(
   
   const revisionSlide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
   
+  // Title text overlaid on the navy header bar (white text)
   revisionSlide.addText(isZh ? '变更履历' : 'Revision History', {
-    x: SLIDE_LAYOUT.contentLeft, y: SLIDE_LAYOUT.contentTop, w: SLIDE_LAYOUT.contentWidth, h: 0.4,
-    fontSize: 18, color: COLORS.dark, bold: true,
+    x: 0.4, y: 0.05, w: 5, h: 0.38,
+    fontSize: 18, color: COLORS.white, bold: true,
   });
 
-  const revisionHeader: TableRow = row([
-    isZh ? '版本' : 'Version',
-    isZh ? '日期' : 'Date',
-    isZh ? '修订人' : 'Author',
-    isZh ? '变更内容' : 'Changes'
-  ]);
+  // Subtitle bar below header (medium blue)
+  revisionSlide.addShape('rect', {
+    x: 0, y: 0.45, w: '100%', h: 0.22,
+    fill: { color: '2E75B6' },
+  });
+  revisionSlide.addText(isZh ? '变更表' : 'Change Log', {
+    x: 0, y: 0.45, w: '100%', h: 0.22,
+    fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
+  });
+
+  // Table title row
+  const tableTitleRow: TableRow = [
+    { text: isZh ? '发行/变更履历表' : 'Release/Change History', options: { colspan: 6, align: 'center', bold: true, fill: { color: '2E75B6' }, color: COLORS.white, fontSize: 10 } as any },
+  ];
+
+  const revisionHeader: TableRow = [
+    cell(isZh ? '编号' : 'No.', { fill: { color: '2E75B6' }, color: COLORS.white, bold: true, align: 'center', fontSize: 9 } as any),
+    cell(isZh ? '版本' : 'Version', { fill: { color: '2E75B6' }, color: COLORS.white, bold: true, align: 'center', fontSize: 9 } as any),
+    cell(isZh ? '发行/变更描述' : 'Description', { fill: { color: '2E75B6' }, color: COLORS.white, bold: true, align: 'center', fontSize: 9 } as any),
+    cell(isZh ? '客户规格书版本' : 'Customer Spec', { fill: { color: '2E75B6' }, color: COLORS.white, bold: true, align: 'center', fontSize: 9 } as any),
+    cell(isZh ? '日期' : 'Date', { fill: { color: '2E75B6' }, color: COLORS.white, bold: true, align: 'center', fontSize: 9 } as any),
+    cell(isZh ? '发行/变更人' : 'Author', { fill: { color: '2E75B6' }, color: COLORS.white, bold: true, align: 'center', fontSize: 9 } as any),
+  ];
 
   const revisionHistory = project.revision_history || [];
   const revisionRows: TableRow[] = revisionHistory.length > 0
-    ? revisionHistory.map(item => row([
+    ? revisionHistory.map((item, idx) => row([
+        String(idx + 1),
         item.version,
+        item.content,
+        '——',
         item.date,
         item.author,
-        item.content
       ]))
-    : [row(['V1.0', project.date || '-', project.responsible || '-', isZh ? '初稿' : 'Initial draft'])];
+    : [
+        row(['1', 'V1.0', isZh ? '原始版本发行' : 'Initial release', '——', project.date || '-', project.responsible || '-']),
+        row(['2', '', '', '', '', '']),
+        row(['3', '', '', '', '', '']),
+      ];
 
-  revisionSlide.addTable([revisionHeader, ...revisionRows], {
+  revisionSlide.addTable([tableTitleRow, revisionHeader, ...revisionRows], {
     x: SLIDE_LAYOUT.contentLeft, 
-    y: SLIDE_LAYOUT.contentTop + 0.5, 
+    y: 0.85, 
     w: SLIDE_LAYOUT.contentWidth,
     fontFace: 'Arial',
     fontSize: 9,
-    colW: [0.8, 1.2, 1.2, 6],
+    colW: [0.6, 0.7, 3.2, 1.6, 1.2, 1.2],
     border: { pt: 0.5, color: COLORS.border },
     fill: { color: COLORS.white },
     valign: 'middle',
-    ...createAutoPageTableOptions(SLIDE_LAYOUT.contentTop + 0.5),
+    align: 'center',
+    ...createAutoPageTableOptions(0.85),
   });
 
   // ========== SLIDE 4: Camera Installation Direction Guide ==========
@@ -967,8 +914,8 @@ export async function generatePPTX(
   const mountGuideSlide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
   
   mountGuideSlide.addText(isZh ? '相机安装方向说明' : 'Camera Installation Direction Guide', {
-    x: SLIDE_LAYOUT.contentLeft, y: SLIDE_LAYOUT.contentTop, w: SLIDE_LAYOUT.contentWidth, h: 0.4,
-    fontSize: 18, color: COLORS.dark, bold: true,
+    x: 0.4, y: 0.05, w: 7.5, h: 0.38,
+    fontSize: 18, color: COLORS.white, bold: true,
   });
 
   // Draw three camera mount diagrams
