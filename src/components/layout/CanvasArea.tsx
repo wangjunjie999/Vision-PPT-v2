@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useAppStore } from '@/store/useAppStore';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
@@ -10,7 +11,24 @@ import { ProductViewerCanvas } from '../canvas/ProductViewerCanvas';
 
 export function CanvasArea() {
   const { selectedProjectId, selectedWorkstationId, selectedModuleId } = useData();
-  const { annotationMode, viewerMode } = useAppStore();
+  const { annotationMode, viewerMode, exitAnnotationMode, exitViewerMode } = useAppStore();
+
+  const prevIds = useRef({ selectedProjectId, selectedWorkstationId, selectedModuleId });
+
+  useEffect(() => {
+    const prev = prevIds.current;
+    const changed =
+      prev.selectedProjectId !== selectedProjectId ||
+      prev.selectedWorkstationId !== selectedWorkstationId ||
+      prev.selectedModuleId !== selectedModuleId;
+
+    if (changed) {
+      if (annotationMode) exitAnnotationMode();
+      if (viewerMode) exitViewerMode();
+    }
+
+    prevIds.current = { selectedProjectId, selectedWorkstationId, selectedModuleId };
+  }, [selectedProjectId, selectedWorkstationId, selectedModuleId]);
 
   // Viewer mode takes priority over annotation
   if (viewerMode) {
