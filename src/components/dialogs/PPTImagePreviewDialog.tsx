@@ -3,13 +3,21 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useData } from '@/contexts/DataContext';
-import { useState, useMemo } from 'react';
-import { CheckCircle2, XCircle, Eye, ImageIcon, Layers, Box } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { CheckCircle2, XCircle, Eye, ImageIcon, Layers, Camera } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PPTImagePreviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+interface AnnotationInfo {
+  id: string;
+  snapshot_url: string;
+  remark: string | null;
+  workstation_id: string | null;
 }
 
 export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDialogProps) {
@@ -24,8 +32,38 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLabel, setPreviewLabel] = useState('');
+  const [annotations, setAnnotations] = useState<Map<string, AnnotationInfo[]>>(new Map());
 
   const projectWorkstations = selectedProjectId ? getProjectWorkstations(selectedProjectId) : [];
+
+  // Fetch product annotations grouped by workstation
+  useEffect(() => {
+    if (!open || !selectedProjectId || projectWorkstations.length === 0) return;
+
+    const wsIds = projectWorkstations.map(ws => ws.id);
+
+    async function fetchAnnotations() {
+      const { data } = await supabase
+        .from('product_annotations')
+        .select('id, snapshot_url, remark, workstation_id')
+        .in('workstation_id', wsIds)
+        .order('created_at', { ascending: false });
+
+      if (!data) return;
+
+      const grouped = new Map<string, AnnotationInfo[]>();
+      for (const row of data) {
+        const wsId = row.workstation_id;
+        if (!wsId) continue;
+        const arr = grouped.get(wsId) || [];
+        arr.push(row);
+        grouped.set(wsId, arr);
+      }
+      setAnnotations(grouped);
+    }
+
+    fetchAnnotations();
+  }, [open, selectedProjectId, projectWorkstations.length]);
 
   const imageData = useMemo(() => {
     let totalSaved = 0;
@@ -34,6 +72,7 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
     const groups = projectWorkstations.map(ws => {
       const layout = allLayouts.find(l => l.workstation_id === ws.id);
       const modules = getWorkstationModules(ws.id);
+      const wsAnnotations = annotations.get(ws.id) || [];
 
       const layoutImages = [
         { label: '正视图', url: layout?.front_view_image_url || null },
@@ -49,12 +88,13 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
 
       layoutImages.forEach(img => img.url ? totalSaved++ : totalMissing++);
       moduleImages.forEach(img => img.url ? totalSaved++ : totalMissing++);
+      totalSaved += wsAnnotations.length;
 
-      return { workstation: ws, layoutImages, moduleImages };
+      return { workstation: ws, layoutImages, moduleImages, annotations: wsAnnotations };
     });
 
     return { groups, totalSaved, totalMissing };
-  }, [projectWorkstations, allLayouts, getWorkstationModules]);
+  }, [projectWorkstations, allLayouts, getWorkstationModules, annotations]);
 
   const handlePreview = (url: string, label: string) => {
     setPreviewUrl(url);
@@ -71,7 +111,7 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
               PPT 图片预览
             </DialogTitle>
             <DialogDescription>
-              检查各工位三视图和模块光学方案图是否已保存完整
+              检查各工位三视图、模块光学方案图和产品标注截图是否已保存完整
             </DialogDescription>
           </DialogHeader>
 
@@ -89,11 +129,10 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
 
           <Separator />
 
-          <ScrollArea className="flex-1 pr-2">
+          <ScrollArea className="h-[60vh] pr-2">
             <div className="space-y-6">
-              {imageData.groups.map(({ workstation, layoutImages, moduleImages }) => (
+              {imageData.groups.map(({ workstation, layoutImages, moduleImages, annotations: wsAnnotations }) => (
                 <div key={workstation.id} className="space-y-3">
-                  {/* Workstation header */}
                   <div className="flex items-center gap-2">
                     <Layers className="h-4 w-4 text-primary" />
                     <h4 className="font-semibold text-sm">{workstation.name}</h4>
@@ -123,9 +162,29 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
                         {moduleImages.map((img, i) => (
                           <ImageThumbnail
                             key={i}
-                            label={`${img.moduleName}`}
+                            label={img.moduleName}
                             url={img.url}
                             onPreview={() => img.url && handlePreview(img.url, `${img.moduleName} - ${img.label}`)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Product annotation snapshots */}
+                  {wsAnnotations.length > 0 && (
+                    <div className="ml-6">
+                      <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                        <Camera className="h-3 w-3" />
+                        产品标注截图
+                      </p>
+                      <div className="grid grid-cols-3 gap-3">
+                        {wsAnnotations.map((anno) => (
+                          <ImageThumbnail
+                            key={anno.id}
+                            label={anno.remark || '标注截图'}
+                            url={anno.snapshot_url}
+                            onPreview={() => handlePreview(anno.snapshot_url, `${workstation.name} - ${anno.remark || '标注截图'}`)}
                           />
                         ))}
                       </div>
@@ -203,7 +262,6 @@ function ImageThumbnail({
         </div>
       )}
 
-      {/* Label + status */}
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1.5">
         <div className="flex items-center justify-between">
           <span className="text-[10px] text-white truncate">{label}</span>
