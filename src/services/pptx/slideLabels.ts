@@ -45,9 +45,9 @@ export const COMPANY_NAME_EN = 'SuZhou DXY Intelligent Solution Co.,Ltd';
 // Color scheme - Tech-Shine corporate style (德星云智能企业风格)
 // 科技正蓝 + 纯白背景 + 纯黑主文字
 export const COLORS = {
-  primary: '0066CC',      // 科技正蓝 - 主视觉标识色
-  secondary: '0066CC',    // 科技正蓝 - 章节数字/标题栏
-  accent: '0066CC',       // 科技正蓝 - 板块标头
+  primary: '003D7A',      // 深蓝色 - 主视觉标识色
+  secondary: '003D7A',    // 深蓝色 - 章节数字/标题栏
+  accent: '003D7A',       // 深蓝色 - 板块标头
   warning: 'F5A623',      // Warm orange (暖橙色)
   destructive: 'D93025',  // Red (红色)
   background: 'FFFFFF',   // 纯白色 - 通用背景色
