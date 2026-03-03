@@ -43,20 +43,20 @@ export const COMPANY_NAME_ZH = '苏州德星云智能装备有限公司';
 export const COMPANY_NAME_EN = 'SuZhou DXY Intelligent Solution Co.,Ltd';
 
 // Color scheme - Tech-Shine corporate style (德星云智能企业风格)
-// Deep blue primary + White background + Dark gray text
+// 科技正蓝 + 纯白背景 + 纯黑主文字
 export const COLORS = {
-  primary: '1B3B70',      // Tech-Shine deep blue (深蓝主色)
-  secondary: '1B3B70',    // Deep blue secondary (深蓝色)
-  accent: '1B3B70',       // Blue accent (蓝色点缀)
+  primary: '0066CC',      // 科技正蓝 - 主视觉标识色
+  secondary: '0066CC',    // 科技正蓝 - 章节数字/标题栏
+  accent: '0066CC',       // 科技正蓝 - 板块标头
   warning: 'F5A623',      // Warm orange (暖橙色)
   destructive: 'D93025',  // Red (红色)
-  background: 'FFFFFF',   // White background (白色背景)
-  dark: '333333',         // Dark gray text (深灰文字)
+  background: 'FFFFFF',   // 纯白色 - 通用背景色
+  dark: '000000',         // 纯黑色 - 主文字色
   white: 'FFFFFF',        // White
-  border: 'D0D5DD',       // Border gray (边框灰)
+  border: 'E6E6E6',       // 浅灰色 - 分隔/线条色
   lightGray: 'F5F5F5',    // Light gray for backgrounds (浅灰背景)
-  textPrimary: '333333',  // Primary text (主文字-深灰)
-  textSecondary: '666666', // Secondary text (次要文字)
+  textPrimary: '000000',  // 纯黑色 - 标题/技术参数/核心文字
+  textSecondary: '333333', // 深灰色 - 次要文字/辅助说明
 };
 
 // 16:9 Slide Layout Constants
