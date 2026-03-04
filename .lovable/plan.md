@@ -1,31 +1,59 @@
 
 
-# 修复截图中工控机信息丢失
+# 修复保存图片后预览/导出仍显示旧图的问题
 
-## 问题根因
+## 根因分析
 
-右侧标注区域的 `foreignObject` 高度为 620px，5 张信息卡片（相机 + 镜头 + 光源 + 视野参数 + 工控机）的实际内容高度超过 620px，`foreignObject` 会裁切溢出内容。网页上因为有滚动/溢出显示可以看到，但截图时 `overflow: hidden` 导致工控机卡片被完全裁切掉。
+有两个核心原因导致"屏幕上看到的"和"保存/导出的图片"不一致：
+
+### 原因 1：文件名固定 → CDN/浏览器缓存
+
+`ModuleSchematic.tsx` 中保存示意图时使用**固定文件名** `module-schematic-{id}.png`，每次覆盖上传后 URL 不变。浏览器和 CDN 会缓存旧 URL 的图片内容，导致 PPT 预览和导出时拿到的仍是旧图。
+
+对比 `batchImageSaver.ts` 中使用了 `module-schematic-{id}-${Date.now()}.png`（带时间戳），每次生成唯一 URL，不存在缓存问题。
+
+### 原因 2：截图时未包含工控机（foreignObject 和 Module Info Badge）
+
+`ModuleSchematic.tsx` 截图时临时设置容器为 `1200x1000` 并对 `diagramRef.current` 做 `toPng`。但是：
+
+- `diagramRef` 包裹的 div 内有 `VisionSystemDiagram`（SVG）和一个**绝对定位的 Module Info Badge**（`absolute bottom-4 left-4`）
+- `toPng` 设置 `overflow: hidden` 后，如果 SVG 的实际渲染高度超过容器，底部的工控机卡片会被裁切
+- Module Info Badge 也可能遮挡或与 SVG 内容重叠
 
 ## 修改方案
 
-### `src/components/canvas/VisionSystemDiagram.tsx`
+### 1. `ModuleSchematic.tsx` — 文件名加时间戳 + 清理旧文件
 
-1. **SVG viewBox 扩高**：`viewBox="0 0 800 650"` → `viewBox="0 0 800 750"`，为工控机卡片留出更多空间
-2. **foreignObject 高度增加**：`height="620"` → `height="720"`，确保 5 张卡片完整显示
-3. **容器最小高度**：`min-h-[600px]` → `min-h-[700px]`
-4. **减小卡片间距和内边距**：每张卡片 padding 从 `10px` 改为 `8px`，gap 从 `8px` 改为 `6px`，节省垂直空间
+将 `handleSaveSchematic` 中的固定文件名改为带时间戳的唯一文件名，同时清理该模块之前的旧文件：
 
-### `src/components/canvas/ModuleSchematic.tsx`
+```
+const fileName = `module-schematic-${module.id}-${Date.now()}.png`;
+// 先用 list 找到旧文件并删除
+const { data: oldFiles } = await supabase.storage
+  .from('module-schematics')
+  .list('', { search: `module-schematic-${module.id}` });
+if (oldFiles?.length) {
+  await supabase.storage.from('module-schematics')
+    .remove(oldFiles.map(f => f.name));
+}
+```
 
-5. **截图高度匹配**：三处 `toPng` 调用的 height 从 `900` → `1000`，确保截图容器能完整包含扩高后的 SVG
+这样每次保存生成新 URL，PPT 预览和导出不会读到缓存旧图。
 
-### `src/components/canvas/BatchImageSaveButton.tsx`
+### 2. `ModuleSchematic.tsx` — 截图容器高度匹配 SVG
 
-6. **批量截图容器高度**：同步增加容器高度
+将截图时的容器高度从 `1000px` 增加到 `1100px`，并将 `toPng` 的 height 参数同步调整，确保 viewBox 750 的 SVG 在 1200 宽度下按比例完整显示（750/800*1200 = 1125px）。
+
+### 3. `ModuleSchematic.tsx` — 截图时隐藏 Module Info Badge
+
+在截图前临时隐藏左下角的 Module Info Badge（该 badge 在截图中会遮挡内容且使用 CSS 变量样式），截图后恢复。给 badge div 添加 `data-screenshot-hide` 属性，截图时设置 `display: none`。
+
+### 4. `batchImageSaver.ts` — 清理旧文件的逻辑统一
+
+`saveSchematicToStorage` 中的旧文件清理也改为按前缀搜索删除，而非仅删固定文件名（当前只删 `module-schematic-{id}.png`，不会删带时间戳的旧文件）。
 
 | 文件 | 修改 |
 |------|------|
-| `VisionSystemDiagram.tsx` | viewBox 750 + foreignObject 720 + min-h 700 + 紧凑间距 |
-| `ModuleSchematic.tsx` | 截图高度 900→1000 |
-| `BatchImageSaveButton.tsx` | 批量截图容器同步扩高 |
+| `ModuleSchematic.tsx` | 文件名加时间戳 + 清理旧文件 + 截图高度 1100 + 隐藏 badge |
+| `batchImageSaver.ts` | 旧文件清理改为 list+remove 模式 |
 
