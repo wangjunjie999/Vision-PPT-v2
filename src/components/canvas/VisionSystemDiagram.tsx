@@ -337,7 +337,7 @@ export function VisionSystemDiagram({
             strokeWidth="1.5"
           />
           {/* FOV angle label - positioned outside the arc, above the lens */}
-          <text x="280" y="130" textAnchor="start" className="fill-primary" style={{ fontSize: '11px', fontWeight: 500 }}>
+          <text x="280" y="130" textAnchor="start" fill="hsl(210, 100%, 75%)" style={{ fontSize: '11px', fontWeight: 500 }}>
             {fovAngle}°
           </text>
           {/* Connector line from arc to label */}
@@ -424,7 +424,7 @@ export function VisionSystemDiagram({
           >
             ROI
           </text>
-          <text x="65" y="55" textAnchor="middle" className="fill-muted-foreground" style={{ fontSize: '9px' }}>
+          <text x="65" y="55" textAnchor="middle" fill="hsl(220, 15%, 65%)" style={{ fontSize: '9px' }}>
             待检测产品
           </text>
         </g>
@@ -447,8 +447,8 @@ export function VisionSystemDiagram({
             x="0" 
             y="350" 
             textAnchor="middle" 
-            className="fill-primary font-medium"
-            style={{ fontSize: '12px' }}
+            fill="hsl(210, 100%, 75%)"
+            style={{ fontSize: '12px', fontWeight: 500 }}
             transform="rotate(-90, 0, 350)"
           >
             {lightDistance}±20mm
@@ -469,7 +469,7 @@ export function VisionSystemDiagram({
             markerStart="url(#arrowLeft)"
             markerEnd="url(#arrowRight)"
           />
-          <text x="220" y="20" textAnchor="middle" className="fill-primary" style={{ fontSize: '11px' }}>
+          <text x="220" y="20" textAnchor="middle" fill="hsl(210, 100%, 75%)" style={{ fontSize: '11px' }}>
             视野宽度 ~{Math.round(fovOffsetX * 2)}mm
           </text>
         </g>
@@ -648,114 +648,114 @@ export function VisionSystemDiagram({
 
         {/* Annotations in SVG - moved further right */}
         <foreignObject x="500" y="20" width="290" height="520">
-          <div className="space-y-2" style={{ padding: '8px' }}>
+          <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {/* Camera specs */}
-            <div className="bg-card/95 backdrop-blur-sm rounded-lg p-2.5 border shadow-sm">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm">📷</span>
-                <span className="font-semibold text-xs text-foreground">工业相机</span>
+            <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '10px', border: '1px solid hsl(220, 15%, 28%)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span style={{ fontSize: '14px' }}>📷</span>
+                <span style={{ fontWeight: 600, fontSize: '12px', color: '#e2e8f0' }}>工业相机</span>
               </div>
               {hasCamera ? (
                 <>
-                  <p className="text-[11px] text-foreground">{camera.resolution} · 靶面{camera.sensor_size}</p>
-                  <p className="text-[10px] text-muted-foreground">{camera.brand} {camera.model} @ {camera.frame_rate}fps</p>
+                  <p style={{ fontSize: '11px', color: '#e2e8f0' }}>{camera.resolution} · 靶面{camera.sensor_size}</p>
+                  <p style={{ fontSize: '10px', color: '#94a3b8' }}>{camera.brand} {camera.model} @ {camera.frame_rate}fps</p>
                 </>
               ) : (
-                <p className="text-[10px] text-muted-foreground">点击左侧相机图标选择</p>
+                <p style={{ fontSize: '10px', color: '#94a3b8' }}>点击左侧相机图标选择</p>
               )}
             </div>
 
             {/* Lens specs */}
-            <div className="bg-card/95 backdrop-blur-sm rounded-lg p-2.5 border shadow-sm">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm">🔭</span>
-                <span className="font-semibold text-xs text-foreground">工业镜头</span>
+            <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '10px', border: '1px solid hsl(220, 15%, 28%)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span style={{ fontSize: '14px' }}>🔭</span>
+                <span style={{ fontWeight: 600, fontSize: '12px', color: '#e2e8f0' }}>工业镜头</span>
               </div>
               {hasLens ? (
                 <>
-                  <p className="text-[11px] text-foreground">焦距 {lens.focal_length} · 光圈 {lens.aperture}</p>
-                  <p className="text-[10px] text-muted-foreground">{lens.brand} {lens.model}</p>
+                  <p style={{ fontSize: '11px', color: '#e2e8f0' }}>焦距 {lens.focal_length} · 光圈 {lens.aperture}</p>
+                  <p style={{ fontSize: '10px', color: '#94a3b8' }}>{lens.brand} {lens.model}</p>
                 </>
               ) : (
-                <p className="text-[10px] text-muted-foreground">点击左侧镜头图标选择</p>
+                <p style={{ fontSize: '10px', color: '#94a3b8' }}>点击左侧镜头图标选择</p>
               )}
             </div>
 
             {/* Light specs */}
-            <div className="bg-card/95 backdrop-blur-sm rounded-lg p-2.5 border shadow-sm">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm">💡</span>
-                <span className="font-semibold text-xs text-foreground">光源</span>
+            <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '10px', border: '1px solid hsl(220, 15%, 28%)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span style={{ fontSize: '14px' }}>💡</span>
+                <span style={{ fontWeight: 600, fontSize: '12px', color: '#e2e8f0' }}>光源</span>
               </div>
               {hasLight ? (
                 <>
-                  <p className="text-[11px] text-foreground">{light.color}{light.type} · {light.power}</p>
-                  <p className="text-[10px] text-muted-foreground">{light.brand} {light.model}</p>
-                  <p className="text-[10px] text-primary mt-0.5">光源距离产品：{lightDistance}±20mm</p>
+                  <p style={{ fontSize: '11px', color: '#e2e8f0' }}>{light.color}{light.type} · {light.power}</p>
+                  <p style={{ fontSize: '10px', color: '#94a3b8' }}>{light.brand} {light.model}</p>
+                  <p style={{ fontSize: '10px', color: 'hsl(210, 100%, 75%)', marginTop: '2px' }}>光源距离产品：{lightDistance}±20mm</p>
                 </>
               ) : (
-                <p className="text-[10px] text-muted-foreground">点击左侧光源图标选择</p>
+                <p style={{ fontSize: '10px', color: '#94a3b8' }}>点击左侧光源图标选择</p>
               )}
             </div>
 
             {/* FOV info - editable */}
-            <div className="bg-card/95 backdrop-blur-sm rounded-lg p-2.5 border shadow-sm">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm">📐</span>
-                <span className="font-semibold text-xs text-foreground">视野参数</span>
+            <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '10px', border: '1px solid hsl(220, 15%, 28%)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '14px' }}>📐</span>
+                <span style={{ fontWeight: 600, fontSize: '12px', color: '#e2e8f0' }}>视野参数</span>
                 {interactive && (onFovAngleChange || onLightDistanceChange) && (
-                  <span className="text-[9px] text-primary ml-auto">可编辑</span>
+                  <span style={{ fontSize: '9px', color: 'hsl(210, 100%, 75%)', marginLeft: 'auto' }}>可编辑</span>
                 )}
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-muted-foreground w-14">视角:</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '10px', color: '#94a3b8', width: '56px' }}>视角:</span>
                   {interactive && onFovAngleChange ? (
                     <input
                       type="number"
                       value={fovAngle}
                       onChange={(e) => onFovAngleChange(parseFloat(e.target.value) || 45)}
-                      className="w-14 h-6 text-[11px] px-1.5 rounded border bg-background text-foreground"
+                      style={{ width: '56px', height: '24px', fontSize: '11px', padding: '0 6px', borderRadius: '4px', border: '1px solid hsl(220, 15%, 35%)', backgroundColor: 'hsl(220, 15%, 22%)', color: '#fff', outline: 'none' }}
                       min="10"
                       max="120"
                     />
                   ) : (
-                    <span className="text-[11px] text-foreground">{fovAngle}</span>
+                    <span style={{ fontSize: '11px', color: '#e2e8f0' }}>{fovAngle}</span>
                   )}
-                  <span className="text-[10px] text-muted-foreground">°</span>
+                  <span style={{ fontSize: '10px', color: '#94a3b8' }}>°</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-muted-foreground w-14">工作距离:</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '10px', color: '#94a3b8', width: '56px' }}>工作距离:</span>
                   {interactive && onLightDistanceChange ? (
                     <input
                       type="number"
                       value={lightDistance}
                       onChange={(e) => onLightDistanceChange(parseFloat(e.target.value) || 335)}
-                      className="w-14 h-6 text-[11px] px-1.5 rounded border bg-background text-foreground"
+                      style={{ width: '56px', height: '24px', fontSize: '11px', padding: '0 6px', borderRadius: '4px', border: '1px solid hsl(220, 15%, 35%)', backgroundColor: 'hsl(220, 15%, 22%)', color: '#fff', outline: 'none' }}
                       min="50"
                       max="1000"
                     />
                   ) : (
-                    <span className="text-[11px] text-foreground">{lightDistance}</span>
+                    <span style={{ fontSize: '11px', color: '#e2e8f0' }}>{lightDistance}</span>
                   )}
-                  <span className="text-[10px] text-muted-foreground">mm</span>
+                  <span style={{ fontSize: '10px', color: '#94a3b8' }}>mm</span>
                 </div>
-                <p className="text-[10px] text-muted-foreground">视野宽度约 {Math.round(fovOffsetX * 2)}mm</p>
+                <p style={{ fontSize: '10px', color: '#94a3b8' }}>视野宽度约 {Math.round(fovOffsetX * 2)}mm</p>
               </div>
             </div>
 
-            {/* Controller specs - only show if controller is selected */}
+            {/* Controller specs */}
             {hasController && (
-              <div className="bg-card/95 backdrop-blur-sm rounded-lg p-2.5 border shadow-sm">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm">🖥️</span>
-                  <span className="font-semibold text-xs text-foreground">工控机</span>
+              <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '10px', border: '1px solid hsl(220, 15%, 28%)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '14px' }}>🖥️</span>
+                  <span style={{ fontWeight: 600, fontSize: '12px', color: '#e2e8f0' }}>工控机</span>
                 </div>
-                <p className="text-[11px] text-foreground">{controller.cpu}</p>
-                <p className="text-[11px] text-foreground">{controller.memory} · {controller.storage}</p>
-                <p className="text-[10px] text-muted-foreground">{controller.brand} {controller.model}</p>
+                <p style={{ fontSize: '11px', color: '#e2e8f0' }}>{controller.cpu}</p>
+                <p style={{ fontSize: '11px', color: '#e2e8f0' }}>{controller.memory} · {controller.storage}</p>
+                <p style={{ fontSize: '10px', color: '#94a3b8' }}>{controller.brand} {controller.model}</p>
                 {controller.gpu && (
-                  <p className="text-[10px] text-primary mt-0.5">GPU: {controller.gpu}</p>
+                  <p style={{ fontSize: '10px', color: 'hsl(210, 100%, 75%)', marginTop: '2px' }}>GPU: {controller.gpu}</p>
                 )}
               </div>
             )}
