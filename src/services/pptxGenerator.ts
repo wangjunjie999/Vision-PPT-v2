@@ -1276,22 +1276,7 @@ export async function generatePPTX(
       });
     };
 
-    for (const camera of usedCameras) {
-      const cameraInfoRows: TableRow[] = [
-        row([isZh ? '品牌' : 'Brand', camera.brand]),
-        row([isZh ? '型号' : 'Model', camera.model]),
-        row([isZh ? '分辨率' : 'Resolution', camera.resolution]),
-        row([isZh ? '帧率' : 'Frame Rate', `${camera.frame_rate} fps`]),
-        row([isZh ? '接口' : 'Interface', camera.interface]),
-        row([isZh ? '传感器尺寸' : 'Sensor Size', camera.sensor_size]),
-      ];
-      await addHardwareDetailSlide(
-        `${isZh ? '相机' : 'Camera'}: ${camera.model}`,
-        `${camera.brand} | ${isZh ? '工业相机' : 'Industrial Camera'}`,
-        camera.image_url,
-        cameraInfoRows
-      );
-    }
+    // Camera detail slides removed - only summary table now
 
     for (const lens of usedLenses) {
       const lensInfoRows: TableRow[] = [
@@ -1357,44 +1342,80 @@ export async function generatePPTX(
     fontSize: 18, color: COLORS.dark, bold: true,
   });
 
-  const moduleCameraCount = modules.filter(m => m.selected_camera).length;
-  const moduleLensCount = modules.filter(m => m.selected_lens).length;
-  const moduleLightCount = modules.filter(m => m.selected_light).length;
-  const moduleControllerIds = new Set(modules.filter(m => m.selected_controller).map(m => m.selected_controller));
-  
-  // Defensive array checks for selected hardware
-  const layoutCameraCount = layouts.reduce((sum, l) => {
-    const cameras = Array.isArray(l.selected_cameras) ? l.selected_cameras : [];
-    return sum + cameras.filter(c => c).length;
-  }, 0);
-  const layoutLensCount = layouts.reduce((sum, l) => {
-    const lenses = Array.isArray(l.selected_lenses) ? l.selected_lenses : [];
-    return sum + lenses.filter(c => c).length;
-  }, 0);
-  const layoutLightCount = layouts.reduce((sum, l) => {
-    const lights = Array.isArray(l.selected_lights) ? l.selected_lights : [];
-    return sum + lights.filter(c => c).length;
-  }, 0);
-  const layoutControllerCount = layouts.filter(l => l.selected_controller).length;
-  
-  const totalCameraCount = layoutCameraCount > 0 ? layoutCameraCount : moduleCameraCount;
-  const totalLensCount = layoutLensCount > 0 ? layoutLensCount : moduleLensCount;
-  const totalLightCount = layoutLightCount > 0 ? layoutLightCount : moduleLightCount;
-  const totalControllerCount = layoutControllerCount > 0 ? layoutControllerCount : moduleControllerIds.size;
+  // Aggregate hardware by brand+model across all modules
+  const hwCountMap = new Map<string, { type: string; brand: string; model: string; count: number }>();
 
-  const hwSummary: TableRow[] = [
-    row([isZh ? '设备类型' : 'Device Type', isZh ? '数量' : 'Quantity', isZh ? '备注' : 'Notes']),
-    row([isZh ? '工业相机' : 'Industrial Camera', totalCameraCount.toString(), isZh ? '按工位配置' : 'Per workstation']),
-    row([isZh ? '工业镜头' : 'Industrial Lens', totalLensCount.toString(), isZh ? '按工位配置' : 'Per workstation']),
-    row([isZh ? '光源' : 'Light Source', totalLightCount.toString(), isZh ? '按工位配置' : 'Per workstation']),
-    row([isZh ? '工控机' : 'Industrial PC', totalControllerCount.toString(), isZh ? '可多工位共享' : 'Shared']),
+  const addToMap = (type: string, brand: string, model: string) => {
+    const key = `${type}||${brand}||${model}`;
+    const existing = hwCountMap.get(key);
+    if (existing) {
+      existing.count++;
+    } else {
+      hwCountMap.set(key, { type, brand, model, count: 1 });
+    }
+  };
+
+  // Count from modules
+  if (hardware) {
+    for (const m of modules) {
+      if (m.selected_camera) {
+        const cam = hardware.cameras.find(c => c.id === m.selected_camera);
+        if (cam) addToMap(isZh ? '工业相机' : 'Industrial Camera', cam.brand, cam.model);
+      }
+      if (m.selected_lens) {
+        const lens = hardware.lenses.find(l => l.id === m.selected_lens);
+        if (lens) addToMap(isZh ? '工业镜头' : 'Industrial Lens', lens.brand, lens.model);
+      }
+      if (m.selected_light) {
+        const light = hardware.lights.find(l => l.id === m.selected_light);
+        if (light) addToMap(isZh ? '光源' : 'Light Source', light.brand, light.model);
+      }
+      if (m.selected_controller) {
+        const ctrl = hardware.controllers.find(c => c.id === m.selected_controller);
+        if (ctrl) addToMap(isZh ? '工控机' : 'Industrial PC', ctrl.brand, ctrl.model);
+      }
+    }
+  }
+
+  const hwItems = Array.from(hwCountMap.values());
+  let totalDevices = hwItems.reduce((sum, item) => sum + item.count, 0);
+
+  // Header row
+  const hwHeader: TableRow[] = [
+    row([
+      isZh ? '序号' : 'No.',
+      isZh ? '设备类型' : 'Device Type',
+      isZh ? '品牌' : 'Brand',
+      isZh ? '型号' : 'Model',
+      isZh ? '数量' : 'Qty',
+      isZh ? '备注' : 'Notes',
+    ]),
   ];
 
-  hwSlide.addTable(hwSummary, {
-    x: SLIDE_LAYOUT.contentLeft, y: SLIDE_LAYOUT.contentTop + 0.5, w: SLIDE_LAYOUT.contentWidth, h: 1.6,
+  // Data rows
+  const hwDataRows: TableRow[] = hwItems.map((item, idx) =>
+    row([
+      String(idx + 1),
+      item.type,
+      item.brand,
+      item.model,
+      String(item.count),
+      '',
+    ])
+  );
+
+  // Total row
+  const hwTotalRow: TableRow[] = [
+    row(['', '', '', isZh ? '总计' : 'Total', `${totalDevices}${isZh ? '台' : ''}`, '']),
+  ];
+
+  const hwAllRows = [...hwHeader, ...hwDataRows, ...hwTotalRow];
+
+  hwSlide.addTable(hwAllRows, {
+    x: SLIDE_LAYOUT.contentLeft, y: SLIDE_LAYOUT.contentTop + 0.5, w: SLIDE_LAYOUT.contentWidth,
     fontFace: 'Arial',
     fontSize: 10,
-    colW: [2.8, 1.8, 4.6],
+    colW: [0.6, 1.6, 1.4, 2.2, 0.8, 2.6],
     border: { pt: 0.5, color: COLORS.border },
     fill: { color: COLORS.white },
     valign: 'middle',
