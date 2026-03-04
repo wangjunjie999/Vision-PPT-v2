@@ -144,14 +144,14 @@ export function ModuleSchematic() {
       const el = diagramRef.current;
       const originalStyle = el.style.cssText;
       el.style.width = '1200px';
-      el.style.height = '1000px';
+      el.style.height = '1100px';
       el.style.maxWidth = 'none';
       el.style.overflow = 'hidden';
       await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
       
       const dataUrl = await toPng(el, {
         width: 1200,
-        height: 1000,
+        height: 1100,
         quality: 1,
         pixelRatio,
         backgroundColor: '#1a1a2e',
@@ -188,14 +188,14 @@ export function ModuleSchematic() {
       const el = diagramRef.current;
       const originalStyle = el.style.cssText;
       el.style.width = '1200px';
-      el.style.height = '1000px';
+      el.style.height = '1100px';
       el.style.maxWidth = 'none';
       el.style.overflow = 'hidden';
       await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
       
       const dataUrl = await toPng(el, {
         width: 1200,
-        height: 1000,
+        height: 1100,
         quality: 1,
         pixelRatio,
         backgroundColor: '#1a1a2e',
@@ -255,11 +255,15 @@ export function ModuleSchematic() {
       
       const pixelRatio = getPixelRatio();
       
-      // 截图前：临时设置固定尺寸确保完整截取，避免响应式布局导致内容偏移
+      // 截图前：隐藏 Module Info Badge（避免遮挡内容）
+      const badge = diagramRef.current.querySelector('[data-screenshot-hide]') as HTMLElement | null;
+      if (badge) badge.style.display = 'none';
+      
+      // 截图前：临时设置固定尺寸确保完整截取
       const el = diagramRef.current;
       const originalStyle = el.style.cssText;
       el.style.width = '1200px';
-      el.style.height = '1000px';
+      el.style.height = '1100px';
       el.style.maxWidth = 'none';
       el.style.overflow = 'hidden';
       
@@ -268,25 +272,32 @@ export function ModuleSchematic() {
       
       const dataUrl = await toPng(el, {
         width: 1200,
-        height: 1000,
+        height: 1100,
         quality: 1,
         pixelRatio,
         backgroundColor: '#1a1a2e',
         skipFonts: true,
       });
       
-      // 截图后恢复原始样式
+      // 截图后恢复原始样式和 badge
       el.style.cssText = originalStyle;
+      if (badge) badge.style.display = '';
       
       // Convert base64 to blob
       const response = await fetch(dataUrl);
       const blob = await response.blob();
       
-      // Upload to Supabase Storage
-      const fileName = `module-schematic-${module.id}.png`;
+      // 使用带时间戳的唯一文件名，避免 CDN/浏览器缓存
+      const fileName = `module-schematic-${module.id}-${Date.now()}.png`;
       
-      // Remove old file if exists
-      await supabase.storage.from('module-schematics').remove([fileName]);
+      // 清理该模块所有旧文件
+      const { data: oldFiles } = await supabase.storage
+        .from('module-schematics')
+        .list('', { search: `module-schematic-${module.id}` });
+      if (oldFiles?.length) {
+        await supabase.storage.from('module-schematics')
+          .remove(oldFiles.map(f => f.name));
+      }
       
       // Upload new file
       const { error: uploadError } = await supabase.storage
@@ -398,7 +409,7 @@ export function ModuleSchematic() {
           />
 
           {/* Module Info Badge */}
-          <div className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm rounded-lg p-3 border shadow-sm">
+          <div data-screenshot-hide className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm rounded-lg p-3 border shadow-sm">
             <div className="flex items-center gap-2 mb-2">
               <ModuleIcon className="h-4 w-4 text-primary" />
               <span className="font-medium text-sm">{module.name}</span>
