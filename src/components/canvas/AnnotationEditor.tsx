@@ -48,17 +48,27 @@ const CATEGORIES = [
 
 export function AnnotationEditor() {
   const { user } = useAuth();
-  const { annotationSnapshot, annotationAssetId, annotationWorkstationId, exitAnnotationMode } = useAppStore();
+  const { annotationSnapshot, annotationAssetId, annotationWorkstationId, annotationExistingData, exitAnnotationMode } = useAppStore();
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveRemark, setSaveRemark] = useState('');
   const [saving, setSaving] = useState(false);
+  const [readOnly, setReadOnly] = useState(false);
   
   // Sequential edit mode
   const [sequentialMode, setSequentialMode] = useState(false);
   const [currentEditIndex, setCurrentEditIndex] = useState(0);
   const [editingAnnotations, setEditingAnnotations] = useState<Annotation[]>([]);
   const [highlightId, setHighlightId] = useState<string | null>(null);
+
+  // Load existing data if viewing a record
+  useState(() => {
+    if (annotationExistingData) {
+      setAnnotations(annotationExistingData.annotations as Annotation[]);
+      setSaveRemark(annotationExistingData.remark || '');
+      setReadOnly(true);
+    }
+  });
 
   const handleStartSave = useCallback(() => {
     if (annotations.length === 0) return;
@@ -128,35 +138,47 @@ export function AnnotationEditor() {
       const { data: urlData } = supabase.storage.from('product-snapshots').getPublicUrl(path);
       const snapshotUrl = urlData.publicUrl;
 
-      const { data: existing } = await supabase
-        .from('product_annotations')
-        .select('version')
-        .eq('asset_id', annotationAssetId)
-        .order('version', { ascending: false })
-        .limit(1);
+      // If editing existing record, update it
+      if (annotationExistingData?.recordId) {
+        const { error } = await supabase
+          .from('product_annotations')
+          .update({
+            snapshot_url: snapshotUrl,
+            annotations_json: annotations as unknown as any,
+            remark: saveRemark || null,
+          })
+          .eq('id', annotationExistingData.recordId);
+        if (error) throw error;
+      } else {
+        // Create new record
+        const { data: existing } = await supabase
+          .from('product_annotations')
+          .select('version')
+          .eq('asset_id', annotationAssetId)
+          .order('version', { ascending: false })
+          .limit(1);
 
-      const nextVersion = existing && existing.length > 0
-        ? existing[0].version + 1
-        : 1;
+        const nextVersion = existing && existing.length > 0
+          ? existing[0].version + 1
+          : 1;
 
-      const insertData: Record<string, unknown> = {
-        asset_id: annotationAssetId,
-        snapshot_url: snapshotUrl,
-        annotations_json: annotations as unknown as any,
-        view_meta: { viewName: `版本${nextVersion}` },
-        version: nextVersion,
-        remark: saveRemark || null,
-        user_id: user.id,
-      };
+        const insertData: Record<string, unknown> = {
+          asset_id: annotationAssetId,
+          snapshot_url: snapshotUrl,
+          annotations_json: annotations as unknown as any,
+          view_meta: { viewName: `版本${nextVersion}` },
+          version: nextVersion,
+          remark: saveRemark || null,
+          user_id: user.id,
+        };
 
-      // Include workstation_id if available
-      if (annotationWorkstationId) {
-        insertData.workstation_id = annotationWorkstationId;
+        if (annotationWorkstationId) {
+          insertData.workstation_id = annotationWorkstationId;
+        }
+
+        const { error } = await supabase.from('product_annotations').insert(insertData as any);
+        if (error) throw error;
       }
-
-      const { error } = await supabase.from('product_annotations').insert(insertData as any);
-
-      if (error) throw error;
 
       setSaveDialogOpen(false);
       setSaveRemark('');
@@ -167,7 +189,7 @@ export function AnnotationEditor() {
     } finally {
       setSaving(false);
     }
-  }, [annotationSnapshot, annotationAssetId, annotationWorkstationId, annotations, saveRemark, user]);
+  }, [annotationSnapshot, annotationAssetId, annotationWorkstationId, annotationExistingData, annotations, saveRemark, user]);
 
   if (!annotationSnapshot) {
     return (
@@ -198,10 +220,21 @@ export function AnnotationEditor() {
           <span className="text-xs text-muted-foreground">
             已标注 {annotations.length} 个特征
           </span>
+          {readOnly ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setReadOnly(false)}
+              className="gap-1"
+            >
+              <Edit3 className="h-4 w-4" />
+              编辑标注
+            </Button>
+          ) : null}
           <Button
             size="sm"
             onClick={handleStartSave}
-            disabled={annotations.length === 0}
+            disabled={annotations.length === 0 || readOnly}
             className="gap-1"
           >
             <Save className="h-4 w-4" />
@@ -217,7 +250,7 @@ export function AnnotationEditor() {
             imageUrl={annotationSnapshot}
             annotations={sequentialMode ? editingAnnotations : annotations}
             onChange={sequentialMode ? setEditingAnnotations : setAnnotations}
-            readOnly={sequentialMode}
+            readOnly={sequentialMode || readOnly}
             fillContainer
             highlightId={highlightId}
           />

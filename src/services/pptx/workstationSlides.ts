@@ -182,11 +182,11 @@ interface WorkstationSlideData {
     output_types?: string[] | null;
     roi_strategy?: string | null;
   }>;
-  annotation?: {
+  annotations?: Array<{
     snapshot_url: string;
     annotations_json: Array<{ labelNumber?: number; label?: string; number?: number; name?: string; category?: string; description?: string }>;
     remark?: string | null;
-  };
+  }>;
   productAsset?: {
     preview_images: Array<{ url: string; name?: string }> | null;
     detection_method?: string | null;
@@ -363,84 +363,73 @@ export async function generateProductSchematicSlide(
   ctx: SlideContext,
   data: WorkstationSlideData
 ): Promise<void> {
-  const slide = ctx.pptx.addSlide({ masterName: 'MASTER_SLIDE' });
-  const { annotation, productAsset } = data;
+  const { annotations: allAnnotations, productAsset } = data;
+  const annotationsList = allAnnotations && allAnnotations.length > 0 ? allAnnotations : [];
   
-  addSlideTitle(slide, ctx, ctx.isZh ? '产品示意图' : 'Product Schematic');
+  if (annotationsList.length > 0) {
+    // Generate one slide per annotation
+    for (let ai = 0; ai < annotationsList.length; ai++) {
+      const annotation = annotationsList[ai];
+      const slide = ctx.pptx.addSlide({ masterName: 'MASTER_SLIDE' });
+      const subtitle = annotationsList.length > 1
+        ? `${ctx.isZh ? '产品示意图' : 'Product Schematic'} ${ai + 1}/${annotationsList.length}`
+        : (ctx.isZh ? '产品示意图' : 'Product Schematic');
+      addSlideTitle(slide, ctx, subtitle);
 
-  // Main image area
-  const imageUrl = annotation?.snapshot_url || productAsset?.preview_images?.[0]?.url;
-  
-  if (imageUrl) {
-    try {
-      const dataUri = await fetchImageAsDataUri(imageUrl);
-      if (dataUri) {
-        // Calculate proportional fit
-        const dims = await getImageDimensions(dataUri).catch(() => ({ width: 800, height: 600 }));
-        const fit = calculateContainFit(dims.width, dims.height, {
-          x: 0.5, y: 1.2, width: 5.5, height: 3.8
+      try {
+        const dataUri = await fetchImageAsDataUri(annotation.snapshot_url);
+        if (dataUri) {
+          const dims = await getImageDimensions(dataUri).catch(() => ({ width: 800, height: 600 }));
+          const fit = calculateContainFit(dims.width, dims.height, { x: 0.5, y: 1.2, width: 5.5, height: 3.8 });
+          slide.addImage({ data: dataUri, x: fit.x, y: fit.y, w: fit.width, h: fit.height });
+        }
+      } catch (e) {
+        addImagePlaceholder(slide, { x: 0.5, y: 1.2, width: 5.5, height: 3.8 }, ctx.isZh ? '待上传产品图片' : 'Upload product image', '📷');
+      }
+
+      // Annotation legend
+      slide.addText(ctx.isZh ? '标注说明' : 'Annotation Legend', {
+        x: 6.2, y: 1.2, w: 3.3, h: 0.3, fontSize: 11, color: COLORS.dark, bold: true,
+      });
+      const annotItems = Array.isArray(annotation.annotations_json) ? annotation.annotations_json : [];
+      const legendRows: TableRow[] = annotItems
+        .filter(item => (item.labelNumber || item.number) && (item.label || item.name))
+        .map(item => {
+          const num = item.labelNumber || item.number || 0;
+          const label = item.label || item.name || '';
+          const detail = item.category ? `[${item.category}] ${label}` : label;
+          return row([`#${num}`, detail]);
         });
-        
-        slide.addImage({
-          data: dataUri,
-          x: fit.x, y: fit.y, w: fit.width, h: fit.height,
+      if (legendRows.length > 0) {
+        slide.addTable(legendRows, {
+          x: 6.2, y: 1.55, w: 3.3, h: Math.min(legendRows.length * 0.32 + 0.1, 2.8),
+          fontFace: 'Arial', fontSize: 9, colW: [0.6, 2.7],
+          border: { pt: 0.5, color: COLORS.border }, fill: { color: COLORS.white },
         });
       }
-    } catch (e) {
-      slide.addShape('rect', {
-        x: 0.5, y: 1.2, w: 5.5, h: 3.8,
-        fill: { color: COLORS.border },
-      });
-      slide.addText(ctx.isZh ? '待上传产品图片' : 'Upload product image', {
-        x: 0.5, y: 2.9, w: 5.5, h: 0.4,
-        fontSize: 12, color: COLORS.secondary, align: 'center',
-      });
+      if (annotation.remark) {
+        slide.addText(annotation.remark, { x: 6.2, y: 4.5, w: 3.3, h: 0.5, fontSize: 9, color: COLORS.secondary });
+      }
     }
   } else {
-    slide.addShape('rect', {
-      x: 0.5, y: 1.2, w: 5.5, h: 3.8,
-      fill: { color: COLORS.border },
-    });
-    slide.addText(ctx.isZh ? '待上传产品图片' : 'Upload product image', {
-      x: 0.5, y: 2.9, w: 5.5, h: 0.4,
-      fontSize: 12, color: COLORS.secondary, align: 'center',
-    });
-  }
-
-  // Annotation legend (right side)
-  slide.addText(ctx.isZh ? '标注说明' : 'Annotation Legend', {
-    x: 6.2, y: 1.2, w: 3.3, h: 0.3,
-    fontSize: 11, color: COLORS.dark, bold: true,
-  });
-
-  // Defensive array check for annotations_json
-  // Support both legacy (labelNumber/label) and new (number/name/category/description) formats
-  const annotItems = Array.isArray(annotation?.annotations_json) ? annotation.annotations_json : [];
-  const legendRows: TableRow[] = annotItems
-    .filter(item => (item.labelNumber || item.number) && (item.label || item.name))
-    .map(item => {
-      const num = item.labelNumber || item.number || 0;
-      const label = item.label || item.name || '';
-      const detail = item.category ? `[${item.category}] ${label}` : label;
-      return row([`#${num}`, detail]);
-    });
-
-  if (legendRows.length > 0) {
-    slide.addTable(legendRows, {
-      x: 6.2, y: 1.55, w: 3.3, h: Math.min(legendRows.length * 0.32 + 0.1, 2.8),
-      fontFace: 'Arial',
-      fontSize: 9,
-      colW: [0.6, 2.7],
-      border: { pt: 0.5, color: COLORS.border },
-      fill: { color: COLORS.white },
-    });
-  }
-
-  if (annotation?.remark) {
-    slide.addText(annotation.remark, {
-      x: 6.2, y: 4.5, w: 3.3, h: 0.5,
-      fontSize: 9, color: COLORS.secondary,
-    });
+    // Fallback: use product asset preview image
+    const slide = ctx.pptx.addSlide({ masterName: 'MASTER_SLIDE' });
+    addSlideTitle(slide, ctx, ctx.isZh ? '产品示意图' : 'Product Schematic');
+    const imageUrl = productAsset?.preview_images?.[0]?.url;
+    if (imageUrl) {
+      try {
+        const dataUri = await fetchImageAsDataUri(imageUrl);
+        if (dataUri) {
+          const dims = await getImageDimensions(dataUri).catch(() => ({ width: 800, height: 600 }));
+          const fit = calculateContainFit(dims.width, dims.height, { x: 0.5, y: 1.2, width: 5.5, height: 3.8 });
+          slide.addImage({ data: dataUri, x: fit.x, y: fit.y, w: fit.width, h: fit.height });
+        }
+      } catch (e) {
+        addImagePlaceholder(slide, { x: 0.5, y: 1.2, width: 5.5, height: 3.8 }, ctx.isZh ? '待上传产品图片' : 'Upload product image', '📷');
+      }
+    } else {
+      addImagePlaceholder(slide, { x: 0.5, y: 1.2, width: 5.5, height: 3.8 }, ctx.isZh ? '待上传产品图片' : 'Upload product image', '📷');
+    }
   }
 }
 

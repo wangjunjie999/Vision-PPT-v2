@@ -1074,7 +1074,7 @@ export async function generatePPTX(
     const wsModules = modules.filter(m => m.workstation_id === ws.id);
     const wsCode = getWorkstationCode(project.code, i);
     
-    const wsAnnotation = annotations?.find(a => a.scope_type === 'workstation' && a.workstation_id === ws.id);
+    const wsAnnotations = annotations?.filter(a => a.scope_type === 'workstation' && a.workstation_id === ws.id) || [];
     const wsProductAsset = productAssets?.find(a => a.scope_type === 'workstation' && a.workstation_id === ws.id);
 
     const wsBaseProgress = 20 + i * progressPerWs;
@@ -1146,11 +1146,11 @@ export async function generatePPTX(
         output_types: m.output_types,
         roi_strategy: m.roi_strategy,
       })),
-      annotation: wsAnnotation ? {
-        snapshot_url: wsAnnotation.snapshot_url,
-        annotations_json: wsAnnotation.annotations_json,
-        remark: wsAnnotation.remark,
-      } : undefined,
+      annotations: wsAnnotations.map(a => ({
+        snapshot_url: a.snapshot_url,
+        annotations_json: a.annotations_json,
+        remark: a.remark,
+      })),
       productAsset: wsProductAsset ? {
         preview_images: wsProductAsset.preview_images,
         detection_method: wsProductAsset.detection_method,

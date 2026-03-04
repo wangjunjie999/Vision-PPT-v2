@@ -38,7 +38,8 @@ interface Store {
   annotationAssetId: string | null;
   annotationScope: 'workstation' | 'module';
   annotationWorkstationId: string | null;
-  enterAnnotationMode: (snapshot: string, assetId: string, scope: 'workstation' | 'module', workstationId?: string) => void;
+  annotationExistingData: { annotations: Array<{ id: string; type: string; x: number; y: number; number?: number; name: string; category: string; description: string; width?: number; height?: number; radius?: number }>; remark: string | null; recordId: string } | null;
+  enterAnnotationMode: (snapshot: string, assetId: string, scope: 'workstation' | 'module', workstationId?: string, existingData?: { annotations: any[]; remark: string | null; recordId: string }) => void;
   exitAnnotationMode: () => void;
   
   // Viewer mode (3D/image in central canvas)
@@ -153,18 +154,21 @@ export const useAppStore = create<Store>()(
       annotationAssetId: null,
       annotationScope: 'workstation',
       annotationWorkstationId: null,
-      enterAnnotationMode: (snapshot, assetId, scope, workstationId) => set({
+      annotationExistingData: null,
+      enterAnnotationMode: (snapshot, assetId, scope, workstationId, existingData) => set({
         annotationMode: true,
         annotationSnapshot: snapshot,
         annotationAssetId: assetId,
         annotationScope: scope,
         annotationWorkstationId: workstationId || null,
+        annotationExistingData: existingData || null,
       }),
       exitAnnotationMode: () => set({
         annotationMode: false,
         annotationSnapshot: null,
         annotationAssetId: null,
         annotationWorkstationId: null,
+        annotationExistingData: null,
       }),
       
       // Viewer mode
