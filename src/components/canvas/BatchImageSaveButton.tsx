@@ -325,7 +325,7 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
               {/* Schematic Renderer */}
               {currentRenderModule && currentModuleData && (
                 <div ref={schematicRef}>
-                  <div className="vision-diagram-container" style={{ width: '1000px', height: '900px' }}>
+                  <div className="vision-diagram-container" style={{ width: '1000px', height: '1000px' }}>
                     <VisionSystemDiagram
                       camera={cameras.find(c => c.id === currentModuleData.selected_camera) || null}
                       lens={lenses.find(l => l.id === currentModuleData.selected_lens) || null}

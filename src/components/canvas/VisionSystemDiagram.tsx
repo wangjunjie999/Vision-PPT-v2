@@ -204,9 +204,9 @@ export function VisionSystemDiagram({
   const interactiveClass = interactive ? "cursor-pointer hover:opacity-80 transition-opacity" : "";
 
   return (
-    <div className={cn("relative w-full h-full min-h-[600px]", className)}>
+    <div className={cn("relative w-full h-full min-h-[700px]", className)}>
       <svg 
-        viewBox="0 0 800 650" 
+        viewBox="0 0 800 750"
         className="w-full h-full"
         style={{ maxHeight: '100%' }}
       >
@@ -647,10 +647,10 @@ export function VisionSystemDiagram({
         )}
 
         {/* Annotations in SVG - moved further right */}
-        <foreignObject x="500" y="20" width="290" height="620">
-          <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <foreignObject x="500" y="20" width="290" height="720">
+          <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {/* Camera specs */}
-            <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '10px', border: '1px solid hsl(220, 15%, 28%)' }}>
+            <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '8px', border: '1px solid hsl(220, 15%, 28%)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                 <span style={{ fontSize: '14px' }}>📷</span>
                 <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>工业相机</span>
@@ -666,7 +666,7 @@ export function VisionSystemDiagram({
             </div>
 
             {/* Lens specs */}
-            <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '10px', border: '1px solid hsl(220, 15%, 28%)' }}>
+            <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '8px', border: '1px solid hsl(220, 15%, 28%)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                 <span style={{ fontSize: '14px' }}>🔭</span>
                 <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>工业镜头</span>
@@ -682,7 +682,7 @@ export function VisionSystemDiagram({
             </div>
 
             {/* Light specs */}
-            <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '10px', border: '1px solid hsl(220, 15%, 28%)' }}>
+            <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '8px', border: '1px solid hsl(220, 15%, 28%)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                 <span style={{ fontSize: '14px' }}>💡</span>
                 <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>光源</span>
@@ -699,7 +699,7 @@ export function VisionSystemDiagram({
             </div>
 
             {/* FOV info - editable */}
-            <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '10px', border: '1px solid hsl(220, 15%, 28%)' }}>
+            <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '8px', border: '1px solid hsl(220, 15%, 28%)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                 <span style={{ fontSize: '14px' }}>📐</span>
                 <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>视野参数</span>
@@ -746,7 +746,7 @@ export function VisionSystemDiagram({
 
             {/* Controller specs */}
             {hasController && (
-              <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '10px', border: '1px solid hsl(220, 15%, 28%)' }}>
+              <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '8px', border: '1px solid hsl(220, 15%, 28%)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                   <span style={{ fontSize: '14px' }}>🖥️</span>
                    <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>工控机</span>
