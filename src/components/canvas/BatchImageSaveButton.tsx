@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -8,7 +8,9 @@ import {
   CheckCircle2, 
   ImageIcon,
   Camera,
-  Layers
+  Layers,
+  ChevronDown,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useData } from '@/contexts/DataContext';
@@ -27,12 +29,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { VisionSystemDiagram } from './VisionSystemDiagram';
 import { SimpleLayoutDiagram } from './SimpleLayoutDiagram';
 import { useCameras, useLights, useLenses, useControllers } from '@/hooks/useHardware';
 
 interface BatchImageSaveButtonProps {
   projectId: string;
+}
+
+interface ImageList {
+  layouts: Array<{ workstationId: string; workstationName: string; missingViews: ViewType[] }>;
+  schematics: Array<{ moduleId: string; moduleName: string; workstationName: string }>;
+  total: number;
 }
 
 export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
@@ -64,19 +78,18 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
 
   const projectWorkstations = getProjectWorkstations(projectId);
   
-  // Calculate missing: each workstation needs a layout overview + each module needs a schematic
-  const missingImages = (() => {
-    const missingLayouts: Array<{ workstationId: string; workstationName: string; missingViews: ViewType[] }> = [];
-    const missingSchematics: Array<{ moduleId: string; moduleName: string; workstationName: string }> = [];
+  // Calculate missing images (only those without URLs)
+  const missingImages = useMemo<ImageList>(() => {
+    const missingLayouts: ImageList['layouts'] = [];
+    const missingSchematics: ImageList['schematics'] = [];
 
     for (const ws of projectWorkstations) {
       const layout = layouts.find(l => l.workstation_id === ws.id);
-      // Only need front_view for layout overview now
       if (layout && !layout.front_view_image_url) {
         missingLayouts.push({
           workstationId: ws.id,
           workstationName: ws.name,
-          missingViews: ['front' as ViewType], // Single overview
+          missingViews: ['front' as ViewType],
         });
       }
       const wsModules = getWorkstationModules(ws.id);
@@ -89,12 +102,35 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
 
     const total = missingLayouts.length + missingSchematics.length;
     return { layouts: missingLayouts, schematics: missingSchematics, total };
-  })();
+  }, [projectWorkstations, layouts, getWorkstationModules]);
+
+  // Calculate ALL images (for force regeneration)
+  const allImages = useMemo<ImageList>(() => {
+    const allLayouts: ImageList['layouts'] = [];
+    const allSchematics: ImageList['schematics'] = [];
+
+    for (const ws of projectWorkstations) {
+      const layout = layouts.find(l => l.workstation_id === ws.id);
+      if (layout) {
+        allLayouts.push({
+          workstationId: ws.id,
+          workstationName: ws.name,
+          missingViews: ['front' as ViewType],
+        });
+      }
+      const wsModules = getWorkstationModules(ws.id);
+      for (const m of wsModules) {
+        allSchematics.push({ moduleId: m.id, moduleName: m.name, workstationName: ws.name });
+      }
+    }
+
+    const total = allLayouts.length + allSchematics.length;
+    return { layouts: allLayouts, schematics: allSchematics, total };
+  }, [projectWorkstations, layouts, getWorkstationModules]);
 
   // Handle render complete
   useEffect(() => {
     if (renderCompleteResolve.current && (currentRenderWorkstation || currentRenderModule)) {
-      // Give extra time for SVG to fully render
       const timeout = setTimeout(() => {
         renderCompleteResolve.current?.();
         renderCompleteResolve.current = null;
@@ -109,9 +145,11 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
     });
   }, []);
 
-  const handleBatchSave = useCallback(async () => {
-    if (missingImages.total === 0) {
-      toast.info('所有图片已保存，无需重复操作');
+  const handleBatchSave = useCallback(async (force: boolean = false) => {
+    const imageList = force ? allImages : missingImages;
+
+    if (imageList.total === 0) {
+      toast.info(force ? '项目中没有可生成的图片' : '所有图片已保存，无需重复操作');
       return;
     }
 
@@ -123,7 +161,7 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
 
     try {
       // Save layout views
-      for (const layoutItem of missingImages.layouts) {
+      for (const layoutItem of imageList.layouts) {
         const layout = layouts.find(l => l.workstation_id === layoutItem.workstationId);
         if (!layout) continue;
 
@@ -131,18 +169,15 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
           current++;
           setProgress({
             current,
-            total: missingImages.total,
+            total: imageList.total,
             message: `${layoutItem.workstationName} - ${getViewLabel(view)}`,
             type: 'layout',
           });
 
           try {
-            // Render the view
             setCurrentRenderWorkstation(layoutItem.workstationId);
             setCurrentView(view);
             await waitForRender();
-            
-            // Extra wait for canvas to settle
             await new Promise(r => setTimeout(r, 300));
 
             const canvasElement = layoutCanvasRef.current?.querySelector('svg');
@@ -174,11 +209,11 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
       setCurrentRenderWorkstation(null);
 
       // Save module schematics
-      for (const schematicItem of missingImages.schematics) {
+      for (const schematicItem of imageList.schematics) {
         current++;
         setProgress({
           current,
-          total: missingImages.total,
+          total: imageList.total,
           message: `${schematicItem.workstationName} - ${schematicItem.moduleName}`,
           type: 'schematic',
         });
@@ -186,8 +221,6 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
         try {
           setCurrentRenderModule(schematicItem.moduleId);
           await waitForRender();
-          
-          // Extra wait for diagram to settle
           await new Promise(r => setTimeout(r, 300));
 
           const diagramElement = schematicRef.current?.querySelector('.vision-diagram-container');
@@ -225,11 +258,9 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
       setProgress(null);
       setCurrentRenderWorkstation(null);
       setCurrentRenderModule(null);
-      
-      // Close dialog after a short delay
       setTimeout(() => setShowDialog(false), 1500);
     }
-  }, [missingImages, layouts, waitForRender, updateLayout, updateModule]);
+  }, [missingImages, allImages, layouts, waitForRender, updateLayout, updateModule]);
 
   // Get current module data for schematic rendering
   const currentModuleData = currentRenderModule 
@@ -238,26 +269,58 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
 
   return (
     <>
-      <Button
-        variant="outline"
-        className="gap-2"
-        onClick={handleBatchSave}
-        disabled={isSaving || missingImages.total === 0}
-      >
-        {isSaving ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : missingImages.total === 0 ? (
-          <CheckCircle2 className="h-4 w-4 text-success" />
-        ) : (
-          <Save className="h-4 w-4" />
-        )}
-        一键保存所有图片
-        {missingImages.total > 0 && (
-          <Badge variant="destructive" className="ml-1">
-            {missingImages.total}
-          </Badge>
-        )}
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            className="gap-2"
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : missingImages.total === 0 ? (
+              <CheckCircle2 className="h-4 w-4 text-success" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            一键保存图片
+            {missingImages.total > 0 && (
+              <Badge variant="destructive" className="ml-1">
+                {missingImages.total}
+              </Badge>
+            )}
+            <ChevronDown className="h-3 w-3 ml-1 opacity-60" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onClick={() => handleBatchSave(false)}
+            disabled={missingImages.total === 0}
+            className="gap-2"
+          >
+            <Save className="h-4 w-4" />
+            保存缺失图片
+            {missingImages.total > 0 && (
+              <Badge variant="destructive" className="ml-auto text-xs">
+                {missingImages.total}
+              </Badge>
+            )}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => handleBatchSave(true)}
+            disabled={allImages.total === 0}
+            className="gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            重新生成全部图片
+            {allImages.total > 0 && (
+              <Badge variant="secondary" className="ml-auto text-xs">
+                {allImages.total}
+              </Badge>
+            )}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {/* Progress Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
@@ -273,7 +336,6 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Progress Info */}
             {progress && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
@@ -296,7 +358,6 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
               </div>
             )}
 
-            {/* Missing Items Summary */}
             {!isSaving && missingImages.total === 0 && (
               <div className="flex items-center justify-center gap-2 py-8 text-success">
                 <CheckCircle2 className="h-8 w-8" />
@@ -309,7 +370,6 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
               className="fixed left-[-9999px] top-0 w-[1200px] h-[1000px] overflow-hidden"
               aria-hidden="true"
             >
-            {/* Layout Diagram Renderer - uses SimpleLayoutDiagram */}
               {currentRenderWorkstation && (
                 <div ref={layoutCanvasRef}>
                   <OffscreenSimpleLayout
@@ -322,7 +382,6 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
                 </div>
               )}
 
-              {/* Schematic Renderer */}
               {currentRenderModule && currentModuleData && (
                 <div ref={schematicRef}>
                   <div className="vision-diagram-container" style={{ width: '1000px', height: '1000px' }}>
@@ -387,7 +446,6 @@ function OffscreenSimpleLayout({
   
   if (!workstation || !layout) return null;
 
-  // Parse layout objects
   let layoutObjects: any[] = [];
   if (layout?.layout_objects) {
     try {
@@ -403,7 +461,6 @@ function OffscreenSimpleLayout({
   const mechanisms = Array.isArray(layout?.mechanisms) ? layout.mechanisms : [];
   const cameraMounts = Array.isArray(layout?.camera_mounts) ? layout.camera_mounts : [];
 
-  // Build hardware summary from layout's selected hardware
   const selectedCameras = Array.isArray(layout?.selected_cameras) ? layout.selected_cameras : [];
   const selectedLenses = Array.isArray(layout?.selected_lenses) ? layout.selected_lenses : [];
   const selectedLights = Array.isArray(layout?.selected_lights) ? layout.selected_lights : [];
