@@ -306,7 +306,7 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
 
             {/* Off-screen render area */}
             <div 
-              className="fixed left-[-9999px] top-0 w-[1200px] h-[800px] overflow-hidden"
+              className="fixed left-[-9999px] top-0 w-[1200px] h-[1000px] overflow-hidden"
               aria-hidden="true"
             >
             {/* Layout Diagram Renderer - uses SimpleLayoutDiagram */}
@@ -325,7 +325,7 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
               {/* Schematic Renderer */}
               {currentRenderModule && currentModuleData && (
                 <div ref={schematicRef}>
-                  <div className="vision-diagram-container" style={{ width: '1000px', height: '600px' }}>
+                  <div className="vision-diagram-container" style={{ width: '1000px', height: '900px' }}>
                     <VisionSystemDiagram
                       camera={cameras.find(c => c.id === currentModuleData.selected_camera) || null}
                       lens={lenses.find(l => l.id === currentModuleData.selected_lens) || null}
