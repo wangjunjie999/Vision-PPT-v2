@@ -1194,142 +1194,7 @@ export async function generatePPTX(
     generateBOMSlide(ctx, slideData);
   }
 
-  // ========== HARDWARE DETAIL SLIDES ==========
-  if (hardware) {
-    progress = 88;
-    onProgress(progress, isZh ? '生成硬件详情...' : 'Generating hardware details...', isZh ? '硬件详情页' : 'Hardware details');
-
-    const usedCameraIds = new Set(modules.filter(m => m.selected_camera).map(m => m.selected_camera));
-    const usedLensIds = new Set(modules.filter(m => m.selected_lens).map(m => m.selected_lens));
-    const usedLightIds = new Set(modules.filter(m => m.selected_light).map(m => m.selected_light));
-    const usedControllerIds = new Set(modules.filter(m => m.selected_controller).map(m => m.selected_controller));
-
-    const usedCameras = hardware.cameras.filter(c => usedCameraIds.has(c.id));
-    const usedLenses = hardware.lenses.filter(l => usedLensIds.has(l.id));
-    const usedLights = hardware.lights.filter(l => usedLightIds.has(l.id));
-    const usedControllers = hardware.controllers.filter(c => usedControllerIds.has(c.id));
-
-    const addHardwareDetailSlide = async (
-      title: string,
-      subtitle: string,
-      imageUrl: string | null,
-      infoRows: TableRow[]
-    ) => {
-      const slide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
-      
-      slide.addText(title, {
-        x: 0.5, y: 0.6, w: 9, h: 0.5,
-        fontSize: 22, color: COLORS.dark, bold: true,
-      });
-
-      slide.addText(subtitle, {
-        x: 0.5, y: 1.05, w: 9, h: 0.3,
-        fontSize: 12, color: COLORS.secondary,
-      });
-
-      if (imageUrl) {
-        try {
-          const dataUri = await fetchImageAsDataUri(imageUrl);
-          if (dataUri) {
-            slide.addImage({
-              data: dataUri,
-              x: 0.5, y: 1.5, w: 4, h: 3.5,
-              sizing: { type: 'contain', w: 4, h: 3.5 },
-            });
-          } else {
-            throw new Error('Failed to fetch image');
-          }
-        } catch (e) {
-          slide.addShape('rect', {
-            x: 0.5, y: 1.5, w: 4, h: 3.5,
-            fill: { color: COLORS.border },
-          });
-          slide.addText(isZh ? '产品图片' : 'Product Image', {
-            x: 0.5, y: 3, w: 4, h: 0.5,
-            fontSize: 14, color: COLORS.secondary, align: 'center',
-          });
-        }
-      } else {
-        slide.addShape('rect', {
-          x: 0.5, y: 1.5, w: 4, h: 3.5,
-          fill: { color: COLORS.border },
-        });
-        slide.addText(isZh ? '产品图片' : 'Product Image', {
-          x: 0.5, y: 3, w: 4, h: 0.5,
-          fontSize: 14, color: COLORS.secondary, align: 'center',
-        });
-      }
-
-      slide.addText(isZh ? '规格参数' : 'Specifications', {
-        x: 5, y: 1.5, w: 4.5, h: 0.4,
-        fontSize: 14, color: COLORS.dark, bold: true,
-      });
-
-      slide.addTable(infoRows, {
-        x: 5, y: 1.95, w: 4.5, h: Math.min(infoRows.length * 0.45 + 0.1, 3),
-        fontFace: 'Arial',
-        fontSize: 10,
-        colW: [1.8, 2.7],
-        border: { pt: 0.5, color: COLORS.border },
-        fill: { color: COLORS.white },
-        valign: 'middle',
-      });
-    };
-
-    // Camera detail slides removed - only summary table now
-
-    for (const lens of usedLenses) {
-      const lensInfoRows: TableRow[] = [
-        row([isZh ? '品牌' : 'Brand', lens.brand]),
-        row([isZh ? '型号' : 'Model', lens.model]),
-        row([isZh ? '焦距' : 'Focal Length', lens.focal_length]),
-        row([isZh ? '光圈' : 'Aperture', lens.aperture]),
-        row([isZh ? '接口' : 'Mount', lens.mount]),
-      ];
-      await addHardwareDetailSlide(
-        `${isZh ? '镜头' : 'Lens'}: ${lens.model}`,
-        `${lens.brand} | ${isZh ? '工业镜头' : 'Industrial Lens'}`,
-        lens.image_url,
-        lensInfoRows
-      );
-    }
-
-    for (const light of usedLights) {
-      const lightInfoRows: TableRow[] = [
-        row([isZh ? '品牌' : 'Brand', light.brand]),
-        row([isZh ? '型号' : 'Model', light.model]),
-        row([isZh ? '类型' : 'Type', light.type]),
-        row([isZh ? '颜色' : 'Color', light.color]),
-        row([isZh ? '功率' : 'Power', light.power]),
-      ];
-      await addHardwareDetailSlide(
-        `${isZh ? '光源' : 'Light'}: ${light.model}`,
-        `${light.brand} | ${isZh ? '机器视觉光源' : 'Machine Vision Light'}`,
-        light.image_url,
-        lightInfoRows
-      );
-    }
-
-    for (const controller of usedControllers) {
-      const controllerInfoRows: TableRow[] = [
-        row([isZh ? '品牌' : 'Brand', controller.brand]),
-        row([isZh ? '型号' : 'Model', controller.model]),
-        row(['CPU', controller.cpu]),
-        row([isZh ? '内存' : 'Memory', controller.memory]),
-        row([isZh ? '存储' : 'Storage', controller.storage]),
-        row([isZh ? '性能等级' : 'Performance', controller.performance]),
-      ];
-      if (controller.gpu) {
-        controllerInfoRows.splice(3, 0, row(['GPU', controller.gpu]));
-      }
-      await addHardwareDetailSlide(
-        `${isZh ? '工控机' : 'Controller'}: ${controller.model}`,
-        `${controller.brand} | ${isZh ? '工业控制器' : 'Industrial Controller'}`,
-        controller.image_url,
-        controllerInfoRows
-      );
-    }
-  }
+  // Hardware detail slides removed - only summary table is generated
 
   // ========== HARDWARE SUMMARY SLIDE (16:9) ==========
   progress = 92;
@@ -1414,8 +1279,8 @@ export async function generatePPTX(
   hwSlide.addTable(hwAllRows, {
     x: SLIDE_LAYOUT.contentLeft, y: SLIDE_LAYOUT.contentTop + 0.5, w: SLIDE_LAYOUT.contentWidth,
     fontFace: 'Arial',
-    fontSize: 10,
-    colW: [0.6, 1.6, 1.4, 2.2, 0.8, 2.6],
+    fontSize: 8,
+    colW: [0.5, 1.4, 1.2, 2.0, 0.6, 1.8],
     border: { pt: 0.5, color: COLORS.border },
     fill: { color: COLORS.white },
     valign: 'middle',
