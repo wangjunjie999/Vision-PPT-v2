@@ -204,9 +204,9 @@ export function VisionSystemDiagram({
   const interactiveClass = interactive ? "cursor-pointer hover:opacity-80 transition-opacity" : "";
 
   return (
-    <div className={cn("relative w-full h-full min-h-[500px]", className)}>
+    <div className={cn("relative w-full h-full min-h-[600px]", className)}>
       <svg 
-        viewBox="0 0 800 550" 
+        viewBox="0 0 800 650" 
         className="w-full h-full"
         style={{ maxHeight: '100%' }}
       >
@@ -647,21 +647,21 @@ export function VisionSystemDiagram({
         )}
 
         {/* Annotations in SVG - moved further right */}
-        <foreignObject x="500" y="20" width="290" height="520">
+        <foreignObject x="500" y="20" width="290" height="620">
           <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {/* Camera specs */}
             <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '10px', border: '1px solid hsl(220, 15%, 28%)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                 <span style={{ fontSize: '14px' }}>📷</span>
-                <span style={{ fontWeight: 600, fontSize: '12px', color: '#e2e8f0' }}>工业相机</span>
+                <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>工业相机</span>
               </div>
               {hasCamera ? (
                 <>
-                  <p style={{ fontSize: '11px', color: '#e2e8f0' }}>{camera.resolution} · 靶面{camera.sensor_size}</p>
-                  <p style={{ fontSize: '10px', color: '#94a3b8' }}>{camera.brand} {camera.model} @ {camera.frame_rate}fps</p>
+                   <p style={{ fontSize: '11px', color: '#f1f5f9' }}>{camera.resolution} · 靶面{camera.sensor_size}</p>
+                   <p style={{ fontSize: '10px', color: '#cbd5e1' }}>{camera.brand} {camera.model} @ {camera.frame_rate}fps</p>
                 </>
               ) : (
-                <p style={{ fontSize: '10px', color: '#94a3b8' }}>点击左侧相机图标选择</p>
+                <p style={{ fontSize: '10px', color: '#cbd5e1' }}>点击左侧相机图标选择</p>
               )}
             </div>
 
@@ -669,15 +669,15 @@ export function VisionSystemDiagram({
             <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '10px', border: '1px solid hsl(220, 15%, 28%)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                 <span style={{ fontSize: '14px' }}>🔭</span>
-                <span style={{ fontWeight: 600, fontSize: '12px', color: '#e2e8f0' }}>工业镜头</span>
+                <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>工业镜头</span>
               </div>
               {hasLens ? (
                 <>
-                  <p style={{ fontSize: '11px', color: '#e2e8f0' }}>焦距 {lens.focal_length} · 光圈 {lens.aperture}</p>
-                  <p style={{ fontSize: '10px', color: '#94a3b8' }}>{lens.brand} {lens.model}</p>
+                   <p style={{ fontSize: '11px', color: '#f1f5f9' }}>焦距 {lens.focal_length} · 光圈 {lens.aperture}</p>
+                   <p style={{ fontSize: '10px', color: '#cbd5e1' }}>{lens.brand} {lens.model}</p>
                 </>
               ) : (
-                <p style={{ fontSize: '10px', color: '#94a3b8' }}>点击左侧镜头图标选择</p>
+                <p style={{ fontSize: '10px', color: '#cbd5e1' }}>点击左侧镜头图标选择</p>
               )}
             </div>
 
@@ -685,16 +685,16 @@ export function VisionSystemDiagram({
             <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '10px', border: '1px solid hsl(220, 15%, 28%)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                 <span style={{ fontSize: '14px' }}>💡</span>
-                <span style={{ fontWeight: 600, fontSize: '12px', color: '#e2e8f0' }}>光源</span>
+                <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>光源</span>
               </div>
               {hasLight ? (
                 <>
-                  <p style={{ fontSize: '11px', color: '#e2e8f0' }}>{light.color}{light.type} · {light.power}</p>
-                  <p style={{ fontSize: '10px', color: '#94a3b8' }}>{light.brand} {light.model}</p>
-                  <p style={{ fontSize: '10px', color: 'hsl(210, 100%, 75%)', marginTop: '2px' }}>光源距离产品：{lightDistance}±20mm</p>
+                   <p style={{ fontSize: '11px', color: '#f1f5f9' }}>{light.color}{light.type} · {light.power}</p>
+                   <p style={{ fontSize: '10px', color: '#cbd5e1' }}>{light.brand} {light.model}</p>
+                   <p style={{ fontSize: '10px', color: 'hsl(210, 100%, 75%)', marginTop: '2px' }}>光源距离产品：{lightDistance}±20mm</p>
                 </>
               ) : (
-                <p style={{ fontSize: '10px', color: '#94a3b8' }}>点击左侧光源图标选择</p>
+                <p style={{ fontSize: '10px', color: '#cbd5e1' }}>点击左侧光源图标选择</p>
               )}
             </div>
 
@@ -702,14 +702,14 @@ export function VisionSystemDiagram({
             <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '10px', border: '1px solid hsl(220, 15%, 28%)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                 <span style={{ fontSize: '14px' }}>📐</span>
-                <span style={{ fontWeight: 600, fontSize: '12px', color: '#e2e8f0' }}>视野参数</span>
+                <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>视野参数</span>
                 {interactive && (onFovAngleChange || onLightDistanceChange) && (
                   <span style={{ fontSize: '9px', color: 'hsl(210, 100%, 75%)', marginLeft: 'auto' }}>可编辑</span>
                 )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '10px', color: '#94a3b8', width: '56px' }}>视角:</span>
+                  <span style={{ fontSize: '10px', color: '#cbd5e1', width: '56px' }}>视角:</span>
                   {interactive && onFovAngleChange ? (
                     <input
                       type="number"
@@ -720,12 +720,12 @@ export function VisionSystemDiagram({
                       max="120"
                     />
                   ) : (
-                    <span style={{ fontSize: '11px', color: '#e2e8f0' }}>{fovAngle}</span>
+                    <span style={{ fontSize: '11px', color: '#f1f5f9' }}>{fovAngle}</span>
                   )}
-                  <span style={{ fontSize: '10px', color: '#94a3b8' }}>°</span>
+                  <span style={{ fontSize: '10px', color: '#cbd5e1' }}>°</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '10px', color: '#94a3b8', width: '56px' }}>工作距离:</span>
+                  <span style={{ fontSize: '10px', color: '#cbd5e1', width: '56px' }}>工作距离:</span>
                   {interactive && onLightDistanceChange ? (
                     <input
                       type="number"
@@ -736,11 +736,11 @@ export function VisionSystemDiagram({
                       max="1000"
                     />
                   ) : (
-                    <span style={{ fontSize: '11px', color: '#e2e8f0' }}>{lightDistance}</span>
+                    <span style={{ fontSize: '11px', color: '#f1f5f9' }}>{lightDistance}</span>
                   )}
-                  <span style={{ fontSize: '10px', color: '#94a3b8' }}>mm</span>
+                  <span style={{ fontSize: '10px', color: '#cbd5e1' }}>mm</span>
                 </div>
-                <p style={{ fontSize: '10px', color: '#94a3b8' }}>视野宽度约 {Math.round(fovOffsetX * 2)}mm</p>
+                <p style={{ fontSize: '10px', color: '#cbd5e1' }}>视野宽度约 {Math.round(fovOffsetX * 2)}mm</p>
               </div>
             </div>
 
@@ -749,11 +749,11 @@ export function VisionSystemDiagram({
               <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '10px', border: '1px solid hsl(220, 15%, 28%)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                   <span style={{ fontSize: '14px' }}>🖥️</span>
-                  <span style={{ fontWeight: 600, fontSize: '12px', color: '#e2e8f0' }}>工控机</span>
-                </div>
-                <p style={{ fontSize: '11px', color: '#e2e8f0' }}>{controller.cpu}</p>
-                <p style={{ fontSize: '11px', color: '#e2e8f0' }}>{controller.memory} · {controller.storage}</p>
-                <p style={{ fontSize: '10px', color: '#94a3b8' }}>{controller.brand} {controller.model}</p>
+                   <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>工控机</span>
+                 </div>
+                 <p style={{ fontSize: '11px', color: '#f1f5f9' }}>{controller.cpu}</p>
+                 <p style={{ fontSize: '11px', color: '#f1f5f9' }}>{controller.memory} · {controller.storage}</p>
+                 <p style={{ fontSize: '10px', color: '#cbd5e1' }}>{controller.brand} {controller.model}</p>
                 {controller.gpu && (
                   <p style={{ fontSize: '10px', color: 'hsl(210, 100%, 75%)', marginTop: '2px' }}>GPU: {controller.gpu}</p>
                 )}
