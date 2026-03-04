@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
-import { ThreeViewLayout, type LayoutObject3D, getViewTransforms } from './ThreeViewLayout';
-import { ThreeViewOverlay, type ViewPanelInfo } from './ThreeViewOverlay';
+import { type LayoutObject3D } from './ThreeViewLayout';
 import { toPng } from 'html-to-image';
 import { useData } from '@/contexts/DataContext';
 import { useMechanisms, type Mechanism } from '@/hooks/useMechanisms';
@@ -62,155 +61,6 @@ const AUTO_ARRANGE_CONFIG = {
   startOffsetX: -150, // start offset from center for first object
 };
 
-// ===== Overview Zoom/Pan Container =====
-function OverviewZoomContainer({
-  objects,
-  layout,
-  workstation,
-  productDimensions,
-}: {
-  objects: LayoutObject3D[];
-  layout: any;
-  workstation: any;
-  productDimensions: { length: number; width: number; height: number };
-}) {
-  const SVG_W = 1600;
-  const SVG_H = 900;
-  const [ovZoom, setOvZoom] = useState(1);
-  const [ovPan, setOvPan] = useState({ x: 0, y: 0 });
-  const [dragging, setDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [fitted, setFitted] = useState(false);
-  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
-  const ovContainerRef = useRef<HTMLDivElement>(null);
-
-  // Fit to container on mount and when container resizes
-  const fitToContainer = useCallback(() => {
-    const rect = ovContainerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const scaleX = rect.width / SVG_W;
-    const scaleY = rect.height / SVG_H;
-    const fitZoom = Math.min(scaleX, scaleY) * 0.95;
-    const panX = (rect.width - SVG_W * fitZoom) / 2;
-    const panY = (rect.height - SVG_H * fitZoom) / 2;
-    setOvZoom(fitZoom);
-    setOvPan({ x: panX, y: panY });
-    setContainerSize({ w: rect.width, h: rect.height });
-  }, []);
-
-  useEffect(() => {
-    if (!fitted && ovContainerRef.current) {
-      requestAnimationFrame(() => { fitToContainer(); setFitted(true); });
-    }
-  }, [fitted, fitToContainer]);
-
-  // Track container size on resize
-  useEffect(() => {
-    const el = ovContainerRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => {
-      const rect = el.getBoundingClientRect();
-      setContainerSize({ w: rect.width, h: rect.height });
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    const rect = ovContainerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    const newZoom = Math.min(3, Math.max(0.3, ovZoom + delta));
-    const ratio = newZoom / ovZoom;
-    setOvPan(prev => ({
-      x: mouseX - ratio * (mouseX - prev.x),
-      y: mouseY - ratio * (mouseY - prev.y),
-    }));
-    setOvZoom(newZoom);
-  }, [ovZoom]);
-
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    setDragging(true);
-    setDragStart({ x: e.clientX - ovPan.x, y: e.clientY - ovPan.y });
-  }, [ovPan]);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!dragging) return;
-    setOvPan({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
-  }, [dragging, dragStart]);
-
-  const handleMouseUp = useCallback(() => setDragging(false), []);
-
-  const reset = useCallback(() => { fitToContainer(); }, [fitToContainer]);
-
-  // Compute view transforms for overlay
-  const overlayPanels = useMemo<ViewPanelInfo[]>(() => {
-    const t = getViewTransforms(objects, SVG_W, SVG_H, productDimensions);
-    return [
-      { view: 'front' as const, label: '正视图', panelX: t.front.panelX, panelY: t.front.panelY, panelW: t.front.panelW, panelH: t.front.panelH, headerH: t.headerH, scale: t.front.scale, offsetX: t.front.offsetX, offsetY: t.front.offsetY },
-      { view: 'side' as const, label: '左视图', panelX: t.side.panelX, panelY: t.side.panelY, panelW: t.side.panelW, panelH: t.side.panelH, headerH: t.headerH, scale: t.side.scale, offsetX: t.side.offsetX, offsetY: t.side.offsetY },
-      { view: 'top' as const, label: '俯视图', panelX: t.top.panelX, panelY: t.top.panelY, panelW: t.top.panelW, panelH: t.top.panelH, headerH: t.headerH, scale: t.top.scale, offsetX: t.top.offsetX, offsetY: t.top.offsetY },
-    ];
-  }, [objects, productDimensions]);
-
-  return (
-    <div
-      ref={ovContainerRef}
-      className="flex-1 overflow-hidden relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
-      onWheel={handleWheel}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      onDoubleClick={reset}
-      style={{ cursor: dragging ? 'grabbing' : 'grab' }}
-    >
-      {/* Zoomable content layer */}
-      <div style={{
-        transform: `translate(${ovPan.x}px, ${ovPan.y}px) scale(${ovZoom})`,
-        transformOrigin: '0 0',
-        width: SVG_W,
-        height: SVG_H,
-      }}>
-        <ThreeViewLayout
-          objects={objects}
-          mechanisms={Array.isArray(layout?.mechanisms) ? layout.mechanisms : []}
-          cameraMounts={Array.isArray(layout?.camera_mounts) ? layout.camera_mounts : []}
-          workstationName={workstation?.name || ''}
-          productDimensions={productDimensions}
-          width={SVG_W}
-          height={SVG_H}
-          hideCameras={true}
-        />
-      </div>
-
-      {/* Viewport-fixed overlay: coordinate axes + HUD */}
-      <ThreeViewOverlay
-        panels={overlayPanels}
-        ovZoom={ovZoom}
-        ovPan={ovPan}
-        containerWidth={containerSize.w}
-        containerHeight={containerSize.h}
-      />
-
-      {/* Zoom controls */}
-      <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-slate-800/90 backdrop-blur rounded-lg px-2 py-1 border border-slate-600/50 z-10">
-        <button onClick={(e) => { e.stopPropagation(); setOvZoom(z => Math.max(0.5, z - 0.1)); }}
-          className="w-7 h-7 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700 rounded text-sm font-bold">−</button>
-        <span className="text-xs text-slate-300 w-12 text-center select-none">{Math.round(ovZoom * 100)}%</span>
-        <button onClick={(e) => { e.stopPropagation(); setOvZoom(z => Math.min(3, z + 0.1)); }}
-          className="w-7 h-7 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700 rounded text-sm font-bold">+</button>
-        <div className="w-px h-4 bg-slate-600 mx-1" />
-        <button onClick={(e) => { e.stopPropagation(); reset(); }}
-          className="px-2 h-7 flex items-center justify-center text-xs text-slate-300 hover:text-white hover:bg-slate-700 rounded">重置</button>
-      </div>
-    </div>
-  );
-}
 
 export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasProps) {
   const { 
@@ -227,7 +77,6 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   const layout = getLayoutByWorkstation(workstationId) as any;
   
   const [currentView, setCurrentView] = useState<ViewType>('front');
-  const [overviewMode, setOverviewMode] = useState(false);
   const [objects, setObjects] = useState<LayoutObject[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [gridEnabled, setGridEnabled] = useState(true);
@@ -1351,10 +1200,10 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
           {(['front', 'side', 'top'] as ViewType[]).map(view => (
             <button
               key={view}
-              onClick={() => { setCurrentView(view); setOverviewMode(false); }}
+              onClick={() => setCurrentView(view)}
               className={cn(
                 'px-3 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-1.5',
-                !overviewMode && currentView === view 
+                currentView === view 
                   ? 'bg-primary text-primary-foreground shadow-sm' 
                   : 'bg-muted hover:bg-muted/80 text-muted-foreground'
               )}
@@ -1365,18 +1214,6 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               )}
             </button>
           ))}
-          <button
-            onClick={() => setOverviewMode(!overviewMode)}
-            className={cn(
-              'px-3 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-1.5',
-              overviewMode
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'bg-muted hover:bg-muted/80 text-muted-foreground'
-            )}
-          >
-            <LayoutGrid className="h-3.5 w-3.5" />
-            三合一概览
-          </button>
         </div>
         
         {/* Right: Quality selector, Save buttons and settings toggle */}
@@ -1611,14 +1448,6 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       </div>
       
       {/* Canvas Container */}
-      {overviewMode ? (
-        <OverviewZoomContainer
-          objects={objects as LayoutObject3D[]}
-          layout={layout}
-          workstation={workstation}
-          productDimensions={productDimensions}
-        />
-      ) : (
       <div 
         ref={containerRef}
         className="flex-1 overflow-hidden relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
@@ -1752,8 +1581,8 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 </text>
               </g>
               
-              {/* Draggable objects */}
-              {objects.map(obj => {
+              {/* Draggable objects (cameras hidden from canvas, only mechanisms shown) */}
+              {objects.filter(obj => obj.type !== 'camera').map(obj => {
                 const isSelected = obj.id === selectedId;
                 const isSecondSelected = obj.id === secondSelectedId;
                 const mechImage = obj.type === 'mechanism' ? getMechanismImageForObject(obj) : null;
@@ -1910,63 +1739,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 />
               )}
               
-              {/* Camera mount points on mechanisms */}
-              {objects.filter(o => o.type === 'mechanism' && !hiddenIds.has(o.id)).map(mechObj => (
-                <g key={`mount-points-${mechObj.id}`} transform={`translate(${mechObj.x}, ${mechObj.y})`}>
-                  <CameraMountPoints
-                    mechanismObject={mechObj}
-                    currentView={currentView}
-                    cameras={objects.filter(o => o.type === 'camera')}
-                    onSnapCamera={(cameraId, mountPoint, mechanismId) => {
-                      const camera = objects.find(o => o.id === cameraId);
-                      const mechanism = objects.find(o => o.id === mechanismId);
-                      if (!camera || !mechanism) return;
-                      
-                      const mountPos = getMountPointWorldPosition(mechanism, mountPoint.id, currentView);
-                      if (!mountPos) return;
-                      
-                      // Calculate 3D offsets
-                      const offsetX = (camera.posX ?? 0) - (mechanism.posX ?? 0);
-                      const offsetY = (camera.posY ?? 0) - (mechanism.posY ?? 0);
-                      const offsetZ = (camera.posZ ?? 0) - (mechanism.posZ ?? 0);
-                      
-                      updateObject(cameraId, {
-                        x: mountPos.x,
-                        y: mountPos.y,
-                        mountedToMechanismId: mechanismId,
-                        mountPointId: mountPoint.id,
-                        mountOffsetX: offsetX,
-                        mountOffsetY: offsetY,
-                        mountOffsetZ: offsetZ,
-                      });
-                      
-                      toast.success(`${camera.name} 已挂载到 ${mechanism.name}`);
-                    }}
-                    draggingCameraId={isDragging && selectedObj?.type === 'camera' ? selectedId : null}
-                    scale={scale}
-                  />
-                </g>
-              ))}
-              
-              {/* Connection lines for mounted cameras */}
-              {objects.filter(o => o.type === 'camera' && o.mountedToMechanismId && !hiddenIds.has(o.id)).map(camera => {
-                const mechanism = objects.find(o => o.id === camera.mountedToMechanismId);
-                if (!mechanism || hiddenIds.has(mechanism.id)) return null;
-                
-                return (
-                  <line
-                    key={`mount-line-${camera.id}`}
-                    x1={camera.x}
-                    y1={camera.y}
-                    x2={mechanism.x}
-                    y2={mechanism.y}
-                    stroke="hsl(var(--primary))"
-                    strokeWidth="2"
-                    strokeDasharray="6 3"
-                    opacity="0.6"
-                  />
-                );
-              })}
+              {/* Camera mount points and connection lines hidden - camera info described in text */}
               
               {/* Operation hints moved to viewport-fixed overlay below */}
             </svg>
@@ -2116,7 +1889,6 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
           onPanModeChange={setPanMode}
         />
       </div>
-      )}
     </div>
   );
 }
