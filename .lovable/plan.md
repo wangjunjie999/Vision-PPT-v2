@@ -1,59 +1,34 @@
 
 
-# 删除标注通道 + 记录点击跳转画布 + PPT包含所有标注图
+# PPT 硬件统计页改造
 
-## 问题分析
+## 需求
+1. **删除每个相机的规格参数详情页**（lines 1279-1294，每台相机一页带图片+规格表）
+2. **改造"硬件清单汇总"页**：按型号统计数量，一个表格列出所有硬件设备（相机、镜头、光源、工控机），每行显示品牌、型号、数量
 
-从截图可以看到，右侧面板的"产品3D与特征标注"区域有4个Tab：3D查看、产品信息、标注、记录。用户希望：
-1. **删除"标注"Tab**：不再在右侧面板内嵌标注画布
-2. **记录Tab点击跳转画布**：点击记录后在中间画布区域查看/修改标注
-3. **PPT包含所有标注图**：每个工位的所有标注截图都生成到PPT中（当前只取第一张）
+## 修改文件
 
-## 修改方案
+### `src/services/pptxGenerator.ts`
 
-### 1. `src/store/useAppStore.ts` — 扩展标注模式支持加载已有标注
+**删除**：相机的 `addHardwareDetailSlide` 循环（lines 1279-1294），保留镜头/光源/工控机的详情页（或根据需要也删除）
 
-在 store 中增加 `annotationExistingData` 字段，用于传递已有标注记录的 annotations 和 remark，使 `AnnotationEditor` 能以查看/编辑模式打开已有记录：
+**改造硬件汇总页**（lines 1349-1402）：
+- 遍历所有工位的 `selected_cameras/lenses/lights/controller`，按 `brand + model` 分组计数
+- 生成表格：序号 | 设备类型 | 品牌 | 型号 | 数量 | 备注
+- 末行加总计
 
+**表格结构示例**：
 ```
-annotationExistingData: { annotations: Annotation[], remark: string | null, recordId: string } | null
+序号 | 设备类型 | 品牌   | 型号      | 数量 | 备注
+1    | 工业相机 | Basler | acA2500   | 3    |
+2    | 工业相机 | HIK    | MV-CA060  | 2    |
+3    | 工业镜头 | Fujinon| HF25SA    | 5    |
+4    | 光源    | CCS    | LDR2-90   | 3    |
+5    | 工控机  | Neousys| Nuvo-8208 | 1    |
+                          总计        | 14台  |
 ```
 
-### 2. `src/components/product/ProductAnnotationPanel.tsx` — 删除"标注"Tab + 修改记录点击行为
-
-- 将 Tabs 从 4 列改为 3 列：`3D查看`、`产品信息`、`记录`
-- 删除 `TabsContent value="annotate"` 整个区域
-- 修改 `handleViewRecord`：不再设置 `activeTab('annotate')`，而是调用 `enterAnnotationMode(record.snapshot_url, asset.id, 'workstation', workstationId)` 并传入已有标注数据，跳转到中间画布查看
-- 保留截图按钮功能（从3D查看截图后进入标注模式）
-
-### 3. `src/components/canvas/AnnotationEditor.tsx` — 支持查看已有记录 + 编辑按钮
-
-- 读取 store 中的 `annotationExistingData`
-- 如果存在已有数据，初始化 annotations 为已有标注，默认 `readOnly=true`
-- 添加"编辑标注"按钮，点击后切换为可编辑模式
-- 保存时如果是编辑已有记录，更新而非新建
-
-### 4. `src/services/pptxGenerator.ts` + `workstationSlides.ts` — PPT包含所有标注图
-
-**`pptxGenerator.ts`**：
-- 将 `wsAnnotation = annotations?.find(...)` 改为 `wsAnnotations = annotations?.filter(...)` 获取所有标注
-- 将 `annotation` 字段从单个改为数组 `annotations: AnnotationData[]`
-
-**`workstationSlides.ts`**：
-- 修改 `generateProductSchematicSlide` 支持多张标注：为每张标注生成一页PPT（标题 "产品示意图 1/N"）
-- 如果没有标注则回退到 `productAsset.preview_images[0]`
-
-### 5. `src/components/forms/AnnotationRecordsPanel.tsx` — 同步修改
-
-此组件在 `FormPanel` 中 annotation mode 时显示，需要同步支持查看已有记录的功能。
-
-## 涉及文件
-
-| 文件 | 修改类型 |
-|------|----------|
-| `src/store/useAppStore.ts` | 增加 `annotationExistingData` 字段 |
-| `src/components/product/ProductAnnotationPanel.tsx` | 删除标注Tab，修改记录点击跳转画布 |
-| `src/components/canvas/AnnotationEditor.tsx` | 支持加载已有标注 + 编辑按钮 |
-| `src/services/pptxGenerator.ts` | 支持多标注传递 |
-| `src/services/pptx/workstationSlides.ts` | 多标注生成多页PPT |
+| 文件 | 修改 |
+|------|------|
+| `src/services/pptxGenerator.ts` | 删除相机详情页循环 + 改造硬件汇总表为按型号统计 |
 
