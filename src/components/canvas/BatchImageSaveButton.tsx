@@ -229,6 +229,7 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
               quality: 'standard',
               backgroundColor: '#1a1a2e',
               format: 'png',
+              forceWhiteText: true,
             });
             
             await saveSchematicToStorage(
