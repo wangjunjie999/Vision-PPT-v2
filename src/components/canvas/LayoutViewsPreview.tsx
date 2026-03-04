@@ -40,15 +40,14 @@ export function LayoutViewsPreview({ workstationId, className, onOpenCanvas }: L
   const wsCode = (workstation as any)?.code || '';
   const wsName = workstation?.name || '';
   
-  const renderImage = (url: string | null, label: string, large: boolean) => (
+  const renderImage = (url: string | null, label: string) => (
     <div className="space-y-1.5">
       <div className="text-xs text-center text-muted-foreground font-medium">
         {label}
       </div>
       <div 
         className={cn(
-          "rounded-lg border-2 border-dashed overflow-hidden flex items-center justify-center",
-          large ? "aspect-[4/3]" : "aspect-video",
+          "rounded-lg border-2 border-dashed overflow-hidden flex items-center justify-center aspect-[4/3]",
           url 
             ? "border-primary/30 bg-background" 
             : "border-muted-foreground/20 bg-muted/30"
@@ -100,12 +99,12 @@ export function LayoutViewsPreview({ workstationId, className, onOpenCanvas }: L
       </div>
       
       {/* Views: Primary (large) + Auxiliary (small) */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="col-span-2">
-          {renderImage(primaryUrl, `主视图 - ${VIEW_LABELS[primaryView]}`, true)}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          {renderImage(primaryUrl, `主视图 - ${VIEW_LABELS[primaryView]}`)}
         </div>
         <div>
-          {renderImage(auxiliaryUrl, `辅视图 - ${VIEW_LABELS[auxiliaryView]}`, false)}
+          {renderImage(auxiliaryUrl, `辅视图 - ${VIEW_LABELS[auxiliaryView]}`)}
         </div>
       </div>
 
