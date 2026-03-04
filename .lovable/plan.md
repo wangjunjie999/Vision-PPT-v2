@@ -1,15 +1,37 @@
 
 
-# 主视图/辅视图预览等大显示
+# 修复保存视图逻辑：适配主视图+辅视图双视图模型
 
 ## 问题
-当前 `LayoutViewsPreview` 中主视图占 2/3（col-span-2），辅视图占 1/3，导致大小不一致。用户要求在 UI 预览中两者等大，大小差异只在 PPT 中体现。
+1. `saveAllViewSnapshots` 仍然硬编码保存 front/side/top 三个视图，应该只保存 layout 中设定的 primary_view + auxiliary_view
+2. 视图切换按钮仍显示三个视图（front/side/top），应只显示 primary + auxiliary 两个
+3. 按钮文案仍为"保存三视图"，应改为"保存视图"
+4. `viewSaveStatus` 仍跟踪三个视图状态
 
 ## 修改范围（1个文件）
 
-### `src/components/canvas/LayoutViewsPreview.tsx`
+### `src/components/canvas/DraggableLayoutCanvas.tsx`
 
-- 将 grid 从 `grid-cols-3` 改为 `grid-cols-2`，移除 `col-span-2`，让两张图等宽等大
-- `renderImage` 中移除 `large` 参数差异，统一使用相同的 `aspect-[4/3]`
-- PPT 生成逻辑（`workstationSlides.ts`）不变，保持 60/40 的大小差异
+**1. 从 layout 读取 primaryView / auxiliaryView**
+- 在组件顶部（约第75行后）添加：
+  ```tsx
+  const primaryView: ViewType = layout?.primary_view || 'front';
+  const auxiliaryView: ViewType = layout?.auxiliary_view || 'side';
+  const activeViews: ViewType[] = primaryView === auxiliaryView ? [primaryView] : [primaryView, auxiliaryView];
+  ```
+- 初始 `currentView` 默认值改为 `primaryView`（用 useEffect 同步）
+
+**2. 视图切换按钮改为只显示 activeViews**
+- 第1195行：`(['front', 'side', 'top'] as ViewType[])` → `activeViews`
+
+**3. `saveAllViewSnapshots` 只保存 activeViews**
+- 第923行：`const views: ViewType[] = ['front', 'side', 'top']` → `const views = activeViews`
+
+**4. 按钮文案更新**
+- "保存三视图" → "保存视图"
+- `viewSaveStatus.front && viewSaveStatus.side && viewSaveStatus.top` → `activeViews.every(v => viewSaveStatus[v])`
+- toast "三视图已全部保存" → "视图已全部保存"
+
+**5. `viewSaveStatus` 初始化与完成标记**
+- 保存完成后只标记 activeViews 对应的 key
 
