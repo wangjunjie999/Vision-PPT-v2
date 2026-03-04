@@ -1,26 +1,31 @@
 
 
-# 将截图中所有文字改为白色
+# 添加"强制重新生成所有图片"功能
 
-## 修改范围
+## 问题
+当前"一键保存所有图片"按钮只处理**缺失**图片的工位/模块（检查 `front_view_image_url` 和 `schematic_image_url` 是否为空）。已有旧截图的模块不会被重新生成。
 
-只修改 `src/components/canvas/VisionSystemDiagram.tsx` 一个文件。
+## 方案
 
-### 右侧信息卡片文字
+修改 `src/components/canvas/BatchImageSaveButton.tsx` 一个文件：
 
-将所有 `<p>` 和 `<span>` 中的文字颜色统一改为白色：
-- `color: '#f1f5f9'` → `color: '#ffffff'`（约 6 处，主要参数文字）
-- `color: '#cbd5e1'` → `color: '#ffffff'`（约 12 处，次要说明文字）
-- `color: 'hsl(210, 100%, 75%)'` → `color: '#ffffff'`（3 处，光源距离、GPU、"可编辑"标签）
+### 1. 新增"强制重新生成"按钮
+在现有按钮旁添加一个"重新生成所有图片"按钮（或改为下拉菜单，包含"保存缺失图片"和"重新生成全部"两个选项）。
 
-### SVG 图形区域标注文字
+### 2. 新增 `allImages` 计算逻辑
+与 `missingImages` 类似，但不检查 URL 是否为空——遍历所有有 layout 的工位和所有模块，生成完整列表。
 
-- "待检测产品" 标签：`fill="#cbd5e1"` → `fill="#ffffff"`
-- "IPC" 标签：`fill="#cbd5e1"` → `fill="#ffffff"`
-- 角度标注 `{fovAngle}°`：`fill="hsl(210, 100%, 75%)"` → `fill="#ffffff"`
-- "视野宽度 ~Xmm" 标注：`fill="hsl(210, 100%, 75%)"` → `fill="#ffffff"`
-- 工作距离标注 `335±20mm`：`fill="hsl(210, 100%, 75%)"` → `fill="#ffffff"`
-- "ROI" 标注：`fill="hsl(120, 70%, 60%)"` → `fill="#ffffff"`
+### 3. 复用 `handleBatchSave`
+添加 `force: boolean` 参数：
+- `force = false`：使用 `missingImages`（现有行为）
+- `force = true`：使用 `allImages`（全部重新截图并上传覆盖）
 
-共约 25 处颜色值替换，全部统一为 `#ffffff`。
+### 4. UI 改动
+将按钮改为 `DropdownMenu`，提供两个选项：
+- **保存缺失图片**（原功能，badge 显示缺失数量）
+- **重新生成全部图片**（强制模式，badge 显示总数量）
+
+| 修改文件 | 改动内容 |
+|----------|----------|
+| `BatchImageSaveButton.tsx` | 添加 allImages 计算、force 参数、下拉菜单 UI |
 
