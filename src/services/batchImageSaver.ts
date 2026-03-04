@@ -141,8 +141,14 @@ export async function saveSchematicToStorage(
 ): Promise<string> {
   const fileName = `module-schematic-${moduleId}-${Date.now()}.png`;
   
-  // Remove old file if exists (ignore errors)
-  await supabase.storage.from('module-schematics').remove([`module-schematic-${moduleId}.png`]);
+  // 清理该模块所有旧文件（按前缀搜索）
+  const { data: oldFiles } = await supabase.storage
+    .from('module-schematics')
+    .list('', { search: `module-schematic-${moduleId}` });
+  if (oldFiles?.length) {
+    await supabase.storage.from('module-schematics')
+      .remove(oldFiles.map(f => f.name));
+  }
   
   // Upload new file
   const { error: uploadError } = await supabase.storage
