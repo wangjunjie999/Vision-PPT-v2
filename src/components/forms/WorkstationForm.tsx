@@ -1,4 +1,5 @@
 import { useData } from '@/contexts/DataContext';
+import { Textarea } from '@/components/ui/textarea';
 import { useControllers } from '@/contexts/HardwareContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -128,13 +129,15 @@ export function WorkstationForm() {
     lensCount: 1 as 1|2|3|4,
     lightCount: 1 as 1|2|3|4,
     cameraMounts: ['top'] as CameraMount[], 
-    // Mount quantities for each type
     mountCounts: { top: 1, side: 0, angled: 0 } as Record<CameraMount, number>,
     mechanisms: [] as Mechanism[],
     selectedCameras: [] as (HardwareItemData | null)[],
     selectedLenses: [] as (HardwareItemData | null)[],
     selectedLights: [] as (HardwareItemData | null)[],
     selectedController: null as HardwareItemData | null,
+    primaryView: 'front' as 'front' | 'side' | 'top',
+    auxiliaryView: 'side' as 'front' | 'side' | 'top',
+    layoutDescription: '',
   });
 
   useEffect(() => {
@@ -214,6 +217,9 @@ export function WorkstationForm() {
         selectedLenses: selectedLenses,
         selectedLights: selectedLights,
         selectedController: selectedController,
+        primaryView: (layout as any).primary_view || 'front',
+        auxiliaryView: (layout as any).auxiliary_view || 'side',
+        layoutDescription: (layout as any).layout_description || '',
       });
     }
   }, [workstation, layout, controllers]);
@@ -357,6 +363,9 @@ export function WorkstationForm() {
         selected_lenses: layoutForm.selectedLenses,
         selected_lights: layoutForm.selectedLights,
         selected_controller: layoutForm.selectedController,
+        primary_view: layoutForm.primaryView,
+        auxiliary_view: layoutForm.auxiliaryView,
+        layout_description: layoutForm.layoutDescription,
       } as any);
       
       toast.success('工位配置已保存');
@@ -847,13 +856,63 @@ export function WorkstationForm() {
         )}
       </div>
       
-      {/* Layout Three-View Preview */}
-      {selectedWorkstationId && (
-        <div className="mt-4 pt-4 border-t">
-          <div className="flex items-center gap-2 mb-3">
-            <ImageIcon className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">布局三视图预览</span>
+      {/* Primary/Auxiliary View Selection */}
+      <div className="mt-4 pt-4 border-t space-y-3">
+        <div className="flex items-center gap-2 mb-2">
+          <ImageIcon className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">主视图 / 辅视图选择</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">主视图</Label>
+            <Select
+              value={layoutForm.primaryView}
+              onValueChange={(v) => setLayoutForm(p => ({ ...p, primaryView: v as any }))}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="front">正视图</SelectItem>
+                <SelectItem value="side">侧视图</SelectItem>
+                <SelectItem value="top">俯视图</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+          <div className="space-y-1">
+            <Label className="text-xs">辅视图</Label>
+            <Select
+              value={layoutForm.auxiliaryView}
+              onValueChange={(v) => setLayoutForm(p => ({ ...p, auxiliaryView: v as any }))}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="front">正视图</SelectItem>
+                <SelectItem value="side">侧视图</SelectItem>
+                <SelectItem value="top">俯视图</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Layout Description */}
+        <div className="space-y-1">
+          <Label className="text-xs">布局说明（相机位置、安装角度等）</Label>
+          <Textarea
+            value={layoutForm.layoutDescription}
+            onChange={(e) => setLayoutForm(p => ({ ...p, layoutDescription: e.target.value }))}
+            placeholder="描述相机安装位置、角度、工作距离等信息。例如：C1相机顶视安装，工作距离350mm，角度90°垂直拍摄..."
+            rows={3}
+            className="text-sm"
+          />
+        </div>
+      </div>
+
+      {/* Layout Views Preview */}
+      {selectedWorkstationId && (
+        <div className="mt-3">
           <LayoutViewsPreview workstationId={selectedWorkstationId} />
         </div>
       )}

@@ -1047,24 +1047,37 @@ export async function generatePDF(
       }
     }
 
-    // 机械结构三视图
+    // 机械布局视图（主视图 + 辅视图）
     if (includeImages && layout) {
-      if (layout.front_view_image_url || layout.side_view_image_url || layout.top_view_image_url) {
+      const primaryView = (layout as any).primary_view || 'front';
+      const auxiliaryView = (layout as any).auxiliary_view || 'side';
+      const layoutDesc = (layout as any).layout_description || '';
+      const VIEW_LABELS_PDF: Record<string, string> = { front: '正视图', side: '侧视图', top: '俯视图' };
+      
+      const primaryUrl = (layout as any)[`${primaryView}_view_image_url`];
+      const auxiliaryUrl = (layout as any)[`${auxiliaryView}_view_image_url`];
+      
+      if (primaryUrl || auxiliaryUrl) {
         helper.addNewPageIfNeeded(100);
-        helper.addSubtitle(isZh ? '机械结构三视图' : 'Mechanical Structure Views');
+        helper.addSubtitle(isZh ? '机械布局视图' : 'Mechanical Layout Views');
       }
       
-      if (layout.front_view_image_url) {
-        const added = await helper.addImage(layout.front_view_image_url, isZh ? '正视图' : 'Front View', 140, 85);
+      if (primaryUrl) {
+        const added = await helper.addImage(primaryUrl, isZh ? `主视图 - ${VIEW_LABELS_PDF[primaryView]}` : `Primary - ${primaryView}`, 140, 85);
         if (added) totalImages++;
       }
-      if (layout.side_view_image_url) {
-        const added = await helper.addImage(layout.side_view_image_url, isZh ? '侧视图' : 'Side View', 140, 85);
+      if (auxiliaryUrl) {
+        const added = await helper.addImage(auxiliaryUrl, isZh ? `辅视图 - ${VIEW_LABELS_PDF[auxiliaryView]}` : `Auxiliary - ${auxiliaryView}`, 140, 85);
         if (added) totalImages++;
       }
-      if (layout.top_view_image_url) {
-        const added = await helper.addImage(layout.top_view_image_url, isZh ? '俯视图' : 'Top View', 140, 85);
-        if (added) totalImages++;
+      
+      // 布局说明
+      if (layoutDesc) {
+        helper.addNewPageIfNeeded(30);
+        helper.addTextImage(isZh ? '【布局说明】' : '【Layout Description】', 20 + 5, 10, 'bold', '#2d3748');
+        helper.y += 12;
+        const descResult = helper.addTextImage(layoutDesc, 20 + 5, 9, 'normal', '#4a5568', 160);
+        helper.y += Math.max(descResult.height, 10) + 5;
       }
     }
 

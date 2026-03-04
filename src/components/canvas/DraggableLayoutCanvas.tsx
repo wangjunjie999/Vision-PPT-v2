@@ -184,6 +184,7 @@ function OverviewZoomContainer({
           productDimensions={productDimensions}
           width={SVG_W}
           height={SVG_H}
+          hideCameras={true}
         />
       </div>
 

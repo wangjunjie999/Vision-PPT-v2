@@ -30,6 +30,7 @@ export interface ThreeViewLayoutProps {
   productDimensions?: { length: number; width: number; height: number };
   width?: number;
   height?: number;
+  hideCameras?: boolean;
 }
 
 // ===== Visual Layer Config =====
@@ -389,13 +390,18 @@ export function ThreeViewLayout({
   productDimensions,
   width = 1600,
   height = 900,
+  hideCameras = false,
 }: ThreeViewLayoutProps) {
   const halfW = width / 2;
   const halfH = height / 2;
   const headerH = 32;
   const padding = 40;
 
-  const labeled = useMemo(() => assignLabels(objects), [objects]);
+  const filteredObjects = useMemo(() => 
+    hideCameras ? objects.filter(o => o.type !== 'camera') : objects,
+    [objects, hideCameras]
+  );
+  const labeled = useMemo(() => assignLabels(filteredObjects), [filteredObjects]);
 
   // Compute auto-scale to fit all objects in each view
   // exported as getViewTransform below for overlay use
@@ -467,7 +473,8 @@ export function ThreeViewLayout({
 
         {/* CoordinateAxes and ViewHUD are now rendered in ThreeViewOverlay (viewport-fixed) */}
 
-        {/* Connection lines (camera to product) */}
+        {/* Connection lines (camera to product) - hidden when hideCameras */}
+        {!hideCameras && (
         <g transform={`translate(${tx + transform.offsetX}, ${ty + transform.offsetY})`}>
           {labeled.filter(o => o.type === 'camera').map(cam => {
             const product = labeled.find(o => o.type === 'product');
@@ -485,6 +492,7 @@ export function ThreeViewLayout({
             );
           })}
         </g>
+        )}
 
         {/* Objects with fixed-size icons */}
         <g transform={`translate(${tx + transform.offsetX}, ${ty + transform.offsetY})`}>

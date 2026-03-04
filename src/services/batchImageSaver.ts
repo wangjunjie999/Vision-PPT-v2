@@ -27,7 +27,7 @@ export interface MissingImages {
 }
 
 /**
- * Calculate missing images for a project
+ * Calculate missing images for a project (only primary + auxiliary views)
  */
 export function calculateMissingImages(
   projectWorkstations: any[],
@@ -41,10 +41,12 @@ export function calculateMissingImages(
     const layout = layouts.find(l => l.workstation_id === ws.id);
     
     if (layout) {
+      const primaryView: ViewType = layout.primary_view || 'front';
+      const auxiliaryView: ViewType = layout.auxiliary_view || 'side';
       const missingViews: ViewType[] = [];
-      if (!layout.front_view_image_url) missingViews.push('front');
-      if (!layout.side_view_image_url) missingViews.push('side');
-      if (!layout.top_view_image_url) missingViews.push('top');
+      
+      if (!layout[`${primaryView}_view_image_url`]) missingViews.push(primaryView);
+      if (!layout[`${auxiliaryView}_view_image_url`] && auxiliaryView !== primaryView) missingViews.push(auxiliaryView);
       
       if (missingViews.length > 0) {
         missingLayouts.push({

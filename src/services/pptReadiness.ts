@@ -161,13 +161,26 @@ export function checkPPTReadiness(input: CheckInput): PPTReadinessResult {
         targetId: ws.id,
       });
     } else {
-      // 检查布局概览图是否已保存
-      if (!layout.front_view_image_url) {
+      // 检查主视图和辅视图是否已保存
+      const primaryView = (layout as any).primary_view || 'front';
+      const auxiliaryView = (layout as any).auxiliary_view || 'side';
+      const primaryUrl = (layout as any)?.[`${primaryView}_view_image_url`];
+      const auxiliaryUrl = (layout as any)?.[`${auxiliaryView}_view_image_url`];
+      
+      if (!primaryUrl) {
         warnings.push({
           level: 'workstation',
           id: ws.id,
           name: ws.name,
-          warning: '未保存布局概览图',
+          warning: '未保存主视图布局图',
+        });
+      }
+      if (!auxiliaryUrl) {
+        warnings.push({
+          level: 'workstation',
+          id: ws.id,
+          name: ws.name,
+          warning: '未保存辅视图布局图',
         });
       }
       
