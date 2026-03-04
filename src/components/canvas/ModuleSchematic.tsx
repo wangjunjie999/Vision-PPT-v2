@@ -266,6 +266,7 @@ export function ModuleSchematic() {
       el.style.height = '1100px';
       el.style.maxWidth = 'none';
       el.style.overflow = 'hidden';
+      el.style.backgroundColor = '#1a1a2e';
       
       // 等待布局重排完成
       await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));

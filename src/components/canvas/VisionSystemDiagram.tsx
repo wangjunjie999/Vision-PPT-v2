@@ -204,7 +204,7 @@ export function VisionSystemDiagram({
   const interactiveClass = interactive ? "cursor-pointer hover:opacity-80 transition-opacity" : "";
 
   return (
-    <div className={cn("relative w-full h-full min-h-[700px]", className)}>
+    <div className={cn("relative w-full h-full min-h-[700px]", className)} style={{ backgroundColor: '#1a1a2e' }}>
       <svg 
         viewBox="0 0 800 750"
         className="w-full h-full"
