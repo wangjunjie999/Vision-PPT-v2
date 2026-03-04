@@ -74,6 +74,14 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   const workstation = workstations.find(ws => ws.id === workstationId) as any;
   const layout = getLayoutByWorkstation(workstationId) as any;
   
+  // Derive active views from layout's primary/auxiliary settings
+  const primaryView: ViewType = layout?.primary_view || 'front';
+  const auxiliaryView: ViewType = layout?.auxiliary_view || 'side';
+  const activeViews: ViewType[] = useMemo(() => 
+    primaryView === auxiliaryView ? [primaryView] : [primaryView, auxiliaryView],
+    [primaryView, auxiliaryView]
+  );
+  
   const [currentView, setCurrentView] = useState<ViewType>('front');
   const [objects, setObjects] = useState<LayoutObject[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -117,11 +125,11 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   // Quality preset for saving views
   const [saveQuality, setSaveQuality] = useState<QualityPreset>('fast');
   
-  // Three-view screenshot saving
+  // View screenshot saving
   const [isSavingView, setIsSavingView] = useState(false);
   const [isSavingAllViews, setIsSavingAllViews] = useState(false);
   const [saveProgress, setSaveProgress] = useState(0); // 0-100
-  const [viewSaveStatus, setViewSaveStatus] = useState<{ front: boolean; side: boolean; top: boolean }>({
+  const [viewSaveStatus, setViewSaveStatus] = useState<Record<ViewType, boolean>>({
     front: false,
     side: false,
     top: false,
@@ -389,12 +397,13 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     if (layout?.snap_enabled !== undefined) setSnapEnabled(layout.snap_enabled);
     if (layout?.show_distances !== undefined) setShowDistances(layout.show_distances);
     
-    // Load view save status
+    // Load view save status and sync currentView to primaryView
     setViewSaveStatus({
       front: layout?.front_view_saved || false,
       side: layout?.side_view_saved || false,
       top: layout?.top_view_saved || false,
     });
+    setCurrentView(layout?.primary_view || 'front');
   }, [layout]);
 
   // When view changes, re-project all objects from 3D to 2D
@@ -920,7 +929,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     
     setIsSavingAllViews(true);
     setSaveProgress(0);
-    const views: ViewType[] = ['front', 'side', 'top'];
+    const views = activeViews;
     const preset = QUALITY_PRESETS[saveQuality];
     
     try {
@@ -988,10 +997,14 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       await updateLayout(layout.id, updateData as any);
       
       // Update local state
-      setViewSaveStatus({ front: true, side: true, top: true });
+      setViewSaveStatus(prev => {
+        const updated = { ...prev };
+        activeViews.forEach(v => { updated[v] = true; });
+        return updated;
+      });
       setSaveProgress(100);
       
-      toast.success('三视图已全部保存');
+      toast.success('视图已全部保存');
     } catch (error) {
       console.error('Save all views error:', error);
       toast.error(getImageSaveErrorMessage(error));
@@ -999,7 +1012,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       setIsSavingAllViews(false);
       setSaveProgress(0);
     }
-  }, [layout?.id, workstationId, updateLayout, saveQuality]);
+  }, [layout?.id, workstationId, updateLayout, saveQuality, activeViews]);
 
   // Auto-arrange objects to prevent overlap
   const autoArrangeObjects = useCallback(() => {
@@ -1192,7 +1205,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       <div className="flex items-center justify-between gap-3 px-4 py-2 bg-card border-b border-border">
         {/* Left: View tabs */}
         <div className="flex gap-1">
-          {(['front', 'side', 'top'] as ViewType[]).map(view => (
+          {activeViews.map(view => (
             <button
               key={view}
               onClick={() => setCurrentView(view)}
@@ -1278,14 +1291,14 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                   )}
                   <span className="relative flex items-center gap-1.5">
                     {isSavingAllViews ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
-                    {isSavingAllViews ? `${saveProgress}%` : '保存三视图'}
-                    {!isSavingAllViews && viewSaveStatus.front && viewSaveStatus.side && viewSaveStatus.top && (
+                    {isSavingAllViews ? `${saveProgress}%` : '保存视图'}
+                    {!isSavingAllViews && activeViews.every(v => viewSaveStatus[v]) && (
                       <Check className="h-3 w-3 text-green-500" />
                     )}
                   </span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>一键保存三个视图截图，用于PPT生成</TooltipContent>
+              <TooltipContent>一键保存选定视图截图，用于PPT生成</TooltipContent>
             </Tooltip>
           </TooltipProvider>
           
