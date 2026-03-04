@@ -33,8 +33,6 @@ import { ObjectPropertyPanel, type LayoutObject } from './ObjectPropertyPanel';
 import { ObjectListPanel } from './ObjectListPanel';
 import { CanvasControls } from './CanvasControls';
 import { AlignmentGuides, calculateSnapPosition } from './AlignmentGuides';
-import { CameraViewRepresentation } from './EngineeringAnnotations';
-import { EngineeringAnnotations } from './EngineeringAnnotations';
 import { ResizeHandles } from './ResizeHandles';
 import { CoordinateSystem } from './CoordinateSystem';
 import { MechanismSVG, getMechanismMountPoints, type CameraMountPoint } from './MechanismSVG';
@@ -112,9 +110,6 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   // Show object list panel
   const [showObjectList, setShowObjectList] = useState(true);
   
-  // Show camera spacing and working distance
-  const [showCameraSpacing, setShowCameraSpacing] = useState(true);
-  const [showWorkingDistance, setShowWorkingDistance] = useState(true);
   
   // Toolbar settings row collapsed
   const [settingsCollapsed, setSettingsCollapsed] = useState(false);
@@ -1411,10 +1406,6 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 <Label htmlFor="dist" className="text-xs cursor-pointer">尺寸标注</Label>
               </div>
               
-              <div className="flex items-center gap-1.5">
-                <Switch checked={showCameraSpacing} onCheckedChange={setShowCameraSpacing} id="spacing" className="scale-75" />
-                <Label htmlFor="spacing" className="text-xs cursor-pointer">相机间距</Label>
-              </div>
               
               <div className="flex items-center gap-1.5">
                 <Switch checked={showObjectList} onCheckedChange={setShowObjectList} id="table" className="scale-75" />
@@ -1612,28 +1603,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                     )}
                     
                     {/* Object body */}
-                    {obj.type === 'camera' ? (
-                      <>
-                        {/* Camera with view-aware representation */}
-                        <CameraViewRepresentation
-                          camera={obj}
-                          currentView={currentView}
-                          isSelected={isSelected}
-                        />
-                        {/* Camera label */}
-                        <rect x={-20} y={-obj.height / 2 - 22} width={40} height={18} rx={4} fill="rgba(30, 41, 59, 0.95)" />
-                        <text x={0} y={-obj.height / 2 - 10} textAnchor="middle" fill="#60a5fa" fontSize="11" fontWeight="700">
-                          {obj.name}
-                        </text>
-                        {/* 3D position indicator */}
-                        <g transform={`translate(${obj.width / 2 + 8}, ${-obj.height / 2 + 5})`}>
-                          <rect x="-2" y="-2" width="50" height="36" rx="4" fill="rgba(30, 41, 59, 0.85)" />
-                          <text x="2" y="8" fill="#ef4444" fontSize="8">X:{obj.posX ?? 0}</text>
-                          <text x="2" y="18" fill="#22c55e" fontSize="8">Y:{obj.posY ?? 0}</text>
-                          <text x="2" y="28" fill="#3b82f6" fontSize="8">Z:{obj.posZ ?? 0}</text>
-                        </g>
-                      </>
-                    ) : (
+                    {(
                       <>
                         {mechImage ? (
                           <>
@@ -1724,20 +1694,6 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 gridSize={gridSize}
               />
               
-              {/* Engineering annotations - camera spacing and working distance */}
-              {showDistances && (
-                <EngineeringAnnotations
-                  objects={objects}
-                  selectedObject={selectedObj || null}
-                  secondSelectedObject={secondObj || null}
-                  centerX={centerX}
-                  centerY={centerY}
-                  scale={scale}
-                  currentView={currentView}
-                  showCameraSpacing={showCameraSpacing}
-                  showWorkingDistance={showWorkingDistance}
-                />
-              )}
               
               {/* Camera mount points and connection lines hidden - camera info described in text */}
               
