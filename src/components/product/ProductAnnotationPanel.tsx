@@ -391,13 +391,21 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
     }
   };
 
-  // View existing annotation record
+  // View existing annotation record - jump to canvas
   const handleViewRecord = (record: AnnotationRecord) => {
-    setSelectedRecord(record);
-    setCurrentSnapshot(record.snapshot_url);
-    setCurrentAnnotations(record.annotations_json || []);
-    setIsAnnotating(false);
-    setActiveTab('annotate');
+    if (!asset) return;
+    useAppStore.getState().enterAnnotationMode(
+      record.snapshot_url,
+      asset.id,
+      'workstation',
+      workstationId,
+      {
+        annotations: record.annotations_json || [],
+        remark: record.remark,
+        recordId: record.id,
+      }
+    );
+    toast.success('已进入标注查看模式');
   };
 
   if (loading) {
@@ -426,7 +434,7 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
       </CardHeader>
       <CardContent className="space-y-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 h-8">
+          <TabsList className="grid w-full grid-cols-3 h-8">
             <TabsTrigger value="viewer" className="text-xs">
               <Eye className="h-3 w-3 mr-1" />
               3D查看
@@ -434,10 +442,6 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
             <TabsTrigger value="info" className="text-xs">
               <Info className="h-3 w-3 mr-1" />
               产品信息
-            </TabsTrigger>
-            <TabsTrigger value="annotate" className="text-xs" disabled={!currentSnapshot}>
-              <Edit3 className="h-3 w-3 mr-1" />
-              标注
             </TabsTrigger>
             <TabsTrigger value="records" className="text-xs">
               <FileImage className="h-3 w-3 mr-1" />
@@ -530,55 +534,7 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
             )}
           </TabsContent>
 
-          {/* Annotation Tab */}
-          <TabsContent value="annotate" className="mt-3">
-            {currentSnapshot ? (
-              <div className="space-y-3">
-                <AnnotationCanvas
-                  imageUrl={currentSnapshot}
-                  annotations={currentAnnotations}
-                  onChange={setCurrentAnnotations}
-                  readOnly={!isAnnotating}
-                />
-                {isAnnotating && (
-                  <div className="flex gap-2 justify-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setIsAnnotating(false);
-                        setCurrentSnapshot(null);
-                        setCurrentAnnotations([]);
-                        setActiveTab('viewer');
-                      }}
-                    >
-                      取消
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => setSaveDialogOpen(true)}
-                      disabled={currentAnnotations.length === 0}
-                    >
-                      <Save className="h-4 w-4 mr-1" />
-                      保存标注
-                    </Button>
-                  </div>
-                )}
-                {selectedRecord && !isAnnotating && (
-                  <div className="text-center">
-                    <Badge variant="outline" className="text-xs">
-                      版本 {selectedRecord.version} - {selectedRecord.remark || '无备注'}
-                    </Badge>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                <Camera className="h-8 w-8 mb-2 opacity-30" />
-                <p className="text-xs">请先在3D查看中截图</p>
-              </div>
-            )}
-          </TabsContent>
+          {/* Annotation Tab removed - annotations now viewed/edited in central canvas */}
 
           {/* Product Info Tab */}
           <TabsContent value="info" className="mt-3">
