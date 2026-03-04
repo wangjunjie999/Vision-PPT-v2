@@ -215,6 +215,9 @@ export interface ReportLayoutData {
   front_view_saved: boolean | null;
   side_view_saved: boolean | null;
   top_view_saved: boolean | null;
+  primary_view: string | null;
+  auxiliary_view: string | null;
+  layout_description: string | null;
   extra_fields: Record<string, { key: string; label: string; value: string }>;
 }
 
@@ -327,6 +330,7 @@ const LAYOUT_DISPLAYED_FIELDS = new Set([
   'side_view_image_url', 'top_view_image_url', 'front_view_saved',
   'side_view_saved', 'top_view_saved', 'description', 'layout_type',
   'grid_enabled', 'snap_enabled', 'show_distances', 'machine_outline', 'layout_objects',
+  'primary_view', 'auxiliary_view', 'layout_description',
 ]);
 
 const MODULE_DISPLAYED_FIELDS = new Set([
@@ -642,6 +646,9 @@ export function buildReportData(input: BuilderInput): ReportData {
       front_view_saved: layout.front_view_saved,
       side_view_saved: layout.side_view_saved,
       top_view_saved: layout.top_view_saved,
+      primary_view: (layout as any).primary_view || 'front',
+      auxiliary_view: (layout as any).auxiliary_view || 'side',
+      layout_description: (layout as any).layout_description || '',
       extra_fields: collectExtraFields(layout as unknown as Record<string, unknown>, LAYOUT_DISPLAYED_FIELDS, lang),
     };
   });

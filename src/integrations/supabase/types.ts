@@ -429,6 +429,7 @@ export type Database = {
       }
       mechanical_layouts: {
         Row: {
+          auxiliary_view: string | null
           camera_count: number | null
           camera_mounts: Json | null
           conveyor_type: string | null
@@ -440,11 +441,13 @@ export type Database = {
           grid_enabled: boolean | null
           height: number | null
           id: string
+          layout_description: string | null
           layout_objects: Json | null
           layout_type: string | null
           machine_outline: Json | null
           mechanisms: Json | null
           name: string
+          primary_view: string | null
           selected_cameras: Json | null
           selected_controller: Json | null
           selected_lenses: Json | null
@@ -461,6 +464,7 @@ export type Database = {
           workstation_id: string
         }
         Insert: {
+          auxiliary_view?: string | null
           camera_count?: number | null
           camera_mounts?: Json | null
           conveyor_type?: string | null
@@ -472,11 +476,13 @@ export type Database = {
           grid_enabled?: boolean | null
           height?: number | null
           id?: string
+          layout_description?: string | null
           layout_objects?: Json | null
           layout_type?: string | null
           machine_outline?: Json | null
           mechanisms?: Json | null
           name: string
+          primary_view?: string | null
           selected_cameras?: Json | null
           selected_controller?: Json | null
           selected_lenses?: Json | null
@@ -493,6 +499,7 @@ export type Database = {
           workstation_id: string
         }
         Update: {
+          auxiliary_view?: string | null
           camera_count?: number | null
           camera_mounts?: Json | null
           conveyor_type?: string | null
@@ -504,11 +511,13 @@ export type Database = {
           grid_enabled?: boolean | null
           height?: number | null
           id?: string
+          layout_description?: string | null
           layout_objects?: Json | null
           layout_type?: string | null
           machine_outline?: Json | null
           mechanisms?: Json | null
           name?: string
+          primary_view?: string | null
           selected_cameras?: Json | null
           selected_controller?: Json | null
           selected_lenses?: Json | null

@@ -158,6 +158,9 @@ interface WorkstationSlideData {
     front_view_image_url?: string | null;
     side_view_image_url?: string | null;
     top_view_image_url?: string | null;
+    primary_view?: string | null;
+    auxiliary_view?: string | null;
+    layout_description?: string | null;
     width?: number | null;
     height?: number | null;
     depth?: number | null;
@@ -619,8 +622,7 @@ export function generateTechnicalRequirementsSlide(
 
 /**
  * Slide 4: Layout & Optical Solution (布局与光学方案)
- * Merges former three-view, schematic, and optical slides into one.
- * Shows simplified layout overview image + key hardware specs table.
+ * Shows primary view (large left) + auxiliary view (small right top) + description (right bottom) + hardware specs.
  */
 export async function generateLayoutAndOpticalSlide(
   ctx: SlideContext,
@@ -629,39 +631,92 @@ export async function generateLayoutAndOpticalSlide(
   const slide = ctx.pptx.addSlide({ masterName: 'MASTER_SLIDE' });
   const { layout, modules, hardware } = data;
   
-  addSlideTitle(slide, ctx, ctx.isZh ? '布局与光学方案' : 'Layout & Optical Solution');
+  addSlideTitle(slide, ctx, ctx.isZh ? '机械布局' : 'Mechanical Layout');
 
-  // Left side: Layout overview image (simplified diagram)
-  const layoutImageUrl = layout?.front_view_image_url;
-  
-  if (layoutImageUrl) {
+  const primaryView = (layout as any)?.primary_view || 'front';
+  const auxiliaryView = (layout as any)?.auxiliary_view || 'side';
+  const layoutDescription: string = (layout as any)?.layout_description || '';
+
+  const getViewUrl = (view: string): string | null => {
+    if (!layout) return null;
+    return (layout as any)?.[`${view}_view_image_url`] || null;
+  };
+
+  const VIEW_LABELS: Record<string, string> = { front: '正视图', side: '侧视图', top: '俯视图' };
+
+  // Left side: Primary view (large) - 60% width
+  const primaryUrl = getViewUrl(primaryView);
+  if (primaryUrl) {
     try {
-      const dataUri = await fetchImageAsDataUri(layoutImageUrl);
+      const dataUri = await fetchImageAsDataUri(primaryUrl);
       if (dataUri) {
         const dims = await getImageDimensions(dataUri).catch(() => ({ width: 900, height: 500 }));
         const fit = calculateContainFit(dims.width, dims.height, {
-          x: 0.4, y: 1.1, width: 5.6, height: 3.6
+          x: 0.3, y: 0.7, width: 5.4, height: 4.2
         });
-        slide.addImage({
-          data: dataUri,
-          x: fit.x, y: fit.y, w: fit.width, h: fit.height,
-        });
+        slide.addImage({ data: dataUri, x: fit.x, y: fit.y, w: fit.width, h: fit.height });
       } else {
-        throw new Error('Failed to fetch image');
+        throw new Error('Failed to fetch');
       }
     } catch (e) {
-      console.error('[PPT] Failed to load layout overview:', e);
-      addImagePlaceholder(slide, { x: 0.4, y: 1.1, width: 5.6, height: 3.6 },
-        ctx.isZh ? '请先保存布局概览图' : 'Please save layout overview',
-        '📐'
-      );
+      addImagePlaceholder(slide, { x: 0.3, y: 0.7, width: 5.4, height: 4.2 },
+        ctx.isZh ? `主视图 (${VIEW_LABELS[primaryView]}) 未保存` : `Primary view not saved`, '📐');
     }
   } else {
-    addImagePlaceholder(slide, { x: 0.4, y: 1.1, width: 5.6, height: 3.6 },
-      ctx.isZh ? '请先保存布局概览图' : 'Please save layout overview',
-      '📐'
-    );
+    addImagePlaceholder(slide, { x: 0.3, y: 0.7, width: 5.4, height: 4.2 },
+      ctx.isZh ? `主视图 (${VIEW_LABELS[primaryView]}) 未保存` : `Primary view not saved`, '📐');
   }
+
+  // Primary view label
+  slide.addText(ctx.isZh ? `主视图 - ${VIEW_LABELS[primaryView]}` : `Primary - ${primaryView}`, {
+    x: 0.3, y: 4.95, w: 5.4, h: 0.2,
+    fontSize: 8, color: COLORS.secondary, align: 'center',
+  });
+
+  // Right top: Auxiliary view (small) - 40% width, top half
+  const auxiliaryUrl = getViewUrl(auxiliaryView);
+  if (auxiliaryUrl) {
+    try {
+      const dataUri = await fetchImageAsDataUri(auxiliaryUrl);
+      if (dataUri) {
+        const dims = await getImageDimensions(dataUri).catch(() => ({ width: 900, height: 500 }));
+        const fit = calculateContainFit(dims.width, dims.height, {
+          x: 5.9, y: 0.7, width: 3.6, height: 2.0
+        });
+        slide.addImage({ data: dataUri, x: fit.x, y: fit.y, w: fit.width, h: fit.height });
+      } else {
+        throw new Error('Failed to fetch');
+      }
+    } catch (e) {
+      addImagePlaceholder(slide, { x: 5.9, y: 0.7, width: 3.6, height: 2.0 },
+        ctx.isZh ? `辅视图 (${VIEW_LABELS[auxiliaryView]})` : `Auxiliary view`, '📐');
+    }
+  } else {
+    addImagePlaceholder(slide, { x: 5.9, y: 0.7, width: 3.6, height: 2.0 },
+      ctx.isZh ? `辅视图 (${VIEW_LABELS[auxiliaryView]})` : `Auxiliary view`, '📐');
+  }
+
+  // Auxiliary view label
+  slide.addText(ctx.isZh ? `辅视图 - ${VIEW_LABELS[auxiliaryView]}` : `Auxiliary - ${auxiliaryView}`, {
+    x: 5.9, y: 2.72, w: 3.6, h: 0.2,
+    fontSize: 8, color: COLORS.secondary, align: 'center',
+  });
+
+  // Right bottom: Layout description text area
+  slide.addShape('rect', {
+    x: 5.9, y: 3.0, w: 3.6, h: 2.15,
+    fill: { color: 'F8F9FA' },
+    line: { color: COLORS.border, width: 0.5 },
+  });
+  slide.addText(ctx.isZh ? '布局说明' : 'Layout Description', {
+    x: 6.0, y: 3.05, w: 3.4, h: 0.25,
+    fontSize: 10, color: COLORS.primary, bold: true,
+  });
+  slide.addText(layoutDescription || (ctx.isZh ? '（未填写布局说明）' : '(No description)'), {
+    x: 6.0, y: 3.35, w: 3.4, h: 1.7,
+    fontSize: 9, color: layoutDescription ? COLORS.dark : COLORS.secondary,
+    valign: 'top',
+  });
 
   // Right side: Hardware specs
   slide.addText(ctx.isZh ? '光学配置' : 'Optical Configuration', {

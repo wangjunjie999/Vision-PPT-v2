@@ -225,6 +225,8 @@ export function collectAllImageUrls(
     front_view_image_url?: string | null;
     side_view_image_url?: string | null;
     top_view_image_url?: string | null;
+    primary_view?: string | null;
+    auxiliary_view?: string | null;
     selected_cameras?: Array<{ image_url?: string | null }> | null;
     selected_lenses?: Array<{ image_url?: string | null }> | null;
     selected_lights?: Array<{ image_url?: string | null }> | null;
@@ -242,11 +244,14 @@ export function collectAllImageUrls(
 ): string[] {
   const urls: string[] = [];
   
-  // Layout three-views
+  // Layout views - only primary and auxiliary
   layouts.forEach(layout => {
-    if (layout.front_view_image_url) urls.push(layout.front_view_image_url);
-    if (layout.side_view_image_url) urls.push(layout.side_view_image_url);
-    if (layout.top_view_image_url) urls.push(layout.top_view_image_url);
+    const primaryView = (layout as any).primary_view || 'front';
+    const auxiliaryView = (layout as any).auxiliary_view || 'side';
+    const primaryUrl = (layout as any)?.[`${primaryView}_view_image_url`];
+    const auxiliaryUrl = (layout as any)?.[`${auxiliaryView}_view_image_url`];
+    if (primaryUrl) urls.push(primaryUrl);
+    if (auxiliaryUrl) urls.push(auxiliaryUrl);
     
     // Selected hardware images from layout - with defensive array checks
     const selectedCameras = Array.isArray(layout.selected_cameras) ? layout.selected_cameras : [];
