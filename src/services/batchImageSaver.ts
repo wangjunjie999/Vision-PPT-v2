@@ -186,17 +186,39 @@ export async function saveSchematicToStorage(
 /**
  * Generate image from an HTML element
  */
+/**
+ * Inject a <style> tag to force all text white for consistent screenshots
+ */
+function injectForceWhiteStyle(container: HTMLElement): HTMLStyleElement {
+  const style = document.createElement('style');
+  style.id = 'capture-force-white';
+  style.textContent = `
+    * { color: #ffffff !important; }
+    p, span, div, text, label, h1, h2, h3, h4, h5, h6 { color: #ffffff !important; fill: #ffffff !important; }
+    svg text, svg tspan { fill: #ffffff !important; }
+  `;
+  container.prepend(style);
+  return style;
+}
+
 export async function generateImageFromElement(
   element: HTMLElement,
   options: {
     quality?: QualityPreset;
     backgroundColor?: string;
     format?: 'jpeg' | 'png';
+    forceWhiteText?: boolean;
   } = {}
 ): Promise<Blob> {
-  const { quality = 'fast', backgroundColor = '#1e293b', format = 'jpeg' } = options;
+  const { quality = 'fast', backgroundColor = '#1e293b', format = 'jpeg', forceWhiteText = false } = options;
   const preset = QUALITY_PRESETS[quality];
   
+  // Inject force-white style if requested
+  let injectedStyle: HTMLStyleElement | null = null;
+  if (forceWhiteText) {
+    injectedStyle = injectForceWhiteStyle(element);
+  }
+
   // Wait for render
   await new Promise<void>((resolve) => {
     requestAnimationFrame(() => {
@@ -211,13 +233,12 @@ export async function generateImageFromElement(
   try {
     dataUrl = await toPng(element, {
       quality: preset.quality,
-      pixelRatio: Math.min(preset.pixelRatio, 2), // Limit pixel ratio to prevent memory issues
+      pixelRatio: Math.min(preset.pixelRatio, 2),
       backgroundColor,
       skipFonts: true,
-      cacheBust: true, // Prevent memory caching issues
+      cacheBust: true,
     });
   } catch (error) {
-    // Retry with lower quality if memory error
     console.warn('First image capture attempt failed, retrying with lower quality:', error);
     dataUrl = await toPng(element, {
       quality: 0.6,
@@ -226,6 +247,11 @@ export async function generateImageFromElement(
       skipFonts: true,
       cacheBust: true,
     });
+  } finally {
+    // Always remove injected style
+    if (injectedStyle) {
+      injectedStyle.remove();
+    }
   }
   
   const originalBlob = dataUrlToBlob(dataUrl);

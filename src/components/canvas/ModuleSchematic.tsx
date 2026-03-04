@@ -259,6 +259,16 @@ export function ModuleSchematic() {
       const badge = diagramRef.current.querySelector('[data-screenshot-hide]') as HTMLElement | null;
       if (badge) badge.style.display = 'none';
       
+      // 注入强制白色文字样式，确保浅色/暗黑模式截图一致
+      const forceStyle = document.createElement('style');
+      forceStyle.id = 'capture-force-white';
+      forceStyle.textContent = `
+        * { color: #ffffff !important; }
+        p, span, div, text, label, h1, h2, h3, h4, h5, h6 { color: #ffffff !important; fill: #ffffff !important; }
+        svg text, svg tspan { fill: #ffffff !important; }
+      `;
+      diagramRef.current.prepend(forceStyle);
+      
       // 截图前：临时设置固定尺寸确保完整截取
       const el = diagramRef.current;
       const originalStyle = el.style.cssText;
@@ -280,9 +290,10 @@ export function ModuleSchematic() {
         skipFonts: true,
       });
       
-      // 截图后恢复原始样式和 badge
+      // 截图后恢复原始样式、badge 和注入样式
       el.style.cssText = originalStyle;
       if (badge) badge.style.display = '';
+      forceStyle.remove();
       
       // Convert base64 to blob
       const response = await fetch(dataUrl);
