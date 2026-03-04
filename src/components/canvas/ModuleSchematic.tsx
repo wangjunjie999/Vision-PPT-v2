@@ -144,14 +144,14 @@ export function ModuleSchematic() {
       const el = diagramRef.current;
       const originalStyle = el.style.cssText;
       el.style.width = '1200px';
-      el.style.height = '900px';
+      el.style.height = '1000px';
       el.style.maxWidth = 'none';
       el.style.overflow = 'hidden';
       await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
       
       const dataUrl = await toPng(el, {
         width: 1200,
-        height: 900,
+        height: 1000,
         quality: 1,
         pixelRatio,
         backgroundColor: '#1a1a2e',
@@ -188,14 +188,14 @@ export function ModuleSchematic() {
       const el = diagramRef.current;
       const originalStyle = el.style.cssText;
       el.style.width = '1200px';
-      el.style.height = '900px';
+      el.style.height = '1000px';
       el.style.maxWidth = 'none';
       el.style.overflow = 'hidden';
       await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
       
       const dataUrl = await toPng(el, {
         width: 1200,
-        height: 900,
+        height: 1000,
         quality: 1,
         pixelRatio,
         backgroundColor: '#1a1a2e',
@@ -259,7 +259,7 @@ export function ModuleSchematic() {
       const el = diagramRef.current;
       const originalStyle = el.style.cssText;
       el.style.width = '1200px';
-      el.style.height = '900px';
+      el.style.height = '1000px';
       el.style.maxWidth = 'none';
       el.style.overflow = 'hidden';
       
@@ -268,7 +268,7 @@ export function ModuleSchematic() {
       
       const dataUrl = await toPng(el, {
         width: 1200,
-        height: 900,
+        height: 1000,
         quality: 1,
         pixelRatio,
         backgroundColor: '#1a1a2e',
