@@ -403,7 +403,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       side: layout?.side_view_saved || false,
       top: layout?.top_view_saved || false,
     });
-    setCurrentView(layout?.primary_view || 'front');
+    
   }, [layout]);
 
   // When view changes, re-project all objects from 3D to 2D
@@ -1205,7 +1205,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       <div className="flex items-center justify-between gap-3 px-4 py-2 bg-card border-b border-border">
         {/* Left: View tabs */}
         <div className="flex gap-1">
-          {activeViews.map(view => (
+          {(['front', 'side', 'top'] as ViewType[]).map(view => (
             <button
               key={view}
               onClick={() => setCurrentView(view)}
