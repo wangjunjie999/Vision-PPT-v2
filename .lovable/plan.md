@@ -1,31 +1,56 @@
 
 
-# 添加"强制重新生成所有图片"功能
+# 修复批量/单个截图中文字显示为黑色的问题
 
-## 问题
-当前"一键保存所有图片"按钮只处理**缺失**图片的工位/模块（检查 `front_view_image_url` 和 `schematic_image_url` 是否为空）。已有旧截图的模块不会被重新生成。
+## 根因分析
 
-## 方案
+通过检查存储的截图和代码，发现两个核心问题：
 
-修改 `src/components/canvas/BatchImageSaveButton.tsx` 一个文件：
+1. **离屏渲染位置导致样式丢失**：`BatchImageSaveButton` 的离屏渲染区域使用 `left: -9999px`。`html-to-image` 在克隆 DOM 时，对于完全移出视口的元素，浏览器可能不会完整计算 `foreignObject` 内嵌 HTML 的样式，导致 `color: '#ffffff'` 未生效，文字回退为默认黑色。
 
-### 1. 新增"强制重新生成"按钮
-在现有按钮旁添加一个"重新生成所有图片"按钮（或改为下拉菜单，包含"保存缺失图片"和"重新生成全部"两个选项）。
+2. **容器背景色未显式指定**：`VisionSystemDiagram` 根元素和外层 `div` 均无显式背景色（依赖 CSS 变量 `bg-background`），在 `html-to-image` 捕获时 CSS 变量可能解析为浅色/白色背景。
 
-### 2. 新增 `allImages` 计算逻辑
-与 `missingImages` 类似，但不检查 URL 是否为空——遍历所有有 layout 的工位和所有模块，生成完整列表。
+## 修改方案（2 个文件）
 
-### 3. 复用 `handleBatchSave`
-添加 `force: boolean` 参数：
-- `force = false`：使用 `missingImages`（现有行为）
-- `force = true`：使用 `allImages`（全部重新截图并上传覆盖）
+### 1. `BatchImageSaveButton.tsx` — 离屏容器修复
 
-### 4. UI 改动
-将按钮改为 `DropdownMenu`，提供两个选项：
-- **保存缺失图片**（原功能，badge 显示缺失数量）
-- **重新生成全部图片**（强制模式，badge 显示总数量）
+将离屏渲染容器从 `left: -9999px` 改为在视口内但不可见：
 
-| 修改文件 | 改动内容 |
-|----------|----------|
-| `BatchImageSaveButton.tsx` | 添加 allImages 计算、force 参数、下拉菜单 UI |
+```text
+旧: class="fixed left-[-9999px] top-0 w-[1200px] h-[1000px] overflow-hidden"
+新: style="position:fixed; left:0; top:0; width:1200px; height:1000px; opacity:0; z-index:-9999; pointer-events:none; overflow:hidden"
+```
+
+同时为 `.vision-diagram-container` 添加显式深色背景：
+```text
+旧: style={{ width: '1000px', height: '1000px' }}
+新: style={{ width: '1000px', height: '1000px', backgroundColor: '#1a1a2e' }}
+```
+
+### 2. `ModuleSchematic.tsx` — 单个保存修复
+
+在截图前给 `diagramRef` 容器添加显式背景色，确保不依赖 CSS 变量：
+
+```text
+// 截图前临时设置
+el.style.backgroundColor = '#1a1a2e';
+
+// 截图后恢复
+el.style.cssText = originalStyle;
+```
+
+### 3. `VisionSystemDiagram.tsx` — 根容器背景色兜底
+
+给 SVG 外层 `<div>` 添加显式内联 `backgroundColor`，作为最后保障：
+
+```text
+旧: <div className={cn("relative w-full h-full min-h-[700px]", className)}>
+新: <div className={cn("relative w-full h-full min-h-[700px]", className)} style={{ backgroundColor: '#1a1a2e' }}>
+```
+
+## 预期效果
+
+- 离屏元素在视口内正常计算样式 → `foreignObject` 中的 `color: '#ffffff'` 正确生效
+- 显式深色背景 → 白色文字清晰可见
+- 批量重新生成和单个保存两条路径输出一致
 
