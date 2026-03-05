@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calculator, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { ModuleFormState } from './types';
-import { useMemo, useCallback } from 'react';
+import { useMemo, useEffect } from 'react';
 import { calculateImagingParams, parseResolution, parseFOV } from '@/utils/imagingCalculations';
 import { useCameras } from '@/hooks/useHardware';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
@@ -40,17 +40,11 @@ export function ModuleStep3Imaging({ form, setForm }: ModuleStep3ImagingProps) {
   }, [form.fieldOfView, form.fieldOfViewCommon, form.type, selectedCameraResolution, form.accuracyRequirement]);
   
   // 自动填充像素精度
-  const handleAutoCalculate = useCallback(() => {
+  useEffect(() => {
     if (calculationResult.resolutionPerPixel) {
       setForm(p => ({ ...p, resolutionPerPixel: calculationResult.resolutionPerPixel || '' }));
     }
   }, [calculationResult.resolutionPerPixel, setForm]);
-  
-  // 检查是否可以自动计算
-  const canAutoCalculate = useMemo(() => {
-    const fov = form.type === 'positioning' ? form.fieldOfView : form.fieldOfViewCommon;
-    return Boolean(selectedCameraResolution && fov && parseFOV(fov) && parseResolution(selectedCameraResolution));
-  }, [form.fieldOfView, form.fieldOfViewCommon, form.type, selectedCameraResolution]);
 
   return (
     <div className="space-y-6">
