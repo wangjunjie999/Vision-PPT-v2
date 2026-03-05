@@ -64,27 +64,7 @@ export function ModuleStep3Imaging({ form, setForm }: ModuleStep3ImagingProps) {
                 </span>
               )}
             </div>
-            {canAutoCalculate && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleAutoCalculate}
-                      className="gap-1.5"
-                    >
-                      <RefreshCw className="h-3.5 w-3.5" />
-                      自动计算
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    根据相机分辨率和视野自动计算像素精度
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
+            </div>
           </div>
           
           {/* Calculation result preview */}
@@ -187,38 +167,13 @@ export function ModuleStep3Imaging({ form, setForm }: ModuleStep3ImagingProps) {
             </div>
           </div>
           <div className="space-y-1">
-            <Label className="text-xs flex items-center gap-1">
-              分辨率 (mm/px)
-              {canAutoCalculate && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-4 w-4 p-0"
-                        onClick={handleAutoCalculate}
-                      >
-                        <Calculator className="h-3 w-3 text-primary" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>点击自动计算</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </Label>
+            <Label className="text-xs">分辨率 (mm/px)</Label>
             <Input 
               value={form.resolutionPerPixel || ''} 
               onChange={e => setForm(p => ({ ...p, resolutionPerPixel: e.target.value }))} 
-              placeholder={calculationResult.resolutionPerPixel || '0.1'}
+              placeholder="0.1"
               className="h-9" 
             />
-            {calculationResult.resolutionPerPixel && !form.resolutionPerPixel && (
-              <p className="text-[10px] text-primary">
-                建议值: {calculationResult.resolutionPerPixel}
-              </p>
-            )}
           </div>
         </div>
       </div>
