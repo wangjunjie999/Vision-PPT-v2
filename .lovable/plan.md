@@ -1,44 +1,40 @@
 
 
-# FOV 输入改为两个独立数值框
+# 在机械布局画布上显示相机及其与执行机构的连接关系
 
 ## 问题
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+当前画布在渲染时通过 `objects.filter(obj => obj.type !== 'camera')` 过滤掉了所有相机对象（第1585行），用户无法在布局图上看到相机位置及其与执行机构的安装关系。
 
 ## 修改方案
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+### `src/components/canvas/DraggableLayoutCanvas.tsx`
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
+**1. 取消相机过滤，恢复相机渲染**
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+将第1585行的 `objects.filter(obj => obj.type !== 'camera')` 改为渲染所有对象（包括相机），但对相机和执行机构使用不同的视觉样式。
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+**2. 相机渲染样式**
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+为 `type === 'camera'` 的对象添加专门的渲染分支：
+- 使用蓝色渐变（已有 `camera-grad` 定义）矩形 + 相机镜头圆形图标
+- 显示相机名称标签（如 CAM1、CAM2）
+- 选中时使用蓝色发光边框
 
-```
-[宽度输入] × [高度输入]
-```
+**3. 绘制相机与执行机构之间的连接线**
 
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+在对象渲染之前，遍历所有已挂载的相机（`mountedToMechanismId` 有值的），绘制：
+- 从相机中心到所挂载执行机构中心的虚线连接线（蓝色半透明）
+- 连接线两端带小圆点标记
+- 挂载图标提示（小锁链图标）
 
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+**4. 恢复相机安装点显示**
 
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+取消第1707行的注释，当拖拽相机时在执行机构上显示安装点（已有 `CameraMountPoints` 组件），方便用户识别可安装位置。
 
-### 4. PPT 输出不变
+### 不变项
 
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+- 相机的拖拽、挂载、3D同步等逻辑已完好保留，无需修改
+- 对象属性面板、对象列表面板中相机的管理功能不变
+- PPT生成逻辑不受影响
 
