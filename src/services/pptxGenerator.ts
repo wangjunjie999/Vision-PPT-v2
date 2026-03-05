@@ -738,7 +738,7 @@ export async function generatePPTX(
     fontSize: 18, color: COLORS.primary, bold: true,
   });
   descSlide.addText(isZh ? '项目基本信息' : 'Project Information', {
-    x: 0, y: 0.48, w: '100%', h: 0.22,
+    x: 0, y: 0.52, w: '100%', h: 0.22,
     fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
   });
 
@@ -830,7 +830,7 @@ export async function generatePPTX(
   });
 
   revisionSlide.addText(isZh ? '变更表' : 'Change Log', {
-    x: 0, y: 0.48, w: '100%', h: 0.22,
+    x: 0, y: 0.52, w: '100%', h: 0.22,
     fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
   });
 
@@ -1079,7 +1079,7 @@ export async function generatePPTX(
     fontSize: 18, color: COLORS.primary, bold: true,
   });
   hwSlide.addText(isZh ? '设备清单' : 'Equipment List', {
-    x: 0, y: 0.48, w: '100%', h: 0.22,
+    x: 0, y: 0.52, w: '100%', h: 0.22,
     fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
   });
 

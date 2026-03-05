@@ -128,17 +128,17 @@ function addSlideTitle(
   if (splitSubtitles) {
     // Split subtitle text (no rect, bg image has the blue bar)
     slide.addText(splitSubtitles.left, {
-      x: 0, y: 0.48, w: '50%', h: 0.22,
+      x: 0, y: 0.52, w: '50%', h: 0.22,
       fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
     });
     slide.addText(splitSubtitles.right, {
-      x: '50%', y: 0.48, w: '50%', h: 0.22,
+      x: '50%', y: 0.52, w: '50%', h: 0.22,
       fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
     });
   } else {
     // Single subtitle text (no rect, bg image has the blue bar)
     slide.addText(subtitle, {
-      x: 0, y: 0.48, w: '100%', h: 0.22,
+      x: 0, y: 0.52, w: '100%', h: 0.22,
       fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
     });
   }
@@ -675,28 +675,28 @@ export async function generateLayoutAndOpticalSlide(
       if (dataUri) {
         const dims = await getImageDimensions(dataUri).catch(() => ({ width: 900, height: 500 }));
         const fit = calculateContainFit(dims.width, dims.height, {
-          x: 0.3, y: 0.7, width: 5.4, height: 4.2
+          x: 0.3, y: 0.85, width: 5.4, height: 4.2
         });
         slide.addImage({ data: dataUri, x: fit.x, y: fit.y, w: fit.width, h: fit.height });
       } else {
         throw new Error('Failed to fetch');
       }
     } catch (e) {
-      addImagePlaceholder(slide, { x: 0.3, y: 0.7, width: 5.4, height: 4.2 },
+      addImagePlaceholder(slide, { x: 0.3, y: 0.85, width: 5.4, height: 4.2 },
         ctx.isZh ? `主视图 (${VIEW_LABELS[primaryView]}) 未保存` : `Primary view not saved`, '📐');
     }
   } else {
-    addImagePlaceholder(slide, { x: 0.3, y: 0.7, width: 5.4, height: 4.2 },
+    addImagePlaceholder(slide, { x: 0.3, y: 0.85, width: 5.4, height: 4.2 },
       ctx.isZh ? `主视图 (${VIEW_LABELS[primaryView]}) 未保存` : `Primary view not saved`, '📐');
   }
 
   // Primary view label
   slide.addText(ctx.isZh ? `主视图 - ${VIEW_LABELS[primaryView]}` : `Primary - ${primaryView}`, {
-    x: 0.3, y: 4.95, w: 5.4, h: 0.2,
+    x: 0.3, y: 5.1, w: 5.4, h: 0.2,
     fontSize: 8, color: COLORS.secondary, align: 'center',
   });
 
-  // Right top: Auxiliary view (small) - 40% width, top half
+  // Right top: Auxiliary view (small)
   const auxiliaryUrl = getViewUrl(auxiliaryView);
   if (auxiliaryUrl) {
     try {
@@ -704,127 +704,41 @@ export async function generateLayoutAndOpticalSlide(
       if (dataUri) {
         const dims = await getImageDimensions(dataUri).catch(() => ({ width: 900, height: 500 }));
         const fit = calculateContainFit(dims.width, dims.height, {
-          x: 5.9, y: 0.7, width: 3.6, height: 2.0
+          x: 5.9, y: 0.85, width: 3.6, height: 2.8
         });
         slide.addImage({ data: dataUri, x: fit.x, y: fit.y, w: fit.width, h: fit.height });
       } else {
         throw new Error('Failed to fetch');
       }
     } catch (e) {
-      addImagePlaceholder(slide, { x: 5.9, y: 0.7, width: 3.6, height: 2.0 },
+      addImagePlaceholder(slide, { x: 5.9, y: 0.85, width: 3.6, height: 2.8 },
         ctx.isZh ? `辅视图 (${VIEW_LABELS[auxiliaryView]})` : `Auxiliary view`, '📐');
     }
   } else {
-    addImagePlaceholder(slide, { x: 5.9, y: 0.7, width: 3.6, height: 2.0 },
+    addImagePlaceholder(slide, { x: 5.9, y: 0.85, width: 3.6, height: 2.8 },
       ctx.isZh ? `辅视图 (${VIEW_LABELS[auxiliaryView]})` : `Auxiliary view`, '📐');
   }
 
   // Auxiliary view label
   slide.addText(ctx.isZh ? `辅视图 - ${VIEW_LABELS[auxiliaryView]}` : `Auxiliary - ${auxiliaryView}`, {
-    x: 5.9, y: 2.72, w: 3.6, h: 0.2,
+    x: 5.9, y: 3.67, w: 3.6, h: 0.2,
     fontSize: 8, color: COLORS.secondary, align: 'center',
   });
 
-  // Right bottom: Layout description text area
+  // Right: Layout description text area
   slide.addShape('rect', {
-    x: 5.9, y: 3.0, w: 3.6, h: 2.15,
+    x: 5.9, y: 3.9, w: 3.6, h: 1.2,
     fill: { color: 'F8F9FA' },
     line: { color: COLORS.border, width: 0.5 },
   });
   slide.addText(ctx.isZh ? '布局说明' : 'Layout Description', {
-    x: 6.0, y: 3.05, w: 3.4, h: 0.25,
+    x: 6.0, y: 3.95, w: 3.4, h: 0.25,
     fontSize: 10, color: COLORS.primary, bold: true,
   });
   slide.addText(layoutDescription || (ctx.isZh ? '（未填写布局说明）' : '(No description)'), {
-    x: 6.0, y: 3.35, w: 3.4, h: 1.7,
+    x: 6.0, y: 4.2, w: 3.4, h: 0.85,
     fontSize: 9, color: layoutDescription ? COLORS.dark : COLORS.secondary,
     valign: 'top',
-  });
-
-  // Right side: Hardware specs
-  slide.addText(ctx.isZh ? '光学配置' : 'Optical Configuration', {
-    x: 6.2, y: 1.1, w: 3.3, h: 0.28,
-    fontSize: 11, color: COLORS.dark, bold: true,
-  });
-
-  // Camera table
-  const cameraRows: TableRow[] = layout?.selected_cameras?.filter((c: any) => c).map((cam: any) => {
-    const fullCam = hardware?.cameras?.find((c: { id: string }) => c.id === cam.id);
-    return row([`${cam.brand} ${cam.model}`, fullCam?.resolution || '-']);
-  }) || [row(['-', '-'])];
-
-  slide.addTable(cameraRows, {
-    x: 6.2, y: 1.42, w: 3.3, h: Math.min(cameraRows.length * 0.26 + 0.05, 0.9),
-    fontFace: 'Arial', fontSize: 8,
-    colW: [2.1, 1.2],
-    border: { pt: 0.5, color: COLORS.border },
-    fill: { color: COLORS.white },
-  });
-
-  // Lens + Light compact
-  const opticsY = 1.42 + Math.min(cameraRows.length * 0.26 + 0.05, 0.9) + 0.15;
-  const opticsRows: TableRow[] = [];
-  
-  layout?.selected_lenses?.filter((l: any) => l).forEach((lens: any) => {
-    const fullLens = hardware?.lenses?.find((l: { id: string }) => l.id === lens.id);
-    opticsRows.push(row([ctx.isZh ? '镜头' : 'Lens', `${lens.brand} ${lens.model}${fullLens?.focal_length ? ` ${fullLens.focal_length}` : ''}`]));
-  });
-  
-  layout?.selected_lights?.filter((l: any) => l).forEach((light: any) => {
-    const fullLight = hardware?.lights?.find((l: { id: string }) => l.id === light.id);
-    opticsRows.push(row([ctx.isZh ? '光源' : 'Light', `${light.brand} ${light.model}${fullLight?.type ? ` (${fullLight.type})` : ''}`]));
-  });
-  
-  if (layout?.selected_controller) {
-    opticsRows.push(row([ctx.isZh ? '工控机' : 'IPC', `${layout.selected_controller.brand} ${layout.selected_controller.model}`]));
-  }
-
-  if (opticsRows.length > 0) {
-    slide.addTable(opticsRows, {
-      x: 6.2, y: opticsY, w: 3.3, h: Math.min(opticsRows.length * 0.24 + 0.05, 1.2),
-      fontFace: 'Arial', fontSize: 8,
-      colW: [0.8, 2.5],
-      border: { pt: 0.5, color: COLORS.border },
-      fill: { color: COLORS.white },
-    });
-  }
-
-  // Layout info section
-  const layoutInfoY = opticsY + Math.min(opticsRows.length * 0.24 + 0.05, 1.2) + 0.2;
-  const cameraMounts = Array.isArray(layout?.camera_mounts) ? layout.camera_mounts : [];
-  const mechanisms = Array.isArray(layout?.mechanisms) ? layout.mechanisms : [];
-
-  const translatedMounts = cameraMounts.map((m: string) => 
-    getLabel(m, CAMERA_MOUNT_LABELS, ctx.isZh ? 'zh' : 'en')
-  ).join('/') || (ctx.isZh ? '顶部' : 'Top');
-  
-  const translatedMechanisms = mechanisms.map((m: string) => 
-    getLabel(m, MECHANISM_LABELS, ctx.isZh ? 'zh' : 'en')
-  ).join('、') || '-';
-
-  const layoutInfoRows: TableRow[] = [
-    row([ctx.isZh ? '安装方式' : 'Mount', translatedMounts]),
-    row([ctx.isZh ? '执行机构' : 'Mechanisms', translatedMechanisms]),
-    row([ctx.isZh ? '相机数量' : 'Cameras', `${layout?.camera_count || modules.length}`]),
-  ];
-
-  // Working distance from modules
-  modules.forEach(mod => {
-    const cfg = (mod.defect_config || mod.measurement_config || mod.positioning_config) as Record<string, unknown> | null;
-    if (cfg?.workingDistance) {
-      layoutInfoRows.push(row([ctx.isZh ? '工作距离' : 'WD', `${cfg.workingDistance} mm`]));
-    }
-    if (cfg?.fieldOfView) {
-      layoutInfoRows.push(row([ctx.isZh ? '视场' : 'FOV', `${cfg.fieldOfView} mm`]));
-    }
-  });
-
-  slide.addTable(layoutInfoRows.slice(0, 7), {
-    x: 6.2, y: layoutInfoY, w: 3.3, h: Math.min(layoutInfoRows.length * 0.24 + 0.05, 1.6),
-    fontFace: 'Arial', fontSize: 8,
-    colW: [1.1, 2.2],
-    border: { pt: 0.5, color: COLORS.border },
-    fill: { color: COLORS.white },
   });
 
   // Layout dimensions at bottom
@@ -832,7 +746,7 @@ export async function generateLayoutAndOpticalSlide(
     slide.addText(
       `${ctx.isZh ? '布局尺寸' : 'Layout Size'}: ${layout.width || '-'} × ${layout.height || '-'} × ${layout.depth || '-'} mm`, 
       {
-        x: 0.4, y: 4.85, w: 5.6, h: 0.22,
+        x: 0.4, y: 5.0, w: 5.6, h: 0.22,
         fontSize: 8, color: COLORS.secondary,
       }
     );
