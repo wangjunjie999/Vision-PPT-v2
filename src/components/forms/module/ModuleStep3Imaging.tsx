@@ -1,14 +1,12 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calculator, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { ModuleFormState } from './types';
 import { useMemo, useEffect } from 'react';
-import { calculateImagingParams, parseResolution, parseFOV } from '@/utils/imagingCalculations';
+import { calculateImagingParams } from '@/utils/imagingCalculations';
 import { useCameras } from '@/hooks/useHardware';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 interface ModuleStep3ImagingProps {
   form: ModuleFormState;
