@@ -1148,11 +1148,7 @@ export function generateBasicInfoAndRequirementsSlide(
   const slide = ctx.pptx.addSlide({ masterName: 'MASTER_SLIDE' });
   const { ws, layout, modules, productAsset } = data;
   
-  // Use split subtitle bar (图93风格: 技术要求 | 产品示意图)
-  addSlideTitle(slide, ctx, '', {
-    left: ctx.isZh ? '技术要求' : 'Technical Requirements',
-    right: ctx.isZh ? '产品示意图' : 'Product Schematic',
-  });
+  addSlideTitle(slide, ctx, ctx.isZh ? '技术要求' : 'Technical Requirements');
 
   // === TOP HALF: Basic Info ===
   const startY = 1.1;
