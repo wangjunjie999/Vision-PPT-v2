@@ -1,39 +1,42 @@
 
 
-# 统一 PPT 内页背景（排除封面）
+# 用上传图片替换所有内页母版背景
 
-## 参考图分析
+## 方案
 
-上传的图片（image-97）显示内页标准背景模板：
-1. **深蓝色页眉条** — 顶部全宽，高约 0.45"
-2. **蓝色副标题线** — 紧接页眉下方，高约 0.02"（细线）
-3. **内容区域深色边框** — 在白色内容区四周有一个深蓝色细线矩形边框（约 0.5pt），形成一个"画框"效果，大约从 x: 0.3, y: 0.55 到 x: 9.7, y: 5.35
-4. **底部细线** — 页脚分隔线
+将 `image-98.png` 复制到 `public/ppt-covers/` 目录，然后修改 `src/services/pptxGenerator.ts` 中的母版定义：
 
-## 当前差异
+1. **删除所有 `masterObjects` 中的绘制元素**（页眉条、页脚条、页脚线、公司名文字、客户名文字、内容边框、Logo）
+2. **改为加载 `ppt-covers/tech-shine-bg.png` 作为全屏背景图**，覆盖整个幻灯片（10" × 5.625"）
+3. 母版 `background` 改为使用该图片的 dataUri
 
-当前母版（`MASTER_SLIDE`）缺少**内容区域的矩形边框**。页眉和页脚线已有，但没有围绕内容区的"画框"轮廓线。
+### 文件：复制资源
+- `image-98.png` → `public/ppt-covers/tech-shine-bg.png`
 
-## 修改方案
+### 文件：`src/services/pptxGenerator.ts`（约第 670-714 行）
 
-### 文件：`src/services/pptxGenerator.ts`（约第 682-693 行）
-
-在 `masterObjects` 数组中添加一个**内容区域边框矩形**（无填充，仅描边）：
+替换整个母版构建逻辑：
 
 ```typescript
-masterObjects.push(
-  // 现有的 header bar、footer bar、footer line...
-  
-  // 内容区域边框 — 深蓝色细线矩形（与参考图一致）
-  { rect: { 
-    x: 0.25, y: 0.52, 
-    w: SLIDE_LAYOUT.width - 0.5,  // 9.5"
-    h: footerY - 0.57,            // ≈4.83"
-    fill: { type: 'none' },       // 透明填充
-    line: { color: activeColors.primary, width: 0.75 },
-  }},
-);
+// 加载背景底图
+let bgImageData: string | null = null;
+const bgUrl = `${window.location.origin}/ppt-covers/tech-shine-bg.png`;
+try {
+  bgImageData = await fetchImageAsDataUri(bgUrl);
+} catch (err) {
+  console.warn('Failed to load bg image:', err);
+}
+
+pptx.defineSlideMaster({
+  title: 'MASTER_SLIDE',
+  background: bgImageData 
+    ? { data: bgImageData } 
+    : { color: activeColors.background },
+  objects: [], // 所有页眉页脚元素由底图自带
+});
 ```
 
-这样所有使用 `MASTER_SLIDE` 的内页自动获得统一的边框背景，封面页（`addSlide()` 无 masterName）不受影响。
+删除的内容：页眉矩形、页脚矩形、页脚线、公司名文字、客户名文字、内容边框矩形、Logo 图片加载及添加逻辑。
+
+封面页不受影响（使用独立的 `tech-shine-cover.png`）。
 
