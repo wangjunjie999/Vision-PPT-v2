@@ -1182,7 +1182,7 @@ export function generateBOMSlide(
   const slide = ctx.pptx.addSlide({ masterName: 'MASTER_SLIDE' });
   const { layout } = data;
   
-  addSlideTitle(slide, ctx, ctx.isZh ? 'BOM清单与审核' : 'BOM List & Review');
+  addSlideTitle(slide, ctx, ctx.isZh ? 'BOM清单' : 'BOM List');
 
   // BOM table
   const bomHeader: TableRow = row([
@@ -1231,26 +1231,6 @@ export function generateBOMSlide(
     valign: 'middle',
     align: 'center',
   });
-
-  // Review section
-  slide.addText(ctx.isZh ? '【审核】' : '[Review]', {
-    x: 0.5, y: 4.4, w: 9, h: 0.25,
-    fontSize: 10, color: COLORS.dark, bold: true,
-  });
-
-  slide.addShape('rect', {
-    x: 0.5, y: 4.7, w: 9, h: 0.65,
-    fill: { color: COLORS.white },
-    line: { color: COLORS.border, width: 0.5 },
-  });
-  
-  slide.addText(
-    `☐ ${ctx.isZh ? '技术确认' : 'Technical'}     ☐ ${ctx.isZh ? '采购确认' : 'Procurement'}     ☐ ${ctx.isZh ? '客户确认' : 'Customer'}`, 
-    {
-      x: 0.7, y: 4.85, w: 8.6, h: 0.35,
-      fontSize: 11, color: COLORS.dark,
-    }
-  );
 }
 
 // ==================== NEW SLIDES: Plan Refactoring ====================
