@@ -151,28 +151,46 @@ export function ModuleStep3Imaging({ form, setForm }: ModuleStep3ImagingProps) {
               className="h-9" 
             />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 col-span-1">
             <Label className="text-xs">视场 FOV (mm)</Label>
-            <div className="relative">
+            <div className="flex items-center gap-1.5">
               <Input 
-                value={form.type === 'positioning' ? form.fieldOfView : form.fieldOfViewCommon || ''} 
+                value={form.fieldOfViewWidth || ''} 
                 onChange={e => {
+                  const w = e.target.value;
+                  const h = form.fieldOfViewHeight || '';
+                  const combined = w && h ? `${w}×${h}` : '';
                   if (form.type === 'positioning') {
-                    setForm(p => ({ ...p, fieldOfView: e.target.value }));
+                    setForm(p => ({ ...p, fieldOfViewWidth: w, fieldOfView: combined }));
                   } else {
-                    setForm(p => ({ ...p, fieldOfViewCommon: e.target.value }));
+                    setForm(p => ({ ...p, fieldOfViewWidth: w, fieldOfViewCommon: combined }));
                   }
                 }}
-                placeholder="100×80"
-                className="h-9" 
+                placeholder="宽"
+                className="h-9 w-full" 
+                type="number"
+              />
+              <span className="text-muted-foreground text-sm shrink-0">×</span>
+              <Input 
+                value={form.fieldOfViewHeight || ''} 
+                onChange={e => {
+                  const h = e.target.value;
+                  const w = form.fieldOfViewWidth || '';
+                  const combined = w && h ? `${w}×${h}` : '';
+                  if (form.type === 'positioning') {
+                    setForm(p => ({ ...p, fieldOfViewHeight: h, fieldOfView: combined }));
+                  } else {
+                    setForm(p => ({ ...p, fieldOfViewHeight: h, fieldOfViewCommon: combined }));
+                  }
+                }}
+                placeholder="高"
+                className="h-9 w-full" 
+                type="number"
               />
               {calculationResult.fovParsed && (
-                <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                </div>
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
               )}
             </div>
-            <p className="text-[10px] text-muted-foreground">格式: 宽×高，如 100×80</p>
           </div>
           <div className="space-y-1">
             <Label className="text-xs flex items-center gap-1">

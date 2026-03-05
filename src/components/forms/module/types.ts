@@ -211,6 +211,8 @@ export interface ModuleFormState {
   // Imaging and optical parameters
   workingDistance: string; // 工作距离WD (mm) - 通用字段，各类型可能覆盖
   fieldOfViewCommon: string; // 视野FOV (mm×mm) - 通用字段
+  fieldOfViewWidth: string; // FOV 宽 (mm)
+  fieldOfViewHeight: string; // FOV 高 (mm)
   resolutionPerPixel: string; // 分辨率换算 (mm/px)
   exposure: string; // 曝光 (us/ms)
   gain: string; // 增益 (dB)
@@ -400,6 +402,8 @@ export const getDefaultFormState = (): ModuleFormState => ({
   // Imaging and optical parameters defaults
   workingDistance: '',
   fieldOfViewCommon: '',
+  fieldOfViewWidth: '',
+  fieldOfViewHeight: '',
   resolutionPerPixel: '',
   exposure: '',
   gain: '',
