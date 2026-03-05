@@ -1611,11 +1611,11 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 );
               })}
 
-              {/* Draggable objects (cameras + mechanisms) */}
-              {objects.map(obj => {
+              {/* Draggable objects: render non-cameras first, then cameras on top */}
+              {objects.filter(obj => obj.type !== 'camera').map(obj => {
                 const isSelected = obj.id === selectedId;
                 const isSecondSelected = obj.id === secondSelectedId;
-                const isCamera = obj.type === 'camera';
+                const isCamera = false;
                 const mechImage = obj.type === 'mechanism' ? getMechanismImageForObject(obj) : null;
                 
                 return (
