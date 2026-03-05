@@ -22,7 +22,9 @@ import {
   MODULE_TYPE_LABELS, 
   WS_TYPE_LABELS, 
   TRIGGER_LABELS,
-  PROCESS_STAGE_LABELS 
+  PROCESS_STAGE_LABELS,
+  FONTS,
+  HEADING_SHADOW,
 } from './slideLabels';
 import { 
   MECHANISM_LABELS, 
@@ -102,7 +104,7 @@ function addImagePlaceholder(
     y: container.y + container.height / 2 - 0.15,
     w: container.width, 
     h: 0.3,
-    fontSize: 9, 
+    fontSize: 9, fontFace: FONTS.body,
     color: COLORS.secondary, 
     align: 'center',
   });
@@ -122,24 +124,25 @@ function addSlideTitle(
   // Main title text overlaid on the navy header bar (primary blue)
   slide.addText(`${ctx.wsCode} ${ctx.wsName}`, {
     x: 0.4, y: 0.05, w: 7.5, h: 0.38,
-    fontSize: 16, color: COLORS.primary, bold: true,
+    fontSize: 16, fontFace: FONTS.heading, color: COLORS.primary, bold: true,
+    shadow: HEADING_SHADOW,
   });
 
   if (splitSubtitles) {
     // Split subtitle text (no rect, bg image has the blue bar)
     slide.addText(splitSubtitles.left, {
       x: 0, y: 0.52, w: '50%', h: 0.22,
-      fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
+      fontSize: 10, fontFace: FONTS.body, color: COLORS.white, align: 'center', valign: 'middle',
     });
     slide.addText(splitSubtitles.right, {
       x: '50%', y: 0.52, w: '50%', h: 0.22,
-      fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
+      fontSize: 10, fontFace: FONTS.body, color: COLORS.white, align: 'center', valign: 'middle',
     });
   } else {
     // Single subtitle text (no rect, bg image has the blue bar)
     slide.addText(subtitle, {
       x: 0, y: 0.52, w: '100%', h: 0.22,
-      fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
+      fontSize: 10, fontFace: FONTS.body, color: COLORS.white, align: 'center', valign: 'middle',
     });
   }
 }
@@ -241,20 +244,23 @@ export function generateWorkstationTitleSlide(
   // Large title with workstation code - using primary orange color
   slide.addText(ctx.wsCode, {
     x: 0.5, y: 1.6, w: 9, h: 0.6,
-    fontSize: 36, color: COLORS.primary, bold: true, align: 'center',
+    fontSize: 36, fontFace: FONTS.heading, color: COLORS.primary, bold: true, align: 'center',
+    shadow: HEADING_SHADOW,
   });
   
   // Workstation name - dark text
   slide.addText(ctx.wsName, {
     x: 0.5, y: 2.3, w: 9, h: 0.5,
-    fontSize: 24, color: COLORS.dark, bold: true, align: 'center',
+    fontSize: 24, fontFace: FONTS.heading, color: COLORS.dark, bold: true, align: 'center',
+    shadow: HEADING_SHADOW,
   });
   
   // Responsible person - secondary gray
   if (ctx.responsible) {
     slide.addText(`${ctx.isZh ? '负责人' : 'Responsible'}: ${ctx.responsible}`, {
       x: 0.5, y: 3.0, w: 9, h: 0.4,
-      fontSize: 14, color: COLORS.secondary, align: 'center',
+      fontSize: 14, fontFace: FONTS.heading, color: COLORS.secondary, align: 'center',
+      shadow: HEADING_SHADOW,
     });
   }
   
@@ -287,11 +293,11 @@ export function generateBasicInfoSlide(
   if (ws.description) {
     slide.addText(ctx.isZh ? '【工位描述】' : '[Workstation Description]', {
       x: 0.5, y: 1.1, w: 9, h: 0.25,
-      fontSize: 10, color: COLORS.secondary, bold: true,
+      fontSize: 10, fontFace: FONTS.body, color: COLORS.secondary, bold: true,
     });
     slide.addText(ws.description, {
       x: 0.5, y: 1.38, w: 9, h: 0.35,
-      fontSize: 9, color: COLORS.dark,
+      fontSize: 9, fontFace: FONTS.body, color: COLORS.dark,
     });
   }
 
@@ -307,61 +313,61 @@ export function generateBasicInfoSlide(
   
   slide.addText(ctx.isZh ? '【检测方式】' : '[Detection Method]', {
     x: 0.5, y: startY, w: 9, h: 0.25,
-    fontSize: 11, color: COLORS.primary, bold: true,
+    fontSize: 11, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
   slide.addText(methodSummary, {
     x: 0.5, y: startY + 0.28, w: 9, h: 0.25,
-    fontSize: 11, color: COLORS.dark,
+    fontSize: 11, fontFace: FONTS.body, color: COLORS.dark,
   });
 
   // Compatible sizes / Key dimensions
   const dims = ws.product_dimensions;
   slide.addText(ctx.isZh ? '【兼容/蓝本尺寸】' : '[Compatible/Model Dimensions]', {
     x: 0.5, y: startY + 0.65, w: 4.3, h: 0.25,
-    fontSize: 11, color: COLORS.primary, bold: true,
+    fontSize: 11, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
   slide.addText(dims ? `${dims.length} × ${dims.width} × ${dims.height} mm` : '-', {
     x: 0.5, y: startY + 0.93, w: 4.3, h: 0.25,
-    fontSize: 10, color: COLORS.dark,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.dark,
   });
 
   // Detection requirements (show module names)
   slide.addText(ctx.isZh ? '【检测要求】' : '[Detection Requirements]', {
     x: 5, y: startY + 0.65, w: 4.5, h: 0.25,
-    fontSize: 11, color: COLORS.primary, bold: true,
+    fontSize: 11, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
   const moduleNames = modules.map(m => m.name).join('、');
   const detectionReq = moduleNames || detectionMethods.join('、') || (ws.observation_target || '-');
   slide.addText(detectionReq, {
     x: 5, y: startY + 0.93, w: 4.5, h: 0.25,
-    fontSize: 10, color: COLORS.dark,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.dark,
   });
 
   // Precision/Resolution/Pixels
   const accuracy = ws.acceptance_criteria?.accuracy || '±0.1mm';
   slide.addText(ctx.isZh ? '【精度/分辨率/像素】' : '[Accuracy/Resolution/Pixels]', {
     x: 0.5, y: startY + 1.3, w: 4.3, h: 0.25,
-    fontSize: 11, color: COLORS.primary, bold: true,
+    fontSize: 11, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
   slide.addText(accuracy, {
     x: 0.5, y: startY + 1.58, w: 4.3, h: 0.25,
-    fontSize: 10, color: COLORS.dark,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.dark,
   });
 
   // Cycle time
   slide.addText(ctx.isZh ? '【节拍】' : '[Cycle Time]', {
     x: 5, y: startY + 1.3, w: 4.5, h: 0.25,
-    fontSize: 11, color: COLORS.primary, bold: true,
+    fontSize: 11, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
   slide.addText(ws.cycle_time ? `${ws.cycle_time} s/pcs` : '-', {
     x: 5, y: startY + 1.58, w: 4.5, h: 0.25,
-    fontSize: 10, color: COLORS.dark,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.dark,
   });
 
   // Key notes
   slide.addText(ctx.isZh ? '【关键备注】' : '[Key Notes]', {
     x: 0.5, y: startY + 2.0, w: 9, h: 0.25,
-    fontSize: 11, color: COLORS.warning, bold: true,
+    fontSize: 11, fontFace: FONTS.body, color: COLORS.warning, bold: true,
   });
   
   const notes = ws.risk_notes || (ctx.isZh 
@@ -375,7 +381,7 @@ export function generateBasicInfoSlide(
   });
   slide.addText(notes, {
     x: 0.7, y: startY + 2.35, w: 8.6, h: 0.8,
-    fontSize: 9, color: COLORS.dark,
+    fontSize: 9, fontFace: FONTS.body, color: COLORS.dark,
   });
 }
 
@@ -412,7 +418,7 @@ export async function generateProductSchematicSlide(
 
       // Annotation legend
       slide.addText(ctx.isZh ? '标注说明' : 'Annotation Legend', {
-        x: 6.2, y: 1.2, w: 3.3, h: 0.3, fontSize: 11, color: COLORS.dark, bold: true,
+        x: 6.2, y: 1.2, w: 3.3, h: 0.3, fontSize: 11, fontFace: FONTS.body, color: COLORS.dark, bold: true,
       });
       const annotItems = Array.isArray(annotation.annotations_json) ? annotation.annotations_json : [];
       const legendRows: TableRow[] = annotItems
@@ -426,12 +432,12 @@ export async function generateProductSchematicSlide(
       if (legendRows.length > 0) {
         slide.addTable(legendRows, {
           x: 6.2, y: 1.55, w: 3.3, h: Math.min(legendRows.length * 0.32 + 0.1, 2.8),
-          fontFace: 'Arial', fontSize: 9, colW: [0.6, 2.7],
+          fontFace: FONTS.body, fontSize: 9, colW: [0.6, 2.7],
           border: { pt: 0.5, color: COLORS.border }, fill: { color: COLORS.white },
         });
       }
       if (annotation.remark) {
-        slide.addText(annotation.remark, { x: 6.2, y: 4.5, w: 3.3, h: 0.5, fontSize: 9, color: COLORS.secondary });
+        slide.addText(annotation.remark, { x: 6.2, y: 4.5, w: 3.3, h: 0.5, fontSize: 9, fontFace: FONTS.body, color: COLORS.secondary });
       }
     }
   } else {
@@ -472,7 +478,7 @@ export function generateTechnicalRequirementsSlide(
   // Detection items with module description
   slide.addText(ctx.isZh ? '【检测项/缺陷项】' : '[Detection/Defect Items]', {
     x: 0.5, y: 1.15, w: 4.3, h: 0.25,
-    fontSize: 11, color: COLORS.primary, bold: true,
+    fontSize: 11, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
 
   const detectionItems: TableRow[] = [];
@@ -551,7 +557,7 @@ export function generateTechnicalRequirementsSlide(
 
   slide.addTable(detectionItems.slice(0, 8), {
     x: 0.5, y: 1.45, w: 4.3, h: Math.min(detectionItems.length * 0.28 + 0.1, 2.2),
-    fontFace: 'Arial',
+    fontFace: FONTS.body,
     fontSize: 8,
     colW: [1.4, 2.9],
     border: { pt: 0.5, color: COLORS.border },
@@ -561,7 +567,7 @@ export function generateTechnicalRequirementsSlide(
   // Minimum defect / Tolerance / Configuration details
   slide.addText(ctx.isZh ? '【配置参数/允许偏差】' : '[Config Parameters/Tolerance]', {
     x: 5, y: 1.15, w: 4.5, h: 0.25,
-    fontSize: 11, color: COLORS.primary, bold: true,
+    fontSize: 11, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
 
   const toleranceRows: TableRow[] = [];
@@ -612,7 +618,7 @@ export function generateTechnicalRequirementsSlide(
 
   slide.addTable(toleranceRows.slice(0, 10), {
     x: 5, y: 1.45, w: 4.5, h: Math.min(toleranceRows.length * 0.26 + 0.1, 2.4),
-    fontFace: 'Arial',
+    fontFace: FONTS.body,
     fontSize: 8,
     colW: [1.8, 2.7],
     border: { pt: 0.5, color: COLORS.border },
@@ -622,7 +628,7 @@ export function generateTechnicalRequirementsSlide(
   // Risk notes section
   slide.addText(ctx.isZh ? '【风险口径/备注】' : '[Risk Notes / Remarks]', {
     x: 0.5, y: 3.95, w: 9, h: 0.25,
-    fontSize: 11, color: COLORS.warning, bold: true,
+    fontSize: 11, fontFace: FONTS.body, color: COLORS.warning, bold: true,
   });
 
   const riskText = ws.risk_notes || (ctx.isZh 
@@ -636,7 +642,7 @@ export function generateTechnicalRequirementsSlide(
   });
   slide.addText(riskText, {
     x: 0.7, y: 4.32, w: 8.6, h: 0.75,
-    fontSize: 9, color: COLORS.dark,
+    fontSize: 9, fontFace: FONTS.body, color: COLORS.dark,
   });
 }
 
@@ -693,7 +699,7 @@ export async function generateLayoutAndOpticalSlide(
   // Primary view label
   slide.addText(ctx.isZh ? `主视图 - ${VIEW_LABELS[primaryView]}` : `Primary - ${primaryView}`, {
     x: 0.3, y: 5.1, w: 5.4, h: 0.2,
-    fontSize: 8, color: COLORS.secondary, align: 'center',
+    fontSize: 8, fontFace: FONTS.body, color: COLORS.secondary, align: 'center',
   });
 
   // Right top: Auxiliary view (small)
@@ -722,7 +728,7 @@ export async function generateLayoutAndOpticalSlide(
   // Auxiliary view label
   slide.addText(ctx.isZh ? `辅视图 - ${VIEW_LABELS[auxiliaryView]}` : `Auxiliary - ${auxiliaryView}`, {
     x: 5.9, y: 3.67, w: 3.6, h: 0.2,
-    fontSize: 8, color: COLORS.secondary, align: 'center',
+    fontSize: 8, fontFace: FONTS.body, color: COLORS.secondary, align: 'center',
   });
 
   // Right: Layout description text area
@@ -733,11 +739,11 @@ export async function generateLayoutAndOpticalSlide(
   });
   slide.addText(ctx.isZh ? '布局说明' : 'Layout Description', {
     x: 6.0, y: 3.95, w: 3.4, h: 0.25,
-    fontSize: 10, color: COLORS.primary, bold: true,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
   slide.addText(layoutDescription || (ctx.isZh ? '（未填写布局说明）' : '(No description)'), {
     x: 6.0, y: 4.2, w: 3.4, h: 0.85,
-    fontSize: 9, color: layoutDescription ? COLORS.dark : COLORS.secondary,
+    fontSize: 9, fontFace: FONTS.body, color: layoutDescription ? COLORS.dark : COLORS.secondary,
     valign: 'top',
   });
 
@@ -747,7 +753,7 @@ export async function generateLayoutAndOpticalSlide(
       `${ctx.isZh ? '布局尺寸' : 'Layout Size'}: ${layout.width || '-'} × ${layout.height || '-'} × ${layout.depth || '-'} mm`, 
       {
         x: 0.4, y: 5.0, w: 5.6, h: 0.22,
-        fontSize: 8, color: COLORS.secondary,
+        fontSize: 8, fontFace: FONTS.body, color: COLORS.secondary,
       }
     );
   }
@@ -784,13 +790,13 @@ export function generateMotionMethodSlide(
 
   slide.addText(ctx.isZh ? '本页为"落地核心"，现场最看这一页' : 'Core execution page for on-site implementation', {
     x: 0.5, y: 1.0, w: 9, h: 0.25,
-    fontSize: 9, color: COLORS.secondary, italic: true,
+    fontSize: 9, fontFace: FONTS.body, color: COLORS.secondary, italic: true,
   });
 
   // Left column: FOV and Installation
   slide.addText(ctx.isZh ? '【视野范围/像素精度】' : '[FOV / Pixel Precision]', {
     x: 0.5, y: 1.35, w: 4.3, h: 0.25,
-    fontSize: 10, color: COLORS.primary, bold: true,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
 
   const fovRows: TableRow[] = [];
@@ -807,7 +813,7 @@ export function generateMotionMethodSlide(
 
   slide.addTable(fovRows.slice(0, 4), {
     x: 0.5, y: 1.65, w: 4.3, h: Math.min(fovRows.length * 0.28 + 0.1, 1.2),
-    fontFace: 'Arial',
+    fontFace: FONTS.body,
     fontSize: 9,
     colW: [2, 2.3],
     border: { pt: 0.5, color: COLORS.border },
@@ -817,7 +823,7 @@ export function generateMotionMethodSlide(
   // Right column: Installation requirements
   slide.addText(ctx.isZh ? '【相机安装要求】' : '[Camera Installation]', {
     x: 5, y: 1.35, w: 4.5, h: 0.25,
-    fontSize: 10, color: COLORS.primary, bold: true,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
 
   const installMounts = Array.isArray(layout?.camera_mounts) ? layout.camera_mounts : [];
@@ -833,7 +839,7 @@ export function generateMotionMethodSlide(
 
   slide.addTable(installRows, {
     x: 5, y: 1.65, w: 4.5, h: 1.0,
-    fontFace: 'Arial',
+    fontFace: FONTS.body,
     fontSize: 9,
     colW: [1.8, 2.7],
     border: { pt: 0.5, color: COLORS.border },
@@ -843,7 +849,7 @@ export function generateMotionMethodSlide(
   // Cycle and shot count
   slide.addText(ctx.isZh ? '【节拍/拍照次数】' : '[Cycle / Shot Count]', {
     x: 0.5, y: 3.0, w: 9, h: 0.25,
-    fontSize: 10, color: COLORS.primary, bold: true,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
 
   const cycleRows: TableRow[] = [
@@ -854,7 +860,7 @@ export function generateMotionMethodSlide(
 
   slide.addTable(cycleRows, {
     x: 0.5, y: 3.3, w: 4.3, h: 1.0,
-    fontFace: 'Arial',
+    fontFace: FONTS.body,
     fontSize: 9,
     colW: [1.8, 2.5],
     border: { pt: 0.5, color: COLORS.border },
@@ -864,7 +870,7 @@ export function generateMotionMethodSlide(
   // Measurement method / Action flow
   slide.addText(ctx.isZh ? '【测量方法/动作流程】' : '[Measurement Method / Action Flow]', {
     x: 5, y: 3.0, w: 4.5, h: 0.25,
-    fontSize: 10, color: COLORS.primary, bold: true,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
 
   const actionScript = ws.action_script || (ctx.isZh 
@@ -878,7 +884,7 @@ export function generateMotionMethodSlide(
   });
   slide.addText(actionScript, {
     x: 5.1, y: 3.4, w: 4.3, h: 1.3,
-    fontSize: 9, color: COLORS.dark,
+    fontSize: 9, fontFace: FONTS.body, color: COLORS.dark,
   });
 }
 
@@ -897,7 +903,7 @@ export function generateOpticalSolutionSlide(
   // Camera configuration
   slide.addText(ctx.isZh ? '【相机型号/像素/靶面】' : '[Camera Model/Resolution/Sensor]', {
     x: 0.5, y: 1.1, w: 9, h: 0.25,
-    fontSize: 10, color: COLORS.primary, bold: true,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
 
   const cameraHeader: TableRow = row([
@@ -919,7 +925,7 @@ export function generateOpticalSolutionSlide(
 
   slide.addTable([cameraHeader, ...cameraRows], {
     x: 0.5, y: 1.4, w: 9, h: Math.min((cameraRows.length + 1) * 0.3 + 0.1, 1.5),
-    fontFace: 'Arial',
+    fontFace: FONTS.body,
     fontSize: 9,
     colW: [3.5, 2, 1.5, 2],
     border: { pt: 0.5, color: COLORS.border },
@@ -931,7 +937,7 @@ export function generateOpticalSolutionSlide(
   // Lens configuration
   slide.addText(ctx.isZh ? '【镜头焦距/光圈】' : '[Lens Focal Length/Aperture]', {
     x: 0.5, y: 3.0, w: 4.3, h: 0.25,
-    fontSize: 10, color: COLORS.primary, bold: true,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
 
   const lensHeader: TableRow = row([
@@ -951,7 +957,7 @@ export function generateOpticalSolutionSlide(
 
   slide.addTable([lensHeader, ...lensRows], {
     x: 0.5, y: 3.3, w: 4.3, h: Math.min((lensRows.length + 1) * 0.28 + 0.1, 1.2),
-    fontFace: 'Arial',
+    fontFace: FONTS.body,
     fontSize: 9,
     colW: [2.3, 1, 1],
     border: { pt: 0.5, color: COLORS.border },
@@ -961,7 +967,7 @@ export function generateOpticalSolutionSlide(
   // Working distance
   slide.addText(ctx.isZh ? '【工作距离(±范围)】' : '[Working Distance (±Range)]', {
     x: 5, y: 3.0, w: 4.5, h: 0.25,
-    fontSize: 10, color: COLORS.primary, bold: true,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
 
   const wdRows: TableRow[] = [];
@@ -977,7 +983,7 @@ export function generateOpticalSolutionSlide(
 
   slide.addTable(wdRows.slice(0, 4), {
     x: 5, y: 3.3, w: 4.5, h: Math.min(wdRows.length * 0.28 + 0.1, 1),
-    fontFace: 'Arial',
+    fontFace: FONTS.body,
     fontSize: 9,
     colW: [2.5, 2],
     border: { pt: 0.5, color: COLORS.border },
@@ -1000,7 +1006,7 @@ export function generateVisionListSlide(
   // Light source configuration
   slide.addText(ctx.isZh ? '【光源型号/数量】' : '[Light Model/Quantity]', {
     x: 0.5, y: 1.1, w: 4.3, h: 0.25,
-    fontSize: 10, color: COLORS.primary, bold: true,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
 
   const lightRows: TableRow[] = layout?.selected_lights?.filter(l => l).map(light => 
@@ -1009,7 +1015,7 @@ export function generateVisionListSlide(
 
   slide.addTable(lightRows, {
     x: 0.5, y: 1.4, w: 4.3, h: Math.min(lightRows.length * 0.28 + 0.1, 1.2),
-    fontFace: 'Arial',
+    fontFace: FONTS.body,
     fontSize: 9,
     colW: [3.3, 1],
     border: { pt: 0.5, color: COLORS.border },
@@ -1019,18 +1025,18 @@ export function generateVisionListSlide(
   // Light distance and angle
   slide.addText(ctx.isZh ? '【光源距离/角度】' : '[Light Distance/Angle]', {
     x: 5, y: 1.1, w: 4.5, h: 0.25,
-    fontSize: 10, color: COLORS.primary, bold: true,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
 
   slide.addText(ctx.isZh ? '需根据实际调试确定' : 'To be determined on-site', {
     x: 5, y: 1.4, w: 4.5, h: 0.3,
-    fontSize: 9, color: COLORS.secondary,
+    fontSize: 9, fontFace: FONTS.body, color: COLORS.secondary,
   });
 
   // Vision equipment list
   slide.addText(ctx.isZh ? '【视觉清单】' : '[Vision Equipment List]', {
     x: 0.5, y: 2.7, w: 9, h: 0.25,
-    fontSize: 10, color: COLORS.primary, bold: true,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
 
   const visionListRows: TableRow[] = [
@@ -1044,7 +1050,7 @@ export function generateVisionListSlide(
 
   slide.addTable(visionListRows, {
     x: 0.5, y: 3.0, w: 4.3, h: 2.0,
-    fontFace: 'Arial',
+    fontFace: FONTS.body,
     fontSize: 9,
     colW: [1.8, 2.5],
     border: { pt: 0.5, color: COLORS.border },
@@ -1054,7 +1060,7 @@ export function generateVisionListSlide(
   // Module summary
   slide.addText(ctx.isZh ? '功能模块' : 'Function Modules', {
     x: 5, y: 2.7, w: 4.5, h: 0.25,
-    fontSize: 10, color: COLORS.dark, bold: true,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.dark, bold: true,
   });
 
   const modRows: TableRow[] = modules.map(mod => row([
@@ -1065,7 +1071,7 @@ export function generateVisionListSlide(
   if (modRows.length > 0) {
     slide.addTable(modRows.slice(0, 6), {
       x: 5, y: 3.0, w: 4.5, h: Math.min(modRows.length * 0.3 + 0.1, 2),
-      fontFace: 'Arial',
+      fontFace: FONTS.body,
       fontSize: 9,
       colW: [1.5, 3],
       border: { pt: 0.5, color: COLORS.border },
@@ -1125,7 +1131,7 @@ export function generateBOMSlide(
 
   slide.addTable([bomHeader, ...bomRows.slice(0, 10)], {
     x: 0.5, y: 1.1, w: 9, h: Math.min((bomRows.length + 1) * 0.32 + 0.1, 3.0),
-    fontFace: 'Arial',
+    fontFace: FONTS.body,
     fontSize: 9,
     colW: [0.6, 1.5, 2.8, 0.8, 1, 2.3],
     border: { pt: 0.5, color: COLORS.border },
@@ -1170,7 +1176,7 @@ export function generateBasicInfoAndRequirementsSlide(
 
   slide.addTable(basicInfoRows, {
     x: 0.4, y: startY, w: 4.5, h: 1.8,
-    fontFace: 'Arial',
+    fontFace: FONTS.body,
     fontSize: 8,
     colW: [1.2, 3.3],
     border: { pt: 0.5, color: COLORS.border },
@@ -1200,7 +1206,7 @@ export function generateBasicInfoAndRequirementsSlide(
 
   slide.addTable(rightInfoRows.slice(0, 8), {
     x: 5.1, y: startY, w: 4.5, h: 1.8,
-    fontFace: 'Arial',
+    fontFace: FONTS.body,
     fontSize: 8,
     colW: [1.4, 3.1],
     border: { pt: 0.5, color: COLORS.border },
@@ -1213,7 +1219,7 @@ export function generateBasicInfoAndRequirementsSlide(
 
   slide.addText(ctx.isZh ? '【检测项/缺陷项】' : '[Detection/Defect Items]', {
     x: 0.4, y: bottomY, w: 4.5, h: 0.25,
-    fontSize: 10, color: COLORS.primary, bold: true,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
 
   const detectionItems: TableRow[] = [];
@@ -1247,7 +1253,7 @@ export function generateBasicInfoAndRequirementsSlide(
 
   slide.addTable(detectionItems.slice(0, 7), {
     x: 0.4, y: bottomY + 0.3, w: 4.5, h: Math.min(detectionItems.length * 0.26 + 0.05, 1.8),
-    fontFace: 'Arial',
+    fontFace: FONTS.body,
     fontSize: 8,
     colW: [1.4, 3.1],
     border: { pt: 0.5, color: COLORS.border },
@@ -1257,7 +1263,7 @@ export function generateBasicInfoAndRequirementsSlide(
   // Right: Config parameters / tolerances
   slide.addText(ctx.isZh ? '【配置参数/允许偏差】' : '[Config / Tolerance]', {
     x: 5.1, y: bottomY, w: 4.5, h: 0.25,
-    fontSize: 10, color: COLORS.primary, bold: true,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
 
   const toleranceRows: TableRow[] = [];
@@ -1278,7 +1284,7 @@ export function generateBasicInfoAndRequirementsSlide(
 
   slide.addTable(toleranceRows.slice(0, 7), {
     x: 5.1, y: bottomY + 0.3, w: 4.5, h: Math.min(toleranceRows.length * 0.26 + 0.05, 1.8),
-    fontFace: 'Arial',
+    fontFace: FONTS.body,
     fontSize: 8,
     colW: [1.6, 2.9],
     border: { pt: 0.5, color: COLORS.border },
@@ -1317,7 +1323,7 @@ export async function generateMechanicalThreeViewSlide(
     // View label above
     slide.addText(label, {
       x: slot.x, y: slot.y - 0.02, w: slot.width, h: 0.2,
-      fontSize: 8, color: COLORS.secondary, align: 'center', bold: true,
+      fontSize: 8, fontFace: FONTS.body, color: COLORS.secondary, align: 'center', bold: true,
     });
 
     const imageContainer = { x: slot.x, y: slot.y + 0.2, width: slot.width, height: slot.height - 0.2 };
@@ -1349,7 +1355,7 @@ export async function generateMechanicalThreeViewSlide(
       `${ctx.isZh ? '总体尺寸' : 'Overall'}: ${layout.width || '-'} × ${layout.height || '-'} × ${layout.depth || '-'} mm (${ctx.isZh ? '宽×高×深' : 'W×H×D'})`,
       {
         x: 0.4, y: 4.55, w: 9.2, h: 0.25,
-        fontSize: 9, color: COLORS.dark, align: 'center', bold: true,
+        fontSize: 9, fontFace: FONTS.body, color: COLORS.dark, align: 'center', bold: true,
       }
     );
   }
@@ -1384,7 +1390,7 @@ export async function generateModuleOpticalSlide(
 
   slide.addText(ctx.isZh ? '光学方案' : 'Optical Solution', {
     x: leftX, y: imgContainerY, w: leftW, h: 0.25,
-    fontSize: 11, color: COLORS.primary, bold: true,
+    fontSize: 11, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
 
   const imageArea = { x: leftX, y: imgContainerY + 0.35, width: leftW, height: imgContainerH - 0.35 };
@@ -1407,7 +1413,7 @@ export async function generateModuleOpticalSlide(
       });
       slide.addText(ctx.isZh ? '请先在系统中保存光路示意图' : 'Please save the optical diagram first', {
         x: imageArea.x, y: imageArea.y, w: imageArea.width, h: imageArea.height,
-        fontSize: 10, color: COLORS.secondary, align: 'center', valign: 'middle',
+        fontSize: 10, fontFace: FONTS.body, color: COLORS.secondary, align: 'center', valign: 'middle',
       });
     }
   } else {
@@ -1418,7 +1424,7 @@ export async function generateModuleOpticalSlide(
     });
     slide.addText(ctx.isZh ? '请先在系统中保存光路示意图' : 'Please save the optical diagram first', {
       x: imageArea.x, y: imageArea.y, w: imageArea.width, h: imageArea.height,
-      fontSize: 10, color: COLORS.secondary, align: 'center', valign: 'middle',
+      fontSize: 10, fontFace: FONTS.body, color: COLORS.secondary, align: 'center', valign: 'middle',
     });
   }
 
@@ -1428,7 +1434,7 @@ export async function generateModuleOpticalSlide(
 
   slide.addText(ctx.isZh ? '测量方法及视觉清单' : 'Method & Vision Checklist', {
     x: rightX, y: 1.1, w: rightW, h: 0.25,
-    fontSize: 11, color: COLORS.primary, bold: true,
+    fontSize: 11, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
 
   // Numbered checklist
@@ -1457,13 +1463,13 @@ export async function generateModuleOpticalSlide(
 
   slide.addText(checklistItems.join('\n'), {
     x: rightX, y: 1.45, w: rightW, h: 1.8,
-    fontSize: 9, color: COLORS.dark, lineSpacingMultiple: 1.5,
+    fontSize: 9, fontFace: FONTS.body, color: COLORS.dark, lineSpacingMultiple: 1.5,
   });
 
   // Measurement method description
   slide.addText(ctx.isZh ? '测量方法:' : 'Measurement Method:', {
     x: rightX, y: 3.4, w: rightW, h: 0.25,
-    fontSize: 10, color: COLORS.primary, bold: true,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
 
   const methodDesc = mod.description || data.ws.motion_description || data.ws.action_script || (ctx.isZh
@@ -1477,6 +1483,6 @@ export async function generateModuleOpticalSlide(
   });
   slide.addText(methodDesc, {
     x: rightX + 0.1, y: 3.75, w: rightW - 0.2, h: 1.3,
-    fontSize: 8, color: COLORS.dark,
+    fontSize: 8, fontFace: FONTS.body, color: COLORS.dark,
   });
 }
