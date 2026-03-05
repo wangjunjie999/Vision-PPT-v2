@@ -1,44 +1,27 @@
 
 
-# FOV 输入改为两个独立数值框
+# 自动填充像素精度（分辨率）
 
 ## 问题
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+当前计算出像素精度后，用户还需点击"自动计算"按钮才能填入。用户希望计算结果直接自动写入分辨率输入框。
 
 ## 修改方案
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+### `src/components/forms/module/ModuleStep3Imaging.tsx`
 
-在 `ModuleFormState` 中添加：
+1. 将 `handleAutoCalculate` 的手动触发改为 `useEffect` 自动触发：当 `calculationResult.resolutionPerPixel` 变化且有值时，自动写入 `form.resolutionPerPixel`。
+
+2. 移除"自动计算"按钮（分辨率标签旁的小计算器图标按钮 + 顶部 banner 中的"自动计算"按钮），因为不再需要手动触发。
+
+3. 保留计算结果预览区域（显示是否满足精度要求等信息），但去掉"建议值"提示文字（因为已经自动填入了）。
+
+```typescript
+// 新增 useEffect 替代手动按钮
+useEffect(() => {
+  if (calculationResult.resolutionPerPixel) {
+    setForm(p => ({ ...p, resolutionPerPixel: calculationResult.resolutionPerPixel || '' }));
+  }
+}, [calculationResult.resolutionPerPixel, setForm]);
 ```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
-
-在 `getDefaultFormState` 中添加默认值 `''`。
-
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
-
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
-
-```
-[宽度输入] × [高度输入]
-```
-
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
-
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
