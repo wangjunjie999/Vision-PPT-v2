@@ -1,44 +1,25 @@
 
 
-# FOV 输入改为两个独立数值框
+# 重新生成 DB260101 全部机械布局图
 
-## 问题
+## 现状分析
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+DB260101（新能源电池模组视觉检测系统）共有 **8 个工位**，每个工位都有对应的机械布局数据。系统已内置"重新生成全部图片"功能（`BatchImageSaveButton` 组件），可以自动渲染所有 `SimpleLayoutDiagram` 并保存截图到存储。
 
-## 修改方案
+## 执行步骤
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+1. **通过浏览器自动化登录预览**（需要你先在预览中登录）
+2. **选择 DB260101 项目**
+3. **点击工具栏的"一键保存图片"下拉菜单 → "重新生成全部图片"**
+4. 系统将自动遍历 8 个工位，渲染最新的 `SimpleLayoutDiagram`（含加深后的拍摄方向线和相机在机构上方的新布局），逐一截图并保存到存储
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
+## 前提条件
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+- 你需要先在右侧预览中 **登录账号**，登录后告诉我，我将通过浏览器自动化帮你完成操作
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+## 预期结果
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
-
-```
-[宽度输入] × [高度输入]
-```
-
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
-
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+8 个工位的布局拓扑图全部重新生成，包含：
+- 加深后的拍摄方向虚线（亮青色 `#22d3ee`）
+- 相机统一在执行机构正上方的新布局
 
