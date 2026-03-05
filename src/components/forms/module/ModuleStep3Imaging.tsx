@@ -3,7 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calculator, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Calculator, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { ModuleFormState } from './types';
 import { useMemo, useEffect } from 'react';
 import { calculateImagingParams, parseResolution, parseFOV } from '@/utils/imagingCalculations';
