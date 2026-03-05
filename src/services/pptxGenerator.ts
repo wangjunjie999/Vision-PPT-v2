@@ -690,6 +690,8 @@ export async function generatePPTX(
     { text: { text: isZh ? COMPANY_NAME_ZH : COMPANY_NAME_EN, options: { x: 0.3, y: footerY + 0.06, w: 4, h: 0.18, fontSize: 7, color: activeColors.dark } } },
     // Customer name in footer (right aligned)
     { text: { text: project.customer, options: { x: SLIDE_LAYOUT.width - 2.5, y: footerY + 0.06, w: 2.2, h: 0.18, fontSize: 7, color: activeColors.dark, align: 'right' } } },
+    // Content area border frame — thin dark blue outline (matching template)
+    { rect: { x: 0.25, y: 0.52, w: SLIDE_LAYOUT.width - 0.5, h: footerY - 0.57, fill: { type: 'none' } as any, line: { color: activeColors.primary, width: 0.75 } } },
   );
   
   // Add company logo to header bar (right side, white logo on navy)
