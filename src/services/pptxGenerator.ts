@@ -663,54 +663,24 @@ export async function generatePPTX(
   // Explicitly set 16:9 layout
   pptx.layout = SLIDE_LAYOUT.name;
 
-  // Define master slide with hardcoded corporate style
-  type MasterObject = NonNullable<PptxGenJS.SlideMasterProps['objects']>[number];
+  // Define master slide with uploaded background image (all header/footer baked in)
   const footerY = SLIDE_LAYOUT.height - SLIDE_LAYOUT.margin.bottom;
   
-  const masterObjects: MasterObject[] = [];
-  
-  // Load company logo for header
-  let companyLogoData: string | null = null;
-  const logoUrl = `${window.location.origin}/ppt-covers/tech-shine-logo.png`;
+  // Load background image for internal pages
+  let bgImageData: string | null = null;
+  const bgUrl = `${window.location.origin}/ppt-covers/tech-shine-bg.png`;
   try {
-    companyLogoData = await fetchImageAsDataUri(logoUrl);
+    bgImageData = await fetchImageAsDataUri(bgUrl);
   } catch (err) {
-    console.warn('Failed to load company logo:', err);
-  }
-  
-  // === Corporate VI Style: Deep navy header bar + white background ===
-  masterObjects.push(
-    // Header: full-width deep navy blue bar (0.45" tall)
-    { rect: { x: 0, y: 0, w: '100%', h: 0.45, fill: { color: activeColors.primary } } },
-    // Footer: white bar
-    { rect: { x: 0, y: footerY, w: '100%', h: SLIDE_LAYOUT.margin.bottom, fill: { color: activeColors.white } } },
-    // Footer: thin deep blue accent line
-    { rect: { x: 0, y: footerY, w: '100%', h: 0.02, fill: { color: activeColors.primary } } },
-    // Company name in footer
-    { text: { text: isZh ? COMPANY_NAME_ZH : COMPANY_NAME_EN, options: { x: 0.3, y: footerY + 0.06, w: 4, h: 0.18, fontSize: 7, color: activeColors.dark } } },
-    // Customer name in footer (right aligned)
-    { text: { text: project.customer, options: { x: SLIDE_LAYOUT.width - 2.5, y: footerY + 0.06, w: 2.2, h: 0.18, fontSize: 7, color: activeColors.dark, align: 'right' } } },
-    // Content area border frame — thin dark blue outline (matching template)
-    { rect: { x: 0.25, y: 0.52, w: SLIDE_LAYOUT.width - 0.5, h: footerY - 0.57, fill: { type: 'none' } as any, line: { color: activeColors.primary, width: 0.75 } } },
-  );
-  
-  // Add company logo to header bar (right side, white logo on navy)
-  if (companyLogoData) {
-    masterObjects.push({
-      image: { 
-        x: SLIDE_LAYOUT.width - 1.8,
-        y: 0.05,
-        w: 1.5,
-        h: 0.35,
-        data: companyLogoData,
-      }
-    });
+    console.warn('Failed to load bg image:', err);
   }
 
   pptx.defineSlideMaster({
     title: 'MASTER_SLIDE',
-    background: { color: activeColors.background },
-    objects: masterObjects,
+    background: bgImageData 
+      ? { data: bgImageData } 
+      : { color: activeColors.background },
+    objects: [], // All header/footer elements are part of the background image
   });
 
   let progress = 5;
