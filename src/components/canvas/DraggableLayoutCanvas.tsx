@@ -929,7 +929,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     
     setIsSavingAllViews(true);
     setSaveProgress(0);
-    const views = activeViews;
+    const views: ViewType[] = ['front', 'side', 'top'];
     const preset = QUALITY_PRESETS[saveQuality];
     
     try {
@@ -997,11 +997,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       await updateLayout(layout.id, updateData as any);
       
       // Update local state
-      setViewSaveStatus(prev => {
-        const updated = { ...prev };
-        activeViews.forEach(v => { updated[v] = true; });
-        return updated;
-      });
+      setViewSaveStatus({ front: true, side: true, top: true });
       setSaveProgress(100);
       
       toast.success('视图已全部保存');
@@ -1012,7 +1008,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       setIsSavingAllViews(false);
       setSaveProgress(0);
     }
-  }, [layout?.id, workstationId, updateLayout, saveQuality, activeViews]);
+  }, [layout?.id, workstationId, updateLayout, saveQuality]);
 
   // Auto-arrange objects to prevent overlap
   const autoArrangeObjects = useCallback(() => {
@@ -1291,14 +1287,14 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                   )}
                   <span className="relative flex items-center gap-1.5">
                     {isSavingAllViews ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
-                    {isSavingAllViews ? `${saveProgress}%` : '保存视图'}
-                    {!isSavingAllViews && activeViews.every(v => viewSaveStatus[v]) && (
+                    {isSavingAllViews ? `${saveProgress}%` : '保存三视图'}
+                    {!isSavingAllViews && viewSaveStatus.front && viewSaveStatus.side && viewSaveStatus.top && (
                       <Check className="h-3 w-3 text-green-500" />
                     )}
                   </span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>一键保存选定视图截图，用于PPT生成</TooltipContent>
+              <TooltipContent>一键保存正视图、侧视图、俯视图截图，用于PPT生成</TooltipContent>
             </Tooltip>
           </TooltipProvider>
           
