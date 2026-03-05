@@ -51,21 +51,19 @@ export function ModuleStep3Imaging({ form, setForm }: ModuleStep3ImagingProps) {
       {/* Auto-calculation status banner */}
       {selectedCameraResolution && (
         <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
-          <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-sm">
-              <Calculator className="h-4 w-4 text-primary" />
-              <span className="text-muted-foreground">已选相机:</span>
-              <Badge variant="secondary" className="font-mono">
-                {selectedCameraResolution}
-              </Badge>
-              {calculationResult.cameraParsed && (
-                <span className="text-xs text-muted-foreground">
-                  ({calculationResult.cameraParsed.width}×{calculationResult.cameraParsed.height} px)
-                </span>
-              )}
-            </div>
+          <div className="flex items-center gap-2 text-sm">
+            <Calculator className="h-4 w-4 text-primary" />
+            <span className="text-muted-foreground">已选相机:</span>
+            <Badge variant="secondary" className="font-mono">
+              {selectedCameraResolution}
+            </Badge>
+            {calculationResult.cameraParsed && (
+              <span className="text-xs text-muted-foreground">
+                ({calculationResult.cameraParsed.width}×{calculationResult.cameraParsed.height} px)
+              </span>
+            )}
           </div>
+          
           {/* Calculation result preview */}
           {calculationResult.resolutionPerPixel && (
             <div className="mt-2 pt-2 border-t border-border/50 flex items-center gap-4 text-sm">
