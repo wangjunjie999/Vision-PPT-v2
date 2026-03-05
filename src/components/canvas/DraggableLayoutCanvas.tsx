@@ -1581,10 +1581,41 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 </text>
               </g>
               
-              {/* Draggable objects (cameras hidden from canvas, only mechanisms shown) */}
-              {objects.filter(obj => obj.type !== 'camera').map(obj => {
+              {/* Connection lines between cameras and mounted mechanisms */}
+              {objects.filter(obj => obj.type === 'camera' && obj.mountedToMechanismId).map(cam => {
+                const mech = objects.find(o => o.id === cam.mountedToMechanismId);
+                if (!mech) return null;
+                return (
+                  <g key={`conn-${cam.id}`}>
+                    <line
+                      x1={cam.x}
+                      y1={cam.y}
+                      x2={mech.x}
+                      y2={mech.y}
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      strokeDasharray="8 4"
+                      opacity={0.6}
+                    />
+                    <circle cx={cam.x} cy={cam.y} r={4} fill="#3b82f6" opacity={0.8} />
+                    <circle cx={mech.x} cy={mech.y} r={4} fill="#ea580c" opacity={0.8} />
+                    {/* Link icon at midpoint */}
+                    <text
+                      x={(cam.x + mech.x) / 2}
+                      y={(cam.y + mech.y) / 2 - 6}
+                      textAnchor="middle"
+                      fontSize="12"
+                      style={{ pointerEvents: 'none' }}
+                    >🔗</text>
+                  </g>
+                );
+              })}
+
+              {/* Draggable objects (cameras + mechanisms) */}
+              {objects.map(obj => {
                 const isSelected = obj.id === selectedId;
                 const isSecondSelected = obj.id === secondSelectedId;
+                const isCamera = obj.type === 'camera';
                 const mechImage = obj.type === 'mechanism' ? getMechanismImageForObject(obj) : null;
                 
                 return (
@@ -1603,7 +1634,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                         width={obj.width + 12}
                         height={obj.height + 12}
                         fill="none"
-                        stroke={isSecondSelected ? '#22c55e' : '#60a5fa'}
+                        stroke={isCamera ? (isSecondSelected ? '#22c55e' : '#60a5fa') : (isSecondSelected ? '#22c55e' : '#60a5fa')}
                         strokeWidth="2"
                         strokeDasharray="6 3"
                         rx={8}
@@ -1612,7 +1643,42 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                     )}
                     
                     {/* Object body */}
-                    {(
+                    {isCamera ? (
+                      <>
+                        {/* Camera body */}
+                        <rect
+                          x={-obj.width / 2}
+                          y={-obj.height / 2}
+                          width={obj.width}
+                          height={obj.height}
+                          fill={isSelected ? 'url(#camera-grad)' : '#2563eb'}
+                          stroke={isSelected ? '#93c5fd' : '#3b82f6'}
+                          strokeWidth={isSelected ? 3 : 2}
+                          rx={6}
+                        />
+                        {/* Camera lens circle */}
+                        <circle
+                          cx={0}
+                          cy={-4}
+                          r={Math.min(obj.width, obj.height) * 0.22}
+                          fill="rgba(0,0,0,0.4)"
+                          stroke="#93c5fd"
+                          strokeWidth={2}
+                        />
+                        <circle
+                          cx={0}
+                          cy={-4}
+                          r={Math.min(obj.width, obj.height) * 0.12}
+                          fill="#60a5fa"
+                          opacity={0.8}
+                        />
+                        {/* Camera name label */}
+                        <rect x={-obj.width / 2} y={obj.height / 2 + 4} width={obj.width} height={18} rx={4} fill="rgba(30, 41, 59, 0.95)" />
+                        <text x={0} y={obj.height / 2 + 16} textAnchor="middle" fill="#93c5fd" fontSize="10" fontWeight="600">
+                          {obj.name}
+                        </text>
+                      </>
+                    ) : (
                       <>
                         {mechImage ? (
                           <>
@@ -1704,7 +1770,29 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               />
               
               
-              {/* Camera mount points and connection lines hidden - camera info described in text */}
+              {/* Camera mount points - show when dragging a camera */}
+              {isDragging && draggingObject?.type === 'camera' && objects.filter(o => o.type === 'mechanism').map(mech => (
+                <g key={`mount-${mech.id}`} transform={`translate(${mech.x}, ${mech.y})`}>
+                  <CameraMountPoints
+                    mechanismObject={mech}
+                    currentView={currentView}
+                    cameras={objects.filter(o => o.type === 'camera')}
+                    onSnapCamera={(cameraId, mountPoint, mechanismId) => {
+                      const mp = getMountPointWorldPosition(mech, mountPoint.id, currentView);
+                      if (mp) {
+                        updateObject(cameraId, {
+                          x: mp.x,
+                          y: mp.y,
+                          mountedToMechanismId: mechanismId,
+                          mountPointId: mountPoint.id,
+                        });
+                      }
+                    }}
+                    draggingCameraId={draggingObject.id}
+                    scale={scale}
+                  />
+                </g>
+              ))}
               
               {/* Operation hints moved to viewport-fixed overlay below */}
             </svg>
