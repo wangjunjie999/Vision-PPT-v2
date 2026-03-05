@@ -1,43 +1,44 @@
 
 
-# PPT 机械布局图改版：放大硬件图标，突出相机-机构空间关系
+# FOV 输入改为两个独立数值框
 
 ## 问题
 
-当前 `SimpleLayoutDiagram` 中图标太小（相机 28×22px，机构最大 36×10px），字号仅 7px，在 PPT 中几乎看不清。三视图各占 450×250 的小区域，信息密度高但可读性差。
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-## 改版思路
+## 修改方案
 
-不追求 1:1 比例，去掉坐标参考线，**核心目标是让人一眼看清每个硬件的位置和相机与执行机构的安装关系**。
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-## 具体修改（`src/components/canvas/SimpleLayoutDiagram.tsx`）
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
+```
 
-### 1. 图标放大 2.5 倍
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-| 元素 | 当前尺寸 | 新尺寸 |
-|------|---------|--------|
-| CameraIcon | 28×22 | 70×55 |
-| MechanismIcon | ~36×28 | ~90×70 |
-| ProductIcon | 60×36 | 150×90 |
-| 标签圆圈 | r=8 | r=16 |
-| 标签字号 | 7px | 14px |
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
 
-### 2. 连接线突出安装关系
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
 
-- 相机→挂载机构：**粗实线**（strokeWidth 3，蓝色），带箭头标记，中间标注"安装于"
-- 相机→产品（拍摄方向）：虚线 + 三角箭头，标注"拍摄方向"
-- 未挂载相机→产品：细虚线保持现状
+```
+[宽度输入] × [高度输入]
+```
 
-### 3. 去掉坐标参考
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
 
-- 移除 `projectTo2D` 中的精确坐标映射，改为**拓扑布局**：产品居中，机构环绕分布，相机靠近其挂载机构
-- 自动间距算法保证图标不重叠，无需用户手动定位
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
 
-### 4. 每个图标下方显示名称
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
 
-在标签圆圈之外，图标下方增加一行中文名称（如"传送带"、"CAM1"），字号 11px，确保 PPT 中可读。
+### 4. PPT 输出不变
 
-### 5. 信息面板字号同步放大
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
 
-右下角关键参数面板：标题 14px，内容 11px，行高 20px。
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
