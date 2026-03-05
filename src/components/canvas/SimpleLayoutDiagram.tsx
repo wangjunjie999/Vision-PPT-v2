@@ -7,10 +7,40 @@ import { MECHANISM_LABELS, CAMERA_MOUNT_LABELS, getLabel } from '@/services/labe
 
 // ===== Enlarged Icon SVG components =====
 
-function CameraIcon({ label, name, x, y, selected }: { label: string; name?: string; x: number; y: number; selected?: boolean }) {
+function CameraIcon({ label, name, x, y, selected, fovTarget }: {
+  label: string; name?: string; x: number; y: number; selected?: boolean;
+  fovTarget?: { x: number; y: number };
+}) {
+  // Calculate rotation angle toward product if fovTarget provided
+  let rotation = 0;
+  if (fovTarget) {
+    rotation = Math.atan2(fovTarget.y - y, fovTarget.x - x) * (180 / Math.PI);
+  }
+
+  // FOV cone: triangle pointing from camera toward product
+  const fovCone = fovTarget ? (() => {
+    const dx = fovTarget.x - x;
+    const dy = fovTarget.y - y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const fovLen = Math.min(dist * 0.45, 70);
+    const fovHalfAngle = 22; // degrees
+    const baseAngle = Math.atan2(dy, dx);
+    const a1 = baseAngle - (fovHalfAngle * Math.PI) / 180;
+    const a2 = baseAngle + (fovHalfAngle * Math.PI) / 180;
+    const p1x = Math.cos(a1) * fovLen;
+    const p1y = Math.sin(a1) * fovLen;
+    const p2x = Math.cos(a2) * fovLen;
+    const p2y = Math.sin(a2) * fovLen;
+    return `M 0,0 L ${p1x},${p1y} L ${p2x},${p2y} Z`;
+  })() : null;
+
   return (
     <g transform={`translate(${x}, ${y})`}>
       {selected && <rect x={-40} y={-32} width={80} height={64} rx={8} fill="none" stroke="#60a5fa" strokeWidth={2} strokeDasharray="4 2" opacity={0.6} />}
+      {/* FOV cone */}
+      {fovCone && (
+        <path d={fovCone} fill="#06b6d4" opacity={0.12} stroke="#06b6d4" strokeWidth={0.8} strokeOpacity={0.3} />
+      )}
       <rect x={-35} y={-27} width={70} height={54} rx={6} fill="#1e3a5f" stroke="#3b82f6" strokeWidth={2} />
       <circle cx={0} cy={0} r={16} fill="none" stroke="#3b82f6" strokeWidth={2} />
       <circle cx={0} cy={0} r={7} fill="#3b82f6" />
@@ -146,6 +176,13 @@ const MECH_COLORS: Record<string, string> = {
   camera_mount: '#64748b',
 };
 
+const MOUNT_TYPE_ZH: Record<string, string> = {
+  top: '顶装',
+  side: '侧装',
+  angled: '斜装',
+  bracket: '支架',
+};
+
 // ===== Topological layout engine =====
 
 interface PlacedNode {
@@ -158,12 +195,14 @@ interface PlacedNode {
   x: number;
   y: number;
   mountedToId?: string;
+  mountType?: string;
 }
 
 function buildTopologicalLayout(
   layoutObjects: LayoutObject[],
   mechanisms: string[],
   cameraCount: number,
+  cameraMounts: string[],
   cx: number,
   cy: number,
   radiusMech: number,
@@ -220,17 +259,20 @@ function buildTopologicalLayout(
   let unmountedIdx = 0;
   const unmountedCount = cameras.filter(c => !c.mountedToMechanismId).length;
 
-  cameras.forEach(c => {
+  cameras.forEach((c, i) => {
     const mounted = c.mountedToMechanismId ? mechMap.get(c.mountedToMechanismId) : null;
     let camX: number, camY: number;
 
+    // Determine mount type for this camera
+    const mountType = cameraMounts[i] || cameraMounts[0] || '';
+
     if (mounted) {
-      // Place camera offset from its mechanism (slightly outward from center)
+      // Place camera offset from its mechanism (increased to 110px to avoid overlap)
       const dx = mounted.x - cx;
       const dy = mounted.y - cy;
       const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      camX = mounted.x + (dx / dist) * 80;
-      camY = mounted.y + (dy / dist) * 80;
+      camX = mounted.x + (dx / dist) * 110;
+      camY = mounted.y + (dy / dist) * 110;
     } else {
       // Unmounted cameras placed in an arc above the product
       const angle = unmountedCount === 1 ? -Math.PI / 2
@@ -249,6 +291,7 @@ function buildTopologicalLayout(
       x: camX,
       y: camY,
       mountedToId: c.mountedToMechanismId,
+      mountType,
     });
   });
 
@@ -264,8 +307,13 @@ function ArrowDefs() {
         <polygon points="0,0 10,4 0,8" fill="#3b82f6" opacity={0.8} />
       </marker>
       <marker id="arrow-cyan" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
-        <polygon points="0,0 10,4 0,8" fill="#06b6d4" opacity={0.6} />
+        <polygon points="0,0 10,4 0,8" fill="#06b6d4" opacity={0.7} />
       </marker>
+      {/* Gradient for mount lines */}
+      <linearGradient id="mount-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#3b82f6" />
+        <stop offset="100%" stopColor="#a855f7" />
+      </linearGradient>
     </defs>
   );
 }
@@ -293,7 +341,7 @@ export function SimpleLayoutDiagram({
   const radiusMech = Math.min(diagramW, height) * 0.28;
   const radiusCam = Math.min(diagramW, height) * 0.42;
 
-  const nodes = buildTopologicalLayout(layoutObjects, mechanisms, cameraCount, diagramCx, diagramCy, radiusMech, radiusCam);
+  const nodes = buildTopologicalLayout(layoutObjects, mechanisms, cameraCount, cameraMounts, diagramCx, diagramCy, radiusMech, radiusCam);
 
   const product = nodes.find(n => n.type === 'product')!;
   const mechNodes = nodes.filter(n => n.type === 'mechanism');
@@ -307,6 +355,20 @@ export function SimpleLayoutDiagram({
 
   const infoX = diagramW + 8;
   const infoContentW = infoW - 16;
+
+  // Build mount groups for visual grouping
+  const mountGroups = camNodes
+    .filter(c => c.mountedToId)
+    .map(cam => {
+      const mech = mechNodes.find(m => m.id === cam.mountedToId);
+      if (!mech) return null;
+      const minX = Math.min(cam.x, mech.x) - 55;
+      const minY = Math.min(cam.y, mech.y) - 60;
+      const maxX = Math.max(cam.x, mech.x) + 55;
+      const maxY = Math.max(cam.y, mech.y) + 60;
+      return { camId: cam.id, mechId: mech.id, x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+    })
+    .filter(Boolean);
 
   return (
     <svg
@@ -327,31 +389,55 @@ export function SimpleLayoutDiagram({
         {workstationName} — 机械布局拓扑图
       </text>
 
+      {/* ===== Install Group backgrounds (behind everything) ===== */}
+      {mountGroups.map((g, i) => g && (
+        <rect
+          key={`group-${i}`}
+          x={g.x} y={g.y} width={g.w} height={g.h}
+          rx={12}
+          fill="#3b82f6" fillOpacity={0.04}
+          stroke="#3b82f6" strokeWidth={1} strokeDasharray="6 3" strokeOpacity={0.25}
+        />
+      ))}
+
       {/* ===== Connection lines (behind objects) ===== */}
 
-      {/* Camera → mounted mechanism: thick solid blue line */}
+      {/* Camera → mounted mechanism: thick solid gradient line with mount type label */}
       {camNodes.filter(c => c.mountedToId).map(cam => {
         const mech = mechNodes.find(m => m.id === cam.mountedToId);
         if (!mech) return null;
         const midX = (cam.x + mech.x) / 2;
         const midY = (cam.y + mech.y) / 2;
+        const mountLabel = cam.mountType
+          ? (MOUNT_TYPE_ZH[cam.mountType] || cam.mountType)
+          : '安装于';
         return (
           <g key={`mount-${cam.id}`}>
             <line x1={cam.x} y1={cam.y} x2={mech.x} y2={mech.y}
-              stroke="#3b82f6" strokeWidth={3} opacity={0.7} markerEnd="url(#arrow-blue)" />
-            <rect x={midX - 24} y={midY - 9} width={48} height={18} rx={3} fill="#1e3a5f" stroke="#3b82f6" strokeWidth={1} opacity={0.9} />
-            <text x={midX} y={midY + 4} textAnchor="middle" fill="#93c5fd" fontSize={9} fontWeight="bold">安装于</text>
+              stroke="url(#mount-grad)" strokeWidth={3} opacity={0.75} markerEnd="url(#arrow-blue)" />
+            <rect x={midX - 26} y={midY - 10} width={52} height={20} rx={4} fill="#1e3a5f" stroke="#3b82f6" strokeWidth={1} opacity={0.95} />
+            <text x={midX} y={midY + 5} textAnchor="middle" fill="#93c5fd" fontSize={10} fontWeight="bold">{mountLabel}</text>
           </g>
         );
       })}
 
-      {/* Camera → product: dashed cyan line (shooting direction) */}
-      {camNodes.map(cam => (
-        <g key={`shoot-${cam.id}`}>
-          <line x1={cam.x} y1={cam.y} x2={product.x} y2={product.y}
-            stroke="#06b6d4" strokeWidth={1.5} strokeDasharray="8 4" opacity={0.4} markerEnd="url(#arrow-cyan)" />
-        </g>
-      ))}
+      {/* Camera → product: dashed cyan line (shooting direction) - enhanced visibility */}
+      {camNodes.map(cam => {
+        // Compute label position at 30% from camera to product
+        const labelX = cam.x + (product.x - cam.x) * 0.3;
+        const labelY = cam.y + (product.y - cam.y) * 0.3;
+        return (
+          <g key={`shoot-${cam.id}`}>
+            <line x1={cam.x} y1={cam.y} x2={product.x} y2={product.y}
+              stroke="#06b6d4" strokeWidth={2} strokeDasharray="8 4" opacity={0.6} markerEnd="url(#arrow-cyan)" />
+            {/* Target dot on product surface */}
+            <circle cx={product.x} cy={product.y} r={3} fill="#06b6d4" opacity={0.7} />
+            {/* "拍摄" label on the line */}
+            <rect x={labelX - 16} y={labelY - 8} width={32} height={16} rx={3} fill="#0f172a" fillOpacity={0.85} />
+            <text x={labelX} y={labelY + 4} textAnchor="middle" fill="#67e8f9" fontSize={8} fontWeight="bold">拍摄</text>
+          </g>
+        );
+      })}
 
       {/* ===== Render objects ===== */}
       <ProductIcon x={product.x} y={product.y} />
@@ -375,6 +461,7 @@ export function SimpleLayoutDiagram({
           name={c.name}
           x={c.x}
           y={c.y}
+          fovTarget={{ x: product.x, y: product.y }}
         />
       ))}
 
@@ -402,11 +489,14 @@ export function SimpleLayoutDiagram({
       {renderInfoSection(infoX, 38 + Math.min(nodes.length, 10) * 20 + 12 + (Math.min(cameraInfo.length + lensInfo.length + lightInfo.length + (hardware.controller ? 1 : 0), 5) + 1) * 18 + 20, infoContentW, '检测方式', moduleTypes)}
 
       {/* Cycle info */}
-      {renderInfoSection(infoX, height - 80, infoContentW, '节拍信息', [
+      {renderInfoSection(infoX, height - 110, infoContentW, '节拍信息', [
         `目标节拍: ${cycleTime ? `${cycleTime} s/pcs` : '待定'}`,
         `拍照次数: ${shotCount || camNodes.length} 次`,
         `相机数量: ${camNodes.length} 台`,
       ])}
+
+      {/* Line type legend */}
+      {renderLineLegend(infoX, height - 30, infoContentW)}
 
       {/* Camera mount labels */}
       {cameraMounts.length > 0 && (
@@ -454,6 +544,20 @@ function renderInfoSection(x: number, y: number, w: number, title: string, items
           • {item.length > 32 ? item.slice(0, 31) + '…' : item}
         </text>
       ))}
+    </>
+  );
+}
+
+function renderLineLegend(x: number, y: number, w: number): JSX.Element {
+  const midX = x + w / 2;
+  return (
+    <>
+      {/* Solid line = mount */}
+      <line x1={x + 4} y1={y} x2={x + 30} y2={y} stroke="#3b82f6" strokeWidth={2.5} />
+      <text x={x + 34} y={y + 4} fill="#93c5fd" fontSize={9}>安装关系</text>
+      {/* Dashed line = shooting */}
+      <line x1={midX} y1={y} x2={midX + 26} y2={y} stroke="#06b6d4" strokeWidth={2} strokeDasharray="6 3" />
+      <text x={midX + 30} y={y + 4} fill="#67e8f9" fontSize={9}>拍摄方向</text>
     </>
   );
 }
