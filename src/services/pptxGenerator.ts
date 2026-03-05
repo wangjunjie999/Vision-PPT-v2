@@ -21,6 +21,8 @@ import {
   PROCESS_STAGE_LABELS,
   COMPANY_NAME_ZH,
   COMPANY_NAME_EN,
+  FONTS,
+  HEADING_SHADOW,
   getWorkstationCode,
   getModuleDisplayName,
 } from './pptx/slideLabels';
@@ -717,12 +719,13 @@ export async function generatePPTX(
     
     coverSlide.addText(isZh ? '德星云智能' : 'TECH-SHINE', {
       x: 0.5, y: 1.5, w: 9, h: 0.6,
-      fontSize: 36, color: COLORS.primary, bold: true, align: 'center',
+      fontSize: 36, fontFace: FONTS.heading, color: COLORS.primary, bold: true, align: 'center',
+      shadow: HEADING_SHADOW,
     });
     
     coverSlide.addText(isZh ? COMPANY_NAME_ZH : COMPANY_NAME_EN, {
       x: 0.5, y: 2.2, w: 9, h: 0.4,
-      fontSize: 14, color: COLORS.dark, align: 'center',
+      fontSize: 14, fontFace: FONTS.body, color: COLORS.dark, align: 'center',
     });
   }
 
@@ -735,11 +738,12 @@ export async function generatePPTX(
   // Title overlaid on navy header bar
   descSlide.addText(isZh ? '项目说明' : 'Project Description', {
     x: 0.4, y: 0.05, w: 5, h: 0.38,
-    fontSize: 18, color: COLORS.primary, bold: true,
+    fontSize: 18, fontFace: FONTS.heading, color: COLORS.primary, bold: true,
+    shadow: HEADING_SHADOW,
   });
   descSlide.addText(isZh ? '项目基本信息' : 'Project Information', {
     x: 0, y: 0.52, w: '100%', h: 0.22,
-    fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.white, align: 'center', valign: 'middle',
   });
 
   // Project basic info table
@@ -756,7 +760,7 @@ export async function generatePPTX(
 
   descSlide.addTable(projectInfoRows, {
     x: SLIDE_LAYOUT.contentLeft, y: SLIDE_LAYOUT.contentTop + 0.45, w: SLIDE_LAYOUT.contentWidth,
-    fontFace: 'Arial',
+    fontFace: FONTS.body,
     fontSize: 9,
     colW: [1.5, 7.7],
     border: { pt: 0.5, color: COLORS.border },
@@ -769,7 +773,7 @@ export async function generatePPTX(
   if (projectDesc) {
     descSlide.addText(isZh ? '【项目简介】' : '[Project Overview]', {
       x: SLIDE_LAYOUT.contentLeft, y: 2.55, w: SLIDE_LAYOUT.contentWidth, h: 0.28,
-      fontSize: 11, color: COLORS.primary, bold: true,
+      fontSize: 11, fontFace: FONTS.body, color: COLORS.primary, bold: true,
     });
     descSlide.addShape('rect', {
       x: SLIDE_LAYOUT.contentLeft, y: 2.88, w: SLIDE_LAYOUT.contentWidth, h: 0.9,
@@ -778,7 +782,7 @@ export async function generatePPTX(
     });
     descSlide.addText(projectDesc, {
       x: SLIDE_LAYOUT.contentLeft + 0.1, y: 2.95, w: SLIDE_LAYOUT.contentWidth - 0.2, h: 0.75,
-      fontSize: 9, color: COLORS.dark,
+      fontSize: 9, fontFace: FONTS.body, color: COLORS.dark,
     });
   }
 
@@ -786,7 +790,7 @@ export async function generatePPTX(
   const wsOverviewY = projectDesc ? 4.0 : 2.55;
   descSlide.addText(isZh ? '工位清单' : 'Workstation List', {
     x: SLIDE_LAYOUT.contentLeft, y: wsOverviewY, w: SLIDE_LAYOUT.contentWidth, h: 0.28,
-    fontSize: 11, color: COLORS.dark, bold: true,
+    fontSize: 11, fontFace: FONTS.body, color: COLORS.dark, bold: true,
   });
 
   const wsTableHeader: TableRow = row([
@@ -807,7 +811,7 @@ export async function generatePPTX(
 
   descSlide.addTable([wsTableHeader, ...wsTableRows], {
     x: SLIDE_LAYOUT.contentLeft, y: wsOverviewY + 0.32, w: SLIDE_LAYOUT.contentWidth,
-    fontFace: 'Arial',
+    fontFace: FONTS.body,
     fontSize: 8,
     colW: [1.1, 3.2, 1.4, 1.1, 1.1],
     border: { pt: 0.5, color: COLORS.border },
@@ -826,26 +830,27 @@ export async function generatePPTX(
   // Title text overlaid on the navy header bar (white text)
   revisionSlide.addText(isZh ? '变更履历' : 'Revision History', {
     x: 0.4, y: 0.05, w: 5, h: 0.38,
-    fontSize: 18, color: COLORS.primary, bold: true,
+    fontSize: 18, fontFace: FONTS.heading, color: COLORS.primary, bold: true,
+    shadow: HEADING_SHADOW,
   });
 
   revisionSlide.addText(isZh ? '变更表' : 'Change Log', {
     x: 0, y: 0.52, w: '100%', h: 0.22,
-    fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.white, align: 'center', valign: 'middle',
   });
 
   // Table title row
   const tableTitleRow: TableRow = [
-    { text: isZh ? '发行/变更履历表' : 'Release/Change History', options: { colspan: 6, align: 'center', bold: true, fill: { color: '2E75B6' }, color: COLORS.white, fontSize: 10 } as any },
+    { text: isZh ? '发行/变更履历表' : 'Release/Change History', options: { colspan: 6, align: 'center', bold: true, fill: { color: '2E75B6' }, color: COLORS.white, fontSize: 10, fontFace: FONTS.body } as any },
   ];
 
   const revisionHeader: TableRow = [
-    cell(isZh ? '编号' : 'No.', { fill: { color: '2E75B6' }, color: COLORS.white, bold: true, align: 'center', fontSize: 9 } as any),
-    cell(isZh ? '版本' : 'Version', { fill: { color: '2E75B6' }, color: COLORS.white, bold: true, align: 'center', fontSize: 9 } as any),
-    cell(isZh ? '发行/变更描述' : 'Description', { fill: { color: '2E75B6' }, color: COLORS.white, bold: true, align: 'center', fontSize: 9 } as any),
-    cell(isZh ? '客户规格书版本' : 'Customer Spec', { fill: { color: '2E75B6' }, color: COLORS.white, bold: true, align: 'center', fontSize: 9 } as any),
-    cell(isZh ? '日期' : 'Date', { fill: { color: '2E75B6' }, color: COLORS.white, bold: true, align: 'center', fontSize: 9 } as any),
-    cell(isZh ? '发行/变更人' : 'Author', { fill: { color: '2E75B6' }, color: COLORS.white, bold: true, align: 'center', fontSize: 9 } as any),
+    cell(isZh ? '编号' : 'No.', { fill: { color: '2E75B6' }, color: COLORS.white, bold: true, align: 'center', fontSize: 9, fontFace: FONTS.body } as any),
+    cell(isZh ? '版本' : 'Version', { fill: { color: '2E75B6' }, color: COLORS.white, bold: true, align: 'center', fontSize: 9, fontFace: FONTS.body } as any),
+    cell(isZh ? '发行/变更描述' : 'Description', { fill: { color: '2E75B6' }, color: COLORS.white, bold: true, align: 'center', fontSize: 9, fontFace: FONTS.body } as any),
+    cell(isZh ? '客户规格书版本' : 'Customer Spec', { fill: { color: '2E75B6' }, color: COLORS.white, bold: true, align: 'center', fontSize: 9, fontFace: FONTS.body } as any),
+    cell(isZh ? '日期' : 'Date', { fill: { color: '2E75B6' }, color: COLORS.white, bold: true, align: 'center', fontSize: 9, fontFace: FONTS.body } as any),
+    cell(isZh ? '发行/变更人' : 'Author', { fill: { color: '2E75B6' }, color: COLORS.white, bold: true, align: 'center', fontSize: 9, fontFace: FONTS.body } as any),
   ];
 
   const revisionHistory = project.revision_history || [];
@@ -868,7 +873,7 @@ export async function generatePPTX(
     x: SLIDE_LAYOUT.contentLeft, 
     y: 0.85, 
     w: SLIDE_LAYOUT.contentWidth,
-    fontFace: 'Arial',
+    fontFace: FONTS.body,
     fontSize: 9,
     colW: [0.6, 0.7, 3.2, 1.6, 1.2, 1.2],
     border: { pt: 0.5, color: COLORS.border },
@@ -886,13 +891,15 @@ export async function generatePPTX(
   
   mountGuideSlide.addText(isZh ? '相机安装方向说明' : 'Camera Installation Direction Guide', {
     x: 0.4, y: 0.05, w: 7.5, h: 0.38,
-    fontSize: 18, color: COLORS.primary, bold: true,
+    fontSize: 18, fontFace: FONTS.heading, color: COLORS.primary, bold: true,
+    shadow: HEADING_SHADOW,
   });
 
   // 说明文字（参考图中"如何区分芯片的长短边?"）
   mountGuideSlide.addText(isZh ? '如何区分芯片的长短边?' : 'How to identify the long/short side of the sensor?', {
     x: 0.4, y: 1.0, w: 9, h: 0.3,
-    fontSize: 14, color: '333333', bold: true,
+    fontSize: 14, fontFace: FONTS.heading, color: '333333', bold: true,
+    shadow: HEADING_SHADOW,
   });
 
   // 加载两张相机实物照片
@@ -922,12 +929,12 @@ export async function generatePPTX(
   // 左图标注"长边"
   mountGuideSlide.addText(isZh ? '长边' : 'Long side', {
     x: 0.3, y: 3.2, w: 1.0, h: 0.25,
-    fontSize: 11, color: '333333',
+    fontSize: 11, fontFace: FONTS.body, color: '333333',
   });
   // 右图标注"长边"
   mountGuideSlide.addText(isZh ? '长边' : 'Long side', {
     x: 8.7, y: 3.2, w: 1.0, h: 0.25,
-    fontSize: 11, color: '333333',
+    fontSize: 11, fontFace: FONTS.body, color: '333333',
   });
 
   // (Old slides 4.5+5+6 removed - content merged into slide 2 above)
@@ -1076,11 +1083,12 @@ export async function generatePPTX(
   
   hwSlide.addText(isZh ? '硬件清单汇总' : 'Hardware Summary', {
     x: 0.4, y: 0.05, w: 7.5, h: 0.38,
-    fontSize: 18, color: COLORS.primary, bold: true,
+    fontSize: 18, fontFace: FONTS.heading, color: COLORS.primary, bold: true,
+    shadow: HEADING_SHADOW,
   });
   hwSlide.addText(isZh ? '设备清单' : 'Equipment List', {
     x: 0, y: 0.52, w: '100%', h: 0.22,
-    fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.white, align: 'center', valign: 'middle',
   });
 
   // Aggregate hardware by brand+model across all modules
@@ -1154,7 +1162,7 @@ export async function generatePPTX(
 
   hwSlide.addTable(hwAllRows, {
     x: SLIDE_LAYOUT.contentLeft, y: 0.85, w: SLIDE_LAYOUT.contentWidth,
-    fontFace: 'Arial',
+    fontFace: FONTS.body,
     fontSize: 8,
     colW: [0.5, 1.4, 1.2, 2.0, 0.6, 1.8],
     border: { pt: 0.5, color: COLORS.border },
@@ -1197,7 +1205,8 @@ export async function generatePPTX(
     
     appendixSlide.addText(isZh ? '附录：补充字段' : 'Appendix: Additional Fields', {
       x: SLIDE_LAYOUT.contentLeft, y: SLIDE_LAYOUT.contentTop, w: SLIDE_LAYOUT.contentWidth, h: 0.4,
-      fontSize: 18, color: COLORS.dark, bold: true,
+      fontSize: 18, fontFace: FONTS.heading, color: COLORS.dark, bold: true,
+      shadow: HEADING_SHADOW,
     });
 
     let appendixY = SLIDE_LAYOUT.contentTop + 0.5;
@@ -1255,7 +1264,7 @@ export async function generatePPTX(
         x: SLIDE_LAYOUT.contentLeft, 
         y: appendixY, 
         w: SLIDE_LAYOUT.contentWidth,
-        fontFace: 'Arial',
+        fontFace: FONTS.body,
         fontSize: 8,
         colW: [2.2, 2.5, 4.5],
         border: { pt: 0.5, color: COLORS.border },
@@ -1279,22 +1288,25 @@ export async function generatePPTX(
 
   endSlide.addText(isZh ? COMPANY_NAME_ZH : COMPANY_NAME_EN, {
     x: 0.5, y: 1.2, w: 9, h: 0.4,
-    fontSize: 14, color: COLORS.white, align: 'center',
+    fontSize: 14, fontFace: FONTS.heading, color: COLORS.white, align: 'center',
+    shadow: HEADING_SHADOW,
   });
 
   endSlide.addText(isZh ? '感谢您的关注' : 'Thank You', {
     x: 0.5, y: 1.9, w: 9, h: 0.8,
-    fontSize: 32, color: COLORS.white, bold: true, align: 'center',
+    fontSize: 32, fontFace: FONTS.heading, color: COLORS.white, bold: true, align: 'center',
+    shadow: HEADING_SHADOW,
   });
 
   endSlide.addText(project.customer, {
     x: 0.5, y: 2.9, w: 9, h: 0.4,
-    fontSize: 16, color: COLORS.white, align: 'center',
+    fontSize: 16, fontFace: FONTS.heading, color: COLORS.white, align: 'center',
+    shadow: HEADING_SHADOW,
   });
 
   endSlide.addText(`${project.responsible || ''} | ${project.date || ''}`, {
     x: 0.5, y: 3.5, w: 9, h: 0.35,
-    fontSize: 11, color: COLORS.secondary, align: 'center',
+    fontSize: 11, fontFace: FONTS.body, color: COLORS.secondary, align: 'center',
   });
 
   // Generate blob

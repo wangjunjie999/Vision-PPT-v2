@@ -59,6 +59,22 @@ export const COLORS = {
   textSecondary: '333333', // 深灰色 - 次要文字/辅助说明
 };
 
+// Font constants - 微软雅黑
+export const FONTS = {
+  heading: 'Microsoft YaHei',
+  body: 'Microsoft YaHei',
+};
+
+// Heading shadow effect for primary titles
+export const HEADING_SHADOW = {
+  type: 'outer' as const,
+  blur: 3,
+  offset: 2,
+  angle: 45,
+  color: '000000',
+  opacity: 0.4,
+};
+
 // 16:9 Slide Layout Constants
 export const SLIDE_LAYOUT = {
   name: 'LAYOUT_16x9' as const,
