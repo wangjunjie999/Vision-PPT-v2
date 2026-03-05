@@ -1770,7 +1770,29 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               />
               
               
-              {/* Camera mount points and connection lines hidden - camera info described in text */}
+              {/* Camera mount points - show when dragging a camera */}
+              {isDragging && draggingObject?.type === 'camera' && objects.filter(o => o.type === 'mechanism').map(mech => (
+                <g key={`mount-${mech.id}`} transform={`translate(${mech.x}, ${mech.y})`}>
+                  <CameraMountPoints
+                    mechanismObject={mech}
+                    currentView={currentView}
+                    cameras={objects.filter(o => o.type === 'camera')}
+                    onSnapCamera={(cameraId, mountPoint, mechanismId) => {
+                      const mp = getMountPointWorldPosition(mech, mountPoint.id, currentView);
+                      if (mp) {
+                        updateObject(cameraId, {
+                          x: mp.x,
+                          y: mp.y,
+                          mountedToMechanismId: mechanismId,
+                          mountPointId: mountPoint.id,
+                        });
+                      }
+                    }}
+                    draggingCameraId={draggingObject.id}
+                    scale={scale}
+                  />
+                </g>
+              ))}
               
               {/* Operation hints moved to viewport-fixed overlay below */}
             </svg>
