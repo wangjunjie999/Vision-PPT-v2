@@ -1407,18 +1407,7 @@ export function generateBasicInfoAndRequirementsSlide(
     fill: { color: COLORS.white },
   });
 
-  // Risk notes at very bottom
-  if (ws.risk_notes) {
-    slide.addShape('rect', {
-      x: 0.4, y: 5.0, w: 9.2, h: 0.4,
-      fill: { color: 'FFF8E1' },
-      line: { color: COLORS.warning, width: 0.5 },
-    });
-    slide.addText(`⚠ ${ws.risk_notes}`, {
-      x: 0.5, y: 5.05, w: 9, h: 0.3,
-      fontSize: 7, color: COLORS.dark,
-    });
-  }
+  // Risk notes removed per user request
 }
 
 /**
