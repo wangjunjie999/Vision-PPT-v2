@@ -765,6 +765,15 @@ export async function generatePPTX(
     x: 0.4, y: 0.05, w: 5, h: 0.38,
     fontSize: 18, color: COLORS.white, bold: true,
   });
+  // Sub-header bar (medium blue)
+  descSlide.addShape('rect', {
+    x: 0, y: 0.45, w: '100%', h: 0.22,
+    fill: { color: '2E75B6' },
+  });
+  descSlide.addText(isZh ? '项目基本信息' : 'Project Information', {
+    x: 0, y: 0.45, w: '100%', h: 0.22,
+    fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
+  });
 
   // Project basic info table
   const projectExt = project as ProjectData & { production_line?: string; description?: string };
@@ -916,6 +925,11 @@ export async function generatePPTX(
   mountGuideSlide.addText(isZh ? '相机安装方向说明' : 'Camera Installation Direction Guide', {
     x: 0.4, y: 0.05, w: 7.5, h: 0.38,
     fontSize: 18, color: COLORS.white, bold: true,
+  });
+  // Sub-header bar (medium blue, empty decorative bar like 图92)
+  mountGuideSlide.addShape('rect', {
+    x: 0, y: 0.45, w: '100%', h: 0.22,
+    fill: { color: '2E75B6' },
   });
 
   // Draw three camera mount diagrams
@@ -1130,8 +1144,17 @@ export async function generatePPTX(
   const hwSlide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
   
   hwSlide.addText(isZh ? '硬件清单汇总' : 'Hardware Summary', {
-    x: SLIDE_LAYOUT.contentLeft, y: SLIDE_LAYOUT.contentTop, w: SLIDE_LAYOUT.contentWidth, h: 0.4,
-    fontSize: 18, color: COLORS.dark, bold: true,
+    x: 0.4, y: 0.05, w: 7.5, h: 0.38,
+    fontSize: 18, color: COLORS.white, bold: true,
+  });
+  // Sub-header bar (medium blue)
+  hwSlide.addShape('rect', {
+    x: 0, y: 0.45, w: '100%', h: 0.22,
+    fill: { color: '2E75B6' },
+  });
+  hwSlide.addText(isZh ? '设备清单' : 'Equipment List', {
+    x: 0, y: 0.45, w: '100%', h: 0.22,
+    fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
   });
 
   // Aggregate hardware by brand+model across all modules
@@ -1204,7 +1227,7 @@ export async function generatePPTX(
   const hwAllRows = [...hwHeader, ...hwDataRows, ...hwTotalRow];
 
   hwSlide.addTable(hwAllRows, {
-    x: SLIDE_LAYOUT.contentLeft, y: SLIDE_LAYOUT.contentTop + 0.5, w: SLIDE_LAYOUT.contentWidth,
+    x: SLIDE_LAYOUT.contentLeft, y: 0.85, w: SLIDE_LAYOUT.contentWidth,
     fontFace: 'Arial',
     fontSize: 8,
     colW: [0.5, 1.4, 1.2, 2.0, 0.6, 1.8],

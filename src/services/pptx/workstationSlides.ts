@@ -110,18 +110,50 @@ function addImagePlaceholder(
 
 /**
  * Unified slide title with Tech-Shine corporate style
- * Deep blue accent bar on left + dark gray text
+ * Main navy header bar + medium blue subtitle bar below
+ * Supports single subtitle or split left/right subtitles (图93风格)
  */
 function addSlideTitle(
   slide: ReturnType<PptxGenJS['addSlide']>,
   ctx: SlideContext,
-  subtitle: string
+  subtitle: string,
+  splitSubtitles?: { left: string; right: string }
 ): void {
-  // Title text overlaid on the navy header bar (white text, matches master deep blue bar)
-  slide.addText(`${ctx.wsCode} ${ctx.wsName} - ${subtitle}`, {
+  // Main title text overlaid on the navy header bar (white text)
+  slide.addText(`${ctx.wsCode} ${ctx.wsName}`, {
     x: 0.4, y: 0.05, w: 7.5, h: 0.38,
     fontSize: 16, color: COLORS.white, bold: true,
   });
+
+  if (splitSubtitles) {
+    // Split subtitle bar (left/right, each 50% width)
+    slide.addShape('rect', {
+      x: 0, y: 0.45, w: '50%', h: 0.22,
+      fill: { color: '2E75B6' },
+    });
+    slide.addText(splitSubtitles.left, {
+      x: 0, y: 0.45, w: '50%', h: 0.22,
+      fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
+    });
+    slide.addShape('rect', {
+      x: '50%', y: 0.45, w: '50%', h: 0.22,
+      fill: { color: '2E75B6' },
+    });
+    slide.addText(splitSubtitles.right, {
+      x: '50%', y: 0.45, w: '50%', h: 0.22,
+      fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
+    });
+  } else {
+    // Single subtitle bar (full width)
+    slide.addShape('rect', {
+      x: 0, y: 0.45, w: '100%', h: 0.22,
+      fill: { color: '2E75B6' },
+    });
+    slide.addText(subtitle, {
+      x: 0, y: 0.45, w: '100%', h: 0.22,
+      fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
+    });
+  }
 }
 
 interface SlideContext {
@@ -1234,7 +1266,11 @@ export function generateBasicInfoAndRequirementsSlide(
   const slide = ctx.pptx.addSlide({ masterName: 'MASTER_SLIDE' });
   const { ws, layout, modules, productAsset } = data;
   
-  addSlideTitle(slide, ctx, ctx.isZh ? '基本信息与检测要求' : 'Basic Info & Requirements');
+  // Use split subtitle bar (图93风格: 技术要求 | 产品示意图)
+  addSlideTitle(slide, ctx, '', {
+    left: ctx.isZh ? '技术要求' : 'Technical Requirements',
+    right: ctx.isZh ? '产品示意图' : 'Product Schematic',
+  });
 
   // === TOP HALF: Basic Info ===
   const startY = 1.1;
