@@ -119,36 +119,24 @@ function addSlideTitle(
   subtitle: string,
   splitSubtitles?: { left: string; right: string }
 ): void {
-  // Main title text overlaid on the navy header bar (white text)
+  // Main title text overlaid on the navy header bar (primary blue)
   slide.addText(`${ctx.wsCode} ${ctx.wsName}`, {
     x: 0.4, y: 0.05, w: 7.5, h: 0.38,
-    fontSize: 16, color: COLORS.white, bold: true,
+    fontSize: 16, color: COLORS.primary, bold: true,
   });
 
   if (splitSubtitles) {
-    // Split subtitle bar (left/right, each 50% width)
-    slide.addShape('rect', {
-      x: 0, y: 0.45, w: '50%', h: 0.22,
-      fill: { color: '2E75B6' },
-    });
+    // Split subtitle text (no rect, bg image has the blue bar)
     slide.addText(splitSubtitles.left, {
       x: 0, y: 0.45, w: '50%', h: 0.22,
       fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
-    });
-    slide.addShape('rect', {
-      x: '50%', y: 0.45, w: '50%', h: 0.22,
-      fill: { color: '2E75B6' },
     });
     slide.addText(splitSubtitles.right, {
       x: '50%', y: 0.45, w: '50%', h: 0.22,
       fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
     });
   } else {
-    // Single subtitle bar (full width)
-    slide.addShape('rect', {
-      x: 0, y: 0.45, w: '100%', h: 0.22,
-      fill: { color: '2E75B6' },
-    });
+    // Single subtitle text (no rect, bg image has the blue bar)
     slide.addText(subtitle, {
       x: 0, y: 0.45, w: '100%', h: 0.22,
       fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',

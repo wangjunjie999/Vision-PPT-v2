@@ -735,12 +735,7 @@ export async function generatePPTX(
   // Title overlaid on navy header bar
   descSlide.addText(isZh ? '项目说明' : 'Project Description', {
     x: 0.4, y: 0.05, w: 5, h: 0.38,
-    fontSize: 18, color: COLORS.white, bold: true,
-  });
-  // Sub-header bar (medium blue)
-  descSlide.addShape('rect', {
-    x: 0, y: 0.45, w: '100%', h: 0.22,
-    fill: { color: '2E75B6' },
+    fontSize: 18, color: COLORS.primary, bold: true,
   });
   descSlide.addText(isZh ? '项目基本信息' : 'Project Information', {
     x: 0, y: 0.45, w: '100%', h: 0.22,
@@ -831,14 +826,9 @@ export async function generatePPTX(
   // Title text overlaid on the navy header bar (white text)
   revisionSlide.addText(isZh ? '变更履历' : 'Revision History', {
     x: 0.4, y: 0.05, w: 5, h: 0.38,
-    fontSize: 18, color: COLORS.white, bold: true,
+    fontSize: 18, color: COLORS.primary, bold: true,
   });
 
-  // Subtitle bar below header (medium blue)
-  revisionSlide.addShape('rect', {
-    x: 0, y: 0.45, w: '100%', h: 0.22,
-    fill: { color: '2E75B6' },
-  });
   revisionSlide.addText(isZh ? '变更表' : 'Change Log', {
     x: 0, y: 0.45, w: '100%', h: 0.22,
     fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
@@ -896,7 +886,7 @@ export async function generatePPTX(
   
   mountGuideSlide.addText(isZh ? '相机安装方向说明' : 'Camera Installation Direction Guide', {
     x: 0.4, y: 0.05, w: 7.5, h: 0.38,
-    fontSize: 18, color: COLORS.white, bold: true,
+    fontSize: 18, color: COLORS.primary, bold: true,
   });
 
   // 加载两张相机实物照片
@@ -1069,12 +1059,7 @@ export async function generatePPTX(
   
   hwSlide.addText(isZh ? '硬件清单汇总' : 'Hardware Summary', {
     x: 0.4, y: 0.05, w: 7.5, h: 0.38,
-    fontSize: 18, color: COLORS.white, bold: true,
-  });
-  // Sub-header bar (medium blue)
-  hwSlide.addShape('rect', {
-    x: 0, y: 0.45, w: '100%', h: 0.22,
-    fill: { color: '2E75B6' },
+    fontSize: 18, color: COLORS.primary, bold: true,
   });
   hwSlide.addText(isZh ? '设备清单' : 'Equipment List', {
     x: 0, y: 0.45, w: '100%', h: 0.22,
