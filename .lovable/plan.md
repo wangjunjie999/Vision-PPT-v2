@@ -1,23 +1,44 @@
 
 
-# 直接通过后端函数重新生成 DB260101 全部布局图
+# FOV 输入改为两个独立数值框
 
-## 方案
+## 问题
 
-项目已有 `generate-test-images` 后端函数，使用服务端权限绕过登录限制，直接生成 SVG 图片上传到存储并更新数据库。
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-### 需要做的事
+## 修改方案
 
-1. **更新后端函数的 SVG 模板**（`supabase/functions/generate-test-images/index.ts`）
-   - **正视图 `generateFrontView`**：将相机放到最顶部（Y=60），使用亮青色 `#22d3ee` 虚线表示拍摄方向，增加相机与光源/机构的间距
-   - **侧视图 `generateSideView`**：同样调整相机位置到最上层，拍摄方向线改为亮青色
-   - **俯视图 `generateTopView`**：FOV 指示线改为亮青色
-   - **光学示意图 `generateSchematic`**：FOV 锥形线改为亮青色
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-2. **调用后端函数**，传入 `project_code: "DB260101"`，自动为 8 个工位生成全部三视图 + 模块示意图并写入数据库
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
+```
 
-### 预期结果
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-- 8 个工位 × 3 视图 = 24 张布局图 + 对应模块示意图，全部更新到数据库
-- 无需登录，后端直接完成
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+
+```
+[宽度输入] × [高度输入]
+```
+
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 

@@ -2,30 +2,30 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
-// Color constants - white background, navy accents
+// Color constants - white background, navy accents, bright cyan for shooting lines
 const C = {
   bg: '#FFFFFF',
   navy: '#003D7A',
   navyLight: '#4A90D9',
+  cyan: '#22d3ee',       // bright cyan for shooting direction lines
   orange: '#F5A623',
   green: '#10B981',
   greenBg: '#ECFDF5',
   gray: '#333333',
   grayLight: '#666666',
   gridLine: '#E6E6E6',
-  fovFill: 'rgba(74,144,217,0.1)',
   red: '#DC2626',
   border: '#D1D5DB',
 };
 
 function generateFrontView(wsName: string, wsCode: string, wsType: string, moduleType: string): string {
   const title = `${wsCode} 正视图`;
-  const cameraY = 80;
-  const lightY = 200;
-  const productY = 380;
+  const cameraY = 60;
+  const lightY = 220;
+  const productY = 400;
   const cameraX = 400;
   const lightPositions = wsType === 'turntable'
     ? [{ x: 200, angle: 30 }, { x: 600, angle: -30 }]
@@ -40,7 +40,7 @@ function generateFrontView(wsName: string, wsCode: string, wsType: string, modul
   <text x="400" y="35" fill="${C.navy}" font-size="18" font-family="Arial" text-anchor="middle" font-weight="bold">${title}</text>
   <text x="400" y="55" fill="${C.grayLight}" font-size="12" font-family="Arial" text-anchor="middle">${wsName} | ${moduleType}</text>
 
-  <!-- Camera -->
+  <!-- Camera at top -->
   <rect x="${cameraX-40}" y="${cameraY}" width="80" height="50" rx="4" fill="${C.navy}" stroke="${C.navy}" stroke-width="2"/>
   <text x="${cameraX}" y="${cameraY+30}" fill="#FFFFFF" font-size="11" font-family="Arial" text-anchor="middle">相机</text>
   <circle cx="${cameraX}" cy="${cameraY+50}" r="15" fill="${C.bg}" stroke="${C.navy}" stroke-width="2"/>
@@ -49,20 +49,21 @@ function generateFrontView(wsName: string, wsCode: string, wsType: string, modul
   <rect x="${cameraX-12}" y="${cameraY+50}" width="24" height="30" rx="2" fill="${C.bg}" stroke="${C.navy}" stroke-width="1.5"/>
   <text x="${cameraX}" y="${cameraY+100}" fill="${C.gray}" font-size="10" font-family="Arial" text-anchor="middle">镜头</text>
 
+  <!-- Shooting direction lines - bright cyan -->
+  <line x1="${cameraX}" y1="${cameraY+80}" x2="${cameraX-80}" y2="${productY}" stroke="${C.cyan}" stroke-width="2" stroke-dasharray="8,4" opacity="0.85"/>
+  <line x1="${cameraX}" y1="${cameraY+80}" x2="${cameraX+80}" y2="${productY}" stroke="${C.cyan}" stroke-width="2" stroke-dasharray="8,4" opacity="0.85"/>
+  <line x1="${cameraX}" y1="${cameraY+80}" x2="${cameraX}" y2="${productY}" stroke="${C.cyan}" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.6"/>
+
   <!-- Light sources -->
   ${lightPositions.map((lp, i) => `
   <polygon points="${lp.x},${lightY} ${lp.x-25},${lightY+40} ${lp.x+25},${lightY+40}" fill="${C.orange}" stroke="${C.orange}" stroke-width="1.5" opacity="0.8"/>
   <text x="${lp.x}" y="${lightY+18}" fill="#FFFFFF" font-size="9" font-family="Arial" text-anchor="middle">L${i+1}</text>
-  <line x1="${lp.x}" y1="${lightY+40}" x2="${cameraX}" y2="${productY}" stroke="${C.orange}" stroke-width="1" stroke-dasharray="5,5" opacity="0.5"/>
+  <line x1="${lp.x}" y1="${lightY+40}" x2="${cameraX}" y2="${productY}" stroke="${C.orange}" stroke-width="1" stroke-dasharray="5,5" opacity="0.4"/>
   `).join('')}
-
-  <!-- FOV cone -->
-  <line x1="${cameraX}" y1="${cameraY+80}" x2="${cameraX-60}" y2="${productY}" stroke="${C.navyLight}" stroke-width="1" stroke-dasharray="4,4" opacity="0.4"/>
-  <line x1="${cameraX}" y1="${cameraY+80}" x2="${cameraX+60}" y2="${productY}" stroke="${C.navyLight}" stroke-width="1" stroke-dasharray="4,4" opacity="0.4"/>
 
   <!-- Product -->
   <rect x="280" y="${productY}" width="240" height="60" rx="3" fill="${C.greenBg}" stroke="${C.green}" stroke-width="2"/>
-  <text x="400" y="${productY+35}" fill="${C.green}" font-size="13" font-family="Arial" text-anchor="middle">待测件 (芯片封装)</text>
+  <text x="400" y="${productY+35}" fill="${C.green}" font-size="13" font-family="Arial" text-anchor="middle">待测件</text>
 
   <!-- Base -->
   <rect x="180" y="${productY+70}" width="440" height="20" rx="2" fill="${C.bg}" stroke="${C.border}" stroke-width="1.5"/>
@@ -95,16 +96,21 @@ function generateSideView(wsName: string, wsCode: string, wsType: string, module
   <text x="400" y="55" fill="${C.grayLight}" font-size="12" font-family="Arial" text-anchor="middle">${wsName} | ${moduleType}</text>
 
   <!-- Support column -->
-  <rect x="380" y="70" width="40" height="300" rx="3" fill="${C.bg}" stroke="${C.border}" stroke-width="1.5"/>
+  <rect x="380" y="60" width="40" height="320" rx="3" fill="${C.bg}" stroke="${C.border}" stroke-width="1.5"/>
 
-  <!-- Camera -->
-  <rect x="360" y="70" width="80" height="45" rx="4" fill="${C.navy}" stroke="${C.navy}" stroke-width="2"/>
-  <text x="400" y="97" fill="#FFFFFF" font-size="11" font-family="Arial" text-anchor="middle">相机</text>
-  <rect x="388" y="115" width="24" height="25" rx="2" fill="${C.bg}" stroke="${C.navy}" stroke-width="1.5"/>
+  <!-- Camera at top -->
+  <rect x="360" y="60" width="80" height="45" rx="4" fill="${C.navy}" stroke="${C.navy}" stroke-width="2"/>
+  <text x="400" y="87" fill="#FFFFFF" font-size="11" font-family="Arial" text-anchor="middle">相机</text>
+  <rect x="388" y="105" width="24" height="25" rx="2" fill="${C.bg}" stroke="${C.navy}" stroke-width="1.5"/>
+
+  <!-- Shooting direction - bright cyan -->
+  <line x1="400" y1="130" x2="400" y2="380" stroke="${C.cyan}" stroke-width="2" stroke-dasharray="8,4" opacity="0.85"/>
+  <line x1="400" y1="130" x2="340" y2="380" stroke="${C.cyan}" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.6"/>
+  <line x1="400" y1="130" x2="460" y2="380" stroke="${C.cyan}" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.6"/>
 
   <!-- Working distance -->
-  <line x1="440" y1="140" x2="440" y2="370" stroke="${C.orange}" stroke-width="1" stroke-dasharray="4,3"/>
-  <text x="460" y="260" fill="${C.orange}" font-size="10" font-family="Arial" transform="rotate(90, 460, 260)">工作距离 300mm</text>
+  <line x1="470" y1="130" x2="470" y2="380" stroke="${C.orange}" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="490" y="260" fill="${C.orange}" font-size="10" font-family="Arial" transform="rotate(90, 490, 260)">工作距离 300mm</text>
 
   <!-- Light -->
   <polygon points="250,250 225,290 275,290" fill="${C.orange}" stroke="${C.orange}" stroke-width="1.5" opacity="0.8"/>
@@ -112,12 +118,12 @@ function generateSideView(wsName: string, wsCode: string, wsType: string, module
   <text x="250" y="310" fill="${C.gray}" font-size="10" font-family="Arial" text-anchor="middle">光源</text>
 
   <!-- Product -->
-  <rect x="300" y="370" width="200" height="50" rx="3" fill="${C.greenBg}" stroke="${C.green}" stroke-width="2"/>
-  <text x="400" y="400" fill="${C.green}" font-size="12" font-family="Arial" text-anchor="middle">待测件</text>
+  <rect x="300" y="380" width="200" height="50" rx="3" fill="${C.greenBg}" stroke="${C.green}" stroke-width="2"/>
+  <text x="400" y="410" fill="${C.green}" font-size="12" font-family="Arial" text-anchor="middle">待测件</text>
 
   <!-- Base -->
-  <rect x="200" y="430" width="400" height="25" rx="2" fill="${C.bg}" stroke="${C.border}" stroke-width="1.5"/>
-  ${wsType === 'turntable' ? `<circle cx="400" cy="442" r="8" fill="none" stroke="${C.border}" stroke-width="1.5"/>` : ''}
+  <rect x="200" y="440" width="400" height="25" rx="2" fill="${C.bg}" stroke="${C.border}" stroke-width="1.5"/>
+  ${wsType === 'turntable' ? `<circle cx="400" cy="452" r="8" fill="none" stroke="${C.border}" stroke-width="1.5"/>` : ''}
 
   <!-- Axes -->
   <line x1="50" y1="550" x2="150" y2="550" stroke="${C.navy}" stroke-width="2"/>
@@ -126,8 +132,8 @@ function generateSideView(wsName: string, wsCode: string, wsType: string, module
   <text x="42" y="465" fill="${C.green}" font-size="12" font-family="Arial">Y</text>
 
   <!-- Height -->
-  <line x1="600" y1="70" x2="600" y2="430" stroke="${C.grayLight}" stroke-width="1"/>
-  <text x="620" y="250" fill="${C.grayLight}" font-size="10" font-family="Arial" transform="rotate(90,620,250)">设备高度 360mm</text>
+  <line x1="620" y1="60" x2="620" y2="440" stroke="${C.grayLight}" stroke-width="1"/>
+  <text x="640" y="250" fill="${C.grayLight}" font-size="10" font-family="Arial" transform="rotate(90,640,250)">设备高度 380mm</text>
 </svg>`;
 }
 
@@ -157,10 +163,10 @@ function generateTopView(wsName: string, wsCode: string, wsType: string, moduleT
   <rect x="350" y="320" width="100" height="60" rx="3" fill="${C.greenBg}" stroke="${C.green}" stroke-width="2"/>
   <text x="400" y="355" fill="${C.green}" font-size="11" font-family="Arial" text-anchor="middle">待测件</text>
 
-  <!-- FOV -->
-  <circle cx="400" cy="350" r="70" fill="${C.navyLight}" fill-opacity="0.1" stroke="${C.navyLight}" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <!-- FOV - bright cyan -->
+  <circle cx="400" cy="350" r="70" fill="${C.cyan}" fill-opacity="0.08" stroke="${C.cyan}" stroke-width="2" stroke-dasharray="6,3"/>
   <circle cx="400" cy="350" r="5" fill="${C.navy}"/>
-  <text x="400" y="290" fill="${C.navy}" font-size="10" font-family="Arial" text-anchor="middle">相机视野 FOV</text>
+  <text x="400" y="290" fill="${C.cyan}" font-size="10" font-family="Arial" text-anchor="middle" font-weight="bold">相机视野 FOV</text>
 
   <!-- Lights -->
   <circle cx="250" cy="350" r="18" fill="${C.orange}" stroke="${C.orange}" stroke-width="1.5" opacity="0.8"/>
@@ -205,9 +211,9 @@ function generateSchematic(moduleName: string, moduleType: string, wsCode: strin
   <rect x="375" y="135" width="50" height="35" rx="3" fill="${C.bg}" stroke="${C.navy}" stroke-width="1.5"/>
   <text x="400" y="158" fill="${C.navy}" font-size="10" font-family="Arial" text-anchor="middle">镜头</text>
 
-  <!-- FOV cone -->
-  <polygon points="400,170 280,380 520,380" fill="${C.navyLight}" fill-opacity="0.08" stroke="${C.navyLight}" stroke-width="1.5" stroke-dasharray="6,3"/>
-  <text x="400" y="300" fill="${C.navy}" font-size="12" font-family="Arial" text-anchor="middle" opacity="0.5">视野范围</text>
+  <!-- FOV cone - bright cyan -->
+  <polygon points="400,170 280,380 520,380" fill="${C.cyan}" fill-opacity="0.06" stroke="${C.cyan}" stroke-width="2" stroke-dasharray="8,4"/>
+  <text x="400" y="300" fill="${C.cyan}" font-size="12" font-family="Arial" text-anchor="middle" opacity="0.7" font-weight="bold">视野范围</text>
 
   <!-- Left light -->
   <rect x="120" y="200" width="60" height="40" rx="4" fill="${C.orange}" stroke="${C.orange}" stroke-width="1.5" opacity="0.85"/>
