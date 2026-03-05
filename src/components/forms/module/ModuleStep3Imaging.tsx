@@ -1,14 +1,12 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calculator, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Calculator, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { ModuleFormState } from './types';
-import { useMemo, useCallback } from 'react';
-import { calculateImagingParams, parseResolution, parseFOV } from '@/utils/imagingCalculations';
+import { useMemo, useEffect } from 'react';
+import { calculateImagingParams } from '@/utils/imagingCalculations';
 import { useCameras } from '@/hooks/useHardware';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 interface ModuleStep3ImagingProps {
   form: ModuleFormState;
@@ -40,56 +38,27 @@ export function ModuleStep3Imaging({ form, setForm }: ModuleStep3ImagingProps) {
   }, [form.fieldOfView, form.fieldOfViewCommon, form.type, selectedCameraResolution, form.accuracyRequirement]);
   
   // 自动填充像素精度
-  const handleAutoCalculate = useCallback(() => {
+  useEffect(() => {
     if (calculationResult.resolutionPerPixel) {
       setForm(p => ({ ...p, resolutionPerPixel: calculationResult.resolutionPerPixel || '' }));
     }
   }, [calculationResult.resolutionPerPixel, setForm]);
-  
-  // 检查是否可以自动计算
-  const canAutoCalculate = useMemo(() => {
-    const fov = form.type === 'positioning' ? form.fieldOfView : form.fieldOfViewCommon;
-    return Boolean(selectedCameraResolution && fov && parseFOV(fov) && parseResolution(selectedCameraResolution));
-  }, [form.fieldOfView, form.fieldOfViewCommon, form.type, selectedCameraResolution]);
 
   return (
     <div className="space-y-6">
       {/* Auto-calculation status banner */}
       {selectedCameraResolution && (
         <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-sm">
-              <Calculator className="h-4 w-4 text-primary" />
-              <span className="text-muted-foreground">已选相机:</span>
-              <Badge variant="secondary" className="font-mono">
-                {selectedCameraResolution}
-              </Badge>
-              {calculationResult.cameraParsed && (
-                <span className="text-xs text-muted-foreground">
-                  ({calculationResult.cameraParsed.width}×{calculationResult.cameraParsed.height} px)
-                </span>
-              )}
-            </div>
-            {canAutoCalculate && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleAutoCalculate}
-                      className="gap-1.5"
-                    >
-                      <RefreshCw className="h-3.5 w-3.5" />
-                      自动计算
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    根据相机分辨率和视野自动计算像素精度
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+          <div className="flex items-center gap-2 text-sm">
+            <Calculator className="h-4 w-4 text-primary" />
+            <span className="text-muted-foreground">已选相机:</span>
+            <Badge variant="secondary" className="font-mono">
+              {selectedCameraResolution}
+            </Badge>
+            {calculationResult.cameraParsed && (
+              <span className="text-xs text-muted-foreground">
+                ({calculationResult.cameraParsed.width}×{calculationResult.cameraParsed.height} px)
+              </span>
             )}
           </div>
           
@@ -193,38 +162,13 @@ export function ModuleStep3Imaging({ form, setForm }: ModuleStep3ImagingProps) {
             </div>
           </div>
           <div className="space-y-1">
-            <Label className="text-xs flex items-center gap-1">
-              分辨率 (mm/px)
-              {canAutoCalculate && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-4 w-4 p-0"
-                        onClick={handleAutoCalculate}
-                      >
-                        <Calculator className="h-3 w-3 text-primary" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>点击自动计算</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </Label>
+            <Label className="text-xs">分辨率 (mm/px)</Label>
             <Input 
               value={form.resolutionPerPixel || ''} 
               onChange={e => setForm(p => ({ ...p, resolutionPerPixel: e.target.value }))} 
-              placeholder={calculationResult.resolutionPerPixel || '0.1'}
+              placeholder="0.1"
               className="h-9" 
             />
-            {calculationResult.resolutionPerPixel && !form.resolutionPerPixel && (
-              <p className="text-[10px] text-primary">
-                建议值: {calculationResult.resolutionPerPixel}
-              </p>
-            )}
           </div>
         </div>
       </div>
