@@ -631,7 +631,10 @@ export async function generateLayoutAndOpticalSlide(
   const slide = ctx.pptx.addSlide({ masterName: 'MASTER_SLIDE' });
   const { layout, modules, hardware } = data;
   
-  addSlideTitle(slide, ctx, ctx.isZh ? '机械布局' : 'Mechanical Layout');
+  const titleText = ctx.isZh 
+    ? `${ctx.wsCode} ${data.ws.name} - 机械布局` 
+    : `${ctx.wsCode} ${data.ws.name} - Mechanical Layout`;
+  addSlideTitle(slide, ctx, titleText);
 
   const primaryView = (layout as any)?.primary_view || 'front';
   const auxiliaryView = (layout as any)?.auxiliary_view || 'side';
