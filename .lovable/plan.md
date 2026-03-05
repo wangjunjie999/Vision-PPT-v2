@@ -1,28 +1,28 @@
 
 
-# 保存全部三视图 + 预览随主辅视图选择动态切换
+# PPT 机械布局：三视图改为主辅视图布局
 
-## 问题
-1. `saveAllViewSnapshots` 当前只保存 `activeViews`（主视图+辅视图），应改为保存全部三个视图到数据库
-2. `LayoutViewsPreview` 组件是静态的，当用户在右侧表单切换主视图/辅视图下拉选择时，预览图应立即切换为对应的已保存图片
+## 现状
+当前 PPT 生成流程中，步骤 c 调用 `generateMechanicalThreeViewSlide`，生成三列等宽的正/侧/俯三视图。用户希望改为如图2所示的 **主辅视图布局**：左侧大图（主视图，约60%宽）+ 右上辅视图 + 右下文字描述区域。
+
+## 发现
+系统中已存在 `generateLayoutAndOpticalSlide` 函数（第627行），实现了完全匹配图2的布局：
+- 左60%：主视图大图
+- 右上：辅视图小图  
+- 右下：布局说明文字区域
+
+但当前 PPT 生成主流程（`pptxGenerator.ts`）调用的是 `generateMechanicalThreeViewSlide`，且 slideData 中缺少 `primary_view`、`auxiliary_view`、`layout_description` 三个字段。
 
 ## 修改方案
 
-### 文件1：`src/components/canvas/DraggableLayoutCanvas.tsx`
+### 文件1：`src/services/pptxGenerator.ts`
+1. **slideData.layout** 增加三个字段：`primary_view`、`auxiliary_view`、`layout_description`
+2. **步骤 c**：将 `generateMechanicalThreeViewSlide` 替换为 `generateLayoutAndOpticalSlide`
+3. **进度文案**：从 "机械三视图" 改为 "机械布局"
+4. **import**：确保导入 `generateLayoutAndOpticalSlide`
 
-**保存全部三视图**
-- 第932行：`const views = activeViews` → `const views: ViewType[] = ['front', 'side', 'top']`
-- 第1000-1004行：`activeViews.forEach` → `(['front', 'side', 'top'] as ViewType[]).forEach`
-- 第1015行依赖数组：移除 `activeViews`
-- 按钮文案改回 "保存三视图"
-- 完成判断改为 `viewSaveStatus.front && viewSaveStatus.side && viewSaveStatus.top`
+### 文件2：`src/services/pptx/workstationSlides.ts`
+1. **标题更新**：`generateLayoutAndOpticalSlide` 中的标题从 "机械布局" 改为包含 DB 号的格式：`${wsCode} ${wsName} - 机械布局`（与其他幻灯片标题风格一致）
 
-### 文件2：`src/components/canvas/LayoutViewsPreview.tsx`
-
-**预览图随主辅视图选择动态变化**（已经实现）
-- 当前代码从 `layout?.primary_view` 和 `layout?.auxiliary_view` 读取视图类型，然后用 `layout?.[${view}_view_image_url]` 获取对应图片
-- 因为三张图都已保存在数据库中，用户在表单切换主/辅视图下拉后，`layout` 数据更新，预览自动显示新选择的视图图片
-- **无需修改此文件**，逻辑已正确
-
-总结：画布保存时存三张图，预览组件已经能根据 primary_view/auxiliary_view 动态读取对应图片URL，切换即生效。
+不需要修改 `generateMechanicalThreeViewSlide`，它保留在代码中但不再被主流程调用。
 
