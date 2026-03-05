@@ -1,27 +1,34 @@
 
 
-# 恢复三视图导航 + 保存仅限主视图/辅视图
+# 修复两个问题：布局页面图片不更新 + PPT预览改为主辅视图
 
-## 问题理解
-用户的需求是：
-1. **画布中始终显示三个视图切换按钮**（正视图、左视图、俯视图），因为不同视图看到的内容不同，都需要用来编辑
-2. **三个视图共享同一份3D数据**——在一个视图中拖动对象，其他视图自动更新（这个功能已有，是3D投影系统）
-3. **保存视图截图时**只保存 primary_view + auxiliary_view 两个（用于PPT），这个逻辑保留
-4. 之前把视图导航限制为 `activeViews` 是错误的，导致俯视图等被隐藏
+## 问题分析
 
-## 修改范围（1个文件）
+### 问题1：布局页面保存后图片不更新
+`LayoutViewsPreview` 从 `layout` 对象中读取 `primary_view` 和 `auxiliary_view` 对应的 `${view}_view_image_url`。但 `saveAllViewSnapshots` 保存后虽然调用了 `updateLayout` 更新数据库，**React Query 可能没有即时刷新**，导致组件仍显示旧图。另外图片URL可能加了时间戳但浏览器仍使用缓存。
 
-### `src/components/canvas/DraggableLayoutCanvas.tsx`
+需要在 `LayoutViewsPreview` 的 `<img>` 标签上加 cache-busting（如 `?t=timestamp`），确保每次 layout 数据变化后图片刷新。
 
-**1. 视图导航恢复为三个视图**
-- 第1208行：`activeViews.map(view =>` → `(['front', 'side', 'top'] as ViewType[]).map(view =>`
+### 问题2：PPT图片预览仍显示三视图
+`PPTImagePreviewDialog.tsx` 第100-104行硬编码了三视图：
+```tsx
+const layoutImages = [
+  { label: '正视图', url: layout?.front_view_image_url || null },
+  { label: '侧视图', url: layout?.side_view_image_url || null },
+  { label: '俯视图', url: layout?.top_view_image_url || null },
+];
+```
+需要改为只显示 primary_view + auxiliary_view。
 
-**2. 保存逻辑保持不变**
-- `saveAllViewSnapshots` 中的 `const views = activeViews` 保持原样——只保存主视图+辅视图用于报告
-- 按钮文案"保存视图"保持不变
+## 修改方案
 
-**3. 移除 currentView 强制同步到 primaryView 的 useEffect**
-- 第400行：删除 `setCurrentView(layout?.primary_view || 'front')` — 让用户自由切换，不要每次 layout 更新都跳回主视图
+### 文件1：`src/components/dialogs/PPTImagePreviewDialog.tsx`
+1. 读取 layout 的 `primary_view` 和 `auxiliary_view`
+2. `layoutImages` 改为只包含这两个视图
+3. 标题从 "三视图" 改为 "工位布局视图"
+4. grid 从 `grid-cols-3` 改为 `grid-cols-2`
+5. `DialogDescription` 从 "三视图" 改为 "布局视图"
 
-总结：导航三个全开，保存只存两个。
+### 文件2：`src/components/canvas/LayoutViewsPreview.tsx`
+1. 在 `<img>` 的 `src` 上追加 cache-busting 参数 `?t=${layout?.updated_at || ''}`，确保 layout 更新后浏览器重新加载图片
 
