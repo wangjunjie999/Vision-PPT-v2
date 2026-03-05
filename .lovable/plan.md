@@ -1,63 +1,36 @@
 
 
-# 按参考图重建相机安装方向说明页
+# 修改标题样式 + 删除副标题背景矩形
 
 ## 理解
 
-- **image-100.png**：布局参考图，规定两张相机图片在幻灯片上的摆放位置
-- **image-101.png**：相机正面照片
-- **image-102.png**：相机背面照片
+1. **删除副标题背景矩形** — 所有 `addShape('rect', { y: 0.45, fill: '2E75B6' })` 要去掉，因为背景图 `tech-shine-bg.png` 已自带蓝色副标题条
+2. **大标题用主题蓝色** — 将 `color: COLORS.white` 改为 `color: COLORS.primary`（`003D7A`）
+3. **小标题文字保留** — 只去掉矩形底色，文字仍然放在 y:0.45 位置（背景图的蓝色条内），颜色保持白色
+4. **背景图位置** — 告知用户上传路径
 
-需要删除当前程序化绘制的安装说明（三种卡片 + 汇总表格），替换为按参考图精确摆放两张实物照片的幻灯片。
+## 背景图存放位置
 
-## 修改方案
+`public/ppt-covers/tech-shine-bg.png` — 你可以上传更高清的图片替换这个文件。
 
-### 1. 复制图片资源
-- `image-101.png` → `public/ppt-covers/camera-front-photo.png`
-- `image-102.png` → `public/ppt-covers/camera-back-photo.png`
+## 修改文件
 
-### 2. 修改 `src/services/pptxGenerator.ts`（第 891-972 行）
+### 1. `src/services/pptxGenerator.ts`
 
-删除整个旧版内容（mountTypes 卡片、汇总表格），替换为：
+**所有大标题**（项目说明、变更履历、相机安装说明、硬件清单）：
+- `color: COLORS.white` → `color: COLORS.primary`
 
-```typescript
-// ========== SLIDE 4: Camera Installation Direction Guide ==========
-const mountGuideSlide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
+**所有副标题矩形**（3处）删除 `addShape('rect')` 调用，保留 `addText` 调用：
+- 第 740-744 行：删除项目说明的副标题矩形
+- 第 837-841 行：删除变更履历的副标题矩形  
+- 第 1074-1078 行：删除硬件清单的副标题矩形
 
-// 标题
-mountGuideSlide.addText(isZh ? '相机安装方向说明' : 'Camera Installation Direction Guide', {
-  x: 0.4, y: 0.05, w: 7.5, h: 0.38,
-  fontSize: 18, color: COLORS.white, bold: true,
-});
+### 2. `src/services/pptx/workstationSlides.ts`
 
-// 加载两张相机照片
-const [frontPhoto, backPhoto] = await Promise.all([
-  fetchImageAsDataUri(`${window.location.origin}/ppt-covers/camera-front-photo.png`),
-  fetchImageAsDataUri(`${window.location.origin}/ppt-covers/camera-back-photo.png`),
-]);
-
-// 按参考图布局：左右并排放置，居中于内容区
-// 左图（正面）
-if (frontPhoto) {
-  mountGuideSlide.addImage({
-    data: frontPhoto,
-    x: 0.5, y: 0.8,
-    w: 4.3, h: 4.0,
-    sizing: { type: 'contain', w: 4.3, h: 4.0 },
-  });
-}
-// 右图（背面）
-if (backPhoto) {
-  mountGuideSlide.addImage({
-    data: backPhoto,
-    x: 5.2, y: 0.8,
-    w: 4.3, h: 4.0,
-    sizing: { type: 'contain', w: 4.3, h: 4.0 },
-  });
-}
-```
-
-位置参数（x/y/w/h）按参考图的左右对称布局设置，两张图片等宽并排，位于内容区域中央。具体数值可能需要根据参考图微调。
-
-幻灯片位置不变：变更履历之后、工位循环之前。
+`addSlideTitle` 函数（第 116-157 行）：
+- 第 123-126 行：大标题 `color: COLORS.white` → `color: COLORS.primary`
+- 第 130-133 行：删除左半副标题矩形
+- 第 138-141 行：删除右半副标题矩形
+- 第 148-151 行：删除全宽副标题矩形
+- 保留所有 `addText` 调用（小标题文字），颜色保持白色
 
