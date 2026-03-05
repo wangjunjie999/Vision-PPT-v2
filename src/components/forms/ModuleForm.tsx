@@ -60,6 +60,8 @@ export function ModuleForm() {
       const imagingParams = cfg?.imaging ? {
         workingDistance: cfg.imaging.workingDistance || '',
         fieldOfViewCommon: cfg.imaging.fieldOfView || '',
+        fieldOfViewWidth: (() => { const fov = cfg.imaging.fieldOfView || ''; const m = fov.match(/^(\d+(?:\.\d+)?)\s*[×xX]\s*(\d+(?:\.\d+)?)$/); return m ? m[1] : ''; })(),
+        fieldOfViewHeight: (() => { const fov = cfg.imaging.fieldOfView || ''; const m = fov.match(/^(\d+(?:\.\d+)?)\s*[×xX]\s*(\d+(?:\.\d+)?)$/); return m ? m[2] : ''; })(),
         resolutionPerPixel: cfg.imaging.resolutionPerPixel || '',
         exposure: cfg.imaging.exposure || '',
         gain: cfg.imaging.gain?.toString() || '',
@@ -110,6 +112,8 @@ export function ModuleForm() {
           guidingMode: posCfg.guidingMode || 'single_camera',
           guidingMechanism: posCfg.guidingMechanism || 'fixed',
           fieldOfView: posCfg.fieldOfView || '',
+          fieldOfViewWidth: (() => { const fov = posCfg.fieldOfView || ''; const m = fov.match(/^(\d+(?:\.\d+)?)\s*[×xX]\s*(\d+(?:\.\d+)?)$/); return m ? m[1] : ''; })(),
+          fieldOfViewHeight: (() => { const fov = posCfg.fieldOfView || ''; const m = fov.match(/^(\d+(?:\.\d+)?)\s*[×xX]\s*(\d+(?:\.\d+)?)$/); return m ? m[2] : ''; })(),
           workingDistance: posCfg.workingDistance || '',
           accuracyRequirement: posCfg.accuracyRequirement?.toString() || '0.1',
           repeatabilityRequirement: posCfg.repeatabilityRequirement?.toString() || '0.03',

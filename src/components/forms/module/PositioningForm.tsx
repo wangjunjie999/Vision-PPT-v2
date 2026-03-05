@@ -90,12 +90,33 @@ export function PositioningForm({ form, setForm }: PositioningFormProps) {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label className="text-xs">视野范围 (mm) *</Label>
-            <Input
-              value={form.fieldOfView}
-              onChange={e => setForm(p => ({ ...p, fieldOfView: e.target.value }))}
-              placeholder="例如: 100x80"
-              className="h-9"
-            />
+            <div className="flex items-center gap-1.5">
+              <Input
+                value={form.fieldOfViewWidth || ''}
+                onChange={e => {
+                  const w = e.target.value;
+                  const h = form.fieldOfViewHeight || '';
+                  const combined = w && h ? `${w}×${h}` : '';
+                  setForm(p => ({ ...p, fieldOfViewWidth: w, fieldOfView: combined }));
+                }}
+                placeholder="宽"
+                className="h-9"
+                type="number"
+              />
+              <span className="text-muted-foreground text-sm shrink-0">×</span>
+              <Input
+                value={form.fieldOfViewHeight || ''}
+                onChange={e => {
+                  const h = e.target.value;
+                  const w = form.fieldOfViewWidth || '';
+                  const combined = w && h ? `${w}×${h}` : '';
+                  setForm(p => ({ ...p, fieldOfViewHeight: h, fieldOfView: combined }));
+                }}
+                placeholder="高"
+                className="h-9"
+                type="number"
+              />
+            </div>
           </div>
           <div className="space-y-1">
             <Label className="text-xs">工作距离 (mm)</Label>
