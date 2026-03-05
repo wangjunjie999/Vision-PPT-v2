@@ -128,17 +128,17 @@ function addSlideTitle(
   if (splitSubtitles) {
     // Split subtitle text (no rect, bg image has the blue bar)
     slide.addText(splitSubtitles.left, {
-      x: 0, y: 0.45, w: '50%', h: 0.22,
+      x: 0, y: 0.48, w: '50%', h: 0.22,
       fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
     });
     slide.addText(splitSubtitles.right, {
-      x: '50%', y: 0.45, w: '50%', h: 0.22,
+      x: '50%', y: 0.48, w: '50%', h: 0.22,
       fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
     });
   } else {
     // Single subtitle text (no rect, bg image has the blue bar)
     slide.addText(subtitle, {
-      x: 0, y: 0.45, w: '100%', h: 0.22,
+      x: 0, y: 0.48, w: '100%', h: 0.22,
       fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
     });
   }
