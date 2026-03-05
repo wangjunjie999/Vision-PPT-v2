@@ -1882,22 +1882,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 </g>
               ))}
               
-              {/* Canvas Legend - fixed position bottom-right */}
-              <g transform={`translate(${(canvasWidth - 20) / scale + offsetX / scale}, ${(canvasHeight - 20) / scale + offsetY / scale}) scale(${1 / scale})`}>
-                <g transform="translate(-160, -90)">
-                  <rect x={0} y={0} width={155} height={85} rx={8} fill="rgba(15, 23, 42, 0.85)" stroke="rgba(100, 116, 139, 0.4)" strokeWidth={1} />
-                  <text x={12} y={20} fill="#94a3b8" fontSize="11" fontWeight="600">图例说明</text>
-                  {/* Blue = unmounted camera */}
-                  <rect x={12} y={30} width={14} height={14} rx={3} fill="#2563eb" stroke="#3b82f6" strokeWidth={1} />
-                  <text x={32} y={42} fill="#cbd5e1" fontSize="10">相机（未吸附）</text>
-                  {/* Green = mounted camera */}
-                  <rect x={12} y={50} width={14} height={14} rx={3} fill="#16a34a" stroke="#22c55e" strokeWidth={1} opacity={0.7} />
-                  <text x={32} y={62} fill="#cbd5e1" fontSize="10">相机（已吸附）</text>
-                  {/* Orange = mechanism */}
-                  <rect x={12} y={70} width={14} height={14} rx={3} fill="#d97706" stroke="#f59e0b" strokeWidth={1} />
-                  <text x={32} y={82} fill="#cbd5e1" fontSize="10">执行机构</text>
-                </g>
-              </g>
+
 
               {/* Operation hints moved to viewport-fixed overlay below */}
             </svg>
@@ -1984,6 +1969,25 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
           </svg>
           <div className="bg-slate-800/90 rounded-md px-2 py-1 text-[11px] text-slate-400">
             点击选择 | 拖拽移动 | Shift+点击测距 | 拖角调整大小 | 滚轮缩放 | 空格+拖拽平移
+          </div>
+        </div>
+
+        {/* Bottom-right: Legend */}
+        <div className="absolute bottom-20 right-4 pointer-events-none z-10">
+          <div className="bg-slate-800/90 rounded-lg px-3 py-2.5 border border-slate-600/30">
+            <div className="text-[11px] text-slate-400 font-semibold mb-1.5">图例说明</div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-3.5 h-3.5 rounded-sm bg-blue-600 border border-blue-500" />
+              <span className="text-[10px] text-slate-300">相机（未吸附）</span>
+            </div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-3.5 h-3.5 rounded-sm bg-green-600 border border-green-500 opacity-70" />
+              <span className="text-[10px] text-slate-300">相机（已吸附）</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3.5 h-3.5 rounded-sm bg-amber-600 border border-amber-500" />
+              <span className="text-[10px] text-slate-300">执行机构</span>
+            </div>
           </div>
         </div>
 
