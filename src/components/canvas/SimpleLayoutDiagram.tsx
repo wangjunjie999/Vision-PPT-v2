@@ -177,7 +177,7 @@ function buildTopologicalLayout(
     ? cameraObjects
     : Array.from({ length: cameraCount || 1 }, (_, i) => ({
         id: `cam-${i}`, type: 'camera', name: `CAM${i + 1}`,
-      }));
+      } as LayoutObject));
 
   // Extract mechanisms
   const mechObjects = layoutObjects.filter(o => o.type !== 'camera' && o.type !== 'product');
