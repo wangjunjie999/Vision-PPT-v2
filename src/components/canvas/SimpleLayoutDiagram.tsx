@@ -307,7 +307,7 @@ function ArrowDefs() {
         <polygon points="0,0 10,4 0,8" fill="#3b82f6" opacity={0.8} />
       </marker>
       <marker id="arrow-cyan" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
-        <polygon points="0,0 10,4 0,8" fill="#06b6d4" opacity={0.7} />
+        <polygon points="0,0 10,4 0,8" fill="#22d3ee" opacity={1.0} />
       </marker>
       {/* Gradient for mount lines */}
       <linearGradient id="mount-grad" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -429,12 +429,12 @@ export function SimpleLayoutDiagram({
         return (
           <g key={`shoot-${cam.id}`}>
             <line x1={cam.x} y1={cam.y} x2={product.x} y2={product.y}
-              stroke="#06b6d4" strokeWidth={2} strokeDasharray="8 4" opacity={0.6} markerEnd="url(#arrow-cyan)" />
+              stroke="#22d3ee" strokeWidth={2.5} strokeDasharray="8 4" opacity={0.9} markerEnd="url(#arrow-cyan)" />
             {/* Target dot on product surface */}
-            <circle cx={product.x} cy={product.y} r={3} fill="#06b6d4" opacity={0.7} />
+            <circle cx={product.x} cy={product.y} r={4} fill="#22d3ee" opacity={1.0} />
             {/* "拍摄" label on the line */}
-            <rect x={labelX - 16} y={labelY - 8} width={32} height={16} rx={3} fill="#0f172a" fillOpacity={0.85} />
-            <text x={labelX} y={labelY + 4} textAnchor="middle" fill="#67e8f9" fontSize={8} fontWeight="bold">拍摄</text>
+            <rect x={labelX - 18} y={labelY - 9} width={36} height={18} rx={3} fill="#0f172a" fillOpacity={0.9} />
+            <text x={labelX} y={labelY + 4} textAnchor="middle" fill="#ffffff" fontSize={10} fontWeight="bold">拍摄</text>
           </g>
         );
       })}
@@ -556,8 +556,8 @@ function renderLineLegend(x: number, y: number, w: number): JSX.Element {
       <line x1={x + 4} y1={y} x2={x + 30} y2={y} stroke="#3b82f6" strokeWidth={2.5} />
       <text x={x + 34} y={y + 4} fill="#93c5fd" fontSize={9}>安装关系</text>
       {/* Dashed line = shooting */}
-      <line x1={midX} y1={y} x2={midX + 26} y2={y} stroke="#06b6d4" strokeWidth={2} strokeDasharray="6 3" />
-      <text x={midX + 30} y={y + 4} fill="#67e8f9" fontSize={9}>拍摄方向</text>
+      <line x1={midX} y1={y} x2={midX + 26} y2={y} stroke="#22d3ee" strokeWidth={2.5} strokeDasharray="6 3" />
+      <text x={midX + 30} y={y + 4} fill="#ffffff" fontSize={9}>拍摄方向</text>
     </>
   );
 }
