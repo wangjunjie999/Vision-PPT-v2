@@ -267,12 +267,12 @@ function buildTopologicalLayout(
     const mountType = cameraMounts[i] || cameraMounts[0] || '';
 
     if (mounted) {
-      // Place camera offset from its mechanism (increased to 110px to avoid overlap)
+      // Place camera offset from its mechanism (increased to 150px to avoid overlap)
       const dx = mounted.x - cx;
       const dy = mounted.y - cy;
       const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      camX = mounted.x + (dx / dist) * 110;
-      camY = mounted.y + (dy / dist) * 110;
+      camX = mounted.x + (dx / dist) * 150;
+      camY = mounted.y + (dy / dist) * 150;
     } else {
       // Unmounted cameras placed in an arc above the product
       const angle = unmountedCount === 1 ? -Math.PI / 2
