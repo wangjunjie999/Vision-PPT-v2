@@ -1778,14 +1778,14 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                       />
                     )}
                     
-                    {/* Camera body */}
+                    {/* Camera body - green when mounted, blue when free */}
                     <rect
                       x={-obj.width / 2}
                       y={-obj.height / 2}
                       width={obj.width}
                       height={obj.height}
-                      fill={isSelected ? 'url(#camera-grad)' : '#2563eb'}
-                      stroke={isSelected ? '#93c5fd' : '#3b82f6'}
+                      fill={isSelected ? 'url(#camera-grad)' : (isMounted ? '#16a34a' : '#2563eb')}
+                      stroke={isSelected ? '#93c5fd' : (isMounted ? '#22c55e' : '#3b82f6')}
                       strokeWidth={isSelected ? 3 : 2}
                       rx={6}
                     />
@@ -1795,19 +1795,19 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                       cy={-4}
                       r={Math.min(obj.width, obj.height) * 0.22}
                       fill="rgba(0,0,0,0.4)"
-                      stroke="#93c5fd"
+                      stroke={isMounted ? '#4ade80' : '#93c5fd'}
                       strokeWidth={2}
                     />
                     <circle
                       cx={0}
                       cy={-4}
                       r={Math.min(obj.width, obj.height) * 0.12}
-                      fill="#60a5fa"
+                      fill={isMounted ? '#4ade80' : '#60a5fa'}
                       opacity={0.8}
                     />
                     {/* Camera name label */}
                     <rect x={-obj.width / 2} y={obj.height / 2 + 4} width={obj.width} height={18} rx={4} fill="rgba(30, 41, 59, 0.95)" />
-                    <text x={0} y={obj.height / 2 + 16} textAnchor="middle" fill="#93c5fd" fontSize="10" fontWeight="600">
+                    <text x={0} y={obj.height / 2 + 16} textAnchor="middle" fill={isMounted ? '#86efac' : '#93c5fd'} fontSize="10" fontWeight="600">
                       {obj.name}
                     </text>
                     
@@ -1882,6 +1882,23 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 </g>
               ))}
               
+              {/* Canvas Legend - fixed position bottom-right */}
+              <g transform={`translate(${(canvasWidth - 20) / scale + offsetX / scale}, ${(canvasHeight - 20) / scale + offsetY / scale}) scale(${1 / scale})`}>
+                <g transform="translate(-160, -90)">
+                  <rect x={0} y={0} width={155} height={85} rx={8} fill="rgba(15, 23, 42, 0.85)" stroke="rgba(100, 116, 139, 0.4)" strokeWidth={1} />
+                  <text x={12} y={20} fill="#94a3b8" fontSize="11" fontWeight="600">图例说明</text>
+                  {/* Blue = unmounted camera */}
+                  <rect x={12} y={30} width={14} height={14} rx={3} fill="#2563eb" stroke="#3b82f6" strokeWidth={1} />
+                  <text x={32} y={42} fill="#cbd5e1" fontSize="10">相机（未吸附）</text>
+                  {/* Green = mounted camera */}
+                  <rect x={12} y={50} width={14} height={14} rx={3} fill="#16a34a" stroke="#22c55e" strokeWidth={1} opacity={0.7} />
+                  <text x={32} y={62} fill="#cbd5e1" fontSize="10">相机（已吸附）</text>
+                  {/* Orange = mechanism */}
+                  <rect x={12} y={70} width={14} height={14} rx={3} fill="#d97706" stroke="#f59e0b" strokeWidth={1} />
+                  <text x={32} y={82} fill="#cbd5e1" fontSize="10">执行机构</text>
+                </g>
+              </g>
+
               {/* Operation hints moved to viewport-fixed overlay below */}
             </svg>
           </ContextMenuTrigger>
