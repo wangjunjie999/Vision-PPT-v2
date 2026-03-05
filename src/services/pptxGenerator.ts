@@ -1277,38 +1277,6 @@ export async function generatePPTX(
 
   // ========== END SLIDE (16:9 optimized) ==========
   progress = 98;
-  onProgress(progress, isZh ? '生成结束页...' : 'Generating end slide...', isZh ? '生成结束页' : 'End slide');
-
-  const endSlide = pptx.addSlide();
-  
-  endSlide.addShape('rect', {
-    x: 0, y: 0, w: '100%', h: '100%',
-    fill: { color: COLORS.dark },
-  });
-
-  endSlide.addText(isZh ? COMPANY_NAME_ZH : COMPANY_NAME_EN, {
-    x: 0.5, y: 1.2, w: 9, h: 0.4,
-    fontSize: 14, fontFace: FONTS.heading, color: COLORS.white, align: 'center',
-    shadow: HEADING_SHADOW,
-  });
-
-  endSlide.addText(isZh ? '感谢您的关注' : 'Thank You', {
-    x: 0.5, y: 1.9, w: 9, h: 0.8,
-    fontSize: 32, fontFace: FONTS.heading, color: COLORS.white, bold: true, align: 'center',
-    shadow: HEADING_SHADOW,
-  });
-
-  endSlide.addText(project.customer, {
-    x: 0.5, y: 2.9, w: 9, h: 0.4,
-    fontSize: 16, fontFace: FONTS.heading, color: COLORS.white, align: 'center',
-    shadow: HEADING_SHADOW,
-  });
-
-  endSlide.addText(`${project.responsible || ''} | ${project.date || ''}`, {
-    x: 0.5, y: 3.5, w: 9, h: 0.35,
-    fontSize: 11, fontFace: FONTS.body, color: COLORS.secondary, align: 'center',
-  });
-
   // Generate blob
   progress = 100;
   onProgress(progress, isZh ? '完成' : 'Complete', isZh ? 'PPT生成完成' : 'PPT generation complete');
