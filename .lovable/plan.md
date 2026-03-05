@@ -1,42 +1,63 @@
 
 
-# 用上传图片替换所有内页母版背景
+# 按参考图重建相机安装方向说明页
 
-## 方案
+## 理解
 
-将 `image-98.png` 复制到 `public/ppt-covers/` 目录，然后修改 `src/services/pptxGenerator.ts` 中的母版定义：
+- **image-100.png**：布局参考图，规定两张相机图片在幻灯片上的摆放位置
+- **image-101.png**：相机正面照片
+- **image-102.png**：相机背面照片
 
-1. **删除所有 `masterObjects` 中的绘制元素**（页眉条、页脚条、页脚线、公司名文字、客户名文字、内容边框、Logo）
-2. **改为加载 `ppt-covers/tech-shine-bg.png` 作为全屏背景图**，覆盖整个幻灯片（10" × 5.625"）
-3. 母版 `background` 改为使用该图片的 dataUri
+需要删除当前程序化绘制的安装说明（三种卡片 + 汇总表格），替换为按参考图精确摆放两张实物照片的幻灯片。
 
-### 文件：复制资源
-- `image-98.png` → `public/ppt-covers/tech-shine-bg.png`
+## 修改方案
 
-### 文件：`src/services/pptxGenerator.ts`（约第 670-714 行）
+### 1. 复制图片资源
+- `image-101.png` → `public/ppt-covers/camera-front-photo.png`
+- `image-102.png` → `public/ppt-covers/camera-back-photo.png`
 
-替换整个母版构建逻辑：
+### 2. 修改 `src/services/pptxGenerator.ts`（第 891-972 行）
+
+删除整个旧版内容（mountTypes 卡片、汇总表格），替换为：
 
 ```typescript
-// 加载背景底图
-let bgImageData: string | null = null;
-const bgUrl = `${window.location.origin}/ppt-covers/tech-shine-bg.png`;
-try {
-  bgImageData = await fetchImageAsDataUri(bgUrl);
-} catch (err) {
-  console.warn('Failed to load bg image:', err);
-}
+// ========== SLIDE 4: Camera Installation Direction Guide ==========
+const mountGuideSlide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
 
-pptx.defineSlideMaster({
-  title: 'MASTER_SLIDE',
-  background: bgImageData 
-    ? { data: bgImageData } 
-    : { color: activeColors.background },
-  objects: [], // 所有页眉页脚元素由底图自带
+// 标题
+mountGuideSlide.addText(isZh ? '相机安装方向说明' : 'Camera Installation Direction Guide', {
+  x: 0.4, y: 0.05, w: 7.5, h: 0.38,
+  fontSize: 18, color: COLORS.white, bold: true,
 });
+
+// 加载两张相机照片
+const [frontPhoto, backPhoto] = await Promise.all([
+  fetchImageAsDataUri(`${window.location.origin}/ppt-covers/camera-front-photo.png`),
+  fetchImageAsDataUri(`${window.location.origin}/ppt-covers/camera-back-photo.png`),
+]);
+
+// 按参考图布局：左右并排放置，居中于内容区
+// 左图（正面）
+if (frontPhoto) {
+  mountGuideSlide.addImage({
+    data: frontPhoto,
+    x: 0.5, y: 0.8,
+    w: 4.3, h: 4.0,
+    sizing: { type: 'contain', w: 4.3, h: 4.0 },
+  });
+}
+// 右图（背面）
+if (backPhoto) {
+  mountGuideSlide.addImage({
+    data: backPhoto,
+    x: 5.2, y: 0.8,
+    w: 4.3, h: 4.0,
+    sizing: { type: 'contain', w: 4.3, h: 4.0 },
+  });
+}
 ```
 
-删除的内容：页眉矩形、页脚矩形、页脚线、公司名文字、客户名文字、内容边框矩形、Logo 图片加载及添加逻辑。
+位置参数（x/y/w/h）按参考图的左右对称布局设置，两张图片等宽并排，位于内容区域中央。具体数值可能需要根据参考图微调。
 
-封面页不受影响（使用独立的 `tech-shine-cover.png`）。
+幻灯片位置不变：变更履历之后、工位循环之前。
 
