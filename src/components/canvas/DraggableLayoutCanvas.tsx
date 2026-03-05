@@ -1746,8 +1746,96 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                   </g>
                 );
               })}
-              
-              {/* Alignment guides during drag */}
+
+              {/* Cameras rendered on top layer, with semi-transparency when mounted */}
+              {objects.filter(obj => obj.type === 'camera').map(obj => {
+                const isSelected = obj.id === selectedId;
+                const isSecondSelected = obj.id === secondSelectedId;
+                const isMounted = !!(obj as any).mountedToMechanismId;
+                
+                return (
+                  <g 
+                    key={obj.id}
+                    transform={`translate(${obj.x}, ${obj.y}) rotate(${obj.rotation})`}
+                    onMouseDown={(e) => handleMouseDown(e, obj)}
+                    style={{ cursor: obj.locked ? 'not-allowed' : panMode ? 'inherit' : 'move' }}
+                    filter={isSelected ? "url(#glow)" : "url(#drop-shadow)"}
+                    opacity={isMounted ? 0.7 : 1}
+                  >
+                    {/* Selection outline */}
+                    {(isSelected || isSecondSelected) && (
+                      <rect
+                        x={-obj.width / 2 - 6}
+                        y={-obj.height / 2 - 6}
+                        width={obj.width + 12}
+                        height={obj.height + 12}
+                        fill="none"
+                        stroke={isSecondSelected ? '#22c55e' : '#60a5fa'}
+                        strokeWidth="2"
+                        strokeDasharray="6 3"
+                        rx={8}
+                        className="animate-pulse"
+                      />
+                    )}
+                    
+                    {/* Camera body */}
+                    <rect
+                      x={-obj.width / 2}
+                      y={-obj.height / 2}
+                      width={obj.width}
+                      height={obj.height}
+                      fill={isSelected ? 'url(#camera-grad)' : '#2563eb'}
+                      stroke={isSelected ? '#93c5fd' : '#3b82f6'}
+                      strokeWidth={isSelected ? 3 : 2}
+                      rx={6}
+                    />
+                    {/* Camera lens circle */}
+                    <circle
+                      cx={0}
+                      cy={-4}
+                      r={Math.min(obj.width, obj.height) * 0.22}
+                      fill="rgba(0,0,0,0.4)"
+                      stroke="#93c5fd"
+                      strokeWidth={2}
+                    />
+                    <circle
+                      cx={0}
+                      cy={-4}
+                      r={Math.min(obj.width, obj.height) * 0.12}
+                      fill="#60a5fa"
+                      opacity={0.8}
+                    />
+                    {/* Camera name label */}
+                    <rect x={-obj.width / 2} y={obj.height / 2 + 4} width={obj.width} height={18} rx={4} fill="rgba(30, 41, 59, 0.95)" />
+                    <text x={0} y={obj.height / 2 + 16} textAnchor="middle" fill="#93c5fd" fontSize="10" fontWeight="600">
+                      {obj.name}
+                    </text>
+                    
+                    {/* Lock indicator */}
+                    {obj.locked && (
+                      <g transform={`translate(${obj.width / 2 - 6}, ${-obj.height / 2 - 6})`}>
+                        <circle r={10} fill="#1e293b" stroke="#64748b" strokeWidth="1.5" />
+                        <Lock x={-5} y={-5} width={10} height={10} className="text-amber-400" />
+                      </g>
+                    )}
+                    
+                    {/* Rotation indicator for selected */}
+                    {isSelected && obj.rotation !== 0 && (
+                      <text x={obj.width / 2 + 8} y={0} fill="#94a3b8" fontSize="9">
+                        {obj.rotation}°
+                      </text>
+                    )}
+                    
+                    {/* Resize handles for selected object */}
+                    <ResizeHandles
+                      object={obj}
+                      isSelected={isSelected}
+                      onResize={handleResize}
+                    />
+                  </g>
+                );
+              })}
+
               {isDragging && draggingObject && smartSnapEnabled && (
                 <AlignmentGuides
                   objects={objects}
