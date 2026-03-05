@@ -8,7 +8,7 @@ import {
 import {
   generateBasicInfoAndRequirementsSlide,
   generateProductSchematicSlide,
-  generateMechanicalThreeViewSlide,
+  generateLayoutAndOpticalSlide,
   generateModuleOpticalSlide,
   generateBOMSlide,
 } from './pptx/workstationSlides';
@@ -1122,6 +1122,9 @@ export async function generatePPTX(
         front_view_image_url: wsLayout.front_view_image_url,
         side_view_image_url: wsLayout.side_view_image_url,
         top_view_image_url: wsLayout.top_view_image_url,
+        primary_view: (wsLayout as any).primary_view || 'front',
+        auxiliary_view: (wsLayout as any).auxiliary_view || 'side',
+        layout_description: (wsLayout as any).layout_description || '',
         width: wsLayout.width,
         height: wsLayout.height,
         depth: wsLayout.depth,
@@ -1175,10 +1178,10 @@ export async function generatePPTX(
     onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '产品示意图' : 'Product'}`, `[SLIDE:${ws.name}:b] ${isZh ? '产品示意图' : 'Product schematic'}`);
     await generateProductSchematicSlide(ctx, slideData);
     
-    // c. 机械布局三视图 (Pure images + dimensions)
+    // c. 机械布局 (主辅视图 + 布局说明)
     step++;
-    onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '机械三视图' : 'Three Views'}`, `[SLIDE:${ws.name}:c] ${isZh ? '机械三视图' : 'Three views'}`);
-    await generateMechanicalThreeViewSlide(ctx, slideData);
+    onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '机械布局' : 'Mechanical Layout'}`, `[SLIDE:${ws.name}:c] ${isZh ? '机械布局' : 'Mechanical Layout'}`);
+    await generateLayoutAndOpticalSlide(ctx, slideData);
     
     // d. 光学方案 × N (One page per module)
     for (let mi = 0; mi < wsModules.length; mi++) {
