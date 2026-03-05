@@ -738,7 +738,7 @@ export async function generatePPTX(
     fontSize: 18, color: COLORS.primary, bold: true,
   });
   descSlide.addText(isZh ? '项目基本信息' : 'Project Information', {
-    x: 0, y: 0.45, w: '100%', h: 0.22,
+    x: 0, y: 0.48, w: '100%', h: 0.22,
     fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
   });
 
@@ -830,7 +830,7 @@ export async function generatePPTX(
   });
 
   revisionSlide.addText(isZh ? '变更表' : 'Change Log', {
-    x: 0, y: 0.45, w: '100%', h: 0.22,
+    x: 0, y: 0.48, w: '100%', h: 0.22,
     fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
   });
 
@@ -889,29 +889,46 @@ export async function generatePPTX(
     fontSize: 18, color: COLORS.primary, bold: true,
   });
 
+  // 说明文字（参考图中"如何区分芯片的长短边?"）
+  mountGuideSlide.addText(isZh ? '如何区分芯片的长短边?' : 'How to identify the long/short side of the sensor?', {
+    x: 0.4, y: 1.0, w: 9, h: 0.3,
+    fontSize: 14, color: '333333', bold: true,
+  });
+
   // 加载两张相机实物照片
   const [frontPhoto, backPhoto] = await Promise.all([
     fetchImageAsDataUri(`${window.location.origin}/ppt-covers/camera-front-photo.png`),
     fetchImageAsDataUri(`${window.location.origin}/ppt-covers/camera-back-photo.png`),
   ]);
 
-  // 按参考图布局：左右并排放置，居中于内容区
+  // 按参考图布局：左右并排放置，居中偏上，留出底部空间
   if (frontPhoto) {
     mountGuideSlide.addImage({
       data: frontPhoto,
-      x: 0.5, y: 0.8,
-      w: 4.3, h: 4.0,
-      sizing: { type: 'contain', w: 4.3, h: 4.0 },
+      x: 1.0, y: 1.5,
+      w: 3.5, h: 3.5,
+      sizing: { type: 'contain', w: 3.5, h: 3.5 },
     });
   }
   if (backPhoto) {
     mountGuideSlide.addImage({
       data: backPhoto,
-      x: 5.2, y: 0.8,
-      w: 4.3, h: 4.0,
-      sizing: { type: 'contain', w: 4.3, h: 4.0 },
+      x: 5.5, y: 1.5,
+      w: 3.5, h: 3.5,
+      sizing: { type: 'contain', w: 3.5, h: 3.5 },
     });
   }
+
+  // 左图标注"长边"
+  mountGuideSlide.addText(isZh ? '长边' : 'Long side', {
+    x: 0.3, y: 3.2, w: 1.0, h: 0.25,
+    fontSize: 11, color: '333333',
+  });
+  // 右图标注"长边"
+  mountGuideSlide.addText(isZh ? '长边' : 'Long side', {
+    x: 8.7, y: 3.2, w: 1.0, h: 0.25,
+    fontSize: 11, color: '333333',
+  });
 
   // (Old slides 4.5+5+6 removed - content merged into slide 2 above)
 
@@ -1062,7 +1079,7 @@ export async function generatePPTX(
     fontSize: 18, color: COLORS.primary, bold: true,
   });
   hwSlide.addText(isZh ? '设备清单' : 'Equipment List', {
-    x: 0, y: 0.45, w: '100%', h: 0.22,
+    x: 0, y: 0.48, w: '100%', h: 0.22,
     fontSize: 10, color: COLORS.white, align: 'center', valign: 'middle',
   });
 
