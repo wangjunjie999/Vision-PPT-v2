@@ -898,78 +898,30 @@ export async function generatePPTX(
     x: 0.4, y: 0.05, w: 7.5, h: 0.38,
     fontSize: 18, color: COLORS.white, bold: true,
   });
-  // Sub-header bar (medium blue, empty decorative bar like 图92)
-  mountGuideSlide.addShape('rect', {
-    x: 0, y: 0.45, w: '100%', h: 0.22,
-    fill: { color: '2E75B6' },
-  });
 
-  // Draw three camera mount diagrams
-  const mountTypes = [
-    { name: isZh ? '顶视 (Top)' : 'Top View', desc: isZh ? '相机垂直向下拍摄，适用于平面检测、尺寸测量' : 'Camera facing down, for surface inspection', icon: '⬇️', color: COLORS.primary },
-    { name: isZh ? '侧视 (Side)' : 'Side View', desc: isZh ? '相机水平拍摄，适用于侧面检测、高度测量' : 'Camera horizontal, for side inspection', icon: '➡️', color: COLORS.accent },
-    { name: isZh ? '斜视 (Angled)' : 'Angled View', desc: isZh ? '相机倾斜拍摄，适用于立体特征、反光表面' : 'Camera tilted, for 3D features', icon: '↘️', color: COLORS.warning },
-  ];
+  // 加载两张相机实物照片
+  const [frontPhoto, backPhoto] = await Promise.all([
+    fetchImageAsDataUri(`${window.location.origin}/ppt-covers/camera-front-photo.png`),
+    fetchImageAsDataUri(`${window.location.origin}/ppt-covers/camera-back-photo.png`),
+  ]);
 
-  const cardWidth = 2.9;
-  const cardHeight = 1.8;
-  const cardY = SLIDE_LAYOUT.contentTop + 0.5;
-
-  mountTypes.forEach((mount, i) => {
-    const x = SLIDE_LAYOUT.contentLeft + i * 3.1;
-    mountGuideSlide.addShape('rect', {
-      x, y: cardY, w: cardWidth, h: cardHeight,
-      fill: { color: COLORS.white },
-      shadow: { type: 'outer', blur: 3, offset: 2, angle: 45, opacity: 0.15 },
+  // 按参考图布局：左右并排放置，居中于内容区
+  if (frontPhoto) {
+    mountGuideSlide.addImage({
+      data: frontPhoto,
+      x: 0.5, y: 0.8,
+      w: 4.3, h: 4.0,
+      sizing: { type: 'contain', w: 4.3, h: 4.0 },
     });
-    mountGuideSlide.addText(mount.icon, {
-      x, y: cardY + 0.1, w: cardWidth, h: 0.5,
-      fontSize: 24, align: 'center',
+  }
+  if (backPhoto) {
+    mountGuideSlide.addImage({
+      data: backPhoto,
+      x: 5.2, y: 0.8,
+      w: 4.3, h: 4.0,
+      sizing: { type: 'contain', w: 4.3, h: 4.0 },
     });
-    mountGuideSlide.addText(mount.name, {
-      x, y: cardY + 0.65, w: cardWidth, h: 0.28,
-      fontSize: 11, bold: true, color: mount.color, align: 'center',
-    });
-    mountGuideSlide.addText(mount.desc, {
-      x: x + 0.1, y: cardY + 0.95, w: cardWidth - 0.2, h: 0.7,
-      fontSize: 7, color: COLORS.secondary, align: 'center',
-    });
-  });
-
-  // Project mount summary
-  const allMounts = layouts.flatMap(l => {
-    const mounts = l.camera_mounts;
-    return Array.isArray(mounts) ? mounts : [];
-  });
-  const mountCounts = {
-    top: allMounts.filter(m => m === 'top').length,
-    side: allMounts.filter(m => m === 'side').length,
-    angled: allMounts.filter(m => m === 'angled').length,
-  };
-
-  const summaryY = cardY + cardHeight + 0.3;
-  mountGuideSlide.addText(isZh ? '本项目相机安装汇总' : 'Project Camera Mount Summary', {
-    x: SLIDE_LAYOUT.contentLeft, y: summaryY, w: SLIDE_LAYOUT.contentWidth, h: 0.3,
-    fontSize: 11, color: COLORS.dark, bold: true,
-  });
-
-  const mountSummaryRows: TableRow[] = [
-    row([isZh ? '安装方式' : 'Mount Type', isZh ? '数量' : 'Count', isZh ? '占比' : 'Ratio']),
-    row([isZh ? '顶视' : 'Top', mountCounts.top.toString(), allMounts.length > 0 ? `${Math.round(mountCounts.top / allMounts.length * 100)}%` : '-']),
-    row([isZh ? '侧视' : 'Side', mountCounts.side.toString(), allMounts.length > 0 ? `${Math.round(mountCounts.side / allMounts.length * 100)}%` : '-']),
-    row([isZh ? '斜视' : 'Angled', mountCounts.angled.toString(), allMounts.length > 0 ? `${Math.round(mountCounts.angled / allMounts.length * 100)}%` : '-']),
-  ];
-
-  mountGuideSlide.addTable(mountSummaryRows, {
-    x: SLIDE_LAYOUT.contentLeft, y: summaryY + 0.35, w: 4, h: 1.1,
-    fontFace: 'Arial',
-    fontSize: 9,
-    colW: [1.3, 1.3, 1.4],
-    border: { pt: 0.5, color: COLORS.border },
-    fill: { color: COLORS.white },
-    valign: 'middle',
-    align: 'center',
-  });
+  }
 
   // (Old slides 4.5+5+6 removed - content merged into slide 2 above)
 
