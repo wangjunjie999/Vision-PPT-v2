@@ -55,7 +55,7 @@ export function LayoutViewsPreview({ workstationId, className, onOpenCanvas }: L
       >
         {url ? (
           <img 
-            src={url} 
+            src={`${url}${url.includes('?') ? '&' : '?'}t=${layout?.updated_at || ''}`} 
             alt={label}
             className="w-full h-full object-contain"
             onError={(e) => {

@@ -97,10 +97,12 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
       const wsAnnotations = annotations.get(ws.id) || [];
       const wsProductImages = productImages.get(ws.id) || [];
 
+      const VIEW_LABELS: Record<string, string> = { front: '正视图', side: '侧视图', top: '俯视图' };
+      const pv: string = (layout as any)?.primary_view || 'front';
+      const av: string = (layout as any)?.auxiliary_view || 'side';
       const layoutImages = [
-        { label: '正视图', url: layout?.front_view_image_url || null },
-        { label: '侧视图', url: layout?.side_view_image_url || null },
-        { label: '俯视图', url: layout?.top_view_image_url || null },
+        { label: `主视图 - ${VIEW_LABELS[pv] || pv}`, url: layout?.[`${pv}_view_image_url` as keyof typeof layout] as string || null },
+        { label: `辅视图 - ${VIEW_LABELS[av] || av}`, url: layout?.[`${av}_view_image_url` as keyof typeof layout] as string || null },
       ];
 
       const moduleImages = modules.map(mod => ({
@@ -135,7 +137,7 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
               PPT 图片预览
             </DialogTitle>
             <DialogDescription>
-              检查各工位三视图、模块光学方案图和产品标注截图是否已保存完整
+              检查各工位布局视图、模块光学方案图和产品标注截图是否已保存完整
             </DialogDescription>
           </DialogHeader>
 
@@ -165,8 +167,8 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
 
                   {/* Layout views */}
                   <div className="ml-6">
-                    <p className="text-xs text-muted-foreground mb-2">三视图</p>
-                    <div className="grid grid-cols-3 gap-3">
+                    <p className="text-xs text-muted-foreground mb-2">工位布局视图</p>
+                    <div className="grid grid-cols-2 gap-3">
                       {layoutImages.map((img, i) => (
                         <ImageThumbnail
                           key={i}
