@@ -631,10 +631,10 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     }
     
     // Check for camera snap to mechanism mount points
-    if (currentObj?.type === 'camera') {
-      const nearestMount = findNearestMountPoint(newX, newY, objects, currentView, 70);
+    if (currentObj?.type === 'camera' && currentView !== 'isometric') {
+      const nearestMount = findNearestMountPoint(newX, newY, objects, currentView as StandardViewType, 70);
       if (nearestMount) {
-        const mountPos = getMountPointWorldPosition(nearestMount.mechanism, nearestMount.mountPoint.id, currentView);
+        const mountPos = getMountPointWorldPosition(nearestMount.mechanism, nearestMount.mountPoint.id, currentView as StandardViewType);
         if (mountPos) {
           newX = mountPos.x;
           newY = mountPos.y;
@@ -666,13 +666,13 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
           currentObj.x, 
           currentObj.y, 
           objects, 
-          currentView, 
-          70 // snap threshold - increased for easier interaction
+          currentView as StandardViewType, 
+          70
         );
         
         if (nearestMount) {
           // Get mount world position for snapping
-          const mountPos = getMountPointWorldPosition(nearestMount.mechanism, nearestMount.mountPoint.id, currentView);
+          const mountPos = getMountPointWorldPosition(nearestMount.mechanism, nearestMount.mountPoint.id, currentView as StandardViewType);
           
           // Calculate 3D offsets for the binding
           const mechPosX = nearestMount.mechanism.posX ?? 0;
@@ -1262,23 +1262,20 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   const enabledMechanisms = getEnabledMechanisms();
 
   // Get mechanism image URL for current view - prioritize local assets
+  const mechViewForImage: StandardViewType = currentView === 'isometric' ? 'front' : currentView;
   const getMechanismImageForObject = (obj: LayoutObject) => {
-    // First try to get from local bundled assets using mechanism type
     if (obj.mechanismType) {
-      const localImage = getMechanismImage(obj.mechanismType, currentView);
+      const localImage = getMechanismImage(obj.mechanismType, mechViewForImage);
       if (localImage) return localImage;
     }
     
-    // Fallback to database URLs
     const mech = mechanisms.find(m => m.id === obj.mechanismId);
     if (!mech) return null;
     
-    // Try local assets by mechanism type from database
-    const localImage = getMechanismImage(mech.type, currentView);
+    const localImage = getMechanismImage(mech.type, mechViewForImage);
     if (localImage) return localImage;
     
-    // Last resort: database URLs (might not work if they're file paths)
-    switch (currentView) {
+    switch (mechViewForImage) {
       case 'front': return mech.front_view_image_url;
       case 'side': return mech.side_view_image_url;
       case 'top': return mech.top_view_image_url;
@@ -2018,27 +2015,29 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 />
               )}
               
-              {/* Coordinate system with axes and rulers */}
-              <CoordinateSystem
-                centerX={centerX}
-                centerY={centerY}
-                canvasWidth={canvasWidth}
-                canvasHeight={canvasHeight}
-                scale={scale}
-                currentView={currentView}
-                gridSize={gridSize}
-              />
+              {/* Coordinate system with axes and rulers - hidden in isometric */}
+              {!isIsometric && (
+                <CoordinateSystem
+                  centerX={centerX}
+                  centerY={centerY}
+                  canvasWidth={canvasWidth}
+                  canvasHeight={canvasHeight}
+                  scale={scale}
+                  currentView={currentView as StandardViewType}
+                  gridSize={gridSize}
+                />
+              )}
               
               
               {/* Camera mount points - show when dragging a camera */}
-              {isDragging && draggingObject?.type === 'camera' && objects.filter(o => o.type === 'mechanism').map(mech => (
+              {isDragging && !isIsometric && draggingObject?.type === 'camera' && objects.filter(o => o.type === 'mechanism').map(mech => (
                 <g key={`mount-${mech.id}`} transform={`translate(${mech.x}, ${mech.y})`}>
                   <CameraMountPoints
                     mechanismObject={mech}
-                    currentView={currentView}
+                    currentView={currentView as StandardViewType}
                     cameras={objects.filter(o => o.type === 'camera')}
                     onSnapCamera={(cameraId, mountPoint, mechanismId) => {
-                      const mp = getMountPointWorldPosition(mech, mountPoint.id, currentView);
+                      const mp = getMountPointWorldPosition(mech, mountPoint.id, currentView as StandardViewType);
                       if (mp) {
                         updateObject(cameraId, {
                           x: mp.x,
@@ -2155,7 +2154,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
             centerX={centerX}
             centerY={centerY}
             scale={scale}
-            currentView={currentView}
+            currentView={currentView as StandardViewType}
           />
         )}
         
@@ -2171,7 +2170,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
             }}
             scale={scale}
             canvasCenter={{ x: centerX, y: centerY }}
-            currentView={currentView}
+            currentView={currentView as StandardViewType}
             allObjects={objects}
           />
         )}
