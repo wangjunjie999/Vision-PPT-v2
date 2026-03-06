@@ -144,9 +144,9 @@ export const ObjectListPanel = memo(function ObjectListPanel({
               {isHidden && (
                 <EyeOff className="h-3 w-3 text-muted-foreground shrink-0" />
               )}
-              {/* Mounted indicator for cameras */}
-              {obj.type === 'camera' && obj.mountedToMechanismId && (
-                <span className="text-blue-400 text-[10px]" title="已挂载到机构">🔗</span>
+              {/* Mounted indicator for cameras or products */}
+              {(obj.type === 'camera' || obj.type === 'product') && obj.mountedToMechanismId && (
+                <span className={cn("text-[10px]", isProduct ? "text-green-400" : "text-blue-400")} title="已吸附到机构">{isProduct ? '📦' : '🔗'}</span>
               )}
             </div>
             
@@ -395,6 +395,19 @@ export const ObjectListPanel = memo(function ObjectListPanel({
               </div>
               <div className="space-y-1.5">
                 {mechanisms.map((mech, i) => renderObjectItem(mech, i, mechanisms.length))}
+              </div>
+            </div>
+          )}
+          
+          {/* Products Section */}
+          {products.length > 0 && (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
+                <span className="text-cyan-500 text-sm">📦</span>
+                <span>产品 ({products.length})</span>
+              </div>
+              <div className="space-y-1.5">
+                {products.map((prod, i) => renderObjectItem(prod, i, products.length))}
               </div>
             </div>
           )}
