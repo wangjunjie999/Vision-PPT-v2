@@ -2231,10 +2231,18 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                   <g key={`iso-cam-${camObj.id}`} opacity={isMounted ? 0.7 : 1}>
                     {connectionLine}
                     <g filter="url(#drop-shadow)">
-                      <polygon points={leftFace} fill={fillLeft} fillOpacity="0.3" stroke={strokeColor} strokeWidth="1" strokeDasharray="4 2" />
-                      <polygon points={frontFace} fill={fillFront} fillOpacity="0.5" stroke={strokeColor} strokeWidth="2" />
-                      <polygon points={rightFace} fill={fillRight} fillOpacity="0.5" stroke={strokeColor} strokeWidth="2" />
-                      <polygon points={topFace} fill={fillTop} fillOpacity="0.4" stroke={strokeColor} strokeWidth="2" />
+                      {/* Visible faces */}
+                      <polygon points={leftFace} fill={fillLeft} fillOpacity="0.3" stroke={strokeColor} strokeWidth="1.5" />
+                      <polygon points={frontFace} fill={fillFront} fillOpacity="0.5" stroke={strokeColor} strokeWidth="1.5" />
+                      <polygon points={rightFace} fill={fillRight} fillOpacity="0.5" stroke={strokeColor} strokeWidth="1.5" />
+                      <polygon points={topFace} fill={fillTop} fillOpacity="0.4" stroke={strokeColor} strokeWidth="1.5" />
+                      {/* Hidden edges (back face edges) - dashed */}
+                      <line x1={t2.x} y1={t2.y} x2={t3.x} y2={t3.y} stroke={strokeColor} strokeWidth="1" strokeDasharray="4 3" opacity={0.35} />
+                      <line x1={t3.x} y1={t3.y} x2={b3.x} y2={b3.y} stroke={strokeColor} strokeWidth="1" strokeDasharray="4 3" opacity={0.35} />
+                      <line x1={b3.x} y1={b3.y} x2={b2.x} y2={b2.y} stroke={strokeColor} strokeWidth="1" strokeDasharray="4 3" opacity={0.35} />
+                      <line x1={b0.x} y1={b0.y} x2={b3.x} y2={b3.y} stroke={strokeColor} strokeWidth="1" strokeDasharray="4 3" opacity={0.35} />
+                      <line x1={b0.x} y1={b0.y} x2={b1.x} y2={b1.y} stroke={strokeColor} strokeWidth="1" strokeDasharray="4 3" opacity={0.35} />
+                      <line x1={b1.x} y1={b1.y} x2={b2.x} y2={b2.y} stroke={strokeColor} strokeWidth="1" strokeDasharray="4 3" opacity={0.35} />
                       {/* Lens circle on front face */}
                       <circle
                         cx={(t0.x + t1.x + b1.x + b0.x) / 4}
