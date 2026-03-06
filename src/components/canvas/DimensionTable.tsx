@@ -20,7 +20,7 @@ interface DimensionTableProps {
 interface DeviceCoordinates {
   id: string;
   name: string;
-  type: 'camera' | 'mechanism';
+  type: 'camera' | 'mechanism' | 'product';
   // 3D coordinates in mm (relative to product center)
   posX: number;
   posY: number;
