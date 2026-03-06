@@ -37,6 +37,7 @@ import { ResizeHandles } from './ResizeHandles';
 import { CoordinateSystem } from './CoordinateSystem';
 import { MechanismSVG, getMechanismMountPoints, type CameraMountPoint, CAMERA_INTERACTION_TYPES, PRODUCT_INTERACTION_TYPES } from './MechanismSVG';
 import { CameraMountPoints, findNearestMountPoint, getMountPointWorldPosition } from './CameraMountPoints';
+import { ProductMountPoints, findNearestProductMountPoint, getProductMountPointWorldPosition } from './ProductMountPoints';
 import { getMechanismImage } from '@/utils/mechanismImageUrls';
 import { MechanismThumbnail } from '@/components/common/ImageWithFallback';
 import { compressImage, dataUrlToBlob, QUALITY_PRESETS, type QualityPreset } from '@/utils/imageCompression';
