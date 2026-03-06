@@ -1973,72 +1973,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 );
               })}
 
-              {/* Draggable objects: render product first, then mechanisms, then cameras on top */}
-              {/* Product object (draggable in non-isometric views) */}
-              {!isIsometric && objects.filter(obj => obj.type === 'product').map(obj => {
-                const isSelected = obj.id === selectedId;
-                const isSecondSelected = obj.id === secondSelectedId;
-                const isMounted = !!obj.mountedToMechanismId;
-                const pW = currentView === 'side' ? productD : productW;
-                const pH = currentView === 'top' ? productD : productH;
-                
-                return (
-                  <g 
-                    key={obj.id}
-                    transform={`translate(${obj.x}, ${obj.y}) rotate(${obj.rotation})`}
-                    onMouseDown={(e) => handleMouseDown(e, obj)}
-                    style={{ cursor: obj.locked ? 'not-allowed' : panMode ? 'inherit' : 'move' }}
-                    filter={isSelected ? "url(#glow)" : "url(#drop-shadow)"}
-                  >
-                    {(isSelected || isSecondSelected) && (
-                      <rect
-                        x={-pW / 2 - 6}
-                        y={-pH / 2 - 6}
-                        width={pW + 12}
-                        height={pH + 12}
-                        fill="none"
-                        stroke={isMounted ? '#22c55e' : '#22d3ee'}
-                        strokeWidth="2"
-                        strokeDasharray="6 3"
-                        rx={8}
-                        className="animate-pulse"
-                      />
-                    )}
-                    <rect
-                      x={-pW / 2}
-                      y={-pH / 2}
-                      width={pW}
-                      height={pH}
-                      fill="url(#product-grad)"
-                      stroke={isMounted ? '#22c55e' : '#22d3ee'}
-                      strokeWidth={isSelected ? 3 : 2}
-                      rx={6}
-                    />
-                    {/* Cross-hair */}
-                    <line x1={-15} y1={0} x2={15} y2={0} stroke="#fff" strokeWidth="1" opacity="0.5" />
-                    <line x1={0} y1={-15} x2={0} y2={15} stroke="#fff" strokeWidth="1" opacity="0.5" />
-                    <circle cx={0} cy={0} r={4} fill="#fff" opacity="0.7" />
-                    
-                    {/* Label */}
-                    <text
-                      x={0}
-                      y={pH / 2 + 20}
-                      textAnchor="middle"
-                      fill="#94a3b8"
-                      fontSize="11"
-                    >
-                      {isMounted ? '📦 ' : ''}产品 {productDimensions.length}×{productDimensions.width}×{productDimensions.height}mm
-                    </text>
-                    
-                    <ResizeHandles
-                      object={{ ...obj, width: pW, height: pH }}
-                      isSelected={isSelected}
-                      onResize={handleResize}
-                    />
-                  </g>
-                );
-              })}
-              
+              {/* Draggable objects: render mechanisms first, then products on top, then cameras on top */}
               {/* Mechanism objects */}
               {objects.filter(obj => obj.type === 'mechanism').map(obj => {
                 const isSelected = obj.id === selectedId;
@@ -2122,6 +2057,72 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                     
                     <ResizeHandles
                       object={obj}
+                      isSelected={isSelected}
+                      onResize={handleResize}
+                    />
+                  </g>
+                );
+              })}
+
+              {/* Product objects rendered on top of mechanisms, with mounted styling */}
+              {!isIsometric && objects.filter(obj => obj.type === 'product').map(obj => {
+                const isSelected = obj.id === selectedId;
+                const isSecondSelected = obj.id === secondSelectedId;
+                const isMounted = !!obj.mountedToMechanismId;
+                const pW = currentView === 'side' ? productD : productW;
+                const pH = currentView === 'top' ? productD : productH;
+                
+                return (
+                  <g 
+                    key={obj.id}
+                    transform={`translate(${obj.x}, ${obj.y}) rotate(${obj.rotation})`}
+                    onMouseDown={(e) => handleMouseDown(e, obj)}
+                    style={{ cursor: obj.locked ? 'not-allowed' : panMode ? 'inherit' : 'move' }}
+                    filter={isSelected ? "url(#glow)" : "url(#drop-shadow)"}
+                    opacity={isMounted ? 0.7 : 1}
+                  >
+                    {(isSelected || isSecondSelected) && (
+                      <rect
+                        x={-pW / 2 - 6}
+                        y={-pH / 2 - 6}
+                        width={pW + 12}
+                        height={pH + 12}
+                        fill="none"
+                        stroke={isMounted ? '#22c55e' : '#22d3ee'}
+                        strokeWidth="2"
+                        strokeDasharray="6 3"
+                        rx={8}
+                        className="animate-pulse"
+                      />
+                    )}
+                    <rect
+                      x={-pW / 2}
+                      y={-pH / 2}
+                      width={pW}
+                      height={pH}
+                      fill={isMounted ? '#16a34a' : 'url(#product-grad)'}
+                      stroke={isMounted ? '#22c55e' : '#22d3ee'}
+                      strokeWidth={isSelected ? 3 : 2}
+                      rx={6}
+                    />
+                    {/* Cross-hair */}
+                    <line x1={-15} y1={0} x2={15} y2={0} stroke="#fff" strokeWidth="1" opacity="0.5" />
+                    <line x1={0} y1={-15} x2={0} y2={15} stroke="#fff" strokeWidth="1" opacity="0.5" />
+                    <circle cx={0} cy={0} r={4} fill="#fff" opacity="0.7" />
+                    
+                    {/* Label */}
+                    <text
+                      x={0}
+                      y={pH / 2 + 20}
+                      textAnchor="middle"
+                      fill={isMounted ? '#86efac' : '#94a3b8'}
+                      fontSize="11"
+                    >
+                      {isMounted ? '📦 ' : ''}产品 {productDimensions.length}×{productDimensions.width}×{productDimensions.height}mm
+                    </text>
+                    
+                    <ResizeHandles
+                      object={{ ...obj, width: pW, height: pH }}
                       isSelected={isSelected}
                       onResize={handleResize}
                     />
