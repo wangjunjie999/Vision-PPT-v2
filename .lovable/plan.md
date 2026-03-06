@@ -1,42 +1,44 @@
 
 
-# 按分工分类吸附：相机吸附 vs 产品吸附
+# FOV 输入改为两个独立数值框
 
-## 概述
-当前所有执行机构都有相机安装点（CameraMountPoint），相机可以吸附到任何机构上。这不合理——产品交互类机构（传送带、转盘、挡停等）应该吸附**产品**而非相机，只有相机交互类机构（视觉支架、机械臂）才应吸附相机。
+## 问题
 
-## 改动
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-### 1. 新增产品安装点定义（`MechanismSVG.tsx`）
-- 新增 `ProductMountPoint` 接口和 `getProductMountPoints()` 函数
-- 为产品交互类机构定义产品安装位置（如传送带的产品承载面中心、夹爪的夹持位置等）
-- 移除产品交互类机构（conveyor、turntable、lift、stop、cylinder、gripper）的 `CameraMountPoint`，仅保留 camera_mount 和 robot_arm 的相机安装点
+## 修改方案
 
-### 2. 新增 `ProductMountPoints.tsx` 组件
-- 类似 `CameraMountPoints.tsx`，但用于产品区域与机构的吸附
-- 当拖拽产品区域靠近产品交互类机构时，显示产品安装点指示器（📦 图标，绿色吸附提示）
-- 吸附后产品跟随机构移动
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-### 3. 扩展 `LayoutObject` 类型（`ObjectPropertyPanel.tsx`）
-- 产品区域增加 `mountedToMechanismId` 支持（复用现有字段）
-- 产品区域目前是固定渲染的背景矩形，需改为可选的可拖拽对象
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
+```
 
-### 4. 修改拖拽吸附逻辑（`DraggableLayoutCanvas.tsx`）
-- **相机拖拽时**：只检测相机交互类机构（camera_mount、robot_arm）的安装点
-- **产品拖拽时**：只检测产品交互类机构（conveyor、turntable 等）的安装点
-- 更新 `findNearestMountPoint` 调用，增加机构类型过滤
-- 拖拽相机时只显示相机交互类机构的 CameraMountPoints
-- 产品区域改为可拖拽对象，靠近产品交互类机构时显示 ProductMountPoints
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-### 5. 2.5D 预览中体现绑定关系
-- 产品吸附到机构后，在 2.5D 视图中显示产品贴合机构的位置
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
 
-## 文件改动
-| 文件 | 改动 |
-|------|------|
-| `src/components/canvas/MechanismSVG.tsx` | 移除产品类机构的相机安装点；新增 `ProductMountPoint` 和 `getProductMountPoints()` |
-| `src/components/canvas/ProductMountPoints.tsx` | **新建**，产品吸附点渲染组件 |
-| `src/components/canvas/CameraMountPoints.tsx` | 更新 `findNearestMountPoint` 增加类型过滤参数 |
-| `src/components/canvas/ObjectPropertyPanel.tsx` | 产品对象支持显示挂载状态 |
-| `src/components/canvas/DraggableLayoutCanvas.tsx` | 拖拽逻辑按对象类型分别匹配不同类型机构；产品区域改为可拖拽对象 |
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+
+```
+[宽度输入] × [高度输入]
+```
+
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 

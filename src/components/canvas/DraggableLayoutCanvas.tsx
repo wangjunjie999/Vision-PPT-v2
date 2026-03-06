@@ -35,7 +35,7 @@ import { CanvasControls } from './CanvasControls';
 import { AlignmentGuides, calculateSnapPosition } from './AlignmentGuides';
 import { ResizeHandles } from './ResizeHandles';
 import { CoordinateSystem } from './CoordinateSystem';
-import { MechanismSVG, getMechanismMountPoints, type CameraMountPoint } from './MechanismSVG';
+import { MechanismSVG, getMechanismMountPoints, type CameraMountPoint, CAMERA_INTERACTION_TYPES, PRODUCT_INTERACTION_TYPES } from './MechanismSVG';
 import { CameraMountPoints, findNearestMountPoint, getMountPointWorldPosition } from './CameraMountPoints';
 import { getMechanismImage } from '@/utils/mechanismImageUrls';
 import { MechanismThumbnail } from '@/components/common/ImageWithFallback';
@@ -2145,7 +2145,9 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               
               
               {/* Camera mount points - show when dragging a camera */}
-              {isDragging && !isIsometric && draggingObject?.type === 'camera' && objects.filter(o => o.type === 'mechanism').map(mech => (
+              {isDragging && !isIsometric && draggingObject?.type === 'camera' && objects
+                .filter(o => o.type === 'mechanism' && CAMERA_INTERACTION_TYPES.includes(o.mechanismType || ''))
+                .map(mech => (
                 <g key={`mount-${mech.id}`} transform={`translate(${mech.x}, ${mech.y})`}>
                   <CameraMountPoints
                     mechanismObject={mech}
