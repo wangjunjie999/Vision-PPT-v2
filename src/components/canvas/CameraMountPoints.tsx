@@ -215,6 +215,7 @@ export function findNearestMountPoint(
     // Only check camera-interaction mechanisms for camera snapping
     if (!CAMERA_INTERACTION_TYPES.includes(mech.mechanismType || '')) return;
     const mechanismType = mech.mechanismType || 'camera_mount';
+    const mountPoints = getMechanismMountPoints(mechanismType, currentView);
     
     mountPoints.forEach(mp => {
       const mountWorldX = mech.x + mp.position.x * (mech.width / 2);
