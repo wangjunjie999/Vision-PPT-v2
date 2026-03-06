@@ -1944,12 +1944,14 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 );
               })}
 
-              {/* Draggable objects: render non-cameras first, then cameras on top */}
-              {objects.filter(obj => obj.type !== 'camera').map(obj => {
+              {/* Draggable objects: render product first, then mechanisms, then cameras on top */}
+              {/* Product object (draggable in non-isometric views) */}
+              {!isIsometric && objects.filter(obj => obj.type === 'product').map(obj => {
                 const isSelected = obj.id === selectedId;
                 const isSecondSelected = obj.id === secondSelectedId;
-                const isCamera = false;
-                const mechImage = obj.type === 'mechanism' ? getMechanismImageForObject(obj) : null;
+                const isMounted = !!obj.mountedToMechanismId;
+                const pW = currentView === 'side' ? productD : productW;
+                const pH = currentView === 'top' ? productD : productH;
                 
                 return (
                   <g 
@@ -1959,7 +1961,69 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                     style={{ cursor: obj.locked ? 'not-allowed' : panMode ? 'inherit' : 'move' }}
                     filter={isSelected ? "url(#glow)" : "url(#drop-shadow)"}
                   >
-                    {/* Selection outline */}
+                    {(isSelected || isSecondSelected) && (
+                      <rect
+                        x={-pW / 2 - 6}
+                        y={-pH / 2 - 6}
+                        width={pW + 12}
+                        height={pH + 12}
+                        fill="none"
+                        stroke={isMounted ? '#22c55e' : '#22d3ee'}
+                        strokeWidth="2"
+                        strokeDasharray="6 3"
+                        rx={8}
+                        className="animate-pulse"
+                      />
+                    )}
+                    <rect
+                      x={-pW / 2}
+                      y={-pH / 2}
+                      width={pW}
+                      height={pH}
+                      fill="url(#product-grad)"
+                      stroke={isMounted ? '#22c55e' : '#22d3ee'}
+                      strokeWidth={isSelected ? 3 : 2}
+                      rx={6}
+                    />
+                    {/* Cross-hair */}
+                    <line x1={-15} y1={0} x2={15} y2={0} stroke="#fff" strokeWidth="1" opacity="0.5" />
+                    <line x1={0} y1={-15} x2={0} y2={15} stroke="#fff" strokeWidth="1" opacity="0.5" />
+                    <circle cx={0} cy={0} r={4} fill="#fff" opacity="0.7" />
+                    
+                    {/* Label */}
+                    <text
+                      x={0}
+                      y={pH / 2 + 20}
+                      textAnchor="middle"
+                      fill="#94a3b8"
+                      fontSize="11"
+                    >
+                      {isMounted ? '📦 ' : ''}产品 {productDimensions.length}×{productDimensions.width}×{productDimensions.height}mm
+                    </text>
+                    
+                    <ResizeHandles
+                      object={{ ...obj, width: pW, height: pH }}
+                      isSelected={isSelected}
+                      onResize={handleResize}
+                    />
+                  </g>
+                );
+              })}
+              
+              {/* Mechanism objects */}
+              {objects.filter(obj => obj.type === 'mechanism').map(obj => {
+                const isSelected = obj.id === selectedId;
+                const isSecondSelected = obj.id === secondSelectedId;
+                const mechImage = getMechanismImageForObject(obj);
+                
+                return (
+                  <g 
+                    key={obj.id}
+                    transform={`translate(${obj.x}, ${obj.y}) rotate(${obj.rotation})`}
+                    onMouseDown={(e) => handleMouseDown(e, obj)}
+                    style={{ cursor: obj.locked ? 'not-allowed' : panMode ? 'inherit' : 'move' }}
+                    filter={isSelected ? "url(#glow)" : "url(#drop-shadow)"}
+                  >
                     {(isSelected || isSecondSelected) && (
                       <rect
                         x={-obj.width / 2 - 6}
@@ -1967,7 +2031,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                         width={obj.width + 12}
                         height={obj.height + 12}
                         fill="none"
-                        stroke={isCamera ? (isSecondSelected ? '#22c55e' : '#60a5fa') : (isSecondSelected ? '#22c55e' : '#60a5fa')}
+                        stroke={isSecondSelected ? '#22c55e' : '#60a5fa'}
                         strokeWidth="2"
                         strokeDasharray="6 3"
                         rx={8}
@@ -1975,87 +2039,45 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                       />
                     )}
                     
-                    {/* Object body */}
-                    {isCamera ? (
+                    {mechImage ? (
                       <>
-                        {/* Camera body */}
                         <rect
+                          x={-obj.width / 2 - 2}
+                          y={-obj.height / 2 - 2}
+                          width={obj.width + 4}
+                          height={obj.height + 4}
+                          fill="rgba(30, 41, 59, 0.9)"
+                          stroke={isSelected ? '#fb923c' : '#ea580c'}
+                          strokeWidth={isSelected ? 3 : 2}
+                          rx={6}
+                        />
+                        <image
+                          href={mechImage}
                           x={-obj.width / 2}
                           y={-obj.height / 2}
                           width={obj.width}
                           height={obj.height}
-                          fill={isSelected ? 'url(#camera-grad)' : '#2563eb'}
-                          stroke={isSelected ? '#93c5fd' : '#3b82f6'}
-                          strokeWidth={isSelected ? 3 : 2}
-                          rx={6}
+                          preserveAspectRatio="xMidYMid meet"
+                          style={{ pointerEvents: 'none' }}
                         />
-                        {/* Camera lens circle */}
-                        <circle
-                          cx={0}
-                          cy={-4}
-                          r={Math.min(obj.width, obj.height) * 0.22}
-                          fill="rgba(0,0,0,0.4)"
-                          stroke="#93c5fd"
-                          strokeWidth={2}
-                        />
-                        <circle
-                          cx={0}
-                          cy={-4}
-                          r={Math.min(obj.width, obj.height) * 0.12}
-                          fill="#60a5fa"
-                          opacity={0.8}
-                        />
-                        {/* Camera name label */}
-                        <rect x={-obj.width / 2} y={obj.height / 2 + 4} width={obj.width} height={18} rx={4} fill="rgba(30, 41, 59, 0.95)" />
-                        <text x={0} y={obj.height / 2 + 16} textAnchor="middle" fill="#93c5fd" fontSize="10" fontWeight="600">
-                          {obj.name}
-                        </text>
                       </>
                     ) : (
-                      <>
-                        {mechImage ? (
-                          <>
-                            <rect
-                              x={-obj.width / 2 - 2}
-                              y={-obj.height / 2 - 2}
-                              width={obj.width + 4}
-                              height={obj.height + 4}
-                              fill="rgba(30, 41, 59, 0.9)"
-                              stroke={isSelected ? '#fb923c' : '#ea580c'}
-                              strokeWidth={isSelected ? 3 : 2}
-                              rx={6}
-                            />
-                            <image
-                              href={mechImage}
-                              x={-obj.width / 2}
-                              y={-obj.height / 2}
-                              width={obj.width}
-                              height={obj.height}
-                              preserveAspectRatio="xMidYMid meet"
-                              style={{ pointerEvents: 'none' }}
-                            />
-                          </>
-                        ) : (
-                          <rect
-                            x={-obj.width / 2}
-                            y={-obj.height / 2}
-                            width={obj.width}
-                            height={obj.height}
-                            fill={isSelected ? 'url(#mech-grad)' : '#ea580c'}
-                            stroke={isSelected ? '#fdba74' : '#c2410c'}
-                            strokeWidth={isSelected ? 3 : 2}
-                            rx={6}
-                          />
-                        )}
-                        {/* Mechanism label */}
-                        <rect x={-obj.width / 2} y={obj.height / 2 + 4} width={obj.width} height={18} rx={4} fill="rgba(30, 41, 59, 0.95)" />
-                        <text x={0} y={obj.height / 2 + 16} textAnchor="middle" fill="#fdba74" fontSize="10" fontWeight="600">
-                          {obj.name}
-                        </text>
-                      </>
+                      <rect
+                        x={-obj.width / 2}
+                        y={-obj.height / 2}
+                        width={obj.width}
+                        height={obj.height}
+                        fill={isSelected ? 'url(#mech-grad)' : '#ea580c'}
+                        stroke={isSelected ? '#fdba74' : '#c2410c'}
+                        strokeWidth={isSelected ? 3 : 2}
+                        rx={6}
+                      />
                     )}
+                    <rect x={-obj.width / 2} y={obj.height / 2 + 4} width={obj.width} height={18} rx={4} fill="rgba(30, 41, 59, 0.95)" />
+                    <text x={0} y={obj.height / 2 + 16} textAnchor="middle" fill="#fdba74" fontSize="10" fontWeight="600">
+                      {obj.name}
+                    </text>
                     
-                    {/* Lock indicator */}
                     {obj.locked && (
                       <g transform={`translate(${obj.width / 2 - 6}, ${-obj.height / 2 - 6})`}>
                         <circle r={10} fill="#1e293b" stroke="#64748b" strokeWidth="1.5" />
@@ -2063,14 +2085,12 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                       </g>
                     )}
                     
-                    {/* Rotation indicator for selected */}
                     {isSelected && obj.rotation !== 0 && (
                       <text x={obj.width / 2 + 8} y={0} fill="#94a3b8" fontSize="9">
                         {obj.rotation}°
                       </text>
                     )}
                     
-                    {/* Resize handles for selected object */}
                     <ResizeHandles
                       object={obj}
                       isSelected={isSelected}
