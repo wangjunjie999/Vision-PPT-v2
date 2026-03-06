@@ -1283,12 +1283,6 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     }
   };
 
-  if (!workstation) return null;
-
-  // Current product dimensions based on view
-  const currentProductW = currentView === 'side' ? productD : productW;
-  const currentProductH = currentView === 'top' ? productD : productH;
-
   // Isometric cube helper: project a 3D point to isometric 2D
   const isoProject = useCallback((px: number, py: number, pz: number) => {
     const cos30 = Math.cos(Math.PI / 6);
@@ -1298,6 +1292,12 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       y: centerY - ((px + py) * sin30 + pz) * scale
     };
   }, [centerX, centerY, scale]);
+
+  if (!workstation) return null;
+
+  // Current product dimensions based on view
+  const currentProductW = currentView === 'side' ? productD : productW;
+  const currentProductH = currentView === 'top' ? productD : productH;
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden relative">
