@@ -2239,7 +2239,20 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 </g>
               ))}
               
-
+              {/* Product mount points - show when dragging a product */}
+              {isDragging && !isIsometric && draggingObject?.type === 'product' && objects
+                .filter(o => o.type === 'mechanism' && PRODUCT_INTERACTION_TYPES.includes(o.mechanismType || ''))
+                .map(mech => (
+                <g key={`product-mount-${mech.id}`} transform={`translate(${mech.x}, ${mech.y})`}>
+                  <ProductMountPoints
+                    mechanismObject={mech}
+                    currentView={currentView as StandardViewType}
+                    productObject={draggingObject}
+                    draggingProductId={draggingObject.id}
+                    scale={scale}
+                  />
+                </g>
+              ))}
 
               {/* Operation hints moved to viewport-fixed overlay below */}
             </svg>
