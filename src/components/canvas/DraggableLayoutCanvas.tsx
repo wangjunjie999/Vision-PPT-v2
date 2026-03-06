@@ -2194,11 +2194,13 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 const topFace = `${t0.x},${t0.y} ${t1.x},${t1.y} ${t2.x},${t2.y} ${t3.x},${t3.y}`;
                 const frontFace = `${t0.x},${t0.y} ${t1.x},${t1.y} ${b1.x},${b1.y} ${b0.x},${b0.y}`;
                 const rightFace = `${t1.x},${t1.y} ${t2.x},${t2.y} ${b2.x},${b2.y} ${b1.x},${b1.y}`;
+                const leftFace = `${t0.x},${t0.y} ${t3.x},${t3.y} ${b3.x},${b3.y} ${b0.x},${b0.y}`;
                 
                 // Colors: mounted = green, unmounted = blue
                 const fillFront = isMounted ? '#16a34a' : '#2563eb';
                 const fillRight = isMounted ? '#166534' : '#1d4ed8';
                 const fillTop = isMounted ? '#4ade80' : '#60a5fa';
+                const fillLeft = isMounted ? '#15803d' : '#1e40af';
                 const strokeColor = isMounted ? '#22c55e' : '#3b82f6';
                 const labelColor = isMounted ? '#86efac' : '#93c5fd';
                 
@@ -2229,6 +2231,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                   <g key={`iso-cam-${camObj.id}`} opacity={isMounted ? 0.7 : 1}>
                     {connectionLine}
                     <g filter="url(#drop-shadow)">
+                      <polygon points={leftFace} fill={fillLeft} fillOpacity="0.3" stroke={strokeColor} strokeWidth="1" strokeDasharray="4 2" />
                       <polygon points={frontFace} fill={fillFront} fillOpacity="0.5" stroke={strokeColor} strokeWidth="2" />
                       <polygon points={rightFace} fill={fillRight} fillOpacity="0.5" stroke={strokeColor} strokeWidth="2" />
                       <polygon points={topFace} fill={fillTop} fillOpacity="0.4" stroke={strokeColor} strokeWidth="2" />
