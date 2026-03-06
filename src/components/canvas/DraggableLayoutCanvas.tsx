@@ -1446,8 +1446,11 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                   <div className="space-y-1 max-h-72 overflow-y-auto">
                     {enabledMechanisms.length === 0 ? (
                       <p className="text-sm text-muted-foreground p-3 text-center">暂无可用机构</p>
-                    ) : (
-                      enabledMechanisms.map(mech => (
+                    ) : (() => {
+                      const CAMERA_TYPES = ['camera_mount', 'robot_arm'];
+                      const cameraMechs = enabledMechanisms.filter(m => CAMERA_TYPES.includes(m.type));
+                      const productMechs = enabledMechanisms.filter(m => !CAMERA_TYPES.includes(m.type));
+                      const renderItem = (mech: any) => (
                         <button
                           key={mech.id}
                           onClick={() => addMechanism(mech)}
@@ -1461,8 +1464,27 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                             </div>
                           </div>
                         </button>
-                      ))
-                    )}
+                      );
+                      return (
+                        <>
+                          {cameraMechs.length > 0 && (
+                            <>
+                              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">📷 相机交互</div>
+                              {cameraMechs.map(renderItem)}
+                            </>
+                          )}
+                          {cameraMechs.length > 0 && productMechs.length > 0 && (
+                            <div className="my-1 h-px bg-border" />
+                          )}
+                          {productMechs.length > 0 && (
+                            <>
+                              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">📦 产品交互</div>
+                              {productMechs.map(renderItem)}
+                            </>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </PopoverContent>
               </Popover>
