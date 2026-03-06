@@ -315,13 +315,13 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       const deltaY = (updates.posY ?? targetObj.posY ?? 0) - (targetObj.posY ?? 0);
       const deltaZ = (updates.posZ ?? targetObj.posZ ?? 0) - (targetObj.posZ ?? 0);
       
-      // If mechanism moved, update all mounted cameras
+      // If mechanism moved, update all mounted cameras and products
       if (targetObj.type === 'mechanism' && (deltaX !== 0 || deltaY !== 0 || deltaZ !== 0)) {
         return prev.map(obj => {
           if (obj.id === id) {
             return { ...obj, ...updates };
           }
-          // Find cameras mounted to this mechanism
+          // Find cameras or products mounted to this mechanism
           if (obj.mountedToMechanismId === id) {
             const newPosX = (obj.posX ?? 0) + deltaX;
             const newPosY = (obj.posY ?? 0) + deltaY;
