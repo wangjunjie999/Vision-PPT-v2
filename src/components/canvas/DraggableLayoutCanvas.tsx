@@ -25,7 +25,7 @@ import {
   ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Crosshair,
   Move, LayoutGrid, AlignHorizontalJustifyCenter, 
   AlignVerticalJustifyCenter, AlignCenterHorizontal,
-  ImageIcon, Check, ChevronDown, ChevronUp, Settings2, Zap
+  ImageIcon, Check, ChevronDown, ChevronUp, Settings2, Zap, Layers
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
