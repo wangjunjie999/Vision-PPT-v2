@@ -405,11 +405,47 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
             posY: obj.posY ?? 0,
             posZ: obj.posZ ?? (obj.type === 'camera' ? 300 : 0),
           }));
+          // Ensure product object exists
+          const hasProduct = migratedObjects.some((o: any) => o.type === 'product');
+          if (!hasProduct) {
+            const productCanvasPos = project3DTo2D(0, 0, 0, currentView);
+            migratedObjects.push({
+              id: 'product-main',
+              type: 'product',
+              name: '产品',
+              posX: 0,
+              posY: 0,
+              posZ: 0,
+              x: productCanvasPos.x,
+              y: productCanvasPos.y,
+              width: productDimensions.length,
+              height: productDimensions.height,
+              rotation: 0,
+              locked: false,
+            });
+          }
           setObjects(migratedObjects);
         }
       } catch (e) {
         console.error('Failed to parse layout objects:', e);
       }
+    } else {
+      // No layout objects yet - create initial product object
+      const productCanvasPos = project3DTo2D(0, 0, 0, currentView);
+      setObjects([{
+        id: 'product-main',
+        type: 'product',
+        name: '产品',
+        posX: 0,
+        posY: 0,
+        posZ: 0,
+        x: productCanvasPos.x,
+        y: productCanvasPos.y,
+        width: productDimensions.length,
+        height: productDimensions.height,
+        rotation: 0,
+        locked: false,
+      }]);
     }
     if (layout?.grid_enabled !== undefined) setGridEnabled(layout.grid_enabled);
     if (layout?.snap_enabled !== undefined) setSnapEnabled(layout.snap_enabled);
@@ -643,6 +679,18 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       }
     }
     
+    // Check for product snap to product-interaction mechanism mount points
+    if (currentObj?.type === 'product' && currentView !== 'isometric') {
+      const nearestProductMount = findNearestProductMountPoint(newX, newY, objects, currentView as StandardViewType, 80);
+      if (nearestProductMount) {
+        const mountPos = getProductMountPointWorldPosition(nearestProductMount.mechanism, nearestProductMount.mountPoint.id, currentView as StandardViewType);
+        if (mountPos) {
+          newX = mountPos.x;
+          newY = mountPos.y;
+        }
+      }
+    }
+    
     // Update 3D coordinates based on canvas position and current view
     if (currentObj) {
       const updates3D = update3DFromCanvas(newX, newY, currentView, currentObj);
@@ -659,9 +707,11 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   };
 
   const handleMouseUp = () => {
-    // Check if camera should be mounted to mechanism
+    // Check if camera or product should be mounted to mechanism
     if (isDragging && selectedId) {
       const currentObj = objects.find(o => o.id === selectedId);
+      
+      // Camera → camera-interaction mechanism snapping
       if (currentObj?.type === 'camera') {
         const nearestMount = findNearestMountPoint(
           currentObj.x, 
@@ -672,32 +722,25 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         );
         
         if (nearestMount) {
-          // Get mount world position for snapping
           const mountPos = getMountPointWorldPosition(nearestMount.mechanism, nearestMount.mountPoint.id, currentView as StandardViewType);
-          
-          // Calculate 3D offsets for the binding
           const mechPosX = nearestMount.mechanism.posX ?? 0;
           const mechPosY = nearestMount.mechanism.posY ?? 0;
           const mechPosZ = nearestMount.mechanism.posZ ?? 0;
-          
           const offsetX = (currentObj.posX ?? 0) - mechPosX;
           const offsetY = (currentObj.posY ?? 0) - mechPosY;
           const offsetZ = (currentObj.posZ ?? 0) - mechPosZ;
           
-          // Update camera with binding info
           updateObject(selectedId, {
             mountedToMechanismId: nearestMount.mechanism.id,
             mountPointId: nearestMount.mountPoint.id,
             mountOffsetX: offsetX,
             mountOffsetY: offsetY,
             mountOffsetZ: offsetZ,
-            // Snap position if mount position available
             ...(mountPos ? { x: mountPos.x, y: mountPos.y } : {}),
           });
           
           toast.success(`${currentObj.name} 已挂载到 ${nearestMount.mechanism.name}`);
         } else if (currentObj.mountedToMechanismId) {
-          // Dragged away from mount point - unbind
           const mechObj = objects.find(o => o.id === currentObj.mountedToMechanismId);
           updateObject(selectedId, {
             mountedToMechanismId: undefined,
@@ -708,6 +751,50 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
           });
           if (mechObj) {
             toast.info(`${currentObj.name} 已从 ${mechObj.name} 解除挂载`);
+          }
+        }
+      }
+      
+      // Product → product-interaction mechanism snapping
+      if (currentObj?.type === 'product') {
+        const nearestProductMount = findNearestProductMountPoint(
+          currentObj.x,
+          currentObj.y,
+          objects,
+          currentView as StandardViewType,
+          80
+        );
+        
+        if (nearestProductMount) {
+          const mountPos = getProductMountPointWorldPosition(nearestProductMount.mechanism, nearestProductMount.mountPoint.id, currentView as StandardViewType);
+          const mechPosX = nearestProductMount.mechanism.posX ?? 0;
+          const mechPosY = nearestProductMount.mechanism.posY ?? 0;
+          const mechPosZ = nearestProductMount.mechanism.posZ ?? 0;
+          const offsetX = (currentObj.posX ?? 0) - mechPosX;
+          const offsetY = (currentObj.posY ?? 0) - mechPosY;
+          const offsetZ = (currentObj.posZ ?? 0) - mechPosZ;
+          
+          updateObject(selectedId, {
+            mountedToMechanismId: nearestProductMount.mechanism.id,
+            mountPointId: nearestProductMount.mountPoint.id,
+            mountOffsetX: offsetX,
+            mountOffsetY: offsetY,
+            mountOffsetZ: offsetZ,
+            ...(mountPos ? { x: mountPos.x, y: mountPos.y } : {}),
+          });
+          
+          toast.success(`产品已吸附到 ${nearestProductMount.mechanism.name}`);
+        } else if (currentObj.mountedToMechanismId) {
+          const mechObj = objects.find(o => o.id === currentObj.mountedToMechanismId);
+          updateObject(selectedId, {
+            mountedToMechanismId: undefined,
+            mountPointId: undefined,
+            mountOffsetX: undefined,
+            mountOffsetY: undefined,
+            mountOffsetZ: undefined,
+          });
+          if (mechObj) {
+            toast.info(`产品已从 ${mechObj.name} 解除吸附`);
           }
         }
       }
