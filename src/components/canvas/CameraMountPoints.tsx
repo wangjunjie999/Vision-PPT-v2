@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { type LayoutObject } from './ObjectPropertyPanel';
-import { getMechanismMountPoints, type CameraMountPoint } from './MechanismSVG';
+import { getMechanismMountPoints, type CameraMountPoint, CAMERA_INTERACTION_TYPES } from './MechanismSVG';
 
 interface CameraMountPointsProps {
   mechanismObject: LayoutObject;
@@ -212,9 +212,9 @@ export function findNearestMountPoint(
   
   mechanisms.forEach(mech => {
     if (mech.type !== 'mechanism') return;
-    
+    // Only check camera-interaction mechanisms for camera snapping
+    if (!CAMERA_INTERACTION_TYPES.includes(mech.mechanismType || '')) return;
     const mechanismType = mech.mechanismType || 'camera_mount';
-    const mountPoints = getMechanismMountPoints(mechanismType, currentView);
     
     mountPoints.forEach(mp => {
       const mountWorldX = mech.x + mp.position.x * (mech.width / 2);
