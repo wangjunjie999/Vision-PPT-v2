@@ -2029,7 +2029,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 // If mounted, position product on top of the mechanism's 3D position
                 const pPosX = isMounted && parentMech ? (parentMech.posX ?? 0) : (productObj?.posX ?? 0);
                 const pPosY = isMounted && parentMech ? (parentMech.posY ?? 0) : (productObj?.posY ?? 0);
-                const mechHeight = isMounted && parentMech ? (parentMech.depth ?? 80) : 0;
+                const mechHeight = isMounted && parentMech ? (parentMech.height ?? 80) : 0;
                 const pPosZ = isMounted && parentMech ? (parentMech.posZ ?? 0) + mechHeight / 2 + productDimensions.height / 2 : (productObj?.posZ ?? 0);
                 
                 const hL = productDimensions.length / 2;
