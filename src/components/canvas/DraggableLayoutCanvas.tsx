@@ -1868,90 +1868,51 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 );
               })()}
               
-              {/* Product (center reference) */}
-              {isIsometric ? (
-                // Isometric 3D cube rendering
-                (() => {
-                  const hL = productDimensions.length / 2;
-                  const hW = productDimensions.width / 2;
-                  const hH = productDimensions.height / 2;
-                  // 8 corners of the box, projected to 2D
-                  const p = (x: number, y: number, z: number) => isoProject(x, y, z);
-                  // Top face: z = +hH
-                  const t0 = p(-hL, -hW, hH);
-                  const t1 = p(hL, -hW, hH);
-                  const t2 = p(hL, hW, hH);
-                  const t3 = p(-hL, hW, hH);
-                  // Bottom face: z = -hH
-                  const b0 = p(-hL, -hW, -hH);
-                  const b1 = p(hL, -hW, -hH);
-                  const b2 = p(hL, hW, -hH);
-                  const b3 = p(-hL, hW, -hH);
-                  
-                  const topFace = `${t0.x},${t0.y} ${t1.x},${t1.y} ${t2.x},${t2.y} ${t3.x},${t3.y}`;
-                  const frontFace = `${t0.x},${t0.y} ${t1.x},${t1.y} ${b1.x},${b1.y} ${b0.x},${b0.y}`;
-                  const rightFace = `${t1.x},${t1.y} ${t2.x},${t2.y} ${b2.x},${b2.y} ${b1.x},${b1.y}`;
-                  
-                  // Back edges (hidden, dashed)
-                  const leftFace = `${t0.x},${t0.y} ${t3.x},${t3.y} ${b3.x},${b3.y} ${b0.x},${b0.y}`;
-                  
-                  return (
-                    <g filter="url(#drop-shadow)">
-                      {/* Left face (partially visible) */}
-                      <polygon points={leftFace} fill="#0891b2" fillOpacity="0.3" stroke="#22d3ee" strokeWidth="1" strokeDasharray="4 2" />
-                      {/* Front face */}
-                      <polygon points={frontFace} fill="#06b6d4" fillOpacity="0.5" stroke="#22d3ee" strokeWidth="2" />
-                      {/* Right face */}
-                      <polygon points={rightFace} fill="#0e7490" fillOpacity="0.5" stroke="#22d3ee" strokeWidth="2" />
-                      {/* Top face */}
-                      <polygon points={topFace} fill="#67e8f9" fillOpacity="0.4" stroke="#22d3ee" strokeWidth="2" />
-                      
-                      {/* Face labels */}
-                      <text x={(t0.x + t1.x + b1.x + b0.x) / 4} y={(t0.y + t1.y + b1.y + b0.y) / 4 + 4} textAnchor="middle" fill="#e0f2fe" fontSize="10" fontWeight="500" opacity="0.8">正面</text>
-                      <text x={(t1.x + t2.x + b2.x + b1.x) / 4} y={(t1.y + t2.y + b2.y + b1.y) / 4 + 4} textAnchor="middle" fill="#e0f2fe" fontSize="10" fontWeight="500" opacity="0.8">侧面</text>
-                      <text x={(t0.x + t1.x + t2.x + t3.x) / 4} y={(t0.y + t1.y + t2.y + t3.y) / 4 + 4} textAnchor="middle" fill="#e0f2fe" fontSize="10" fontWeight="500" opacity="0.8">顶面</text>
-                      
-                      {/* Product dimensions label */}
-                      <text
-                        x={centerX}
-                        y={Math.max(b0.y, b1.y, b2.y) + 25}
-                        textAnchor="middle"
-                        fill="#94a3b8"
-                        fontSize="11"
-                      >
-                        产品 {productDimensions.length}×{productDimensions.width}×{productDimensions.height}mm
-                      </text>
-                    </g>
-                  );
-                })()
-              ) : (
-                <g filter="url(#drop-shadow)">
-                  <rect
-                    x={centerX - currentProductW / 2}
-                    y={centerY - currentProductH / 2}
-                    width={currentProductW}
-                    height={currentProductH}
-                    fill="url(#product-grad)"
-                    stroke="#22d3ee"
-                    strokeWidth="2"
-                    rx={6}
-                  />
-                  {/* Product cross-hair */}
-                  <line x1={centerX - 15} y1={centerY} x2={centerX + 15} y2={centerY} stroke="#fff" strokeWidth="1" opacity="0.5" />
-                  <line x1={centerX} y1={centerY - 15} x2={centerX} y2={centerY + 15} stroke="#fff" strokeWidth="1" opacity="0.5" />
-                  <circle cx={centerX} cy={centerY} r={4} fill="#fff" opacity="0.7" />
-                  
-                  <text
-                    x={centerX}
-                    y={centerY + currentProductH / 2 + 20}
-                    textAnchor="middle"
-                    fill="#94a3b8"
-                    fontSize="11"
-                  >
-                    产品 {productDimensions.length}×{productDimensions.width}×{productDimensions.height}mm
-                  </text>
-                </g>
-              )}
+              {/* Product (center reference) - rendered from product LayoutObject in draggable loop */}
+              {isIsometric && (() => {
+                const productObj = objects.find(o => o.type === 'product');
+                const pPosX = productObj?.posX ?? 0;
+                const pPosY = productObj?.posY ?? 0;
+                const pPosZ = productObj?.posZ ?? 0;
+                const hL = productDimensions.length / 2;
+                const hW = productDimensions.width / 2;
+                const hH = productDimensions.height / 2;
+                const p = (x: number, y: number, z: number) => isoProject(pPosX + x, pPosY + y, pPosZ + z);
+                const t0 = p(-hL, -hW, hH);
+                const t1 = p(hL, -hW, hH);
+                const t2 = p(hL, hW, hH);
+                const t3 = p(-hL, hW, hH);
+                const b0 = p(-hL, -hW, -hH);
+                const b1 = p(hL, -hW, -hH);
+                const b2 = p(hL, hW, -hH);
+                const b3 = p(-hL, hW, -hH);
+                
+                const topFace = `${t0.x},${t0.y} ${t1.x},${t1.y} ${t2.x},${t2.y} ${t3.x},${t3.y}`;
+                const frontFace = `${t0.x},${t0.y} ${t1.x},${t1.y} ${b1.x},${b1.y} ${b0.x},${b0.y}`;
+                const rightFace = `${t1.x},${t1.y} ${t2.x},${t2.y} ${b2.x},${b2.y} ${b1.x},${b1.y}`;
+                const leftFace = `${t0.x},${t0.y} ${t3.x},${t3.y} ${b3.x},${b3.y} ${b0.x},${b0.y}`;
+                
+                return (
+                  <g filter="url(#drop-shadow)">
+                    <polygon points={leftFace} fill="#0891b2" fillOpacity="0.3" stroke="#22d3ee" strokeWidth="1" strokeDasharray="4 2" />
+                    <polygon points={frontFace} fill="#06b6d4" fillOpacity="0.5" stroke="#22d3ee" strokeWidth="2" />
+                    <polygon points={rightFace} fill="#0e7490" fillOpacity="0.5" stroke="#22d3ee" strokeWidth="2" />
+                    <polygon points={topFace} fill="#67e8f9" fillOpacity="0.4" stroke="#22d3ee" strokeWidth="2" />
+                    <text x={(t0.x + t1.x + b1.x + b0.x) / 4} y={(t0.y + t1.y + b1.y + b0.y) / 4 + 4} textAnchor="middle" fill="#e0f2fe" fontSize="10" fontWeight="500" opacity="0.8">正面</text>
+                    <text x={(t1.x + t2.x + b2.x + b1.x) / 4} y={(t1.y + t2.y + b2.y + b1.y) / 4 + 4} textAnchor="middle" fill="#e0f2fe" fontSize="10" fontWeight="500" opacity="0.8">侧面</text>
+                    <text x={(t0.x + t1.x + t2.x + t3.x) / 4} y={(t0.y + t1.y + t2.y + t3.y) / 4 + 4} textAnchor="middle" fill="#e0f2fe" fontSize="10" fontWeight="500" opacity="0.8">顶面</text>
+                    <text
+                      x={(t0.x + t1.x + t2.x + t3.x) / 4}
+                      y={Math.max(b0.y, b1.y, b2.y) + 25}
+                      textAnchor="middle"
+                      fill="#94a3b8"
+                      fontSize="11"
+                    >
+                      产品 {productDimensions.length}×{productDimensions.width}×{productDimensions.height}mm
+                    </text>
+                  </g>
+                );
+              })()}
               
               {/* Connection lines between cameras and mounted mechanisms */}
               {objects.filter(obj => obj.type === 'camera' && obj.mountedToMechanismId).map(cam => {
