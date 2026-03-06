@@ -17,7 +17,7 @@ type ViewType = 'front' | 'side' | 'top';
 
 export interface LayoutObject {
   id: string;
-  type: 'camera' | 'mechanism';
+  type: 'camera' | 'mechanism' | 'product';
   mechanismId?: string;
   mechanismType?: string;
   name: string;

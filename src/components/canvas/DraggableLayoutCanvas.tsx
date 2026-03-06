@@ -37,6 +37,7 @@ import { ResizeHandles } from './ResizeHandles';
 import { CoordinateSystem } from './CoordinateSystem';
 import { MechanismSVG, getMechanismMountPoints, type CameraMountPoint, CAMERA_INTERACTION_TYPES, PRODUCT_INTERACTION_TYPES } from './MechanismSVG';
 import { CameraMountPoints, findNearestMountPoint, getMountPointWorldPosition } from './CameraMountPoints';
+import { ProductMountPoints, findNearestProductMountPoint, getProductMountPointWorldPosition } from './ProductMountPoints';
 import { getMechanismImage } from '@/utils/mechanismImageUrls';
 import { MechanismThumbnail } from '@/components/common/ImageWithFallback';
 import { compressImage, dataUrlToBlob, QUALITY_PRESETS, type QualityPreset } from '@/utils/imageCompression';
@@ -314,13 +315,13 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       const deltaY = (updates.posY ?? targetObj.posY ?? 0) - (targetObj.posY ?? 0);
       const deltaZ = (updates.posZ ?? targetObj.posZ ?? 0) - (targetObj.posZ ?? 0);
       
-      // If mechanism moved, update all mounted cameras
+      // If mechanism moved, update all mounted cameras and products
       if (targetObj.type === 'mechanism' && (deltaX !== 0 || deltaY !== 0 || deltaZ !== 0)) {
         return prev.map(obj => {
           if (obj.id === id) {
             return { ...obj, ...updates };
           }
-          // Find cameras mounted to this mechanism
+          // Find cameras or products mounted to this mechanism
           if (obj.mountedToMechanismId === id) {
             const newPosX = (obj.posX ?? 0) + deltaX;
             const newPosY = (obj.posY ?? 0) + deltaY;
@@ -404,11 +405,47 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
             posY: obj.posY ?? 0,
             posZ: obj.posZ ?? (obj.type === 'camera' ? 300 : 0),
           }));
+          // Ensure product object exists
+          const hasProduct = migratedObjects.some((o: any) => o.type === 'product');
+          if (!hasProduct) {
+            const productCanvasPos = project3DTo2D(0, 0, 0, currentView);
+            migratedObjects.push({
+              id: 'product-main',
+              type: 'product',
+              name: '产品',
+              posX: 0,
+              posY: 0,
+              posZ: 0,
+              x: productCanvasPos.x,
+              y: productCanvasPos.y,
+              width: productDimensions.length,
+              height: productDimensions.height,
+              rotation: 0,
+              locked: false,
+            });
+          }
           setObjects(migratedObjects);
         }
       } catch (e) {
         console.error('Failed to parse layout objects:', e);
       }
+    } else {
+      // No layout objects yet - create initial product object
+      const productCanvasPos = project3DTo2D(0, 0, 0, currentView);
+      setObjects([{
+        id: 'product-main',
+        type: 'product',
+        name: '产品',
+        posX: 0,
+        posY: 0,
+        posZ: 0,
+        x: productCanvasPos.x,
+        y: productCanvasPos.y,
+        width: productDimensions.length,
+        height: productDimensions.height,
+        rotation: 0,
+        locked: false,
+      }]);
     }
     if (layout?.grid_enabled !== undefined) setGridEnabled(layout.grid_enabled);
     if (layout?.snap_enabled !== undefined) setSnapEnabled(layout.snap_enabled);
@@ -642,6 +679,18 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       }
     }
     
+    // Check for product snap to product-interaction mechanism mount points
+    if (currentObj?.type === 'product' && currentView !== 'isometric') {
+      const nearestProductMount = findNearestProductMountPoint(newX, newY, objects, currentView as StandardViewType, 80);
+      if (nearestProductMount) {
+        const mountPos = getProductMountPointWorldPosition(nearestProductMount.mechanism, nearestProductMount.mountPoint.id, currentView as StandardViewType);
+        if (mountPos) {
+          newX = mountPos.x;
+          newY = mountPos.y;
+        }
+      }
+    }
+    
     // Update 3D coordinates based on canvas position and current view
     if (currentObj) {
       const updates3D = update3DFromCanvas(newX, newY, currentView, currentObj);
@@ -658,9 +707,11 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   };
 
   const handleMouseUp = () => {
-    // Check if camera should be mounted to mechanism
+    // Check if camera or product should be mounted to mechanism
     if (isDragging && selectedId) {
       const currentObj = objects.find(o => o.id === selectedId);
+      
+      // Camera → camera-interaction mechanism snapping
       if (currentObj?.type === 'camera') {
         const nearestMount = findNearestMountPoint(
           currentObj.x, 
@@ -671,32 +722,25 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         );
         
         if (nearestMount) {
-          // Get mount world position for snapping
           const mountPos = getMountPointWorldPosition(nearestMount.mechanism, nearestMount.mountPoint.id, currentView as StandardViewType);
-          
-          // Calculate 3D offsets for the binding
           const mechPosX = nearestMount.mechanism.posX ?? 0;
           const mechPosY = nearestMount.mechanism.posY ?? 0;
           const mechPosZ = nearestMount.mechanism.posZ ?? 0;
-          
           const offsetX = (currentObj.posX ?? 0) - mechPosX;
           const offsetY = (currentObj.posY ?? 0) - mechPosY;
           const offsetZ = (currentObj.posZ ?? 0) - mechPosZ;
           
-          // Update camera with binding info
           updateObject(selectedId, {
             mountedToMechanismId: nearestMount.mechanism.id,
             mountPointId: nearestMount.mountPoint.id,
             mountOffsetX: offsetX,
             mountOffsetY: offsetY,
             mountOffsetZ: offsetZ,
-            // Snap position if mount position available
             ...(mountPos ? { x: mountPos.x, y: mountPos.y } : {}),
           });
           
           toast.success(`${currentObj.name} 已挂载到 ${nearestMount.mechanism.name}`);
         } else if (currentObj.mountedToMechanismId) {
-          // Dragged away from mount point - unbind
           const mechObj = objects.find(o => o.id === currentObj.mountedToMechanismId);
           updateObject(selectedId, {
             mountedToMechanismId: undefined,
@@ -707,6 +751,50 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
           });
           if (mechObj) {
             toast.info(`${currentObj.name} 已从 ${mechObj.name} 解除挂载`);
+          }
+        }
+      }
+      
+      // Product → product-interaction mechanism snapping
+      if (currentObj?.type === 'product') {
+        const nearestProductMount = findNearestProductMountPoint(
+          currentObj.x,
+          currentObj.y,
+          objects,
+          currentView as StandardViewType,
+          80
+        );
+        
+        if (nearestProductMount) {
+          const mountPos = getProductMountPointWorldPosition(nearestProductMount.mechanism, nearestProductMount.mountPoint.id, currentView as StandardViewType);
+          const mechPosX = nearestProductMount.mechanism.posX ?? 0;
+          const mechPosY = nearestProductMount.mechanism.posY ?? 0;
+          const mechPosZ = nearestProductMount.mechanism.posZ ?? 0;
+          const offsetX = (currentObj.posX ?? 0) - mechPosX;
+          const offsetY = (currentObj.posY ?? 0) - mechPosY;
+          const offsetZ = (currentObj.posZ ?? 0) - mechPosZ;
+          
+          updateObject(selectedId, {
+            mountedToMechanismId: nearestProductMount.mechanism.id,
+            mountPointId: nearestProductMount.mountPoint.id,
+            mountOffsetX: offsetX,
+            mountOffsetY: offsetY,
+            mountOffsetZ: offsetZ,
+            ...(mountPos ? { x: mountPos.x, y: mountPos.y } : {}),
+          });
+          
+          toast.success(`产品已吸附到 ${nearestProductMount.mechanism.name}`);
+        } else if (currentObj.mountedToMechanismId) {
+          const mechObj = objects.find(o => o.id === currentObj.mountedToMechanismId);
+          updateObject(selectedId, {
+            mountedToMechanismId: undefined,
+            mountPointId: undefined,
+            mountOffsetX: undefined,
+            mountOffsetY: undefined,
+            mountOffsetZ: undefined,
+          });
+          if (mechObj) {
+            toast.info(`产品已从 ${mechObj.name} 解除吸附`);
           }
         }
       }
@@ -1780,90 +1868,51 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 );
               })()}
               
-              {/* Product (center reference) */}
-              {isIsometric ? (
-                // Isometric 3D cube rendering
-                (() => {
-                  const hL = productDimensions.length / 2;
-                  const hW = productDimensions.width / 2;
-                  const hH = productDimensions.height / 2;
-                  // 8 corners of the box, projected to 2D
-                  const p = (x: number, y: number, z: number) => isoProject(x, y, z);
-                  // Top face: z = +hH
-                  const t0 = p(-hL, -hW, hH);
-                  const t1 = p(hL, -hW, hH);
-                  const t2 = p(hL, hW, hH);
-                  const t3 = p(-hL, hW, hH);
-                  // Bottom face: z = -hH
-                  const b0 = p(-hL, -hW, -hH);
-                  const b1 = p(hL, -hW, -hH);
-                  const b2 = p(hL, hW, -hH);
-                  const b3 = p(-hL, hW, -hH);
-                  
-                  const topFace = `${t0.x},${t0.y} ${t1.x},${t1.y} ${t2.x},${t2.y} ${t3.x},${t3.y}`;
-                  const frontFace = `${t0.x},${t0.y} ${t1.x},${t1.y} ${b1.x},${b1.y} ${b0.x},${b0.y}`;
-                  const rightFace = `${t1.x},${t1.y} ${t2.x},${t2.y} ${b2.x},${b2.y} ${b1.x},${b1.y}`;
-                  
-                  // Back edges (hidden, dashed)
-                  const leftFace = `${t0.x},${t0.y} ${t3.x},${t3.y} ${b3.x},${b3.y} ${b0.x},${b0.y}`;
-                  
-                  return (
-                    <g filter="url(#drop-shadow)">
-                      {/* Left face (partially visible) */}
-                      <polygon points={leftFace} fill="#0891b2" fillOpacity="0.3" stroke="#22d3ee" strokeWidth="1" strokeDasharray="4 2" />
-                      {/* Front face */}
-                      <polygon points={frontFace} fill="#06b6d4" fillOpacity="0.5" stroke="#22d3ee" strokeWidth="2" />
-                      {/* Right face */}
-                      <polygon points={rightFace} fill="#0e7490" fillOpacity="0.5" stroke="#22d3ee" strokeWidth="2" />
-                      {/* Top face */}
-                      <polygon points={topFace} fill="#67e8f9" fillOpacity="0.4" stroke="#22d3ee" strokeWidth="2" />
-                      
-                      {/* Face labels */}
-                      <text x={(t0.x + t1.x + b1.x + b0.x) / 4} y={(t0.y + t1.y + b1.y + b0.y) / 4 + 4} textAnchor="middle" fill="#e0f2fe" fontSize="10" fontWeight="500" opacity="0.8">正面</text>
-                      <text x={(t1.x + t2.x + b2.x + b1.x) / 4} y={(t1.y + t2.y + b2.y + b1.y) / 4 + 4} textAnchor="middle" fill="#e0f2fe" fontSize="10" fontWeight="500" opacity="0.8">侧面</text>
-                      <text x={(t0.x + t1.x + t2.x + t3.x) / 4} y={(t0.y + t1.y + t2.y + t3.y) / 4 + 4} textAnchor="middle" fill="#e0f2fe" fontSize="10" fontWeight="500" opacity="0.8">顶面</text>
-                      
-                      {/* Product dimensions label */}
-                      <text
-                        x={centerX}
-                        y={Math.max(b0.y, b1.y, b2.y) + 25}
-                        textAnchor="middle"
-                        fill="#94a3b8"
-                        fontSize="11"
-                      >
-                        产品 {productDimensions.length}×{productDimensions.width}×{productDimensions.height}mm
-                      </text>
-                    </g>
-                  );
-                })()
-              ) : (
-                <g filter="url(#drop-shadow)">
-                  <rect
-                    x={centerX - currentProductW / 2}
-                    y={centerY - currentProductH / 2}
-                    width={currentProductW}
-                    height={currentProductH}
-                    fill="url(#product-grad)"
-                    stroke="#22d3ee"
-                    strokeWidth="2"
-                    rx={6}
-                  />
-                  {/* Product cross-hair */}
-                  <line x1={centerX - 15} y1={centerY} x2={centerX + 15} y2={centerY} stroke="#fff" strokeWidth="1" opacity="0.5" />
-                  <line x1={centerX} y1={centerY - 15} x2={centerX} y2={centerY + 15} stroke="#fff" strokeWidth="1" opacity="0.5" />
-                  <circle cx={centerX} cy={centerY} r={4} fill="#fff" opacity="0.7" />
-                  
-                  <text
-                    x={centerX}
-                    y={centerY + currentProductH / 2 + 20}
-                    textAnchor="middle"
-                    fill="#94a3b8"
-                    fontSize="11"
-                  >
-                    产品 {productDimensions.length}×{productDimensions.width}×{productDimensions.height}mm
-                  </text>
-                </g>
-              )}
+              {/* Product (center reference) - rendered from product LayoutObject in draggable loop */}
+              {isIsometric && (() => {
+                const productObj = objects.find(o => o.type === 'product');
+                const pPosX = productObj?.posX ?? 0;
+                const pPosY = productObj?.posY ?? 0;
+                const pPosZ = productObj?.posZ ?? 0;
+                const hL = productDimensions.length / 2;
+                const hW = productDimensions.width / 2;
+                const hH = productDimensions.height / 2;
+                const p = (x: number, y: number, z: number) => isoProject(pPosX + x, pPosY + y, pPosZ + z);
+                const t0 = p(-hL, -hW, hH);
+                const t1 = p(hL, -hW, hH);
+                const t2 = p(hL, hW, hH);
+                const t3 = p(-hL, hW, hH);
+                const b0 = p(-hL, -hW, -hH);
+                const b1 = p(hL, -hW, -hH);
+                const b2 = p(hL, hW, -hH);
+                const b3 = p(-hL, hW, -hH);
+                
+                const topFace = `${t0.x},${t0.y} ${t1.x},${t1.y} ${t2.x},${t2.y} ${t3.x},${t3.y}`;
+                const frontFace = `${t0.x},${t0.y} ${t1.x},${t1.y} ${b1.x},${b1.y} ${b0.x},${b0.y}`;
+                const rightFace = `${t1.x},${t1.y} ${t2.x},${t2.y} ${b2.x},${b2.y} ${b1.x},${b1.y}`;
+                const leftFace = `${t0.x},${t0.y} ${t3.x},${t3.y} ${b3.x},${b3.y} ${b0.x},${b0.y}`;
+                
+                return (
+                  <g filter="url(#drop-shadow)">
+                    <polygon points={leftFace} fill="#0891b2" fillOpacity="0.3" stroke="#22d3ee" strokeWidth="1" strokeDasharray="4 2" />
+                    <polygon points={frontFace} fill="#06b6d4" fillOpacity="0.5" stroke="#22d3ee" strokeWidth="2" />
+                    <polygon points={rightFace} fill="#0e7490" fillOpacity="0.5" stroke="#22d3ee" strokeWidth="2" />
+                    <polygon points={topFace} fill="#67e8f9" fillOpacity="0.4" stroke="#22d3ee" strokeWidth="2" />
+                    <text x={(t0.x + t1.x + b1.x + b0.x) / 4} y={(t0.y + t1.y + b1.y + b0.y) / 4 + 4} textAnchor="middle" fill="#e0f2fe" fontSize="10" fontWeight="500" opacity="0.8">正面</text>
+                    <text x={(t1.x + t2.x + b2.x + b1.x) / 4} y={(t1.y + t2.y + b2.y + b1.y) / 4 + 4} textAnchor="middle" fill="#e0f2fe" fontSize="10" fontWeight="500" opacity="0.8">侧面</text>
+                    <text x={(t0.x + t1.x + t2.x + t3.x) / 4} y={(t0.y + t1.y + t2.y + t3.y) / 4 + 4} textAnchor="middle" fill="#e0f2fe" fontSize="10" fontWeight="500" opacity="0.8">顶面</text>
+                    <text
+                      x={(t0.x + t1.x + t2.x + t3.x) / 4}
+                      y={Math.max(b0.y, b1.y, b2.y) + 25}
+                      textAnchor="middle"
+                      fill="#94a3b8"
+                      fontSize="11"
+                    >
+                      产品 {productDimensions.length}×{productDimensions.width}×{productDimensions.height}mm
+                    </text>
+                  </g>
+                );
+              })()}
               
               {/* Connection lines between cameras and mounted mechanisms */}
               {objects.filter(obj => obj.type === 'camera' && obj.mountedToMechanismId).map(cam => {
@@ -1894,13 +1943,44 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                   </g>
                 );
               })}
+              
+              {/* Connection lines between products and mounted mechanisms */}
+              {objects.filter(obj => obj.type === 'product' && obj.mountedToMechanismId).map(prod => {
+                const mech = objects.find(o => o.id === prod.mountedToMechanismId);
+                if (!mech) return null;
+                return (
+                  <g key={`conn-product-${prod.id}`}>
+                    <line
+                      x1={prod.x}
+                      y1={prod.y}
+                      x2={mech.x}
+                      y2={mech.y}
+                      stroke="#22c55e"
+                      strokeWidth={2}
+                      strokeDasharray="8 4"
+                      opacity={0.6}
+                    />
+                    <circle cx={prod.x} cy={prod.y} r={4} fill="#06b6d4" opacity={0.8} />
+                    <circle cx={mech.x} cy={mech.y} r={4} fill="#ea580c" opacity={0.8} />
+                    <text
+                      x={(prod.x + mech.x) / 2}
+                      y={(prod.y + mech.y) / 2 - 6}
+                      textAnchor="middle"
+                      fontSize="12"
+                      style={{ pointerEvents: 'none' }}
+                    >📦</text>
+                  </g>
+                );
+              })}
 
-              {/* Draggable objects: render non-cameras first, then cameras on top */}
-              {objects.filter(obj => obj.type !== 'camera').map(obj => {
+              {/* Draggable objects: render product first, then mechanisms, then cameras on top */}
+              {/* Product object (draggable in non-isometric views) */}
+              {!isIsometric && objects.filter(obj => obj.type === 'product').map(obj => {
                 const isSelected = obj.id === selectedId;
                 const isSecondSelected = obj.id === secondSelectedId;
-                const isCamera = false;
-                const mechImage = obj.type === 'mechanism' ? getMechanismImageForObject(obj) : null;
+                const isMounted = !!obj.mountedToMechanismId;
+                const pW = currentView === 'side' ? productD : productW;
+                const pH = currentView === 'top' ? productD : productH;
                 
                 return (
                   <g 
@@ -1910,7 +1990,69 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                     style={{ cursor: obj.locked ? 'not-allowed' : panMode ? 'inherit' : 'move' }}
                     filter={isSelected ? "url(#glow)" : "url(#drop-shadow)"}
                   >
-                    {/* Selection outline */}
+                    {(isSelected || isSecondSelected) && (
+                      <rect
+                        x={-pW / 2 - 6}
+                        y={-pH / 2 - 6}
+                        width={pW + 12}
+                        height={pH + 12}
+                        fill="none"
+                        stroke={isMounted ? '#22c55e' : '#22d3ee'}
+                        strokeWidth="2"
+                        strokeDasharray="6 3"
+                        rx={8}
+                        className="animate-pulse"
+                      />
+                    )}
+                    <rect
+                      x={-pW / 2}
+                      y={-pH / 2}
+                      width={pW}
+                      height={pH}
+                      fill="url(#product-grad)"
+                      stroke={isMounted ? '#22c55e' : '#22d3ee'}
+                      strokeWidth={isSelected ? 3 : 2}
+                      rx={6}
+                    />
+                    {/* Cross-hair */}
+                    <line x1={-15} y1={0} x2={15} y2={0} stroke="#fff" strokeWidth="1" opacity="0.5" />
+                    <line x1={0} y1={-15} x2={0} y2={15} stroke="#fff" strokeWidth="1" opacity="0.5" />
+                    <circle cx={0} cy={0} r={4} fill="#fff" opacity="0.7" />
+                    
+                    {/* Label */}
+                    <text
+                      x={0}
+                      y={pH / 2 + 20}
+                      textAnchor="middle"
+                      fill="#94a3b8"
+                      fontSize="11"
+                    >
+                      {isMounted ? '📦 ' : ''}产品 {productDimensions.length}×{productDimensions.width}×{productDimensions.height}mm
+                    </text>
+                    
+                    <ResizeHandles
+                      object={{ ...obj, width: pW, height: pH }}
+                      isSelected={isSelected}
+                      onResize={handleResize}
+                    />
+                  </g>
+                );
+              })}
+              
+              {/* Mechanism objects */}
+              {objects.filter(obj => obj.type === 'mechanism').map(obj => {
+                const isSelected = obj.id === selectedId;
+                const isSecondSelected = obj.id === secondSelectedId;
+                const mechImage = getMechanismImageForObject(obj);
+                
+                return (
+                  <g 
+                    key={obj.id}
+                    transform={`translate(${obj.x}, ${obj.y}) rotate(${obj.rotation})`}
+                    onMouseDown={(e) => handleMouseDown(e, obj)}
+                    style={{ cursor: obj.locked ? 'not-allowed' : panMode ? 'inherit' : 'move' }}
+                    filter={isSelected ? "url(#glow)" : "url(#drop-shadow)"}
+                  >
                     {(isSelected || isSecondSelected) && (
                       <rect
                         x={-obj.width / 2 - 6}
@@ -1918,7 +2060,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                         width={obj.width + 12}
                         height={obj.height + 12}
                         fill="none"
-                        stroke={isCamera ? (isSecondSelected ? '#22c55e' : '#60a5fa') : (isSecondSelected ? '#22c55e' : '#60a5fa')}
+                        stroke={isSecondSelected ? '#22c55e' : '#60a5fa'}
                         strokeWidth="2"
                         strokeDasharray="6 3"
                         rx={8}
@@ -1926,87 +2068,45 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                       />
                     )}
                     
-                    {/* Object body */}
-                    {isCamera ? (
+                    {mechImage ? (
                       <>
-                        {/* Camera body */}
                         <rect
+                          x={-obj.width / 2 - 2}
+                          y={-obj.height / 2 - 2}
+                          width={obj.width + 4}
+                          height={obj.height + 4}
+                          fill="rgba(30, 41, 59, 0.9)"
+                          stroke={isSelected ? '#fb923c' : '#ea580c'}
+                          strokeWidth={isSelected ? 3 : 2}
+                          rx={6}
+                        />
+                        <image
+                          href={mechImage}
                           x={-obj.width / 2}
                           y={-obj.height / 2}
                           width={obj.width}
                           height={obj.height}
-                          fill={isSelected ? 'url(#camera-grad)' : '#2563eb'}
-                          stroke={isSelected ? '#93c5fd' : '#3b82f6'}
-                          strokeWidth={isSelected ? 3 : 2}
-                          rx={6}
+                          preserveAspectRatio="xMidYMid meet"
+                          style={{ pointerEvents: 'none' }}
                         />
-                        {/* Camera lens circle */}
-                        <circle
-                          cx={0}
-                          cy={-4}
-                          r={Math.min(obj.width, obj.height) * 0.22}
-                          fill="rgba(0,0,0,0.4)"
-                          stroke="#93c5fd"
-                          strokeWidth={2}
-                        />
-                        <circle
-                          cx={0}
-                          cy={-4}
-                          r={Math.min(obj.width, obj.height) * 0.12}
-                          fill="#60a5fa"
-                          opacity={0.8}
-                        />
-                        {/* Camera name label */}
-                        <rect x={-obj.width / 2} y={obj.height / 2 + 4} width={obj.width} height={18} rx={4} fill="rgba(30, 41, 59, 0.95)" />
-                        <text x={0} y={obj.height / 2 + 16} textAnchor="middle" fill="#93c5fd" fontSize="10" fontWeight="600">
-                          {obj.name}
-                        </text>
                       </>
                     ) : (
-                      <>
-                        {mechImage ? (
-                          <>
-                            <rect
-                              x={-obj.width / 2 - 2}
-                              y={-obj.height / 2 - 2}
-                              width={obj.width + 4}
-                              height={obj.height + 4}
-                              fill="rgba(30, 41, 59, 0.9)"
-                              stroke={isSelected ? '#fb923c' : '#ea580c'}
-                              strokeWidth={isSelected ? 3 : 2}
-                              rx={6}
-                            />
-                            <image
-                              href={mechImage}
-                              x={-obj.width / 2}
-                              y={-obj.height / 2}
-                              width={obj.width}
-                              height={obj.height}
-                              preserveAspectRatio="xMidYMid meet"
-                              style={{ pointerEvents: 'none' }}
-                            />
-                          </>
-                        ) : (
-                          <rect
-                            x={-obj.width / 2}
-                            y={-obj.height / 2}
-                            width={obj.width}
-                            height={obj.height}
-                            fill={isSelected ? 'url(#mech-grad)' : '#ea580c'}
-                            stroke={isSelected ? '#fdba74' : '#c2410c'}
-                            strokeWidth={isSelected ? 3 : 2}
-                            rx={6}
-                          />
-                        )}
-                        {/* Mechanism label */}
-                        <rect x={-obj.width / 2} y={obj.height / 2 + 4} width={obj.width} height={18} rx={4} fill="rgba(30, 41, 59, 0.95)" />
-                        <text x={0} y={obj.height / 2 + 16} textAnchor="middle" fill="#fdba74" fontSize="10" fontWeight="600">
-                          {obj.name}
-                        </text>
-                      </>
+                      <rect
+                        x={-obj.width / 2}
+                        y={-obj.height / 2}
+                        width={obj.width}
+                        height={obj.height}
+                        fill={isSelected ? 'url(#mech-grad)' : '#ea580c'}
+                        stroke={isSelected ? '#fdba74' : '#c2410c'}
+                        strokeWidth={isSelected ? 3 : 2}
+                        rx={6}
+                      />
                     )}
+                    <rect x={-obj.width / 2} y={obj.height / 2 + 4} width={obj.width} height={18} rx={4} fill="rgba(30, 41, 59, 0.95)" />
+                    <text x={0} y={obj.height / 2 + 16} textAnchor="middle" fill="#fdba74" fontSize="10" fontWeight="600">
+                      {obj.name}
+                    </text>
                     
-                    {/* Lock indicator */}
                     {obj.locked && (
                       <g transform={`translate(${obj.width / 2 - 6}, ${-obj.height / 2 - 6})`}>
                         <circle r={10} fill="#1e293b" stroke="#64748b" strokeWidth="1.5" />
@@ -2014,14 +2114,12 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                       </g>
                     )}
                     
-                    {/* Rotation indicator for selected */}
                     {isSelected && obj.rotation !== 0 && (
                       <text x={obj.width / 2 + 8} y={0} fill="#94a3b8" fontSize="9">
                         {obj.rotation}°
                       </text>
                     )}
                     
-                    {/* Resize handles for selected object */}
                     <ResizeHandles
                       object={obj}
                       isSelected={isSelected}
@@ -2170,7 +2268,20 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 </g>
               ))}
               
-
+              {/* Product mount points - show when dragging a product */}
+              {isDragging && !isIsometric && draggingObject?.type === 'product' && objects
+                .filter(o => o.type === 'mechanism' && PRODUCT_INTERACTION_TYPES.includes(o.mechanismType || ''))
+                .map(mech => (
+                <g key={`product-mount-${mech.id}`} transform={`translate(${mech.x}, ${mech.y})`}>
+                  <ProductMountPoints
+                    mechanismObject={mech}
+                    currentView={currentView as StandardViewType}
+                    productObject={draggingObject}
+                    draggingProductId={draggingObject.id}
+                    scale={scale}
+                  />
+                </g>
+              ))}
 
               {/* Operation hints moved to viewport-fixed overlay below */}
             </svg>
@@ -2226,9 +2337,17 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               <div className="w-3.5 h-3.5 rounded-sm bg-green-600 border border-green-500 opacity-70" />
               <span className="text-[10px] text-slate-300">相机（已吸附）</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-1">
               <div className="w-3.5 h-3.5 rounded-sm bg-amber-600 border border-amber-500" />
               <span className="text-[10px] text-slate-300">执行机构</span>
+            </div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-3.5 h-3.5 rounded-sm bg-cyan-600 border border-cyan-500" />
+              <span className="text-[10px] text-slate-300">产品（未吸附）</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3.5 h-3.5 rounded-sm bg-cyan-600 border border-green-500" />
+              <span className="text-[10px] text-slate-300">产品（已吸附）</span>
             </div>
           </div>
         </div>
