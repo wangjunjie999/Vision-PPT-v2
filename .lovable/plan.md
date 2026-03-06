@@ -1,44 +1,25 @@
 
 
-# FOV 输入改为两个独立数值框
+# 执行机构下拉菜单分组显示
 
-## 问题
+## 改动
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+在 `src/components/canvas/DraggableLayoutCanvas.tsx` 的添加机构 Popover 中（约1446-1465行），将 `enabledMechanisms` 按类型分为两组显示：
 
-## 修改方案
+### 分组定义
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
-
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
+```typescript
+const CAMERA_INTERACTION_TYPES = ['camera_mount', 'robot_arm'];
+const PRODUCT_INTERACTION_TYPES = ['conveyor', 'turntable', 'lift', 'stop', 'cylinder', 'gripper'];
 ```
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+- **相机交互类**（📷）：`camera_mount`（视觉支架）、`robot_arm`（机械臂）
+- **产品交互类**（📦）：`conveyor`（传送带）、`turntable`（旋转台）、`lift`（顶升机构）、`stop`（定位挡停）、`cylinder`（气缸）、`gripper`（夹爪）
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+### UI 结构
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+替换当前的平铺列表为分组列表，每组带一个小标题（如 `📷 相机交互` / `📦 产品交互`），中间用分隔线隔开。未匹配到任何分类的机构归入产品交互类。
 
-```
-[宽度输入] × [高度输入]
-```
-
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
-
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+### 文件改动
+- `src/components/canvas/DraggableLayoutCanvas.tsx` — 仅修改 Popover 内的机构列表渲染逻辑（约1446-1465行）
 
