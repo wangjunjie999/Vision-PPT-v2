@@ -2079,10 +2079,18 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                   <g opacity={isMounted ? 0.7 : 1}>
                     {connectionLine}
                     <g filter="url(#drop-shadow)">
-                      <polygon points={leftFace} fill={fillLeft} fillOpacity="0.3" stroke={strokeColor} strokeWidth="1" strokeDasharray="4 2" />
-                      <polygon points={frontFace} fill={fillFront} fillOpacity="0.5" stroke={strokeColor} strokeWidth="2" />
-                      <polygon points={rightFace} fill={fillRight} fillOpacity="0.5" stroke={strokeColor} strokeWidth="2" />
-                      <polygon points={topFace} fill={fillTop} fillOpacity="0.4" stroke={strokeColor} strokeWidth="2" />
+                      {/* Hidden back edges (dashed lines) */}
+                      <line x1={t2.x} y1={t2.y} x2={t3.x} y2={t3.y} stroke={strokeColor} strokeWidth="1" strokeDasharray="4 3" opacity={0.35} />
+                      <line x1={t3.x} y1={t3.y} x2={b3.x} y2={b3.y} stroke={strokeColor} strokeWidth="1" strokeDasharray="4 3" opacity={0.35} />
+                      <line x1={b3.x} y1={b3.y} x2={b2.x} y2={b2.y} stroke={strokeColor} strokeWidth="1" strokeDasharray="4 3" opacity={0.35} />
+                      <line x1={b0.x} y1={b0.y} x2={b3.x} y2={b3.y} stroke={strokeColor} strokeWidth="1" strokeDasharray="4 3" opacity={0.35} />
+                      <line x1={b0.x} y1={b0.y} x2={b1.x} y2={b1.y} stroke={strokeColor} strokeWidth="1" strokeDasharray="4 3" opacity={0.35} />
+                      <line x1={b1.x} y1={b1.y} x2={b2.x} y2={b2.y} stroke={strokeColor} strokeWidth="1" strokeDasharray="4 3" opacity={0.35} />
+                      {/* Visible faces */}
+                      <polygon points={leftFace} fill={fillLeft} fillOpacity="0.3" stroke={strokeColor} strokeWidth="1.5" />
+                      <polygon points={frontFace} fill={fillFront} fillOpacity="0.5" stroke={strokeColor} strokeWidth="1.5" />
+                      <polygon points={rightFace} fill={fillRight} fillOpacity="0.5" stroke={strokeColor} strokeWidth="1.5" />
+                      <polygon points={topFace} fill={fillTop} fillOpacity="0.4" stroke={strokeColor} strokeWidth="1.5" />
                       <text x={(t0.x + t1.x + b1.x + b0.x) / 4} y={(t0.y + t1.y + b1.y + b0.y) / 4 + 4} textAnchor="middle" fill={textColor} fontSize="10" fontWeight="500" opacity="0.8">正面</text>
                       <text x={(t1.x + t2.x + b2.x + b1.x) / 4} y={(t1.y + t2.y + b2.y + b1.y) / 4 + 4} textAnchor="middle" fill={textColor} fontSize="10" fontWeight="500" opacity="0.8">侧面</text>
                       <text x={(t0.x + t1.x + t2.x + t3.x) / 4} y={(t0.y + t1.y + t2.y + t3.y) / 4 + 4} textAnchor="middle" fill={textColor} fontSize="10" fontWeight="500" opacity="0.8">顶面</text>
