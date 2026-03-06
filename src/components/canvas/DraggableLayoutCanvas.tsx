@@ -2166,8 +2166,98 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 );
               })}
 
-              {/* Cameras rendered on top layer, with semi-transparency when mounted */}
-              {objects.filter(obj => obj.type === 'camera').map(obj => {
+              {/* Camera isometric 3D cubes - rendered AFTER product so cameras appear on top */}
+              {isIsometric && objects.filter(obj => obj.type === 'camera').map(camObj => {
+                const isMounted = !!camObj.mountedToMechanismId;
+                const parentMech = isMounted ? objects.find(o => o.id === camObj.mountedToMechanismId) : null;
+                
+                // If mounted, position camera relative to the parent mechanism's 3D position
+                const cPosX = isMounted && parentMech ? (parentMech.posX ?? 0) + (camObj.mountOffsetX ?? 0) : (camObj.posX ?? 0);
+                const cPosY = isMounted && parentMech ? (parentMech.posY ?? 0) + (camObj.mountOffsetY ?? 0) : (camObj.posY ?? 0);
+                const mechH = isMounted && parentMech ? (parentMech.height ?? 80) : 0;
+                const cPosZ = isMounted && parentMech ? (parentMech.posZ ?? 0) + mechH / 2 + (camObj.height ?? 50) / 2 + 10 : (camObj.posZ ?? 0);
+                
+                const cW = (camObj.width ?? 50) / 2;
+                const cH = (camObj.height ?? 50) / 2;
+                const cD = 25; // depth for camera box
+                
+                const p = (x: number, y: number, z: number) => isoProject(cPosX + x, cPosY + y, cPosZ + z);
+                const t0 = p(-cW, -cD, cH);
+                const t1 = p(cW, -cD, cH);
+                const t2 = p(cW, cD, cH);
+                const t3 = p(-cW, cD, cH);
+                const b0 = p(-cW, -cD, -cH);
+                const b1 = p(cW, -cD, -cH);
+                const b2 = p(cW, cD, -cH);
+                const b3 = p(-cW, cD, -cH);
+                
+                const topFace = `${t0.x},${t0.y} ${t1.x},${t1.y} ${t2.x},${t2.y} ${t3.x},${t3.y}`;
+                const frontFace = `${t0.x},${t0.y} ${t1.x},${t1.y} ${b1.x},${b1.y} ${b0.x},${b0.y}`;
+                const rightFace = `${t1.x},${t1.y} ${t2.x},${t2.y} ${b2.x},${b2.y} ${b1.x},${b1.y}`;
+                
+                // Colors: mounted = green, unmounted = blue
+                const fillFront = isMounted ? '#16a34a' : '#2563eb';
+                const fillRight = isMounted ? '#166534' : '#1d4ed8';
+                const fillTop = isMounted ? '#4ade80' : '#60a5fa';
+                const strokeColor = isMounted ? '#22c55e' : '#3b82f6';
+                const labelColor = isMounted ? '#86efac' : '#93c5fd';
+                
+                // Connection line to mounted mechanism
+                const connectionLine = isMounted && parentMech ? (() => {
+                  const camCenter = isoProject(cPosX, cPosY, cPosZ);
+                  const mechCenter = isoProject(parentMech.posX ?? 0, parentMech.posY ?? 0, parentMech.posZ ?? 0);
+                  return (
+                    <g>
+                      <line
+                        x1={camCenter.x} y1={camCenter.y}
+                        x2={mechCenter.x} y2={mechCenter.y}
+                        stroke="#22c55e" strokeWidth={2} strokeDasharray="6 3" opacity={0.5}
+                      />
+                      <circle cx={mechCenter.x} cy={mechCenter.y} r={3} fill="#ea580c" opacity={0.8} />
+                      <text
+                        x={(camCenter.x + mechCenter.x) / 2}
+                        y={(camCenter.y + mechCenter.y) / 2 - 6}
+                        textAnchor="middle" fontSize="11" style={{ pointerEvents: 'none' }}
+                      >🔗</text>
+                    </g>
+                  );
+                })() : null;
+                
+                const center = isoProject(cPosX, cPosY, cPosZ);
+                
+                return (
+                  <g key={`iso-cam-${camObj.id}`} opacity={isMounted ? 0.7 : 1}>
+                    {connectionLine}
+                    <g filter="url(#drop-shadow)">
+                      <polygon points={frontFace} fill={fillFront} fillOpacity="0.5" stroke={strokeColor} strokeWidth="2" />
+                      <polygon points={rightFace} fill={fillRight} fillOpacity="0.5" stroke={strokeColor} strokeWidth="2" />
+                      <polygon points={topFace} fill={fillTop} fillOpacity="0.4" stroke={strokeColor} strokeWidth="2" />
+                      {/* Lens circle on front face */}
+                      <circle
+                        cx={(t0.x + t1.x + b1.x + b0.x) / 4}
+                        cy={(t0.y + t1.y + b1.y + b0.y) / 4}
+                        r={Math.min(cW, cH) * 0.4}
+                        fill="rgba(0,0,0,0.3)"
+                        stroke={isMounted ? '#4ade80' : '#93c5fd'}
+                        strokeWidth={1.5}
+                      />
+                      <text
+                        x={center.x}
+                        y={Math.max(b0.y, b1.y, b2.y) + 18}
+                        textAnchor="middle"
+                        fill={labelColor}
+                        fontSize="10"
+                        fontWeight="600"
+                      >
+                        {isMounted ? '🔗 ' : ''}{camObj.name}
+                      </text>
+                    </g>
+                  </g>
+                );
+              })}
+
+              {/* Cameras rendered on top layer (2D views only), with semi-transparency when mounted */}
+              {!isIsometric && objects.filter(obj => obj.type === 'camera').map(obj => {
                 const isSelected = obj.id === selectedId;
                 const isSecondSelected = obj.id === secondSelectedId;
                 const isMounted = !!(obj as any).mountedToMechanismId;
