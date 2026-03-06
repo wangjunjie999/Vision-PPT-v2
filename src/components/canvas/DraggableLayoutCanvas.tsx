@@ -42,7 +42,8 @@ import { MechanismThumbnail } from '@/components/common/ImageWithFallback';
 import { compressImage, dataUrlToBlob, QUALITY_PRESETS, type QualityPreset } from '@/utils/imageCompression';
 import { getImageSaveErrorMessage } from '@/utils/errorMessages';
 
-type ViewType = 'front' | 'side' | 'top' | 'isometric';
+type StandardViewType = 'front' | 'side' | 'top';
+type ViewType = StandardViewType | 'isometric';
 
 interface DraggableLayoutCanvasProps {
   workstationId: string;
@@ -129,7 +130,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   const [isSavingView, setIsSavingView] = useState(false);
   const [isSavingAllViews, setIsSavingAllViews] = useState(false);
   const [saveProgress, setSaveProgress] = useState(0); // 0-100
-  const [viewSaveStatus, setViewSaveStatus] = useState<Record<ViewType, boolean>>({
+  const [viewSaveStatus, setViewSaveStatus] = useState<Record<StandardViewType, boolean>>({
     front: false,
     side: false,
     top: false,
