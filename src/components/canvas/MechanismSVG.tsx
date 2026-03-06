@@ -9,6 +9,17 @@ export interface CameraMountPoint {
   description: string;
 }
 
+export interface ProductMountPoint {
+  id: string;
+  type: 'surface' | 'clamp' | 'carrier' | 'center';
+  position: { x: number; y: number };
+  description: string;
+}
+
+// Mechanism category constants
+export const CAMERA_INTERACTION_TYPES = ['camera_mount', 'robot_arm'];
+export const PRODUCT_INTERACTION_TYPES = ['conveyor', 'turntable', 'lift', 'stop', 'cylinder', 'gripper'];
+
 interface MechanismSVGProps {
   type: string;
   width: number;
@@ -21,8 +32,11 @@ interface MechanismSVGProps {
   imageUrl?: string | null; // Optional override image URL from database
 }
 
-// Default camera mount points for each mechanism type
+// Camera mount points - ONLY for camera interaction mechanisms
 export const getMechanismMountPoints = (type: string, view: 'front' | 'side' | 'top'): CameraMountPoint[] => {
+  // Only camera interaction mechanisms have camera mount points
+  if (!CAMERA_INTERACTION_TYPES.includes(type)) return [];
+  
   const configs: Record<string, Record<string, CameraMountPoint[]>> = {
     robot_arm: {
       front: [
@@ -36,44 +50,6 @@ export const getMechanismMountPoints = (type: string, view: 'front' | 'side' | '
         { id: 'arm_end', type: 'arm_end', position: { x: 0.6, y: 0 }, rotation: 0, description: '末端法兰安装' },
       ],
     },
-    turntable: {
-      front: [
-        { id: 'top_center', type: 'top', position: { x: 0, y: -0.6 }, rotation: 0, description: '顶部中心安装' },
-        { id: 'side_left', type: 'side', position: { x: -0.5, y: -0.3 }, rotation: 90, description: '左侧安装' },
-        { id: 'side_right', type: 'side', position: { x: 0.5, y: -0.3 }, rotation: -90, description: '右侧安装' },
-      ],
-      side: [
-        { id: 'top_center', type: 'top', position: { x: 0, y: -0.6 }, rotation: 0, description: '顶部中心安装' },
-      ],
-      top: [
-        { id: 'center', type: 'top', position: { x: 0, y: 0 }, rotation: 0, description: '中心位置' },
-      ],
-    },
-    lift: {
-      front: [
-        { id: 'top_bracket', type: 'bracket', position: { x: 0.4, y: -0.5 }, rotation: 0, description: '顶部支架安装' },
-        { id: 'side_mount', type: 'side', position: { x: 0.5, y: 0 }, rotation: -90, description: '侧面安装' },
-      ],
-      side: [
-        { id: 'top_bracket', type: 'bracket', position: { x: 0, y: -0.5 }, rotation: 0, description: '顶部支架安装' },
-      ],
-      top: [
-        { id: 'platform', type: 'top', position: { x: 0, y: 0 }, rotation: 0, description: '平台上方' },
-      ],
-    },
-    conveyor: {
-      front: [
-        { id: 'gantry_top', type: 'top', position: { x: 0, y: -0.7 }, rotation: 0, description: '龙门架顶部' },
-        { id: 'gantry_left', type: 'angled', position: { x: -0.4, y: -0.5 }, rotation: 45, description: '龙门架左侧斜装' },
-        { id: 'gantry_right', type: 'angled', position: { x: 0.4, y: -0.5 }, rotation: -45, description: '龙门架右侧斜装' },
-      ],
-      side: [
-        { id: 'above', type: 'top', position: { x: 0, y: -0.6 }, rotation: 0, description: '传送带上方' },
-      ],
-      top: [
-        { id: 'line_center', type: 'top', position: { x: 0, y: 0 }, rotation: 0, description: '产线中心上方' },
-      ],
-    },
     camera_mount: {
       front: [
         { id: 'mount_plate', type: 'bracket', position: { x: 0, y: -0.3 }, rotation: 0, description: '相机安装板' },
@@ -85,37 +61,80 @@ export const getMechanismMountPoints = (type: string, view: 'front' | 'side' | '
         { id: 'mount_top', type: 'top', position: { x: 0, y: 0 }, rotation: 0, description: '安装点' },
       ],
     },
-    stop: {
+  };
+
+  return configs[type]?.[view] || [];
+};
+
+// Product mount points - ONLY for product interaction mechanisms
+export const getProductMountPoints = (type: string, view: 'front' | 'side' | 'top'): ProductMountPoint[] => {
+  if (!PRODUCT_INTERACTION_TYPES.includes(type)) return [];
+  
+  const configs: Record<string, Record<string, ProductMountPoint[]>> = {
+    conveyor: {
       front: [
-        { id: 'above', type: 'top', position: { x: 0, y: -0.5 }, rotation: 0, description: '挡停上方' },
+        { id: 'belt_surface', type: 'surface', position: { x: 0, y: -0.1 }, description: '传送带承载面' },
       ],
       side: [
-        { id: 'side', type: 'side', position: { x: 0.4, y: -0.2 }, rotation: -90, description: '侧面' },
+        { id: 'belt_surface', type: 'surface', position: { x: 0, y: -0.1 }, description: '传送带承载面' },
       ],
       top: [
-        { id: 'top', type: 'top', position: { x: 0, y: 0 }, rotation: 0, description: '顶部' },
+        { id: 'belt_center', type: 'center', position: { x: 0, y: 0 }, description: '传送带中心' },
+      ],
+    },
+    turntable: {
+      front: [
+        { id: 'disc_surface', type: 'surface', position: { x: 0, y: -0.3 }, description: '转盘台面' },
+      ],
+      side: [
+        { id: 'disc_surface', type: 'surface', position: { x: 0, y: -0.3 }, description: '转盘台面' },
+      ],
+      top: [
+        { id: 'disc_center', type: 'center', position: { x: 0, y: 0 }, description: '转盘中心' },
+      ],
+    },
+    lift: {
+      front: [
+        { id: 'platform_surface', type: 'surface', position: { x: 0, y: -0.2 }, description: '顶升平台面' },
+      ],
+      side: [
+        { id: 'platform_surface', type: 'surface', position: { x: 0, y: -0.2 }, description: '顶升平台面' },
+      ],
+      top: [
+        { id: 'platform_center', type: 'center', position: { x: 0, y: 0 }, description: '平台中心' },
+      ],
+    },
+    stop: {
+      front: [
+        { id: 'contact_surface', type: 'surface', position: { x: 0, y: -0.3 }, description: '挡停接触面' },
+      ],
+      side: [
+        { id: 'contact_surface', type: 'surface', position: { x: 0, y: -0.3 }, description: '挡停接触面' },
+      ],
+      top: [
+        { id: 'contact_center', type: 'center', position: { x: 0, y: 0 }, description: '接触中心' },
       ],
     },
     cylinder: {
       front: [
-        { id: 'rod_end', type: 'arm_end', position: { x: 0, y: -0.5 }, rotation: 0, description: '活塞杆末端' },
+        { id: 'rod_end', type: 'carrier', position: { x: 0, y: -0.5 }, description: '活塞杆末端' },
       ],
       side: [
-        { id: 'body_side', type: 'side', position: { x: 0.4, y: 0 }, rotation: -90, description: '缸体侧面' },
+        { id: 'rod_end', type: 'carrier', position: { x: 0, y: -0.5 }, description: '活塞杆末端' },
       ],
       top: [
-        { id: 'top', type: 'top', position: { x: 0, y: 0 }, rotation: 0, description: '顶部' },
+        { id: 'rod_center', type: 'center', position: { x: 0, y: 0 }, description: '杆端中心' },
       ],
     },
     gripper: {
       front: [
-        { id: 'center', type: 'top', position: { x: 0, y: -0.4 }, rotation: 0, description: '夹爪中心上方' },
+        { id: 'clamp_center', type: 'clamp', position: { x: 0, y: -0.2 }, description: '夹持中心' },
       ],
       side: [
-        { id: 'side', type: 'side', position: { x: 0.4, y: -0.2 }, rotation: -90, description: '侧面' },
+        { id: 'clamp_center', type: 'clamp', position: { x: 0, y: -0.2 }, description: '夹持中心' },
       ],
       top: [
-        { id: 'above', type: 'top', position: { x: 0, y: 0 }, rotation: 0, description: '上方' },
+        { id: 'clamp_center', type: 'center', position: { x: 0, y: 0 }, description: '夹持中心' },
       ],
     },
   };
