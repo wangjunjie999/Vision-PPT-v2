@@ -58,6 +58,7 @@ export const ObjectListPanel = memo(function ObjectListPanel({
   
   const cameras = objects.filter(o => o.type === 'camera');
   const mechanisms = objects.filter(o => o.type === 'mechanism');
+  const products = objects.filter(o => o.type === 'product');
   
   const allSelected = objects.length > 0 && selectedIds.length === objects.length;
   const someSelected = selectedIds.length > 0 && selectedIds.length < objects.length;
@@ -70,7 +71,7 @@ export const ObjectListPanel = memo(function ObjectListPanel({
       );
       return [
         obj.name,
-        obj.type === 'camera' ? '相机' : '机构',
+        obj.type === 'camera' ? '相机' : obj.type === 'product' ? '产品' : '机构',
         obj.posX ?? 0,
         obj.posY ?? 0,
         obj.posZ ?? 0,
@@ -95,6 +96,7 @@ export const ObjectListPanel = memo(function ObjectListPanel({
       Math.sqrt((obj.posX ?? 0) ** 2 + (obj.posY ?? 0) ** 2 + (obj.posZ ?? 0) ** 2)
     );
     const isCamera = obj.type === 'camera';
+    const isProduct = obj.type === 'product';
     
     return (
       <div
@@ -124,7 +126,7 @@ export const ObjectListPanel = memo(function ObjectListPanel({
           {/* Color indicator */}
           <div className={cn(
             "w-2.5 h-2.5 rounded-full mt-1.5 shrink-0",
-            isCamera ? "bg-blue-500" : "bg-orange-500"
+            isCamera ? "bg-blue-500" : isProduct ? "bg-cyan-500" : "bg-orange-500"
           )} />
           
           {/* Name and info */}
@@ -132,7 +134,7 @@ export const ObjectListPanel = memo(function ObjectListPanel({
             <div className="flex items-center gap-2">
               <span className={cn(
                 "text-sm font-medium truncate",
-                isCamera ? "text-blue-400" : "text-orange-400"
+                isCamera ? "text-blue-400" : isProduct ? "text-cyan-400" : "text-orange-400"
               )}>
                 {obj.name}
               </span>
