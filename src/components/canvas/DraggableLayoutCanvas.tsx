@@ -1654,6 +1654,58 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 <Switch checked={showObjectList} onCheckedChange={setShowObjectList} id="table" className="scale-75" />
                 <Label htmlFor="table" className="text-xs cursor-pointer">对象清单</Label>
               </div>
+              
+              <div className="h-4 w-px bg-border" />
+              
+              {/* Layer order control */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1.5 h-7 text-xs">
+                    <Layers className="h-3 w-3" />
+                    层级设置
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-3" align="start">
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold text-muted-foreground mb-2">渲染层级（上方 = 最前）</div>
+                    {[...layerOrder].reverse().map((type, reverseIdx) => {
+                      const realIdx = layerOrder.length - 1 - reverseIdx;
+                      const info = { mechanism: { icon: '🔧', label: '执行机构' }, product: { icon: '📦', label: '产品' }, camera: { icon: '📷', label: '相机' } }[type];
+                      return (
+                        <div key={type} className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-muted/50 border border-border/50">
+                          <span className="text-xs font-medium flex items-center gap-1.5">
+                            <span>{info.icon}</span>
+                            {info.label}
+                          </span>
+                          <div className="flex gap-0.5">
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="h-5 w-5"
+                              disabled={realIdx === layerOrder.length - 1}
+                              onClick={() => moveLayer(realIdx, 'up')}
+                            >
+                              <ChevronUp className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="h-5 w-5"
+                              disabled={realIdx === 0}
+                              onClick={() => moveLayer(realIdx, 'down')}
+                            >
+                              <ChevronDown className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div className="text-[10px] text-muted-foreground mt-1">
+                      上方的对象会显示在最前面
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         </CollapsibleContent>
@@ -1943,7 +1995,11 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 );
               })}
 
-              {/* Draggable objects: render mechanisms first, then products on top, then cameras on top */}
+              {/* Dynamic layer rendering - order controlled by layerOrder */}
+              {layerOrder.map((layerType) => (
+                <g key={layerType}>
+                {layerType === 'mechanism' && (
+                  <>
               {/* Mechanism objects */}
               {objects.filter(obj => obj.type === 'mechanism').map(obj => {
                 const isSelected = obj.id === selectedId;
@@ -2033,8 +2089,11 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                   </g>
                 );
               })}
-
-              {/* Product isometric 3D cube - rendered AFTER mechanisms so it appears on top */}
+                  </>
+                )}
+                {layerType === 'product' && (
+                  <>
+              {/* Product isometric 3D cube */}
               {isIsometric && (() => {
                 const productObj = objects.find(o => o.type === 'product');
                 const isMounted = !!productObj?.mountedToMechanismId;
@@ -2187,8 +2246,11 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                   </g>
                 );
               })}
-
-              {/* Camera isometric 3D cubes - rendered AFTER product so cameras appear on top */}
+                  </>
+                )}
+                {layerType === 'camera' && (
+                  <>
+              {/* Camera isometric 3D cubes */}
               {isIsometric && objects.filter(obj => obj.type === 'camera').map(camObj => {
                 const isMounted = !!camObj.mountedToMechanismId;
                 const parentMech = isMounted ? objects.find(o => o.id === camObj.mountedToMechanismId) : null;
@@ -2377,6 +2439,10 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                   </g>
                 );
               })}
+                  </>
+                )}
+                </g>
+              ))}
 
               {isDragging && draggingObject && smartSnapEnabled && (
                 <AlignmentGuides
