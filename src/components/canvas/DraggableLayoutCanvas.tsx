@@ -1996,53 +1996,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
           </ContextMenuContent>
         </ContextMenu>
         
-        {/* Viewport-fixed HUD overlays - stay at window edges during zoom/pan */}
-        {/* Top-left: Coordinate system legend */}
-        <div className="absolute top-4 left-4 pointer-events-none z-10">
-          <svg width={100} height={60} viewBox="0 0 100 60">
-            <rect x={0} y={0} width={100} height={60} rx={8} fill="rgba(30, 41, 59, 0.9)" stroke="rgba(148, 163, 184, 0.3)" strokeWidth={1} />
-            <text x={50} y={18} textAnchor="middle" fill="#94a3b8" fontSize={10} fontWeight="500">坐标系</text>
-            {currentView === 'front' && (
-              <>
-                <line x1={30} y1={38} x2={80} y2={38} stroke="#ef4444" strokeWidth={2} />
-                <text x={85} y={42} fill="#ef4444" fontSize={11} fontWeight="600">X</text>
-                <line x1={50} y1={52} x2={50} y2={24} stroke="#3b82f6" strokeWidth={2} />
-                <text x={50} y={16} textAnchor="middle" fill="#3b82f6" fontSize={11} fontWeight="600">Z</text>
-              </>
-            )}
-            {currentView === 'side' && (
-              <>
-                <line x1={30} y1={38} x2={80} y2={38} stroke="#22c55e" strokeWidth={2} />
-                <text x={85} y={42} fill="#22c55e" fontSize={11} fontWeight="600">Y</text>
-                <line x1={50} y1={52} x2={50} y2={24} stroke="#3b82f6" strokeWidth={2} />
-                <text x={50} y={16} textAnchor="middle" fill="#3b82f6" fontSize={11} fontWeight="600">Z</text>
-              </>
-            )}
-            {currentView === 'top' && (
-              <>
-                <line x1={30} y1={38} x2={80} y2={38} stroke="#ef4444" strokeWidth={2} />
-                <text x={85} y={42} fill="#ef4444" fontSize={11} fontWeight="600">X</text>
-                <line x1={50} y1={24} x2={50} y2={52} stroke="#22c55e" strokeWidth={2} />
-                <text x={50} y={58} textAnchor="middle" fill="#22c55e" fontSize={11} fontWeight="600">Y</text>
-              </>
-            )}
-          </svg>
-        </div>
-
-        {/* Bottom-left: Scale bar + operation hints */}
-        <div className="absolute bottom-4 left-4 pointer-events-none z-10 flex flex-col gap-1">
-          <svg width={Math.max(100 * scale + 90, 160)} height={44} viewBox={`0 0 ${Math.max(100 * scale + 90, 160)} 44`}>
-            <rect x={0} y={0} width={Math.max(100 * scale + 90, 160)} height={44} rx={7} fill="rgba(30, 41, 59, 0.95)" />
-            <line x1={12} y1={22} x2={12 + 100 * scale} y2={22} stroke="white" strokeWidth={2.5} />
-            <line x1={12} y1={14} x2={12} y2={30} stroke="white" strokeWidth={2.5} />
-            <line x1={12 + 100 * scale} y1={14} x2={12 + 100 * scale} y2={30} stroke="white" strokeWidth={2.5} />
-            <text x={12 + 50 * scale} y={14} textAnchor="middle" fill="white" fontSize={13} fontWeight="600">100mm</text>
-            <text x={12 + 100 * scale + 18} y={27} fill="#94a3b8" fontSize={11}>比例 1:{Math.round(1 / scale)}</text>
-          </svg>
-          <div className="bg-slate-800/90 rounded-md px-2 py-1 text-[11px] text-slate-400">
-            点击选择 | 拖拽移动 | Shift+点击测距 | 拖角调整大小 | 滚轮缩放 | 空格+拖拽平移
-          </div>
-        </div>
+        {/* Viewport-fixed HUD overlays */}
 
         {/* Bottom-right: Legend */}
         <div className="absolute bottom-20 right-4 pointer-events-none z-10">
