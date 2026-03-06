@@ -2231,6 +2231,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                   <g key={`iso-cam-${camObj.id}`} opacity={isMounted ? 0.7 : 1}>
                     {connectionLine}
                     <g filter="url(#drop-shadow)">
+                      <polygon points={leftFace} fill={fillLeft} fillOpacity="0.3" stroke={strokeColor} strokeWidth="1" strokeDasharray="4 2" />
                       <polygon points={frontFace} fill={fillFront} fillOpacity="0.5" stroke={strokeColor} strokeWidth="2" />
                       <polygon points={rightFace} fill={fillRight} fillOpacity="0.5" stroke={strokeColor} strokeWidth="2" />
                       <polygon points={topFace} fill={fillTop} fillOpacity="0.4" stroke={strokeColor} strokeWidth="2" />
