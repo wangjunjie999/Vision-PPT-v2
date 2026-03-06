@@ -1868,51 +1868,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 );
               })()}
               
-              {/* Product (center reference) - rendered from product LayoutObject in draggable loop */}
-              {isIsometric && (() => {
-                const productObj = objects.find(o => o.type === 'product');
-                const pPosX = productObj?.posX ?? 0;
-                const pPosY = productObj?.posY ?? 0;
-                const pPosZ = productObj?.posZ ?? 0;
-                const hL = productDimensions.length / 2;
-                const hW = productDimensions.width / 2;
-                const hH = productDimensions.height / 2;
-                const p = (x: number, y: number, z: number) => isoProject(pPosX + x, pPosY + y, pPosZ + z);
-                const t0 = p(-hL, -hW, hH);
-                const t1 = p(hL, -hW, hH);
-                const t2 = p(hL, hW, hH);
-                const t3 = p(-hL, hW, hH);
-                const b0 = p(-hL, -hW, -hH);
-                const b1 = p(hL, -hW, -hH);
-                const b2 = p(hL, hW, -hH);
-                const b3 = p(-hL, hW, -hH);
-                
-                const topFace = `${t0.x},${t0.y} ${t1.x},${t1.y} ${t2.x},${t2.y} ${t3.x},${t3.y}`;
-                const frontFace = `${t0.x},${t0.y} ${t1.x},${t1.y} ${b1.x},${b1.y} ${b0.x},${b0.y}`;
-                const rightFace = `${t1.x},${t1.y} ${t2.x},${t2.y} ${b2.x},${b2.y} ${b1.x},${b1.y}`;
-                const leftFace = `${t0.x},${t0.y} ${t3.x},${t3.y} ${b3.x},${b3.y} ${b0.x},${b0.y}`;
-                
-                return (
-                  <g filter="url(#drop-shadow)">
-                    <polygon points={leftFace} fill="#0891b2" fillOpacity="0.3" stroke="#22d3ee" strokeWidth="1" strokeDasharray="4 2" />
-                    <polygon points={frontFace} fill="#06b6d4" fillOpacity="0.5" stroke="#22d3ee" strokeWidth="2" />
-                    <polygon points={rightFace} fill="#0e7490" fillOpacity="0.5" stroke="#22d3ee" strokeWidth="2" />
-                    <polygon points={topFace} fill="#67e8f9" fillOpacity="0.4" stroke="#22d3ee" strokeWidth="2" />
-                    <text x={(t0.x + t1.x + b1.x + b0.x) / 4} y={(t0.y + t1.y + b1.y + b0.y) / 4 + 4} textAnchor="middle" fill="#e0f2fe" fontSize="10" fontWeight="500" opacity="0.8">正面</text>
-                    <text x={(t1.x + t2.x + b2.x + b1.x) / 4} y={(t1.y + t2.y + b2.y + b1.y) / 4 + 4} textAnchor="middle" fill="#e0f2fe" fontSize="10" fontWeight="500" opacity="0.8">侧面</text>
-                    <text x={(t0.x + t1.x + t2.x + t3.x) / 4} y={(t0.y + t1.y + t2.y + t3.y) / 4 + 4} textAnchor="middle" fill="#e0f2fe" fontSize="10" fontWeight="500" opacity="0.8">顶面</text>
-                    <text
-                      x={(t0.x + t1.x + t2.x + t3.x) / 4}
-                      y={Math.max(b0.y, b1.y, b2.y) + 25}
-                      textAnchor="middle"
-                      fill="#94a3b8"
-                      fontSize="11"
-                    >
-                      产品 {productDimensions.length}×{productDimensions.width}×{productDimensions.height}mm
-                    </text>
-                  </g>
-                );
-              })()}
+              {/* Product isometric 3D cube - moved below, rendered after mechanisms */}
               
               {/* Connection lines between cameras and mounted mechanisms */}
               {objects.filter(obj => obj.type === 'camera' && obj.mountedToMechanismId).map(cam => {
@@ -2063,6 +2019,86 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                   </g>
                 );
               })}
+
+              {/* Product isometric 3D cube - rendered AFTER mechanisms so it appears on top */}
+              {isIsometric && (() => {
+                const productObj = objects.find(o => o.type === 'product');
+                const isMounted = !!productObj?.mountedToMechanismId;
+                const parentMech = isMounted ? objects.find(o => o.id === productObj?.mountedToMechanismId) : null;
+                
+                // If mounted, position product on top of the mechanism's 3D position
+                const pPosX = isMounted && parentMech ? (parentMech.posX ?? 0) : (productObj?.posX ?? 0);
+                const pPosY = isMounted && parentMech ? (parentMech.posY ?? 0) : (productObj?.posY ?? 0);
+                const mechHeight = isMounted && parentMech ? (parentMech.height ?? 80) : 0;
+                const pPosZ = isMounted && parentMech ? (parentMech.posZ ?? 0) + mechHeight / 2 + productDimensions.height / 2 : (productObj?.posZ ?? 0);
+                
+                const hL = productDimensions.length / 2;
+                const hW = productDimensions.width / 2;
+                const hH = productDimensions.height / 2;
+                const p = (x: number, y: number, z: number) => isoProject(pPosX + x, pPosY + y, pPosZ + z);
+                const t0 = p(-hL, -hW, hH);
+                const t1 = p(hL, -hW, hH);
+                const t2 = p(hL, hW, hH);
+                const t3 = p(-hL, hW, hH);
+                const b0 = p(-hL, -hW, -hH);
+                const b1 = p(hL, -hW, -hH);
+                const b2 = p(hL, hW, -hH);
+                const b3 = p(-hL, hW, -hH);
+                
+                const topFace = `${t0.x},${t0.y} ${t1.x},${t1.y} ${t2.x},${t2.y} ${t3.x},${t3.y}`;
+                const frontFace = `${t0.x},${t0.y} ${t1.x},${t1.y} ${b1.x},${b1.y} ${b0.x},${b0.y}`;
+                const rightFace = `${t1.x},${t1.y} ${t2.x},${t2.y} ${b2.x},${b2.y} ${b1.x},${b1.y}`;
+                const leftFace = `${t0.x},${t0.y} ${t3.x},${t3.y} ${b3.x},${b3.y} ${b0.x},${b0.y}`;
+                
+                // Colors: mounted = green, unmounted = cyan
+                const fillLeft = isMounted ? '#15803d' : '#0891b2';
+                const fillFront = isMounted ? '#16a34a' : '#06b6d4';
+                const fillRight = isMounted ? '#166534' : '#0e7490';
+                const fillTop = isMounted ? '#4ade80' : '#67e8f9';
+                const strokeColor = isMounted ? '#22c55e' : '#22d3ee';
+                const textColor = isMounted ? '#bbf7d0' : '#e0f2fe';
+                const labelColor = isMounted ? '#86efac' : '#94a3b8';
+                
+                // Connection line from product to mounted mechanism in isometric view
+                const connectionLine = isMounted && parentMech ? (() => {
+                  const prodCenter = isoProject(pPosX, pPosY, pPosZ);
+                  const mechCenter = isoProject(parentMech.posX ?? 0, parentMech.posY ?? 0, parentMech.posZ ?? 0);
+                  return (
+                    <g>
+                      <line
+                        x1={prodCenter.x} y1={prodCenter.y}
+                        x2={mechCenter.x} y2={mechCenter.y}
+                        stroke="#22c55e" strokeWidth={2} strokeDasharray="6 3" opacity={0.5}
+                      />
+                      <circle cx={mechCenter.x} cy={mechCenter.y} r={3} fill="#ea580c" opacity={0.8} />
+                    </g>
+                  );
+                })() : null;
+                
+                return (
+                  <g opacity={isMounted ? 0.7 : 1}>
+                    {connectionLine}
+                    <g filter="url(#drop-shadow)">
+                      <polygon points={leftFace} fill={fillLeft} fillOpacity="0.3" stroke={strokeColor} strokeWidth="1" strokeDasharray="4 2" />
+                      <polygon points={frontFace} fill={fillFront} fillOpacity="0.5" stroke={strokeColor} strokeWidth="2" />
+                      <polygon points={rightFace} fill={fillRight} fillOpacity="0.5" stroke={strokeColor} strokeWidth="2" />
+                      <polygon points={topFace} fill={fillTop} fillOpacity="0.4" stroke={strokeColor} strokeWidth="2" />
+                      <text x={(t0.x + t1.x + b1.x + b0.x) / 4} y={(t0.y + t1.y + b1.y + b0.y) / 4 + 4} textAnchor="middle" fill={textColor} fontSize="10" fontWeight="500" opacity="0.8">正面</text>
+                      <text x={(t1.x + t2.x + b2.x + b1.x) / 4} y={(t1.y + t2.y + b2.y + b1.y) / 4 + 4} textAnchor="middle" fill={textColor} fontSize="10" fontWeight="500" opacity="0.8">侧面</text>
+                      <text x={(t0.x + t1.x + t2.x + t3.x) / 4} y={(t0.y + t1.y + t2.y + t3.y) / 4 + 4} textAnchor="middle" fill={textColor} fontSize="10" fontWeight="500" opacity="0.8">顶面</text>
+                      <text
+                        x={(t0.x + t1.x + t2.x + t3.x) / 4}
+                        y={Math.max(b0.y, b1.y, b2.y) + 25}
+                        textAnchor="middle"
+                        fill={labelColor}
+                        fontSize="11"
+                      >
+                        {isMounted ? '📦 ' : ''}产品 {productDimensions.length}×{productDimensions.width}×{productDimensions.height}mm
+                      </text>
+                    </g>
+                  </g>
+                );
+              })()}
 
               {/* Product objects rendered on top of mechanisms, with mounted styling */}
               {!isIsometric && objects.filter(obj => obj.type === 'product').map(obj => {
