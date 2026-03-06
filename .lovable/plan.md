@@ -1,44 +1,66 @@
 
 
-# FOV 输入改为两个独立数值框
+# 合并保存流程：布局数据 + 三视图截图一键保存
 
-## 问题
+## 当前情况分析
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+### 三视图联动（已正常工作）
+当前系统使用统一的 3D 坐标系（`posX`, `posY`, `posZ`），在不同视图中拖拽对象时只修改对应的两个轴：
+- 正视图拖拽 → 更新 X, Z（Y 不变）
+- 侧视图拖拽 → 更新 Y, Z（X 不变）  
+- 俯视图拖拽 → 更新 X, Y（Z 不变）
 
-## 修改方案
+切换视图时会重新投影所有对象（`useEffect` 第 410-415 行），所以**修改一个视图后切换到其他视图，位置会自动同步**。这部分逻辑已经正确实现。
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+### 保存流程的问题
+当前工具栏有两个独立按钮：
+1. **「保存布局」** — 只保存对象位置数据到数据库
+2. **「保存三视图」** — 只保存三个视图的截图到存储
 
-在 `ModuleFormState` 中添加：
+用户需要点击两次才能完成完整保存，增加了操作步骤。
+
+## 改动方案
+
+**文件**：`src/components/canvas/DraggableLayoutCanvas.tsx`
+
+### 1. 合并为一个「保存」按钮
+将 `handleSave`（保存布局数据）和 `saveAllViewSnapshots`（保存截图）合并为一个 `handleSaveAll` 函数：
+
+```typescript
+const handleSaveAll = async () => {
+  setIsSaving(true);
+  setSaveProgress(0);
+  try {
+    // Step 1: 先保存布局数据
+    const updates = {
+      layout_objects: objects,
+      grid_enabled: gridEnabled,
+      snap_enabled: snapEnabled,
+      show_distances: showDistances,
+    };
+    if (layout?.id) {
+      await updateLayout(layout.id, updates);
+    } else {
+      await addLayout({ workstation_id: workstationId, name: workstation?.name || 'Layout', ...updates });
+    }
+    
+    // Step 2: 再保存三视图截图
+    // (复用现有 saveAllViewSnapshots 的截图+上传逻辑)
+    ...
+    
+    toast.success('布局和视图已保存');
+  } finally {
+    setIsSaving(false);
+    setSaveProgress(0);
+  }
+};
 ```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+### 2. 简化工具栏按钮
+- 移除单独的「保存布局」和「保存三视图」两个按钮
+- 替换为一个「保存」按钮，带进度条显示截图保存进度
+- 保留质量选择下拉菜单
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
-
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
-
-```
-[宽度输入] × [高度输入]
-```
-
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
-
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+### 3. 移除单视图保存功能
+`saveCurrentViewSnapshot` 函数不再需要暴露，因为保存操作统一为一次性保存全部。
 
