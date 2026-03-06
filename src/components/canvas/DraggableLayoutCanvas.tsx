@@ -812,9 +812,13 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     toast.success(`已添加 ${newMech.name}`);
   }, [objects, project3DTo2D, currentView, productDimensions.width, scale]);
 
-  const handleSave = async () => {
+  // Unified save: layout data + three-view snapshots in one click
+  const handleSaveAll = async () => {
     setIsSaving(true);
+    setIsSavingAllViews(true);
+    setSaveProgress(0);
     try {
+      // Step 1: Save layout data (10% progress)
       const updates = {
         layout_objects: objects,
         grid_enabled: gridEnabled,
@@ -822,21 +826,95 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         show_distances: showDistances,
       };
       
-      if (layout?.id) {
-        await updateLayout(layout.id, updates as any);
+      let layoutId = layout?.id;
+      if (layoutId) {
+        await updateLayout(layoutId, updates as any);
       } else {
-        await addLayout({
+        const newLayout = await addLayout({
           workstation_id: workstationId,
           name: workstation?.name || 'Layout',
           ...updates
         } as any);
+        layoutId = (newLayout as any)?.id;
       }
-      toast.success('布局已保存');
+      setSaveProgress(10);
+      
+      // Step 2: Save three-view snapshots
+      const svg = canvasRef.current;
+      if (svg && layoutId) {
+        const views: ViewType[] = ['front', 'side', 'top'];
+        const preset = QUALITY_PRESETS[saveQuality];
+        const viewImages: { view: ViewType; blob: Blob }[] = [];
+        
+        // Generate images sequentially (need to switch views)
+        for (let i = 0; i < views.length; i++) {
+          const view = views[i];
+          setCurrentView(view);
+          await new Promise(r => setTimeout(r, 200));
+          
+          const dataUrl = await toPng(svg as unknown as HTMLElement, { 
+            quality: preset.quality, 
+            pixelRatio: preset.pixelRatio,
+            backgroundColor: '#1e293b',
+            skipFonts: true,
+          });
+          
+          const originalBlob = dataUrlToBlob(dataUrl);
+          const compressedBlob = await compressImage(originalBlob, {
+            quality: preset.quality,
+            maxWidth: preset.maxWidth,
+            maxHeight: preset.maxHeight,
+            format: 'image/jpeg',
+          });
+          
+          viewImages.push({ view, blob: compressedBlob });
+          setSaveProgress(10 + Math.round(((i + 1) / views.length) * 45));
+        }
+        
+        // Upload all views in parallel
+        const uploadPromises = viewImages.map(async ({ view, blob }, index) => {
+          const fileName = `${workstationId}/${view}-${Date.now()}.jpg`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('workstation-views')
+            .upload(fileName, blob, { 
+              upsert: true,
+              contentType: 'image/jpeg',
+            });
+          
+          if (uploadError) throw uploadError;
+          
+          const { data: urlData } = supabase.storage
+            .from('workstation-views')
+            .getPublicUrl(fileName);
+          
+          setSaveProgress(55 + Math.round(((index + 1) / views.length) * 45));
+          
+          return { view, url: urlData.publicUrl };
+        });
+        
+        const uploadResults = await Promise.all(uploadPromises);
+        
+        // Batch update layout with all URLs
+        const updateData: Record<string, any> = {};
+        uploadResults.forEach(({ view, url }) => {
+          updateData[`${view}_view_image_url`] = url;
+          updateData[`${view}_view_saved`] = true;
+        });
+        
+        await updateLayout(layoutId, updateData as any);
+        setViewSaveStatus({ front: true, side: true, top: true });
+      }
+      
+      setSaveProgress(100);
+      toast.success('布局和三视图已保存');
     } catch (error) {
-      console.error('Save error:', error);
-      toast.error('保存失败');
+      console.error('Save all error:', error);
+      toast.error('保存失败: ' + (error instanceof Error ? error.message : '未知错误'));
     } finally {
       setIsSaving(false);
+      setIsSavingAllViews(false);
+      setSaveProgress(0);
     }
   };
 
@@ -1264,37 +1342,31 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
             </Tooltip>
           </TooltipProvider>
 
-          <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-1.5 h-8">
-            {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-            保存布局
-          </Button>
-          
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 
-                  variant="secondary" 
                   size="sm" 
-                  onClick={saveAllViewSnapshots} 
-                  disabled={isSavingView || isSavingAllViews}
-                  className="gap-1.5 h-8 min-w-[110px] relative overflow-hidden"
+                  onClick={handleSaveAll} 
+                  disabled={isSaving || isSavingAllViews}
+                  className="gap-1.5 h-8 min-w-[120px] relative overflow-hidden"
                 >
                   {isSavingAllViews && saveProgress > 0 && (
                     <div 
-                      className="absolute left-0 top-0 bottom-0 bg-primary/20 transition-all duration-300"
+                      className="absolute left-0 top-0 bottom-0 bg-primary-foreground/20 transition-all duration-300"
                       style={{ width: `${saveProgress}%` }}
                     />
                   )}
                   <span className="relative flex items-center gap-1.5">
-                    {isSavingAllViews ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
-                    {isSavingAllViews ? `${saveProgress}%` : '保存三视图'}
-                    {!isSavingAllViews && viewSaveStatus.front && viewSaveStatus.side && viewSaveStatus.top && (
+                    {isSaving || isSavingAllViews ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                    {isSavingAllViews ? `保存中 ${saveProgress}%` : '保存'}
+                    {!isSaving && !isSavingAllViews && viewSaveStatus.front && viewSaveStatus.side && viewSaveStatus.top && (
                       <Check className="h-3 w-3 text-green-500" />
                     )}
                   </span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>一键保存正视图、侧视图、俯视图截图，用于PPT生成</TooltipContent>
+              <TooltipContent>一键保存布局数据 + 三视图截图</TooltipContent>
             </Tooltip>
           </TooltipProvider>
           
