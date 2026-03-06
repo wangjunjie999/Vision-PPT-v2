@@ -1870,8 +1870,8 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               
               {/* Product isometric 3D cube - moved below, rendered after mechanisms */}
               
-              {/* Connection lines between cameras and mounted mechanisms */}
-              {objects.filter(obj => obj.type === 'camera' && obj.mountedToMechanismId).map(cam => {
+              {/* Connection lines between cameras and mounted mechanisms (2D only, isometric handled in 3D block) */}
+              {!isIsometric && objects.filter(obj => obj.type === 'camera' && obj.mountedToMechanismId).map(cam => {
                 const mech = objects.find(o => o.id === cam.mountedToMechanismId);
                 if (!mech) return null;
                 return (
