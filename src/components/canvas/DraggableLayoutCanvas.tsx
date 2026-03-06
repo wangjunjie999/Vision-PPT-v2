@@ -120,6 +120,20 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   // Show object list panel
   const [showObjectList, setShowObjectList] = useState(true);
   
+  // Layer rendering order: bottom to top
+  type LayerType = 'mechanism' | 'product' | 'camera';
+  const [layerOrder, setLayerOrder] = useState<LayerType[]>(['mechanism', 'product', 'camera']);
+  
+  const moveLayer = useCallback((index: number, direction: 'up' | 'down') => {
+    setLayerOrder(prev => {
+      const newOrder = [...prev];
+      const newIndex = direction === 'up' ? index + 1 : index - 1;
+      if (newIndex < 0 || newIndex >= newOrder.length) return prev;
+      [newOrder[index], newOrder[newIndex]] = [newOrder[newIndex], newOrder[index]];
+      return newOrder;
+    });
+  }, []);
+  
   
   // Toolbar settings row collapsed
   const [settingsCollapsed, setSettingsCollapsed] = useState(false);
