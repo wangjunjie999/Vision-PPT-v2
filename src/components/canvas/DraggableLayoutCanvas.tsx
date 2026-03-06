@@ -42,7 +42,7 @@ import { MechanismThumbnail } from '@/components/common/ImageWithFallback';
 import { compressImage, dataUrlToBlob, QUALITY_PRESETS, type QualityPreset } from '@/utils/imageCompression';
 import { getImageSaveErrorMessage } from '@/utils/errorMessages';
 
-type ViewType = 'front' | 'side' | 'top';
+type ViewType = 'front' | 'side' | 'top' | 'isometric';
 
 interface DraggableLayoutCanvasProps {
   workstationId: string;
@@ -159,6 +159,14 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         case 'front': return { x: px, y: -pz };
         case 'side': return { x: py, y: -pz };
         case 'top': return { x: px, y: py };
+        case 'isometric': {
+          const cos30 = Math.cos(Math.PI / 6);
+          const sin30 = Math.sin(Math.PI / 6);
+          return { 
+            x: (px - py) * cos30, 
+            y: -(px + py) * sin30 - pz 
+          };
+        }
       }
     };
     
@@ -230,21 +238,29 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   // Project 3D coordinates to 2D canvas coordinates based on current view
   const project3DTo2D = useCallback((posX: number, posY: number, posZ: number, view: ViewType) => {
     switch (view) {
-      case 'front': // 正视图: X-Z plane (looking from front, Y is depth)
+      case 'front':
         return {
           x: centerX + posX * scale,
-          y: centerY - posZ * scale // Z up is negative Y on canvas
+          y: centerY - posZ * scale
         };
-      case 'side': // 左视图: Y-Z plane (looking from left side, X is depth)
+      case 'side':
         return {
           x: centerX + posY * scale,
           y: centerY - posZ * scale
         };
-      case 'top': // 俯视图: X-Y plane (looking from top, Z is depth)
+      case 'top':
         return {
           x: centerX + posX * scale,
-          y: centerY + posY * scale // Y forward is positive Y on canvas
+          y: centerY + posY * scale
         };
+      case 'isometric': {
+        const cos30 = Math.cos(Math.PI / 6);
+        const sin30 = Math.sin(Math.PI / 6);
+        return {
+          x: centerX + (posX - posY) * cos30 * scale,
+          y: centerY - ((posX + posY) * sin30 + posZ) * scale
+        };
+      }
       default:
         return { x: centerX, y: centerY };
     }
@@ -546,8 +562,10 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     };
   }, [zoom, pan]);
 
+  const isIsometric = currentView === 'isometric';
+
   const handleMouseDown = (e: React.MouseEvent, obj: LayoutObject) => {
-    if (obj.locked || panMode) return;
+    if (obj.locked || panMode || isIsometric) return;
     e.stopPropagation();
     
     // Handle multi-selection with shift key
@@ -1273,6 +1291,16 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   const currentProductW = currentView === 'side' ? productD : productW;
   const currentProductH = currentView === 'top' ? productD : productH;
 
+  // Isometric cube helper: project a 3D point to isometric 2D
+  const isoProject = useCallback((px: number, py: number, pz: number) => {
+    const cos30 = Math.cos(Math.PI / 6);
+    const sin30 = Math.sin(Math.PI / 6);
+    return {
+      x: centerX + (px - py) * cos30 * scale,
+      y: centerY - ((px + py) * sin30 + pz) * scale
+    };
+  }, [centerX, centerY, scale]);
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden relative">
       {/* Toolbar - Main Row: Views + Save buttons only */}
@@ -1296,6 +1324,18 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               )}
             </button>
           ))}
+          <div className="h-6 w-px bg-border self-center mx-1" />
+          <button
+            onClick={() => setCurrentView('isometric')}
+            className={cn(
+              'px-3 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-1.5',
+              currentView === 'isometric'
+                ? 'bg-violet-600 text-white shadow-sm'
+                : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+            )}
+          >
+            🧊 2.5D 预览
+          </button>
         </div>
         
         {/* Right: Quality selector, Save buttons and settings toggle */}
@@ -1613,45 +1653,104 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               
               {/* View label with axis indicators */}
               <g transform={`translate(${centerX}, 40)`}>
-                <rect x={-100} y={-16} width={200} height={32} rx={8} fill="rgba(30, 41, 59, 0.95)" />
+                <rect x={-120} y={-16} width={240} height={32} rx={8} fill="rgba(30, 41, 59, 0.95)" />
                 <text x={0} y={6} textAnchor="middle" fill="#e2e8f0" fontSize="14" fontWeight="600">
                   {currentView === 'front' 
                     ? '🎯 正视图 | X↔ Z↕' 
                     : currentView === 'side' 
                       ? '📐 左视图 | Y↔ Z↕' 
-                      : '🔍 俯视图 | X↔ Y↕'}
+                      : currentView === 'isometric'
+                        ? '🧊 2.5D 等轴测预览（只读）'
+                        : '🔍 俯视图 | X↔ Y↕'}
                 </text>
               </g>
               
               {/* Axis legend moved to viewport-fixed overlay below */}
               
               {/* Product (center reference) */}
-              <g filter="url(#drop-shadow)">
-                <rect
-                  x={centerX - currentProductW / 2}
-                  y={centerY - currentProductH / 2}
-                  width={currentProductW}
-                  height={currentProductH}
-                  fill="url(#product-grad)"
-                  stroke="#22d3ee"
-                  strokeWidth="2"
-                  rx={6}
-                />
-                {/* Product cross-hair */}
-                <line x1={centerX - 15} y1={centerY} x2={centerX + 15} y2={centerY} stroke="#fff" strokeWidth="1" opacity="0.5" />
-                <line x1={centerX} y1={centerY - 15} x2={centerX} y2={centerY + 15} stroke="#fff" strokeWidth="1" opacity="0.5" />
-                <circle cx={centerX} cy={centerY} r={4} fill="#fff" opacity="0.7" />
-                
-                <text
-                  x={centerX}
-                  y={centerY + currentProductH / 2 + 20}
-                  textAnchor="middle"
-                  fill="#94a3b8"
-                  fontSize="11"
-                >
-                  产品 {productDimensions.length}×{productDimensions.width}×{productDimensions.height}mm
-                </text>
-              </g>
+              {isIsometric ? (
+                // Isometric 3D cube rendering
+                (() => {
+                  const hL = productDimensions.length / 2;
+                  const hW = productDimensions.width / 2;
+                  const hH = productDimensions.height / 2;
+                  // 8 corners of the box, projected to 2D
+                  const p = (x: number, y: number, z: number) => isoProject(x, y, z);
+                  // Top face: z = +hH
+                  const t0 = p(-hL, -hW, hH);
+                  const t1 = p(hL, -hW, hH);
+                  const t2 = p(hL, hW, hH);
+                  const t3 = p(-hL, hW, hH);
+                  // Bottom face: z = -hH
+                  const b0 = p(-hL, -hW, -hH);
+                  const b1 = p(hL, -hW, -hH);
+                  const b2 = p(hL, hW, -hH);
+                  const b3 = p(-hL, hW, -hH);
+                  
+                  const topFace = `${t0.x},${t0.y} ${t1.x},${t1.y} ${t2.x},${t2.y} ${t3.x},${t3.y}`;
+                  const frontFace = `${t0.x},${t0.y} ${t1.x},${t1.y} ${b1.x},${b1.y} ${b0.x},${b0.y}`;
+                  const rightFace = `${t1.x},${t1.y} ${t2.x},${t2.y} ${b2.x},${b2.y} ${b1.x},${b1.y}`;
+                  
+                  // Back edges (hidden, dashed)
+                  const leftFace = `${t0.x},${t0.y} ${t3.x},${t3.y} ${b3.x},${b3.y} ${b0.x},${b0.y}`;
+                  
+                  return (
+                    <g filter="url(#drop-shadow)">
+                      {/* Left face (partially visible) */}
+                      <polygon points={leftFace} fill="#0891b2" fillOpacity="0.3" stroke="#22d3ee" strokeWidth="1" strokeDasharray="4 2" />
+                      {/* Front face */}
+                      <polygon points={frontFace} fill="#06b6d4" fillOpacity="0.5" stroke="#22d3ee" strokeWidth="2" />
+                      {/* Right face */}
+                      <polygon points={rightFace} fill="#0e7490" fillOpacity="0.5" stroke="#22d3ee" strokeWidth="2" />
+                      {/* Top face */}
+                      <polygon points={topFace} fill="#67e8f9" fillOpacity="0.4" stroke="#22d3ee" strokeWidth="2" />
+                      
+                      {/* Face labels */}
+                      <text x={(t0.x + t1.x + b1.x + b0.x) / 4} y={(t0.y + t1.y + b1.y + b0.y) / 4 + 4} textAnchor="middle" fill="#e0f2fe" fontSize="10" fontWeight="500" opacity="0.8">正面</text>
+                      <text x={(t1.x + t2.x + b2.x + b1.x) / 4} y={(t1.y + t2.y + b2.y + b1.y) / 4 + 4} textAnchor="middle" fill="#e0f2fe" fontSize="10" fontWeight="500" opacity="0.8">侧面</text>
+                      <text x={(t0.x + t1.x + t2.x + t3.x) / 4} y={(t0.y + t1.y + t2.y + t3.y) / 4 + 4} textAnchor="middle" fill="#e0f2fe" fontSize="10" fontWeight="500" opacity="0.8">顶面</text>
+                      
+                      {/* Product dimensions label */}
+                      <text
+                        x={centerX}
+                        y={Math.max(b0.y, b1.y, b2.y) + 25}
+                        textAnchor="middle"
+                        fill="#94a3b8"
+                        fontSize="11"
+                      >
+                        产品 {productDimensions.length}×{productDimensions.width}×{productDimensions.height}mm
+                      </text>
+                    </g>
+                  );
+                })()
+              ) : (
+                <g filter="url(#drop-shadow)">
+                  <rect
+                    x={centerX - currentProductW / 2}
+                    y={centerY - currentProductH / 2}
+                    width={currentProductW}
+                    height={currentProductH}
+                    fill="url(#product-grad)"
+                    stroke="#22d3ee"
+                    strokeWidth="2"
+                    rx={6}
+                  />
+                  {/* Product cross-hair */}
+                  <line x1={centerX - 15} y1={centerY} x2={centerX + 15} y2={centerY} stroke="#fff" strokeWidth="1" opacity="0.5" />
+                  <line x1={centerX} y1={centerY - 15} x2={centerX} y2={centerY + 15} stroke="#fff" strokeWidth="1" opacity="0.5" />
+                  <circle cx={centerX} cy={centerY} r={4} fill="#fff" opacity="0.7" />
+                  
+                  <text
+                    x={centerX}
+                    y={centerY + currentProductH / 2 + 20}
+                    textAnchor="middle"
+                    fill="#94a3b8"
+                    fontSize="11"
+                  >
+                    产品 {productDimensions.length}×{productDimensions.width}×{productDimensions.height}mm
+                  </text>
+                </g>
+              )}
               
               {/* Connection lines between cameras and mounted mechanisms */}
               {objects.filter(obj => obj.type === 'camera' && obj.mountedToMechanismId).map(cam => {
@@ -2022,10 +2121,19 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
           <div className="bg-slate-800/95 rounded-lg px-4 py-2 border border-slate-600/30 text-center">
             <div className="text-[11px] text-slate-400">当前平面</div>
             <div className="text-sm font-semibold text-white">
-              {currentView === 'front' ? 'X-Z' : currentView === 'side' ? 'Y-Z' : 'X-Y'}
+              {currentView === 'front' ? 'X-Z' : currentView === 'side' ? 'Y-Z' : currentView === 'isometric' ? '等轴测' : 'X-Y'}
             </div>
           </div>
         </div>
+
+        {/* Isometric read-only badge */}
+        {isIsometric && (
+          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+            <div className="bg-violet-600/90 text-white text-xs font-semibold px-4 py-1.5 rounded-full border border-violet-400/40 shadow-lg">
+              🔒 只读预览 — 切换到三视图进行编辑
+            </div>
+          </div>
+        )}
         
         {/* Object List Panel */}
         {showObjectList && (
