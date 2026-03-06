@@ -1943,6 +1943,35 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                   </g>
                 );
               })}
+              
+              {/* Connection lines between products and mounted mechanisms */}
+              {objects.filter(obj => obj.type === 'product' && obj.mountedToMechanismId).map(prod => {
+                const mech = objects.find(o => o.id === prod.mountedToMechanismId);
+                if (!mech) return null;
+                return (
+                  <g key={`conn-product-${prod.id}`}>
+                    <line
+                      x1={prod.x}
+                      y1={prod.y}
+                      x2={mech.x}
+                      y2={mech.y}
+                      stroke="#22c55e"
+                      strokeWidth={2}
+                      strokeDasharray="8 4"
+                      opacity={0.6}
+                    />
+                    <circle cx={prod.x} cy={prod.y} r={4} fill="#06b6d4" opacity={0.8} />
+                    <circle cx={mech.x} cy={mech.y} r={4} fill="#ea580c" opacity={0.8} />
+                    <text
+                      x={(prod.x + mech.x) / 2}
+                      y={(prod.y + mech.y) / 2 - 6}
+                      textAnchor="middle"
+                      fontSize="12"
+                      style={{ pointerEvents: 'none' }}
+                    >📦</text>
+                  </g>
+                );
+              })}
 
               {/* Draggable objects: render product first, then mechanisms, then cameras on top */}
               {/* Product object (draggable in non-isometric views) */}
