@@ -1,44 +1,22 @@
 
 
-# FOV 输入改为两个独立数值框
+# 2.5D等轴测中产品渲染在机构上方 + 显示绑定关系
 
 ## 问题
+当前2.5D isometric视图中，产品3D方块在 line 1872 渲染，**早于**机构（line 1978），导致产品在机构下方。同时产品吸附到机构后，isometric中没有体现绑定关系（位置、颜色）。
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+## 改动（单文件 `DraggableLayoutCanvas.tsx`）
 
-## 修改方案
+### 1. 移动产品isometric渲染块到机构之后
+将 line 1871-1915 的产品isometric渲染块移到机构渲染循环（line 2065）之后，确保产品在机构上方。
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+### 2. 吸附后位置跟随
+当产品有 `mountedToMechanismId` 时，isometric渲染使用挂载机构的3D坐标作为产品位置基准（产品放在机构顶面上），而非产品自身的 posX/posY/posZ。
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
+### 3. 吸附后颜色变化
+- **未吸附**：保持当前青色（`#06b6d4` 系列）
+- **已吸附**：改为绿色（`#16a34a` 系列，与2D视图一致），opacity 0.7
 
-在 `getDefaultFormState` 中添加默认值 `''`。
-
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
-
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
-
-```
-[宽度输入] × [高度输入]
-```
-
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
-
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+### 4. 绑定连线
+已吸附产品与机构之间绘制绿色虚线连接（复用现有 connection line 逻辑），在isometric视图中也使用 `isoProject` 投影后的坐标。
 
