@@ -109,7 +109,7 @@ export function ModuleSchematic() {
 
   // Export as PNG
   const handleExportPNG = useCallback(async () => {
-    if (!diagramRef.current) return;
+    if (!diagramRef.current || !module) return;
     
     try {
       toast.loading('正在生成PNG...');
@@ -146,11 +146,11 @@ export function ModuleSchematic() {
       toast.error('导出PNG失败');
       console.error(error);
     }
-  }, [module.name]);
+  }, [module?.name, getPixelRatio]);
 
   // Export as PDF
   const handleExportPDF = useCallback(async () => {
-    if (!diagramRef.current) return;
+    if (!diagramRef.current || !module) return;
     
     try {
       toast.loading('正在生成PDF...');
@@ -202,10 +202,44 @@ export function ModuleSchematic() {
       toast.error('导出PDF失败');
       console.error(error);
     }
-  }, [module.name]);
+  }, [module?.name, getPixelRatio]);
 
-  const [savingSchematic, setSavingSchematic] = useState(false);
-  const [schematicSaved, setSchematicSaved] = useState(!!(module as any).schematic_image_url);
+  // Lighting photos save handler
+  const handleSaveLightingPhotos = useCallback(async (photos: Array<{ url: string; remark: string; created_at: string }>) => {
+    if (!module) return;
+    await updateModule(module.id, { lighting_photos: photos } as any);
+  }, [module?.id, updateModule]);
+
+  // Early returns after all hooks
+  if (!module || !workstation) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <p className="text-muted-foreground">未选择模块</p>
+      </div>
+    );
+  }
+
+  if (!layout) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
+        <AlertCircle className="h-16 w-16 text-warning" />
+        <h3 className="text-lg font-semibold">请先完成工位布局</h3>
+        <p className="text-muted-foreground text-center max-w-md">
+          模块2D示意图需要以工位布局作为参考。请先选择工位"{workstation.name}"并配置机械布局。
+        </p>
+        <Button variant="outline" onClick={() => selectModule(null)}>
+          返回工位配置
+        </Button>
+      </div>
+    );
+  }
+
+  const selectedCamera = cameras.find(c => c.id === module.selected_camera);
+  const selectedLens = lenses.find(l => l.id === module.selected_lens);
+  const selectedLight = lights.find(l => l.id === module.selected_light);
+  const selectedController = controllers.find(c => c.id === module.selected_controller);
+  const ModuleIcon = moduleTypeIcons[(module.type || 'positioning') as keyof typeof moduleTypeIcons] || Box;
+  const lightingPhotos = Array.isArray((module as any).lighting_photos) ? (module as any).lighting_photos : [];
 
   const handleSaveSchematic = async () => {
     if (!diagramRef.current) return;
