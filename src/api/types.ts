@@ -145,10 +145,16 @@ export interface IProductAssetApi {
   create(data: Omit<DbProductAsset, 'id' | 'created_at' | 'updated_at'>): Promise<DbProductAsset>;
   update(id: string, data: Partial<DbProductAsset>): Promise<DbProductAsset>;
   delete(id: string): Promise<void>;
+  listByWorkstations(wsIds: string[]): Promise<DbProductAsset[]>;
+  listByUserAndScope(userId: string, wsIds: string[], modIds: string[]): Promise<DbProductAsset[]>;
 }
 
 export interface IAnnotationApi {
   list(assetId: string): Promise<DbProductAnnotation[]>;
+  listByWorkstations(wsIds: string[]): Promise<DbProductAnnotation[]>;
+  listByUser(userId: string, assetIds: string[]): Promise<DbProductAnnotation[]>;
+  listByAssetAndWorkstation(assetId: string, workstationId?: string): Promise<DbProductAnnotation[]>;
+  getLatestVersion(assetId: string): Promise<number>;
   create(data: Omit<DbProductAnnotation, 'id' | 'created_at'>): Promise<DbProductAnnotation>;
   update(id: string, data: Partial<DbProductAnnotation>): Promise<DbProductAnnotation>;
   delete(id: string): Promise<void>;
@@ -156,9 +162,20 @@ export interface IAnnotationApi {
 
 export interface IPPTTemplateApi {
   list(): Promise<DbPPTTemplate[]>;
+  listByUser(userId: string): Promise<DbPPTTemplate[]>;
   create(data: Omit<DbPPTTemplate, 'id' | 'created_at' | 'updated_at'>): Promise<DbPPTTemplate>;
   update(id: string, data: Partial<DbPPTTemplate>): Promise<DbPPTTemplate>;
+  updateWhere(filter: Partial<DbPPTTemplate>, data: Partial<DbPPTTemplate>): Promise<void>;
   delete(id: string): Promise<void>;
+  deleteByUser(id: string, userId: string): Promise<void>;
+}
+
+export interface IAdminApi {
+  updateSetting(key: string, value: string): Promise<void>;
+}
+
+export interface IHardwareBulkApi {
+  bulkInsert(type: string, items: Record<string, unknown>[]): Promise<void>;
 }
 
 export interface IEdgeFunctionApi {
@@ -177,7 +194,7 @@ export interface ApiAdapter {
   workstations: IWorkstationApi;
   layouts: ILayoutApi;
   modules: IModuleApi;
-  hardware: IHardwareApi;
+  hardware: IHardwareApi & IHardwareBulkApi;
   assets: IAssetApi;
   storage: IStorageApi & IStorageListApi;
   userRoles: IUserRoleApi;
@@ -186,4 +203,5 @@ export interface ApiAdapter {
   annotations: IAnnotationApi;
   pptTemplates: IPPTTemplateApi;
   functions: IEdgeFunctionApi;
+  admin: IAdminApi;
 }
