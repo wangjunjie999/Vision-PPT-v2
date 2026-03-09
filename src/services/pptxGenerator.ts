@@ -914,7 +914,6 @@ export async function generatePPTX(
       data: frontPhoto,
       x: 1.0, y: 1.5,
       w: 3.5, h: 3.5,
-      sizing: { type: 'contain', w: 3.5, h: 3.5 },
     });
   }
   if (backPhoto) {
@@ -922,7 +921,6 @@ export async function generatePPTX(
       data: backPhoto,
       x: 5.5, y: 1.5,
       w: 3.5, h: 3.5,
-      sizing: { type: 'contain', w: 3.5, h: 3.5 },
     });
   }
 
