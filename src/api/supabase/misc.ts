@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type {
   IUserRoleApi, IDocumentApi, IProductAssetApi,
-  IAnnotationApi, IPPTTemplateApi,
+  IAnnotationApi, IPPTTemplateApi, IAdminApi, IHardwareBulkApi,
   DbProductAsset, DbProductAnnotation, DbGeneratedDocument, DbPPTTemplate,
 } from '../types';
 import type { Database, Json } from '@/integrations/supabase/types';
@@ -102,6 +102,25 @@ export function createSupabaseProductAssetApi(): IProductAssetApi {
       const { error } = await supabase.from('product_assets').delete().eq('id', id);
       if (error) throw error;
     },
+    async listByWorkstations(wsIds) {
+      if (wsIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('product_assets')
+        .select('*')
+        .in('workstation_id', wsIds);
+      if (error) throw error;
+      return (data || []) as DbProductAsset[];
+    },
+    async listByUserAndScope(userId, wsIds, modIds) {
+      if (wsIds.length === 0 && modIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('product_assets')
+        .select('*')
+        .eq('user_id', userId)
+        .or(`workstation_id.in.(${wsIds.join(',')}),module_id.in.(${modIds.join(',')})`);
+      if (error) throw error;
+      return (data || []) as DbProductAsset[];
+    },
   };
 }
 
@@ -115,6 +134,48 @@ export function createSupabaseAnnotationApi(): IAnnotationApi {
         .order('created_at', { ascending: false });
       if (error) throw error;
       return (data || []) as DbProductAnnotation[];
+    },
+    async listByWorkstations(wsIds) {
+      if (wsIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('product_annotations')
+        .select('*')
+        .in('workstation_id', wsIds)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []) as DbProductAnnotation[];
+    },
+    async listByUser(userId, assetIds) {
+      if (assetIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('product_annotations')
+        .select('*')
+        .eq('user_id', userId)
+        .in('asset_id', assetIds);
+      if (error) throw error;
+      return (data || []) as DbProductAnnotation[];
+    },
+    async listByAssetAndWorkstation(assetId, workstationId) {
+      let query = supabase
+        .from('product_annotations')
+        .select('*')
+        .eq('asset_id', assetId);
+      if (workstationId) {
+        query = query.eq('workstation_id', workstationId);
+      }
+      const { data, error } = await query.order('version', { ascending: false });
+      if (error) throw error;
+      return (data || []) as DbProductAnnotation[];
+    },
+    async getLatestVersion(assetId) {
+      const { data, error } = await supabase
+        .from('product_annotations')
+        .select('version')
+        .eq('asset_id', assetId)
+        .order('version', { ascending: false })
+        .limit(1);
+      if (error) throw error;
+      return data && data.length > 0 ? data[0].version : 0;
     },
     async create(insertData) {
       const { data, error } = await supabase
@@ -159,6 +220,15 @@ export function createSupabasePPTTemplateApi(): IPPTTemplateApi {
       if (error) throw error;
       return (data || []) as DbPPTTemplate[];
     },
+    async listByUser(userId) {
+      const { data, error } = await supabase
+        .from('ppt_templates')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []) as DbPPTTemplate[];
+    },
     async create(insertData) {
       const { data, error } = await supabase
         .from('ppt_templates')
@@ -180,8 +250,46 @@ export function createSupabasePPTTemplateApi(): IPPTTemplateApi {
       if (error) throw error;
       return data as DbPPTTemplate;
     },
+    async updateWhere(filter, data) {
+      let query = supabase.from('ppt_templates').update(data as Record<string, unknown>);
+      if (filter.user_id) query = query.eq('user_id', filter.user_id);
+      if (filter.id) query = query.neq('id', filter.id);
+      const { error } = await query;
+      if (error) throw error;
+    },
     async delete(id) {
       const { error } = await supabase.from('ppt_templates').delete().eq('id', id);
+      if (error) throw error;
+    },
+    async deleteByUser(id, userId) {
+      const { error } = await supabase
+        .from('ppt_templates')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId);
+      if (error) throw error;
+    },
+  };
+}
+
+export function createSupabaseAdminApi(): IAdminApi {
+  return {
+    async updateSetting(key, value) {
+      const { error } = await supabase
+        .from('admin_settings')
+        .update({ value })
+        .eq('key', key);
+      if (error) throw error;
+    },
+  };
+}
+
+export function createSupabaseHardwareBulkApi(): IHardwareBulkApi {
+  return {
+    async bulkInsert(type, items) {
+      const tableName = type as 'cameras' | 'lenses' | 'lights' | 'controllers';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await supabase.from(tableName).insert(items as any);
       if (error) throw error;
     },
   };

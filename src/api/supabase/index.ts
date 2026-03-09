@@ -14,16 +14,21 @@ import {
   createSupabaseProductAssetApi,
   createSupabaseAnnotationApi,
   createSupabasePPTTemplateApi,
+  createSupabaseAdminApi,
+  createSupabaseHardwareBulkApi,
 } from './misc';
 
 export function createSupabaseAdapter(): ApiAdapter {
+  const hardwareApi = createSupabaseHardwareApi();
+  const hardwareBulkApi = createSupabaseHardwareBulkApi();
+
   return {
     auth: createSupabaseAuthApi(),
     projects: createSupabaseProjectApi(),
     workstations: createSupabaseWorkstationApi(),
     layouts: createSupabaseLayoutApi(),
     modules: createSupabaseModuleApi(),
-    hardware: createSupabaseHardwareApi(),
+    hardware: { ...hardwareApi, ...hardwareBulkApi },
     assets: createSupabaseAssetApi(),
     storage: createSupabaseStorageApi(),
     userRoles: createSupabaseUserRoleApi(),
@@ -32,5 +37,6 @@ export function createSupabaseAdapter(): ApiAdapter {
     annotations: createSupabaseAnnotationApi(),
     pptTemplates: createSupabasePPTTemplateApi(),
     functions: createSupabaseEdgeFunctionApi(),
+    admin: createSupabaseAdminApi(),
   };
 }
