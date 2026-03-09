@@ -158,6 +158,14 @@ export interface IPPTTemplateApi {
   delete(id: string): Promise<void>;
 }
 
+export interface IEdgeFunctionApi {
+  invoke(functionName: string, options?: { method?: string; body?: unknown }): Promise<{ data: any; error: Error | null }>;
+}
+
+export interface IStorageListApi {
+  listFiles(bucket: string, path?: string, options?: { limit?: number; sortBy?: { column: string; order: string } }): Promise<{ name: string; id?: string; created_at?: string; metadata?: Record<string, unknown> }[]>;
+}
+
 // ============= Aggregated Adapter =============
 
 export interface ApiAdapter {
@@ -168,10 +176,11 @@ export interface ApiAdapter {
   modules: IModuleApi;
   hardware: IHardwareApi;
   assets: IAssetApi;
-  storage: IStorageApi;
+  storage: IStorageApi & IStorageListApi;
   userRoles: IUserRoleApi;
   documents: IDocumentApi;
   productAssets: IProductAssetApi;
   annotations: IAnnotationApi;
   pptTemplates: IPPTTemplateApi;
+  functions: IEdgeFunctionApi;
 }
