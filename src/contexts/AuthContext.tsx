@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { api } from '@/api';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType {
   user: User | null;
@@ -20,33 +20,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Set up auth state listener FIRST
-    const { unsubscribe } = api.auth.onAuthStateChange(
-      (_event, apiSession) => {
-        if (apiSession) {
-          // Map ApiSession to Supabase-compatible types for downstream consumers
-          setSession({ user: apiSession.user, access_token: apiSession.access_token } as unknown as Session);
-          setUser(apiSession.user as unknown as User);
-        } else {
-          setSession(null);
-          setUser(null);
-        }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
         setLoading(false);
       }
     );
 
     // THEN check for existing session
-    api.auth.getSession().then(({ session: apiSession }) => {
-      if (apiSession) {
-        setSession({ user: apiSession.user, access_token: apiSession.access_token } as unknown as Session);
-        setUser(apiSession.user as unknown as User);
-      } else {
-        setSession(null);
-        setUser(null);
-      }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => subscription.unsubscribe();
   }, []);
 
   const toInternalEmail = (username: string) => {
@@ -56,17 +45,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (username: string, password: string, displayName?: string) => {
-    return api.auth.signUp(toInternalEmail(username), password, {
-      data: { display_name: displayName || username },
+    const { error } = await supabase.auth.signUp({
+      email: toInternalEmail(username),
+      password,
+      options: {
+        data: {
+          display_name: displayName || username,
+        },
+      },
     });
+    
+    return { error: error as Error | null };
   };
 
   const signIn = async (username: string, password: string) => {
-    return api.auth.signIn(toInternalEmail(username), password);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: toInternalEmail(username),
+      password,
+    });
+    
+    return { error: error as Error | null };
   };
 
   const signOut = async () => {
-    await api.auth.signOut();
+    await supabase.auth.signOut();
   };
 
   return (

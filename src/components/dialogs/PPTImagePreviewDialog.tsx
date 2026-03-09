@@ -4,9 +4,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useData } from '@/contexts/DataContext';
 import { useState, useMemo, useEffect } from 'react';
-import { CheckCircle2, XCircle, Eye, ImageIcon, Layers, Camera, Box, Sun } from 'lucide-react';
+import { CheckCircle2, XCircle, Eye, ImageIcon, Layers, Camera, Box } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { api } from '@/api';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PPTImagePreviewDialogProps {
   open: boolean;
@@ -44,12 +44,16 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
     const wsIds = projectWorkstations.map(ws => ws.id);
 
     async function fetchData() {
-      // Fetch annotations via API
-      const annoData = await api.annotations.listByWorkstations(wsIds);
+      // Fetch annotations
+      const { data: annoData } = await supabase
+        .from('product_annotations')
+        .select('id, snapshot_url, remark, workstation_id')
+        .in('workstation_id', wsIds)
+        .order('created_at', { ascending: false });
 
       if (annoData) {
         const grouped = new Map<string, AnnotationInfo[]>();
-        for (const row of annoData as any[]) {
+        for (const row of annoData) {
           const wsId = row.workstation_id;
           if (!wsId) continue;
           const arr = grouped.get(wsId) || [];
@@ -59,8 +63,11 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
         setAnnotations(grouped);
       }
 
-      // Fetch product assets preview images via API
-      const assetData = await api.productAssets.listByWorkstations(wsIds);
+      // Fetch product assets preview images
+      const { data: assetData } = await supabase
+        .from('product_assets')
+        .select('workstation_id, preview_images')
+        .in('workstation_id', wsIds);
 
       if (assetData) {
         const grouped = new Map<string, string[]>();
@@ -104,23 +111,12 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
         url: (mod as any).schematic_image_url || null,
       }));
 
-      // Lighting photos per module
-      const moduleLightingPhotos = modules.flatMap(mod => {
-        const photos = Array.isArray((mod as any).lighting_photos) ? (mod as any).lighting_photos : [];
-        return photos.map((p: any, i: number) => ({
-          moduleName: mod.name,
-          label: p.remark || `打光照片 ${i + 1}`,
-          url: p.url || null,
-        }));
-      });
-
       layoutImages.forEach(img => img.url ? totalSaved++ : totalMissing++);
       moduleImages.forEach(img => img.url ? totalSaved++ : totalMissing++);
-      moduleLightingPhotos.forEach(img => img.url ? totalSaved++ : totalMissing++);
       totalSaved += wsAnnotations.length;
       totalSaved += wsProductImages.length;
 
-      return { workstation: ws, layoutImages, moduleImages, moduleLightingPhotos, annotations: wsAnnotations, productImages: wsProductImages };
+      return { workstation: ws, layoutImages, moduleImages, annotations: wsAnnotations, productImages: wsProductImages };
     });
 
     return { groups, totalSaved, totalMissing };
@@ -161,7 +157,7 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
 
           <ScrollArea className="h-[60vh] pr-2">
             <div className="space-y-6">
-              {imageData.groups.map(({ workstation, layoutImages, moduleImages, moduleLightingPhotos, annotations: wsAnnotations, productImages: wsProductImages }) => (
+              {imageData.groups.map(({ workstation, layoutImages, moduleImages, annotations: wsAnnotations, productImages: wsProductImages }) => (
                 <div key={workstation.id} className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Layers className="h-4 w-4 text-primary" />
@@ -193,26 +189,6 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
                           <ImageThumbnail
                             key={i}
                             label={img.moduleName}
-                            url={img.url}
-                            onPreview={() => img.url && handlePreview(img.url, `${img.moduleName} - ${img.label}`)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Lighting photos */}
-                  {moduleLightingPhotos.length > 0 && (
-                    <div className="ml-6">
-                      <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-                        <Sun className="h-3 w-3" />
-                        打光照片
-                      </p>
-                      <div className="grid grid-cols-3 gap-3">
-                        {moduleLightingPhotos.map((img, i) => (
-                          <ImageThumbnail
-                            key={`lp-${i}`}
-                            label={`${img.moduleName} - ${img.label}`}
                             url={img.url}
                             onPreview={() => img.url && handlePreview(img.url, `${img.moduleName} - ${img.label}`)}
                           />

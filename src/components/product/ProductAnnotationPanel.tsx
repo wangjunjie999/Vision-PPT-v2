@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { api } from '@/api';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -133,7 +133,14 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
     setLoading(true);
     try {
       // Load product asset
-      const assetData = await api.productAssets.get(workstationId);
+      const { data: assetData, error: assetError } = await supabase
+        .from('product_assets')
+        .select('*')
+        .eq('workstation_id', workstationId)
+        .eq('scope_type', 'workstation')
+        .maybeSingle();
+
+      if (assetError) throw assetError;
 
       if (assetData) {
         const previewImages = Array.isArray(assetData.preview_images) 
@@ -153,7 +160,13 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
         } as ProductAsset);
 
         // Load annotations for this asset
-        const annotData = await api.annotations.list(assetData.id);
+        const { data: annotData, error: annotError } = await supabase
+          .from('product_annotations')
+          .select('*')
+          .eq('asset_id', assetData.id)
+          .order('version', { ascending: false });
+
+        if (annotError) throw annotError;
         
         const records = (annotData || []).map(a => ({
           ...a,
@@ -201,8 +214,14 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
       // Upload to storage
       const bucket = 'product-models';
       const path = `${workstationId}/${Date.now()}_${file.name}`;
-      await api.storage.upload(bucket, path, file);
-      const fileUrl = api.storage.getPublicUrl(bucket, path);
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(path, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
+      const fileUrl = urlData.publicUrl;
 
       // Create or update asset
       if (asset) {
@@ -218,23 +237,34 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
             updateData.source_type = 'image';
           }
         }
-        await api.productAssets.update(asset.id, updateData);
+        const { error } = await supabase
+          .from('product_assets')
+          .update(updateData)
+          .eq('id', asset.id);
+        if (error) throw error;
       } else {
-        await api.productAssets.create({
+        const { error } = await supabase.from('product_assets').insert({
           workstation_id: workstationId,
           scope_type: 'workstation',
           source_type: isModel ? 'model' : 'image',
           model_file_url: isModel ? fileUrl : null,
-          preview_images: (isImage ? [fileUrl] : []) as any,
+          preview_images: isImage ? [fileUrl] : [],
           user_id: user.id,
         });
+        if (error) throw error;
       }
 
       await loadData();
       toast.success('文件上传成功');
       
       // Auto enter viewer mode after upload
-      const latestAsset = await api.productAssets.get(workstationId);
+      // Need to re-fetch to get latest asset data
+      const { data: latestAsset } = await supabase
+        .from('product_assets')
+        .select('*')
+        .eq('workstation_id', workstationId)
+        .eq('scope_type', 'workstation')
+        .maybeSingle();
       if (latestAsset) {
         const images = Array.isArray(latestAsset.preview_images) ? latestAsset.preview_images as string[] : [];
         if (latestAsset.model_file_url || images.length > 0) {
@@ -294,8 +324,14 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
       // Upload snapshot to storage
       const blob = await fetch(currentSnapshot).then(r => r.blob());
       const path = `${workstationId}/snapshots/${Date.now()}.png`;
-      await api.storage.upload('product-snapshots', path, new File([blob], 'snapshot.png', { type: 'image/png' }));
-      const snapshotUrl = api.storage.getPublicUrl('product-snapshots', path);
+      const { error: uploadError } = await supabase.storage
+        .from('product-snapshots')
+        .upload(path, blob, { contentType: 'image/png' });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('product-snapshots').getPublicUrl(path);
+      const snapshotUrl = urlData.publicUrl;
 
       // Calculate next version
       const nextVersion = annotations.length > 0 
@@ -303,15 +339,17 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
         : 1;
 
       // Insert annotation record
-      await api.annotations.create({
+      const { error } = await supabase.from('product_annotations').insert({
         asset_id: asset.id,
         snapshot_url: snapshotUrl,
         annotations_json: currentAnnotations as unknown as any,
-        view_meta: { viewName: `版本${nextVersion}` } as any,
+        view_meta: { viewName: `版本${nextVersion}` },
         version: nextVersion,
         remark: saveRemark || null,
         user_id: user.id,
       });
+
+      if (error) throw error;
 
       await loadData();
       setIsAnnotating(false);
@@ -338,7 +376,12 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
   // Delete annotation record
   const handleDeleteRecord = async (recordId: string) => {
     try {
-      await api.annotations.delete(recordId);
+      const { error } = await supabase
+        .from('product_annotations')
+        .delete()
+        .eq('id', recordId);
+
+      if (error) throw error;
 
       await loadData();
       toast.success('记录已删除');
@@ -636,7 +679,7 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
                         if (!user) return;
                         setSavingInfo(true);
                         try {
-                          await api.productAssets.create({
+                          const { error } = await supabase.from('product_assets').insert({
                             workstation_id: workstationId,
                             scope_type: 'workstation',
                             source_type: 'image',
@@ -645,6 +688,7 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
                             detection_requirements: detectionRequirements as unknown as any,
                             user_id: user.id,
                           });
+                          if (error) throw error;
                           await loadData();
                           toast.success('产品信息已保存');
                         } catch (error) {
@@ -658,12 +702,17 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
                       
                       setSavingInfo(true);
                       try {
-                        await api.productAssets.update(asset.id, {
-                          detection_method: detectionMethod || null,
-                          product_models: productModels as unknown as any,
-                          detection_requirements: detectionRequirements as unknown as any,
-                          updated_at: new Date().toISOString(),
-                        });
+                        const { error } = await supabase
+                          .from('product_assets')
+                          .update({
+                            detection_method: detectionMethod || null,
+                            product_models: productModels as unknown as any,
+                            detection_requirements: detectionRequirements as unknown as any,
+                            updated_at: new Date().toISOString(),
+                          })
+                          .eq('id', asset.id);
+                        
+                        if (error) throw error;
                         await loadData();
                         toast.success('产品信息已保存');
                       } catch (error) {

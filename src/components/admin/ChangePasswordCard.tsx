@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { KeyRound, Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
-import { api } from '@/api';
+import { supabase } from '@/integrations/supabase/client';
 
 export function ChangePasswordCard() {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -29,7 +29,7 @@ export function ChangePasswordCard() {
     setSaving(true);
     try {
       // Verify current password first
-      const { data: verifyData, error: verifyError } = await api.functions.invoke('verify-admin-password', {
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-admin-password', {
         body: { password: currentPassword.trim() },
       });
       if (verifyError) throw verifyError;
@@ -40,7 +40,12 @@ export function ChangePasswordCard() {
       }
 
       // Update password in admin_settings
-      await api.admin.updateSetting('admin_password', newPassword.trim());
+      const { error } = await supabase
+        .from('admin_settings')
+        .update({ value: newPassword.trim() })
+        .eq('key', 'admin_password');
+
+      if (error) throw error;
 
       toast.success('管理密码已更新');
       setCurrentPassword('');

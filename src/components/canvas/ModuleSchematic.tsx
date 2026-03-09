@@ -20,18 +20,14 @@ import {
   FileImage,
   FileText,
   Loader2,
-  CheckCircle2,
-  Camera,
-  Sun
+  CheckCircle2
 } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { VisionSystemDiagram } from './VisionSystemDiagram';
-import { LightingPhotosPanel, type LightingPhoto } from './LightingPhotosPanel';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
-import { api } from '@/api';
+import { supabase } from '@/integrations/supabase/client';
 import { getImageSaveErrorMessage } from '@/utils/errorMessages';
 
 const moduleTypeIcons = {
@@ -242,18 +238,6 @@ export function ModuleSchematic() {
   const [savingSchematic, setSavingSchematic] = useState(false);
   const [schematicSaved, setSchematicSaved] = useState(!!(module as any).schematic_image_url);
 
-  // Lighting photos state
-  const lightingPhotos: LightingPhoto[] = Array.isArray((module as any).lighting_photos) ? (module as any).lighting_photos : [];
-
-  const handleLightingPhotosUpdate = useCallback(async (photos: LightingPhoto[]) => {
-    try {
-      await updateModule(module.id, { lighting_photos: photos } as any);
-    } catch (err) {
-      console.error('Failed to save lighting photos:', err);
-      toast.error('打光照片保存失败');
-    }
-  }, [module.id, updateModule]);
-
   const handleSaveSchematic = async () => {
     if (!diagramRef.current) return;
     
@@ -319,17 +303,28 @@ export function ModuleSchematic() {
       const fileName = `module-schematic-${module.id}-${Date.now()}.png`;
       
       // 清理该模块所有旧文件
-      const oldFiles = await api.storage.listFiles('module-schematics', '');
-      const toRemove = oldFiles.filter(f => f.name.startsWith(`module-schematic-${module.id}`)).map(f => f.name);
-      if (toRemove.length) {
-        await api.storage.remove('module-schematics', toRemove);
+      const { data: oldFiles } = await supabase.storage
+        .from('module-schematics')
+        .list('', { search: `module-schematic-${module.id}` });
+      if (oldFiles?.length) {
+        await supabase.storage.from('module-schematics')
+          .remove(oldFiles.map(f => f.name));
       }
       
       // Upload new file
-      await api.storage.upload('module-schematics', fileName, new File([blob], fileName, { type: 'image/png' }), { upsert: true });
+      const { error: uploadError } = await supabase.storage
+        .from('module-schematics')
+        .upload(fileName, blob, {
+          contentType: 'image/png',
+          upsert: true
+        });
+        
+      if (uploadError) throw uploadError;
       
       // Get public URL
-      const publicUrl = api.storage.getPublicUrl('module-schematics', fileName);
+      const { data: { publicUrl } } = supabase.storage
+        .from('module-schematics')
+        .getPublicUrl(fileName);
       
       // Update module with schematic URL
       await updateModule(module.id, { 
@@ -358,119 +353,87 @@ export function ModuleSchematic() {
           <div>
             <h3 className="font-semibold">{module.name}</h3>
             <p className="text-sm text-muted-foreground">
-              {moduleTypeLabels[(module.type || 'positioning') as keyof typeof moduleTypeLabels] || module.type || 'positioning'} · {workstation.name}
+              {moduleTypeLabels[(module.type || 'positioning') as keyof typeof moduleTypeLabels] || module.type || 'positioning'} · {workstation.name} · 视觉系统示意图
             </p>
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Download className="h-4 w-4" />
+                导出
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-popover">
+              <DropdownMenuItem onClick={handleExportPNG} className="gap-2 cursor-pointer">
+                <FileImage className="h-4 w-4" />
+                导出为 PNG
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} className="gap-2 cursor-pointer">
+                <FileText className="h-4 w-4" />
+                导出为 PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button onClick={handleSaveSchematic} className="gap-2" disabled={savingSchematic}>
+            {savingSchematic ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : schematicSaved ? (
+              <CheckCircle2 className="h-4 w-4" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            {schematicSaved ? '已保存' : '保存示意图'}
+          </Button>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="schematic" className="flex-1 flex flex-col overflow-hidden">
-        <div className="px-4 pt-3 border-b border-border bg-card/30">
-          <TabsList className="w-auto">
-            <TabsTrigger value="schematic" className="gap-2">
-              <Camera className="h-4 w-4" />
-              光学示意图
-            </TabsTrigger>
-            <TabsTrigger value="lighting" className="gap-2">
-              <Sun className="h-4 w-4" />
-              打光照片
-              {lightingPhotos.length > 0 && (
-                <span className="ml-1 text-xs bg-primary/20 text-primary rounded-full px-1.5">
-                  {lightingPhotos.length}
-                </span>
-              )}
-            </TabsTrigger>
-          </TabsList>
-        </div>
+      {/* Schematic Canvas */}
+      <div className="flex-1 p-6 overflow-auto">
+        <div 
+          ref={diagramRef}
+          className="relative w-full max-w-5xl mx-auto bg-background rounded-xl border-2 border-border overflow-hidden" 
+          style={{ minHeight: '500px' }}
+        >
+          {/* Vision System Diagram */}
+          <VisionSystemDiagram
+            camera={selectedCamera || null}
+            lens={selectedLens || null}
+            light={selectedLight || null}
+            controller={selectedController || null}
+            cameras={cameras}
+            lenses={lenses}
+            lights={lights}
+            controllers={controllers}
+            onCameraSelect={handleCameraSelect}
+            onLensSelect={handleLensSelect}
+            onLightSelect={handleLightSelect}
+            onControllerSelect={handleControllerSelect}
+            lightDistance={lightDistance}
+            fovAngle={fovAngle}
+            onFovAngleChange={handleFovAngleChange}
+            onLightDistanceChange={handleLightDistanceChange}
+            roiStrategy={module.roi_strategy || 'full'}
+            moduleType={module.type || 'positioning'}
+            interactive={true}
+            className="w-full h-full"
+          />
 
-        <TabsContent value="schematic" className="flex-1 overflow-auto m-0">
-          {/* Export/Save buttons */}
-          <div className="flex items-center justify-end gap-2 p-4 pb-0">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Download className="h-4 w-4" />
-                  导出
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-popover">
-                <DropdownMenuItem onClick={handleExportPNG} className="gap-2 cursor-pointer">
-                  <FileImage className="h-4 w-4" />
-                  导出为 PNG
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportPDF} className="gap-2 cursor-pointer">
-                  <FileText className="h-4 w-4" />
-                  导出为 PDF
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button onClick={handleSaveSchematic} className="gap-2" disabled={savingSchematic}>
-              {savingSchematic ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : schematicSaved ? (
-                <CheckCircle2 className="h-4 w-4" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              {schematicSaved ? '已保存' : '保存示意图'}
-            </Button>
-          </div>
-
-          <div className="p-6 pt-4">
-            <div 
-              ref={diagramRef}
-              className="relative w-full max-w-5xl mx-auto bg-background rounded-xl border-2 border-border overflow-hidden" 
-              style={{ minHeight: '500px' }}
-            >
-              <VisionSystemDiagram
-                camera={selectedCamera || null}
-                lens={selectedLens || null}
-                light={selectedLight || null}
-                controller={selectedController || null}
-                cameras={cameras}
-                lenses={lenses}
-                lights={lights}
-                controllers={controllers}
-                onCameraSelect={handleCameraSelect}
-                onLensSelect={handleLensSelect}
-                onLightSelect={handleLightSelect}
-                onControllerSelect={handleControllerSelect}
-                lightDistance={lightDistance}
-                fovAngle={fovAngle}
-                onFovAngleChange={handleFovAngleChange}
-                onLightDistanceChange={handleLightDistanceChange}
-                roiStrategy={module.roi_strategy || 'full'}
-                moduleType={module.type || 'positioning'}
-                interactive={true}
-                className="w-full h-full"
-              />
-              <div data-screenshot-hide className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm rounded-lg p-3 border shadow-sm">
-                <div className="flex items-center gap-2 mb-2">
-                  <ModuleIcon className="h-4 w-4 text-primary" />
-                  <span className="font-medium text-sm">{module.name}</span>
-                </div>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <div>类型: {moduleTypeLabels[(module.type || 'positioning') as keyof typeof moduleTypeLabels] || module.type || 'positioning'}</div>
-                  {module.processing_time_limit && <div>处理时限: {module.processing_time_limit}ms</div>}
-                  <div>ROI: {(module.roi_strategy || 'full') === 'full' ? '全图检测' : '自定义区域'}</div>
-                </div>
-              </div>
+          {/* Module Info Badge */}
+          <div data-screenshot-hide className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm rounded-lg p-3 border shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <ModuleIcon className="h-4 w-4 text-primary" />
+              <span className="font-medium text-sm">{module.name}</span>
+            </div>
+            <div className="text-xs text-muted-foreground space-y-1">
+              <div>类型: {moduleTypeLabels[(module.type || 'positioning') as keyof typeof moduleTypeLabels] || module.type || 'positioning'}</div>
+              {module.processing_time_limit && <div>处理时限: {module.processing_time_limit}ms</div>}
+              <div>ROI: {(module.roi_strategy || 'full') === 'full' ? '全图检测' : '自定义区域'}</div>
             </div>
           </div>
-        </TabsContent>
-
-        <TabsContent value="lighting" className="flex-1 overflow-auto m-0 p-6">
-          <div className="max-w-5xl mx-auto">
-            <LightingPhotosPanel
-              moduleId={module.id}
-              moduleName={module.name}
-              photos={lightingPhotos}
-              onUpdate={handleLightingPhotosUpdate}
-            />
-          </div>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   );
 }

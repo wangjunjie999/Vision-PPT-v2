@@ -26,7 +26,7 @@ import { HardwareImageUpload } from './HardwareImageUpload';
 import { HardwareBulkImport } from './HardwareBulkImport';
 import { HardwareDetailView } from './HardwareDetailView';
 import { useCameras, useLenses, useLights, useControllers, Camera as CameraType, Lens, Light, Controller } from '@/hooks/useHardware';
-import { api } from '@/api';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface Props {
@@ -208,19 +208,21 @@ export function HardwareResourceManager({ type }: Props) {
   };
 
   const handleBulkImport = async (items: Record<string, any>[]) => {
-    try {
-      await api.hardware.bulkInsert(type, items);
-      
-      // Refetch data
-      switch (type) {
-        case 'cameras': await fetchCameras(); break;
-        case 'lenses': await fetchLenses(); break;
-        case 'lights': await fetchLights(); break;
-        case 'controllers': await fetchControllers(); break;
-      }
-    } catch (error) {
+    const tableName = type;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await supabase.from(tableName).insert(items as any);
+    
+    if (error) {
       toast.error('批量导入失败');
       throw error;
+    }
+    
+    // Refetch data
+    switch (type) {
+      case 'cameras': await fetchCameras(); break;
+      case 'lenses': await fetchLenses(); break;
+      case 'lights': await fetchLights(); break;
+      case 'controllers': await fetchControllers(); break;
     }
   };
 

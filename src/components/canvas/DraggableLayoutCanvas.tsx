@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { toPng } from 'html-to-image';
 import { useData } from '@/contexts/DataContext';
 import { useMechanisms, type Mechanism } from '@/hooks/useMechanisms';
-import { api } from '@/api';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import {
   ContextMenu, ContextMenuContent, ContextMenuItem,
@@ -663,10 +663,11 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         }
         const uploadPromises = viewImages.map(async ({ view, blob }, index) => {
           const fileName = `${workstationId}/${view}-${Date.now()}.jpg`;
-          await api.storage.upload('workstation-views', fileName, new File([blob], `${view}.jpg`, { type: 'image/jpeg' }), { upsert: true });
-          const url = api.storage.getPublicUrl('workstation-views', fileName);
+          const { error: uploadError } = await supabase.storage.from('workstation-views').upload(fileName, blob, { upsert: true, contentType: 'image/jpeg' });
+          if (uploadError) throw uploadError;
+          const { data: urlData } = supabase.storage.from('workstation-views').getPublicUrl(fileName);
           setSaveProgress(55 + Math.round(((index + 1) / views.length) * 45));
-          return { view, url };
+          return { view, url: urlData.publicUrl };
         });
         const uploadResults = await Promise.all(uploadPromises);
         const updateData: Record<string, any> = {};

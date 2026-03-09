@@ -11,7 +11,7 @@ import { StorageMigrationTool } from '../admin/StorageMigrationTool';
 import { UserManagement } from '../admin/UserManagement';
 import { ChangePasswordCard } from '../admin/ChangePasswordCard';
 import { useAdminRole } from '@/hooks/useAdminRole';
-import { api } from '@/api';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ export function AdminCenter() {
     setVerifying(true);
     setError('');
     try {
-      const { data, error: fnError } = await api.functions.invoke('verify-admin-password', {
+      const { data, error: fnError } = await supabase.functions.invoke('verify-admin-password', {
         body: { password: password.trim() },
       });
       if (fnError) throw fnError;

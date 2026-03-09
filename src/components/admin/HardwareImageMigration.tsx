@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { api } from '@/api';
+import { supabase } from '@/integrations/supabase/client';
 import { useHardware } from '@/contexts/HardwareContext';
 import { toast } from 'sonner';
 import { Upload, CheckCircle, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
@@ -83,25 +83,36 @@ export function HardwareImageMigration() {
                      localPath.includes('light') ? 'lights' : 'controllers';
         const generatedPath = `${type}/${fileName}`;
         
-        // Upload to Storage
-        try {
-          await api.storage.upload('hardware-images', generatedPath, new File([blob], fileName), { upsert: true });
-          return getSupabaseStorageUrl(generatedPath);
-        } catch (error) {
+        // Upload to Supabase Storage
+        const { data, error } = await supabase.storage
+          .from('hardware-images')
+          .upload(generatedPath, blob, {
+            cacheControl: '3600',
+            upsert: true,
+          });
+        
+        if (error) {
           console.error('Upload error:', error);
           return null;
         }
+        
+        return getSupabaseStorageUrl(generatedPath);
       }
       
-      // Upload to Storage
-      try {
-        const fileName = storagePath.split('/').pop() || 'image.png';
-        await api.storage.upload('hardware-images', storagePath, new File([blob], fileName), { upsert: true });
-        return getSupabaseStorageUrl(storagePath);
-      } catch (error) {
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('hardware-images')
+        .upload(storagePath, blob, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+      
+      if (error) {
         console.error('Upload error:', error);
         return null;
       }
+      
+      return getSupabaseStorageUrl(storagePath);
     } catch (error) {
       console.error('Failed to upload image:', error);
       return null;
@@ -158,26 +169,21 @@ export function HardwareImageMigration() {
         
         result.newUrl = newUrl;
         
-        // Update database record via API
-        try {
-          switch (item.type) {
-            case 'camera':
-              await api.hardware.updateCamera(item.id, { image_url: newUrl });
-              break;
-            case 'lens':
-              await api.hardware.updateLens(item.id, { image_url: newUrl });
-              break;
-            case 'light':
-              await api.hardware.updateLight(item.id, { image_url: newUrl });
-              break;
-            case 'controller':
-              await api.hardware.updateController(item.id, { image_url: newUrl });
-              break;
-          }
-          result.status = 'success';
-        } catch (err: any) {
+        // Update database record
+        const tableName = item.type === 'camera' ? 'cameras' : 
+                         item.type === 'lens' ? 'lenses' :
+                         item.type === 'light' ? 'lights' : 'controllers';
+        
+        const { error } = await supabase
+          .from(tableName)
+          .update({ image_url: newUrl })
+          .eq('id', item.id);
+        
+        if (error) {
           result.status = 'failed';
-          result.error = err.message || '更新失败';
+          result.error = error.message;
+        } else {
+          result.status = 'success';
         }
       } catch (error) {
         result.status = 'failed';

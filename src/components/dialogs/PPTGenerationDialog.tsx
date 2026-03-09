@@ -37,7 +37,7 @@ import { toast } from 'sonner';
 import { useCameras, useLenses, useLights, useControllers } from '@/hooks/useHardware';
 import { checkPPTReadiness } from '@/services/pptReadiness';
 import { ChevronDown, ChevronUp, ExternalLink, ImageOff, Eye } from 'lucide-react';
-import { api } from '@/api';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePPTTemplates } from '@/hooks/usePPTTemplates';
 import { buildReportData, type HardwareLibrary, type ProductAssetInput, type AnnotationInput } from '@/services/reportDataBuilder';
@@ -266,7 +266,11 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
         if (wsIds.length === 0) return;
         
         // Get product assets with all fields including new detection info
-        const assets = await api.productAssets.listByUserAndScope(user.id, wsIds, modIds);
+        const { data: assets } = await supabase
+          .from('product_assets')
+          .select('id, workstation_id, module_id, scope_type, model_file_url, preview_images, detection_method, product_models, detection_requirements')
+          .eq('user_id', user.id)
+          .or(`workstation_id.in.(${wsIds.join(',')}),module_id.in.(${modIds.join(',')})`);
         
         if (assets && assets.length > 0) {
           // Store product assets for PPT generation
@@ -286,7 +290,11 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
           setProductAssets(mappedAssets);
           
           const assetIds = assets.map(a => a.id);
-          const annotationsData = await api.annotations.listByUser(user.id, assetIds);
+          const { data: annotationsData } = await supabase
+            .from('product_annotations')
+            .select('*')
+            .eq('user_id', user.id)
+            .in('asset_id', assetIds);
           
           if (annotationsData) {
             // Map annotations with scope info
@@ -472,20 +480,28 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
       const timestamp = Date.now();
       const filePath = `${user.id}/${selectedProjectId}/${timestamp}_${fileName}`;
       
-      await api.storage.upload('generated-documents', filePath, new File([blob], fileName));
+      const { error: uploadError } = await supabase.storage
+        .from('generated-documents')
+        .upload(filePath, blob);
+      
+      if (uploadError) throw uploadError;
 
-      await api.documents.create({
-        project_id: selectedProjectId,
-        user_id: user.id,
-        file_url: filePath,
-        file_name: fileName,
-        file_size: blob.size,
-        format,
-        generation_method: method,
-        template_id: selectedTemplateId || null,
-        page_count: pageCount,
-        metadata: { language, quality, mode, scope } as any,
-      });
+      const { error: insertError } = await supabase
+        .from('generated_documents')
+        .insert({
+          project_id: selectedProjectId,
+          user_id: user.id,
+          file_url: filePath,
+          file_name: fileName,
+          file_size: blob.size,
+          format,
+          generation_method: method,
+          template_id: selectedTemplateId || null,
+          page_count: pageCount,
+          metadata: { language, quality, mode, scope },
+        } as any);
+
+      if (insertError) throw insertError;
       addLog('success', '已保存到生成历史');
     } catch (err) {
       console.error('Failed to save to history:', err);

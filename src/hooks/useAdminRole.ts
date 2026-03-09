@@ -1,10 +1,10 @@
 /**
  * Hook for checking admin role using server-side verification
- * Uses the user_roles table through the API adapter
+ * Uses the user_roles table instead of hardcoded passwords
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { api } from '@/api';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function useAdminRole() {
@@ -21,7 +21,21 @@ export function useAdminRole() {
 
     try {
       setIsLoading(true);
-      const data = await api.userRoles.getUserRole(user.id, 'admin');
+      
+      // Query user_roles table to check if user has admin role
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error checking admin role:', error);
+        setIsAdmin(false);
+        return false;
+      }
+
       const hasAdminRole = !!data;
       setIsAdmin(hasAdminRole);
       return hasAdminRole;

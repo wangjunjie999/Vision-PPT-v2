@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { api } from '@/api';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -99,7 +99,12 @@ export function ModuleAnnotationPanel({ moduleId, workstationId }: ModuleAnnotat
     setLoading(true);
     try {
       // Load module-specific asset
-      const moduleAssetData = await api.productAssets.getByModule(moduleId);
+      const { data: moduleAssetData } = await supabase
+        .from('product_assets')
+        .select('*')
+        .eq('module_id', moduleId)
+        .eq('scope_type', 'module')
+        .maybeSingle();
 
       if (moduleAssetData) {
         const previewImages = Array.isArray(moduleAssetData.preview_images)
@@ -108,7 +113,11 @@ export function ModuleAnnotationPanel({ moduleId, workstationId }: ModuleAnnotat
         setModuleAsset({ ...moduleAssetData, preview_images: previewImages } as ProductAsset);
 
         // Load annotations for module asset
-        const annotData = await api.annotations.list(moduleAssetData.id);
+        const { data: annotData } = await supabase
+          .from('product_annotations')
+          .select('*')
+          .eq('asset_id', moduleAssetData.id)
+          .order('version', { ascending: false });
 
         const records = (annotData || []).map(a => ({
           ...a,
@@ -125,7 +134,12 @@ export function ModuleAnnotationPanel({ moduleId, workstationId }: ModuleAnnotat
       }
 
       // Load workstation asset for reference
-      const wsAssetData = await api.productAssets.get(workstationId);
+      const { data: wsAssetData } = await supabase
+        .from('product_assets')
+        .select('*')
+        .eq('workstation_id', workstationId)
+        .eq('scope_type', 'workstation')
+        .maybeSingle();
 
       if (wsAssetData) {
         const previewImages = Array.isArray(wsAssetData.preview_images)
@@ -134,7 +148,11 @@ export function ModuleAnnotationPanel({ moduleId, workstationId }: ModuleAnnotat
         setWorkstationAsset({ ...wsAssetData, preview_images: previewImages } as ProductAsset);
 
         // Load workstation annotations
-        const wsAnnotData = await api.annotations.list(wsAssetData.id);
+        const { data: wsAnnotData } = await supabase
+          .from('product_annotations')
+          .select('*')
+          .eq('asset_id', wsAssetData.id)
+          .order('version', { ascending: false });
 
         const wsRecords = (wsAnnotData || []).map(a => ({
           ...a,
@@ -175,30 +193,46 @@ export function ModuleAnnotationPanel({ moduleId, workstationId }: ModuleAnnotat
 
       const bucket = 'product-models';
       const path = `modules/${moduleId}/${Date.now()}_${file.name}`;
-      await api.storage.upload(bucket, path, file);
-      const fileUrl = api.storage.getPublicUrl(bucket, path);
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(path, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
+      const fileUrl = urlData.publicUrl;
 
       if (moduleAsset) {
-        await api.productAssets.update(moduleAsset.id, {
-          preview_images: [...(moduleAsset.preview_images || []), fileUrl] as any,
-          updated_at: new Date().toISOString(),
-        });
+        const { error } = await supabase
+          .from('product_assets')
+          .update({
+            preview_images: [...(moduleAsset.preview_images || []), fileUrl],
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', moduleAsset.id);
+        if (error) throw error;
       } else {
-        await api.productAssets.create({
+        const { error } = await supabase.from('product_assets').insert({
           module_id: moduleId,
           scope_type: 'module',
           source_type: 'image',
           model_file_url: null,
-          preview_images: [fileUrl] as any,
+          preview_images: [fileUrl],
           user_id: user.id,
         });
+        if (error) throw error;
       }
 
       await loadData();
       toast.success('图片上传成功');
       
       // Auto enter viewer mode after upload
-      const latestAsset = await api.productAssets.getByModule(moduleId);
+      const { data: latestAsset } = await supabase
+        .from('product_assets')
+        .select('*')
+        .eq('module_id', moduleId)
+        .eq('scope_type', 'module')
+        .maybeSingle();
       if (latestAsset) {
         const images = Array.isArray(latestAsset.preview_images) ? latestAsset.preview_images as string[] : [];
         if (latestAsset.model_file_url || images.length > 0) {
@@ -260,12 +294,17 @@ export function ModuleAnnotationPanel({ moduleId, workstationId }: ModuleAnnotat
       // Create module asset if not exists
       let assetId = moduleAsset?.id;
       if (!assetId) {
-        const newAsset = await api.productAssets.create({
-          module_id: moduleId,
-          scope_type: 'module',
-          source_type: 'reference',
-          user_id: user.id,
-        });
+        const { data: newAsset, error: assetError } = await supabase
+          .from('product_assets')
+          .insert({
+            module_id: moduleId,
+            scope_type: 'module',
+            source_type: 'reference',
+            user_id: user.id,
+          })
+          .select()
+          .single();
+        if (assetError) throw assetError;
         assetId = newAsset.id;
       }
 
@@ -275,7 +314,7 @@ export function ModuleAnnotationPanel({ moduleId, workstationId }: ModuleAnnotat
         : 1;
 
       // Create reference annotation
-      await api.annotations.create({
+      const { error } = await supabase.from('product_annotations').insert({
         asset_id: assetId,
         snapshot_url: record.snapshot_url,
         annotations_json: record.annotations_json as unknown as any,
@@ -284,11 +323,13 @@ export function ModuleAnnotationPanel({ moduleId, workstationId }: ModuleAnnotat
           isReference: true,
           referenceAssetId: record.asset_id,
           viewName: `引用工位-版本${record.version}`,
-        } as any,
+        },
         version: nextVersion,
         remark: `引用自工位标注版本${record.version}`,
         user_id: user.id,
       });
+
+      if (error) throw error;
 
       await loadData();
       setReferenceDialogOpen(false);
@@ -310,34 +351,47 @@ export function ModuleAnnotationPanel({ moduleId, workstationId }: ModuleAnnotat
       // Create module asset if not exists
       let assetId = moduleAsset?.id;
       if (!assetId) {
-        const newAsset = await api.productAssets.create({
-          module_id: moduleId,
-          scope_type: 'module',
-          source_type: 'image',
-          user_id: user.id,
-        });
+        const { data: newAsset, error: assetError } = await supabase
+          .from('product_assets')
+          .insert({
+            module_id: moduleId,
+            scope_type: 'module',
+            source_type: 'image',
+            user_id: user.id,
+          })
+          .select()
+          .single();
+        if (assetError) throw assetError;
         assetId = newAsset.id;
       }
 
       // Upload snapshot
       const blob = await fetch(currentSnapshot).then(r => r.blob());
       const path = `modules/${moduleId}/snapshots/${Date.now()}.png`;
-      await api.storage.upload('product-snapshots', path, new File([blob], 'snapshot.png', { type: 'image/png' }));
-      const snapshotUrl = api.storage.getPublicUrl('product-snapshots', path);
+      const { error: uploadError } = await supabase.storage
+        .from('product-snapshots')
+        .upload(path, blob, { contentType: 'image/png' });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('product-snapshots').getPublicUrl(path);
+      const snapshotUrl = urlData.publicUrl;
 
       const nextVersion = moduleAnnotations.length > 0
         ? Math.max(...moduleAnnotations.map(a => a.version)) + 1
         : 1;
 
-      await api.annotations.create({
+      const { error } = await supabase.from('product_annotations').insert({
         asset_id: assetId,
         snapshot_url: snapshotUrl,
         annotations_json: currentAnnotations as unknown as any,
-        view_meta: { viewName: `版本${nextVersion}` } as any,
+        view_meta: { viewName: `版本${nextVersion}` },
         version: nextVersion,
         remark: saveRemark || null,
         user_id: user.id,
       });
+
+      if (error) throw error;
 
       await loadData();
       setIsAnnotating(false);
@@ -362,7 +416,12 @@ export function ModuleAnnotationPanel({ moduleId, workstationId }: ModuleAnnotat
 
   const handleDeleteRecord = async (recordId: string) => {
     try {
-      await api.annotations.delete(recordId);
+      const { error } = await supabase
+        .from('product_annotations')
+        .delete()
+        .eq('id', recordId);
+
+      if (error) throw error;
       await loadData();
       toast.success('记录已删除');
     } catch (error) {

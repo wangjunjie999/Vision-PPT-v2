@@ -1,4 +1,4 @@
-import { api } from '@/api';
+import { supabase } from '@/integrations/supabase/client';
 import { toPng } from 'html-to-image';
 import { compressImage, dataUrlToBlob, QUALITY_PRESETS, type QualityPreset } from '@/utils/imageCompression';
 import { imageLocalCache, blobToDataUri, type ImageCacheType } from '@/services/imageLocalCache';
@@ -26,6 +26,9 @@ export interface MissingImages {
   total: number;
 }
 
+/**
+ * Calculate missing images for a project (only primary + auxiliary views)
+ */
 export function calculateMissingImages(
   projectWorkstations: any[],
   layouts: any[],
@@ -36,31 +39,49 @@ export function calculateMissingImages(
 
   for (const ws of projectWorkstations) {
     const layout = layouts.find(l => l.workstation_id === ws.id);
+    
     if (layout) {
       const primaryView: ViewType = layout.primary_view || 'front';
       const auxiliaryView: ViewType = layout.auxiliary_view || 'side';
       const missingViews: ViewType[] = [];
+      
       if (!layout[`${primaryView}_view_image_url`]) missingViews.push(primaryView);
       if (!layout[`${auxiliaryView}_view_image_url`] && auxiliaryView !== primaryView) missingViews.push(auxiliaryView);
+      
       if (missingViews.length > 0) {
-        missingLayouts.push({ workstationId: ws.id, workstationName: ws.name, missingViews });
+        missingLayouts.push({
+          workstationId: ws.id,
+          workstationName: ws.name,
+          missingViews,
+        });
       }
     }
+    
+    // Check modules for missing schematics
     const modules = getWorkstationModules(ws.id);
     for (const m of modules) {
       if (!(m as any).schematic_image_url) {
-        missingSchematics.push({ moduleId: m.id, moduleName: m.name, workstationName: ws.name });
+        missingSchematics.push({
+          moduleId: m.id,
+          moduleName: m.name,
+          workstationName: ws.name,
+        });
       }
     }
   }
 
+  const total = missingLayouts.reduce((acc, l) => acc + l.missingViews.length, 0) + missingSchematics.length;
+
   return {
     layouts: missingLayouts,
     schematics: missingSchematics,
-    total: missingLayouts.reduce((acc, l) => acc + l.missingViews.length, 0) + missingSchematics.length,
+    total,
   };
 }
 
+/**
+ * Save a single view image to storage and update layout
+ */
 export async function saveViewToStorage(
   workstationId: string,
   layoutId: string,
@@ -70,25 +91,51 @@ export async function saveViewToStorage(
 ): Promise<string> {
   const fileName = `${workstationId}/${view}-${Date.now()}.jpg`;
   
-  await api.storage.upload('workstation-views', fileName, imageBlob as File, { upsert: true });
-  const publicUrl = api.storage.getPublicUrl('workstation-views', fileName);
+  // Upload to storage
+  const { error: uploadError } = await supabase.storage
+    .from('workstation-views')
+    .upload(fileName, imageBlob, { 
+      upsert: true,
+      contentType: 'image/jpeg',
+    });
   
+  if (uploadError) throw uploadError;
+  
+  // Get public URL
+  const { data: urlData } = supabase.storage
+    .from('workstation-views')
+    .getPublicUrl(fileName);
+  
+  // Update layout
   const updateField = `${view}_view_image_url`;
   const savedField = `${view}_view_saved`;
   
-  await updateLayout(layoutId, { [updateField]: publicUrl, [savedField]: true } as any);
+  await updateLayout(layoutId, {
+    [updateField]: urlData.publicUrl,
+    [savedField]: true,
+  } as any);
   
+  // 同时缓存到本地 IndexedDB
   try {
-    const cacheType: ImageCacheType = view === 'front' ? 'layout_front_view' : view === 'side' ? 'layout_side_view' : 'layout_top_view';
+    const cacheType: ImageCacheType = view === 'front' 
+      ? 'layout_front_view' 
+      : view === 'side' 
+        ? 'layout_side_view' 
+        : 'layout_top_view';
+    
     const dataUri = await blobToDataUri(imageBlob);
-    await imageLocalCache.set(cacheType, workstationId, publicUrl, dataUri);
+    await imageLocalCache.set(cacheType, workstationId, urlData.publicUrl, dataUri);
+    console.log(`[ImageCache] 三视图已同步缓存: ${view} - ${workstationId}`);
   } catch (cacheError) {
-    console.warn('[ImageCache] 本地缓存失败:', cacheError);
+    console.warn('[ImageCache] 本地缓存失败，不影响主流程:', cacheError);
   }
   
-  return publicUrl;
+  return urlData.publicUrl;
 }
 
+/**
+ * Save module schematic to storage and update module
+ */
 export async function saveSchematicToStorage(
   moduleId: string,
   imageBlob: Blob,
@@ -96,28 +143,54 @@ export async function saveSchematicToStorage(
 ): Promise<string> {
   const fileName = `module-schematic-${moduleId}-${Date.now()}.png`;
   
-  // Clean up old files
-  try {
-    const oldFiles = await api.storage.listFiles('module-schematics', '', { limit: 100 });
-    const toRemove = oldFiles.filter(f => f.name?.startsWith(`module-schematic-${moduleId}`)).map(f => f.name);
-    if (toRemove.length) await api.storage.remove('module-schematics', toRemove);
-  } catch { /* ignore cleanup errors */ }
+  // 清理该模块所有旧文件（按前缀搜索）
+  const { data: oldFiles } = await supabase.storage
+    .from('module-schematics')
+    .list('', { search: `module-schematic-${moduleId}` });
+  if (oldFiles?.length) {
+    await supabase.storage.from('module-schematics')
+      .remove(oldFiles.map(f => f.name));
+  }
   
-  await api.storage.upload('module-schematics', fileName, imageBlob as File, { upsert: true });
-  const publicUrl = api.storage.getPublicUrl('module-schematics', fileName);
+  // Upload new file
+  const { error: uploadError } = await supabase.storage
+    .from('module-schematics')
+    .upload(fileName, imageBlob, {
+      contentType: 'image/png',
+      upsert: true
+    });
+    
+  if (uploadError) throw uploadError;
   
-  await updateModule(moduleId, { schematic_image_url: publicUrl, status: 'complete' });
+  // Get public URL
+  const { data: { publicUrl } } = supabase.storage
+    .from('module-schematics')
+    .getPublicUrl(fileName);
   
+  // Update module with schematic URL
+  await updateModule(moduleId, { 
+    schematic_image_url: publicUrl,
+    status: 'complete'
+  });
+  
+  // 同时缓存到本地 IndexedDB
   try {
     const dataUri = await blobToDataUri(imageBlob);
     await imageLocalCache.set('module_schematic', moduleId, publicUrl, dataUri);
+    console.log(`[ImageCache] 示意图已同步缓存: ${moduleId}`);
   } catch (cacheError) {
-    console.warn('[ImageCache] 本地缓存失败:', cacheError);
+    console.warn('[ImageCache] 本地缓存失败，不影响主流程:', cacheError);
   }
   
   return publicUrl;
 }
 
+/**
+ * Generate image from an HTML element
+ */
+/**
+ * Inject a <style> tag to force all text white for consistent screenshots
+ */
 function injectForceWhiteStyle(container: HTMLElement): HTMLStyleElement {
   const style = document.createElement('style');
   style.id = 'capture-force-white';
@@ -132,33 +205,79 @@ function injectForceWhiteStyle(container: HTMLElement): HTMLStyleElement {
 
 export async function generateImageFromElement(
   element: HTMLElement,
-  options: { quality?: QualityPreset; backgroundColor?: string; format?: 'jpeg' | 'png'; forceWhiteText?: boolean } = {}
+  options: {
+    quality?: QualityPreset;
+    backgroundColor?: string;
+    format?: 'jpeg' | 'png';
+    forceWhiteText?: boolean;
+  } = {}
 ): Promise<Blob> {
   const { quality = 'fast', backgroundColor = '#1e293b', format = 'jpeg', forceWhiteText = false } = options;
   const preset = QUALITY_PRESETS[quality];
   
+  // Inject force-white style if requested
   let injectedStyle: HTMLStyleElement | null = null;
-  if (forceWhiteText) injectedStyle = injectForceWhiteStyle(element);
+  if (forceWhiteText) {
+    injectedStyle = injectForceWhiteStyle(element);
+  }
 
-  await new Promise<void>((resolve) => { requestAnimationFrame(() => { requestAnimationFrame(() => { resolve(); }); }); });
+  // Wait for render
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        resolve();
+      });
+    });
+  });
   
+  // Use try-catch to handle memory issues with large images
   let dataUrl: string;
   try {
-    dataUrl = await toPng(element, { quality: preset.quality, pixelRatio: Math.min(preset.pixelRatio, 2), backgroundColor, skipFonts: true, cacheBust: true });
+    dataUrl = await toPng(element, {
+      quality: preset.quality,
+      pixelRatio: Math.min(preset.pixelRatio, 2),
+      backgroundColor,
+      skipFonts: true,
+      cacheBust: true,
+    });
   } catch (error) {
-    console.warn('First capture failed, retrying:', error);
-    dataUrl = await toPng(element, { quality: 0.6, pixelRatio: 1, backgroundColor, skipFonts: true, cacheBust: true });
+    console.warn('First image capture attempt failed, retrying with lower quality:', error);
+    dataUrl = await toPng(element, {
+      quality: 0.6,
+      pixelRatio: 1,
+      backgroundColor,
+      skipFonts: true,
+      cacheBust: true,
+    });
   } finally {
-    if (injectedStyle) injectedStyle.remove();
+    // Always remove injected style
+    if (injectedStyle) {
+      injectedStyle.remove();
+    }
   }
   
   const originalBlob = dataUrlToBlob(dataUrl);
+  
   if (format === 'jpeg') {
-    return await compressImage(originalBlob, { quality: preset.quality, maxWidth: preset.maxWidth, maxHeight: preset.maxHeight, format: 'image/jpeg' });
+    return await compressImage(originalBlob, {
+      quality: preset.quality,
+      maxWidth: preset.maxWidth,
+      maxHeight: preset.maxHeight,
+      format: 'image/jpeg',
+    });
   }
+  
   return originalBlob;
 }
 
+/**
+ * View name in Chinese
+ */
 export function getViewLabel(view: ViewType): string {
-  return { front: '正视图', side: '侧视图', top: '俯视图' }[view];
+  const labels: Record<ViewType, string> = {
+    front: '正视图',
+    side: '侧视图',
+    top: '俯视图',
+  };
+  return labels[view];
 }
