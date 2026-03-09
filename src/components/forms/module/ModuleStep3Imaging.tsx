@@ -254,8 +254,8 @@ export function ModuleStep3Imaging({ form, setForm }: ModuleStep3ImagingProps) {
               className="h-9" 
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">光源垂直距离 (mm)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">光源垂直距离 (mm)</Label>
             <Input 
               value={form.lightDistanceVertical || ''} 
               onChange={e => setForm(p => ({ ...p, lightDistanceVertical: e.target.value }))} 
@@ -263,8 +263,8 @@ export function ModuleStep3Imaging({ form, setForm }: ModuleStep3ImagingProps) {
               className="h-9" 
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">光源备注</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">光源备注</Label>
             <Input 
               value={form.lightNote || ''} 
               onChange={e => setForm(p => ({ ...p, lightNote: e.target.value }))} 
@@ -279,8 +279,8 @@ export function ModuleStep3Imaging({ form, setForm }: ModuleStep3ImagingProps) {
       <div className="space-y-3">
         <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">镜头参数</h4>
         <div className="grid grid-cols-3 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">光圈 (F值)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">光圈 (F值)</Label>
             <Input 
               value={form.lensAperture || ''} 
               onChange={e => setForm(p => ({ ...p, lensAperture: e.target.value }))} 
@@ -288,8 +288,8 @@ export function ModuleStep3Imaging({ form, setForm }: ModuleStep3ImagingProps) {
               className="h-9" 
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">景深 (mm)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">景深 (mm)</Label>
             <Input 
               value={form.depthOfField || ''} 
               onChange={e => setForm(p => ({ ...p, depthOfField: e.target.value }))} 
@@ -297,8 +297,8 @@ export function ModuleStep3Imaging({ form, setForm }: ModuleStep3ImagingProps) {
               className="h-9" 
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">工作距离公差 (±mm)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">工作距离公差 (±mm)</Label>
             <Input 
               value={form.workingDistanceTolerance || ''} 
               onChange={e => setForm(p => ({ ...p, workingDistanceTolerance: e.target.value }))} 
@@ -312,7 +312,7 @@ export function ModuleStep3Imaging({ form, setForm }: ModuleStep3ImagingProps) {
       {/* Camera installation notes */}
       <div className="space-y-3">
         <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">相机安装说明</h4>
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <Input 
             value={form.cameraInstallNote || ''} 
             onChange={e => setForm(p => ({ ...p, cameraInstallNote: e.target.value }))} 
