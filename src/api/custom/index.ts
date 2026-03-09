@@ -133,6 +133,9 @@ export function createCustomAdapter(baseUrl: string): ApiAdapter {
       async updateController(id, data) { return fetchApi(`/hardware/controllers/${id}`, { method: 'PUT', body: JSON.stringify(data) }); },
       async deleteController(id) { await fetchApi(`/hardware/controllers/${id}`, { method: 'DELETE' }); },
       async listMechanisms() { return fetchApi('/hardware/mechanisms'); },
+      async addMechanism(data) { return fetchApi('/hardware/mechanisms', { method: 'POST', body: JSON.stringify(data) }); },
+      async updateMechanism(id, data) { return fetchApi(`/hardware/mechanisms/${id}`, { method: 'PUT', body: JSON.stringify(data) }); },
+      async deleteMechanism(id) { await fetchApi(`/hardware/mechanisms/${id}`, { method: 'DELETE' }); },
     },
 
     assets: {
