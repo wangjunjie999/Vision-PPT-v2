@@ -1,44 +1,59 @@
 
 
-# FOV 输入改为两个独立数值框
+# 打光照片功能 — 实现计划
 
-## 问题
+## 需求确认
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+打光照片插入位置：**光学方案示意图之后、BOM清单之前**。
 
-## 修改方案
-
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
-
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
-
-在 `getDefaultFormState` 中添加默认值 `''`。
-
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
-
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
-
-```
-[宽度输入] × [高度输入]
+当前 PPT 工位页面顺序：
+```text
+a. 基本信息+检测要求
+b. 产品示意图
+c. 机械布局
+d. 光学方案 × N（每模块一页）
+e. BOM清单
 ```
 
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+目标顺序：
+```text
+a. 基本信息+检测要求
+b. 产品示意图
+c. 机械布局
+d. 光学方案 × N
+e. 打光照片 × N  ← 新增
+f. BOM清单
+```
 
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+## 数据存储建议
 
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+打光照片属于**模块级别**数据（每个模块有独立的光源配置，打光效果不同）。
 
-### 4. PPT 输出不变
+- 在 `function_modules` 表新增 `lighting_photos jsonb default '[]'` 字段
+- 结构：`[{ url: string, remark?: string, created_at: string }]`
+- 每模块支持 1-4 张照片
+- 图片文件上传到已有的 `module-schematics` 存储桶（复用，无需新建）
 
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+## 改动范围
 
-### 5. 自动计算兼容
+### 1. 数据库迁移
+- `ALTER TABLE function_modules ADD COLUMN lighting_photos jsonb DEFAULT '[]'`
 
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+### 2. 前端 UI — 打光照片上传面板
+- 新建 `src/components/canvas/LightingPhotosPanel.tsx`
+- 放在模块编辑区域，与 ModuleSchematic（光学示意图）同级切换或作为子面板
+- 功能：拖拽上传、预览缩略图、删除、添加备注
+- 通过 `api.modules.update()` 和 `api.storage.upload()` 保存
+
+### 3. PPT 生成
+- `workstationSlides.ts`：新增 `generateLightingPhotosSlide()` 函数
+- `pptxGenerator.ts`：在光学方案循环之后、BOM之前插入打光照片幻灯片
+- 布局：1张居中大图，2张左右并排，3-4张 2×2 网格，每图下方显示备注
+
+### 4. API 适配层
+- 无需新增接口，`api.modules.update()` 已支持 JSONB 字段更新
+- `api.storage` 已有上传能力
+
+### 5. PPT 图片预检
+- `PPTImagePreviewDialog.tsx` 中增加打光照片检查项
 
