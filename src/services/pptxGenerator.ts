@@ -10,6 +10,7 @@ import {
   generateProductSchematicSlide,
   generateLayoutAndOpticalSlide,
   generateModuleOpticalSlide,
+  generateLightingPhotosSlide,
   generateBOMSlide,
 } from './pptx/workstationSlides';
 import {

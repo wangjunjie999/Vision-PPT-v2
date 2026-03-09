@@ -1487,3 +1487,73 @@ export async function generateModuleOpticalSlide(
     fontSize: 8, fontFace: FONTS.body, color: COLORS.dark,
   });
 }
+
+/**
+ * Slide: Lighting Photos (打光照片)
+ * Dynamic layout: 1 centered, 2 side-by-side, 3-4 in 2×2 grid
+ */
+export async function generateLightingPhotosSlide(
+  ctx: SlideContext,
+  data: WorkstationSlideData,
+  moduleIndex: number
+): Promise<void> {
+  const mod = data.modules[moduleIndex];
+  const photos = mod.lighting_photos || [];
+  if (photos.length === 0) return;
+
+  const slide = ctx.pptx.addSlide({ masterName: 'MASTER_SLIDE' });
+  const subtitle = `${mod.name} - ${ctx.isZh ? '打光照片' : 'Lighting Photos'}`;
+  addSlideTitle(slide, ctx, subtitle);
+
+  const count = photos.length;
+
+  // Layout configurations
+  const layouts: Record<number, Array<{ x: number; y: number; w: number; h: number }>> = {
+    1: [{ x: 1.5, y: 1.2, w: 7, h: 3.8 }],
+    2: [
+      { x: 0.3, y: 1.2, w: 4.5, h: 3.5 },
+      { x: 5.2, y: 1.2, w: 4.5, h: 3.5 },
+    ],
+    3: [
+      { x: 0.3, y: 1.1, w: 4.5, h: 2.2 },
+      { x: 5.2, y: 1.1, w: 4.5, h: 2.2 },
+      { x: 0.3, y: 3.5, w: 4.5, h: 2.2 },
+    ],
+    4: [
+      { x: 0.3, y: 1.1, w: 4.5, h: 2.2 },
+      { x: 5.2, y: 1.1, w: 4.5, h: 2.2 },
+      { x: 0.3, y: 3.5, w: 4.5, h: 2.2 },
+      { x: 5.2, y: 3.5, w: 4.5, h: 2.2 },
+    ],
+  };
+
+  const positions = layouts[Math.min(count, 4)] || layouts[4];
+
+  for (let i = 0; i < Math.min(count, 4); i++) {
+    const photo = photos[i];
+    const pos = positions[i];
+
+    try {
+      const dataUri = await fetchImageAsDataUri(photo.url);
+      if (dataUri) {
+        // Calculate contain fit within the position box
+        const dims = await getImageDimensions(dataUri).catch(() => ({ width: 800, height: 600 }));
+        const fit = calculateContainFit(dims.width, dims.height, pos);
+        slide.addImage({ data: dataUri, x: fit.x, y: fit.y, w: fit.width, h: fit.height });
+      } else {
+        addImagePlaceholder(slide, pos, ctx.isZh ? '图片加载失败' : 'Image load failed', '📷');
+      }
+    } catch {
+      addImagePlaceholder(slide, pos, ctx.isZh ? '图片加载失败' : 'Image load failed', '📷');
+    }
+
+    // Remark text below image
+    if (photo.remark) {
+      const remarkY = count <= 2 ? pos.y + pos.h + 0.05 : pos.y + pos.h + 0.02;
+      slide.addText(photo.remark, {
+        x: pos.x, y: remarkY, w: pos.w, h: 0.2,
+        fontSize: 8, fontFace: FONTS.body, color: COLORS.secondary, align: 'center',
+      });
+    }
+  }
+}
