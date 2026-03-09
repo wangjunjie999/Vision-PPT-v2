@@ -249,6 +249,26 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
                     </div>
                   )}
 
+                  {/* Lighting photos */}
+                  {wsLightingPhotos.length > 0 && (
+                    <div className="ml-6">
+                      <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                        <Sun className="h-3 w-3" />
+                        打光照片
+                      </p>
+                      <div className="grid grid-cols-3 gap-3">
+                        {wsLightingPhotos.map((lp, i) => (
+                          <ImageThumbnail
+                            key={`lp-${i}`}
+                            label={`${lp.moduleName} - ${lp.remark}`}
+                            url={lp.url}
+                            onPreview={() => handlePreview(lp.url, `${lp.moduleName} - ${lp.remark}`)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <Separator className="opacity-50" />
                 </div>
               ))}
