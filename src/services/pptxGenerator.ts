@@ -1075,7 +1075,12 @@ export async function generatePPTX(
         step++;
         onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '打光照片' : 'Lighting'}: ${mod.name}`, `[SLIDE:${ws.name}:e${mi + 1}] ${isZh ? '打光照片' : 'Lighting'}: ${mod.name}`);
         const { generateLightingPhotosSlide } = await import('./pptx/workstationSlides');
-        await generateLightingPhotosSlide({ pptx, isZh }, ws.name, mod.name, lightingPhotos);
+        await generateLightingPhotosSlide({ pptx, isZh }, ws.name, mod.name, lightingPhotos, {
+          selectedLight: mod.selected_light || undefined,
+          selectedCamera: mod.selected_camera || undefined,
+          selectedLens: mod.selected_lens || undefined,
+          triggerType: mod.trigger_type || undefined,
+        });
       }
     }
     
