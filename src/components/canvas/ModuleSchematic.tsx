@@ -333,12 +333,6 @@ export function ModuleSchematic() {
     }
   };
 
-  // Lighting photos save handler
-  const handleSaveLightingPhotos = useCallback(async (photos: Array<{ url: string; remark: string; created_at: string }>) => {
-    await updateModule(module.id, { lighting_photos: photos } as any);
-  }, [module.id, updateModule]);
-
-  const lightingPhotos = Array.isArray((module as any).lighting_photos) ? (module as any).lighting_photos : [];
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
