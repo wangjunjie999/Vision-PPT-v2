@@ -2068,6 +2068,70 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                       {obj.name}
                     </text>
                     
+                    {/* Category label badge */}
+                    {(() => {
+                      const isCameraType = CAMERA_INTERACTION_TYPES.includes(obj.mechanismType || '');
+                      const isProductType = PRODUCT_INTERACTION_TYPES.includes(obj.mechanismType || '');
+                      if (!isCameraType && !isProductType) return null;
+                      const badgeColor = isCameraType ? '#3b82f6' : '#22c55e';
+                      const badgeBg = isCameraType ? 'rgba(59,130,246,0.2)' : 'rgba(34,197,94,0.2)';
+                      const badgeIcon = isCameraType ? '📷' : '📦';
+                      const badgeLabel = isCameraType ? '相机' : '产品';
+                      return (
+                        <g transform={`translate(${-obj.width / 2 + 2}, ${-obj.height / 2 - 4})`}>
+                          <rect x={0} y={-10} width={36} height={14} rx={7} fill={badgeBg} stroke={badgeColor} strokeWidth={1} />
+                          <text x={4} y={0} fill={badgeColor} fontSize="8" fontWeight="600">
+                            {badgeIcon} {badgeLabel}
+                          </text>
+                        </g>
+                      );
+                    })()}
+                    
+                    {/* Incompatibility warning when dragging */}
+                    {isDragging && draggingObject && (() => {
+                      const mechType = obj.mechanismType || '';
+                      const isCameraMech = CAMERA_INTERACTION_TYPES.includes(mechType);
+                      const isProductMech = PRODUCT_INTERACTION_TYPES.includes(mechType);
+                      const draggingCamera = draggingObject.type === 'camera';
+                      const draggingProduct = draggingObject.type === 'product';
+                      
+                      // Check if dragging object is near this mechanism
+                      const dx = draggingObject.x - obj.x;
+                      const dy = draggingObject.y - obj.y;
+                      const distance = Math.sqrt(dx * dx + dy * dy);
+                      const warningThreshold = 120;
+                      
+                      const isIncompatible = (
+                        (draggingCamera && isProductMech) ||
+                        (draggingProduct && isCameraMech)
+                      );
+                      
+                      if (!isIncompatible || distance > warningThreshold) return null;
+                      
+                      return (
+                        <g>
+                          {/* Red overlay */}
+                          <rect
+                            x={-obj.width / 2 - 3}
+                            y={-obj.height / 2 - 3}
+                            width={obj.width + 6}
+                            height={obj.height + 6}
+                            fill="rgba(239,68,68,0.15)"
+                            stroke="#ef4444"
+                            strokeWidth={2}
+                            strokeDasharray="4 3"
+                            rx={6}
+                          />
+                          {/* Prohibition icon */}
+                          <circle cx={0} cy={-obj.height / 2 - 16} r={12} fill="rgba(239,68,68,0.9)" />
+                          <line x1={-6} y1={-obj.height / 2 - 16} x2={6} y2={-obj.height / 2 - 16} stroke="#fff" strokeWidth={2.5} />
+                          <text x={14} y={-obj.height / 2 - 12} fill="#ef4444" fontSize="8" fontWeight="600">
+                            {draggingCamera ? '不支持相机' : '不支持产品'}
+                          </text>
+                        </g>
+                      );
+                    })()}
+                    
                     {obj.locked && (
                       <g transform={`translate(${obj.width / 2 - 6}, ${-obj.height / 2 - 6})`}>
                         <circle r={10} fill="#1e293b" stroke="#64748b" strokeWidth="1.5" />
