@@ -2,7 +2,7 @@
  * Asset Registry Hook - React hook for unified asset management
  */
 import { useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import {
@@ -106,32 +106,19 @@ export function useAssetRegistry() {
     setLoading(true);
     try {
       // Get asset info first
-      const { data: asset, error: fetchError } = await supabase
-        .from('asset_registry')
-        .select('*')
-        .eq('id', assetId)
-        .single();
+      const assets = await api.assets.list({ relatedId: assetId });
+      const asset = assets.find(a => a.id === assetId);
 
-      if (fetchError || !asset) {
+      if (!asset) {
         toast.error('资产不存在');
         return false;
       }
 
       // Delete from storage
-      await supabase.storage
-        .from('project-assets')
-        .remove([asset.file_path]);
+      await api.storage.remove('project-assets', [asset.file_path]);
 
       // Delete from registry
-      const { error: deleteError } = await supabase
-        .from('asset_registry')
-        .delete()
-        .eq('id', assetId);
-
-      if (deleteError) {
-        toast.error('删除资产失败');
-        return false;
-      }
+      await api.assets.delete(assetId);
 
       // Update local state
       setAssets(prev => prev.filter(a => a.id !== assetId));
@@ -200,34 +187,22 @@ export function useAssetRegistry() {
     setLoading(true);
     try {
       // Get the asset to restore
-      const { data: asset, error: fetchError } = await supabase
-        .from('asset_registry')
-        .select('*')
-        .eq('id', assetId)
-        .single();
+      const versions = await api.assets.getVersions(assetId, '');
+      const asset = versions.find(a => a.id === assetId);
 
-      if (fetchError || !asset) {
+      if (!asset) {
         toast.error('资产不存在');
         return false;
       }
 
       // Mark all versions of this asset as not current
-      await supabase
-        .from('asset_registry')
-        .update({ is_current: false })
-        .eq('related_id', asset.related_id)
-        .eq('asset_type', asset.asset_type);
+      await api.assets.updateByFilter(
+        { relatedId: asset.related_id, assetType: asset.asset_type },
+        { is_current: false }
+      );
 
       // Mark the selected version as current
-      const { error: updateError } = await supabase
-        .from('asset_registry')
-        .update({ is_current: true })
-        .eq('id', assetId);
-
-      if (updateError) {
-        toast.error('恢复版本失败');
-        return false;
-      }
+      await api.assets.update(assetId, { is_current: true });
 
       toast.success('已恢复到该版本');
       return true;
