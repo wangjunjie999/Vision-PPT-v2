@@ -1,0 +1,1 @@
+ALTER TABLE public.function_modules ADD COLUMN IF NOT EXISTS lighting_photos jsonb DEFAULT '[]';

@@ -1486,3 +1486,80 @@ export async function generateModuleOpticalSlide(
     fontSize: 8, fontFace: FONTS.body, color: COLORS.dark,
   });
 }
+
+// ===== LIGHTING PHOTOS SLIDE =====
+interface LightingPhoto {
+  url: string;
+  remark?: string;
+  created_at?: string;
+}
+
+export async function generateLightingPhotosSlide(
+  ctx: { pptx: PptxGenJS; isZh: boolean },
+  wsName: string,
+  moduleName: string,
+  photos: LightingPhoto[],
+) {
+  if (!photos || photos.length === 0) return;
+
+  const slide = ctx.pptx.addSlide({ masterName: 'MASTER_SLIDE' });
+
+  // Title
+  slide.addText(ctx.isZh ? '打光效果' : 'Lighting Effect', {
+    x: 0.4, y: 0.05, w: 7.5, h: 0.38,
+    fontSize: 18, fontFace: FONTS.heading, color: COLORS.primary, bold: true,
+    shadow: HEADING_SHADOW,
+  });
+  slide.addText(`${wsName} / ${moduleName}`, {
+    x: 0, y: 0.52, w: '100%', h: 0.22,
+    fontSize: 10, fontFace: FONTS.body, color: COLORS.white, align: 'center', valign: 'middle',
+  });
+
+  const contentY = 0.85;
+  const contentH = 4.4;
+  const contentW = SLIDE_LAYOUT.contentWidth;
+  const contentX = SLIDE_LAYOUT.contentLeft;
+  const remarkH = 0.3;
+
+  if (photos.length === 1) {
+    // Single image centered
+    const imgW = contentW * 0.7;
+    const imgH = contentH - remarkH;
+    const imgX = contentX + (contentW - imgW) / 2;
+    try {
+      const dataUri = await fetchImageAsDataUri(photos[0].url);
+      slide.addImage({ data: dataUri, x: imgX, y: contentY, w: imgW, h: imgH, sizing: { type: 'contain', w: imgW, h: imgH } });
+    } catch {
+      slide.addShape('rect', { x: imgX, y: contentY, w: imgW, h: imgH, fill: { color: COLORS.lightGray }, line: { color: COLORS.border, width: 0.5 } });
+      slide.addText(ctx.isZh ? '图片加载失败' : 'Image load failed', { x: imgX, y: contentY + imgH / 2 - 0.15, w: imgW, h: 0.3, fontSize: 10, color: COLORS.textSecondary, align: 'center' });
+    }
+    if (photos[0].remark) {
+      slide.addText(photos[0].remark, { x: imgX, y: contentY + imgH + 0.05, w: imgW, h: remarkH, fontSize: 9, fontFace: FONTS.body, color: COLORS.textSecondary, align: 'center' });
+    }
+  } else {
+    // 2 photos: side by side; 3-4 photos: 2x2 grid
+    const cols = 2;
+    const rows = photos.length <= 2 ? 1 : 2;
+    const gap = 0.15;
+    const cellW = (contentW - gap * (cols - 1)) / cols;
+    const cellH = (contentH - gap * (rows - 1)) / rows;
+    const imgH = cellH - remarkH;
+
+    for (let i = 0; i < photos.length; i++) {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = contentX + col * (cellW + gap);
+      const y = contentY + row * (cellH + gap);
+
+      try {
+        const dataUri = await fetchImageAsDataUri(photos[i].url);
+        slide.addImage({ data: dataUri, x, y, w: cellW, h: imgH, sizing: { type: 'contain', w: cellW, h: imgH } });
+      } catch {
+        slide.addShape('rect', { x, y, w: cellW, h: imgH, fill: { color: COLORS.lightGray }, line: { color: COLORS.border, width: 0.5 } });
+      }
+      if (photos[i].remark) {
+        slide.addText(photos[i].remark, { x, y: y + imgH + 0.02, w: cellW, h: remarkH, fontSize: 8, fontFace: FONTS.body, color: COLORS.textSecondary, align: 'center' });
+      }
+    }
+  }
+}
