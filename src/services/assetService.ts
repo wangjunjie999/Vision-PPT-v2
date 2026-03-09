@@ -2,7 +2,6 @@
  * Asset Service - Unified asset management with standardized naming
  */
 import { api } from '@/api';
-import type { AssetType as DbAssetType } from '@/api/types';
 
 export type AssetType = 
   | 'workstation_product'
