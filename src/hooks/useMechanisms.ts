@@ -91,18 +91,30 @@ export function useMechanisms() {
   useEffect(() => { fetchMechanisms(); }, [fetchMechanisms]);
 
   const addMechanism = async (mechanism: MechanismInsert) => {
-    // For now, mechanisms don't have a dedicated create method in the hardware API
-    // We'll use the supabase adapter directly through a workaround
-    // TODO: Add addMechanism to IHardwareApi if needed
-    throw new Error('addMechanism should be called through the MechanismResourceManager which uses its own supabase calls');
+    const data = await api.hardware.addMechanism({
+      ...mechanism,
+      camera_mount_points: mechanism.camera_mount_points as any,
+      camera_work_distance_range: mechanism.camera_work_distance_range as any,
+    });
+    const newMech = transformMechanism(data);
+    setMechanisms(prev => [...prev, newMech]);
+    return newMech;
   };
 
   const updateMechanism = async (id: string, updates: MechanismUpdate) => {
-    throw new Error('updateMechanism should be called through the MechanismResourceManager');
+    const data = await api.hardware.updateMechanism(id, {
+      ...updates,
+      camera_mount_points: updates.camera_mount_points as any,
+      camera_work_distance_range: updates.camera_work_distance_range as any,
+    });
+    const updatedMech = transformMechanism(data);
+    setMechanisms(prev => prev.map(m => m.id === id ? updatedMech : m));
+    return updatedMech;
   };
 
   const deleteMechanism = async (id: string) => {
-    throw new Error('deleteMechanism should be called through the MechanismResourceManager');
+    await api.hardware.deleteMechanism(id);
+    setMechanisms(prev => prev.filter(m => m.id !== id));
   };
 
   const getEnabledMechanisms = useCallback(() => {
