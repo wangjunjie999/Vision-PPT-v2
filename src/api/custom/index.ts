@@ -12,10 +12,6 @@
 
 import type { ApiAdapter } from '../types';
 
-function notImplemented(method: string): never {
-  throw new Error(`[CustomAdapter] ${method} is not implemented. Please implement this method for your backend.`);
-}
-
 function createHeaders(token?: string): HeadersInit {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -75,10 +71,22 @@ export function createCustomAdapter(baseUrl: string): ApiAdapter {
         // Optionally call: await fetchApi('/auth/signout', { method: 'POST' });
       },
       async getSession() {
-        notImplemented('auth.getSession');
+        if (!authToken) return { session: null };
+        try {
+          const data = await fetchApi('/auth/session');
+          return { session: data.session };
+        } catch {
+          return { session: null };
+        }
       },
       async getUser() {
-        notImplemented('auth.getUser');
+        if (!authToken) return { user: null };
+        try {
+          const data = await fetchApi('/auth/user');
+          return { user: data.user };
+        } catch {
+          return { user: null };
+        }
       },
       onAuthStateChange(_callback) {
         // Custom backends typically use token-based auth without realtime state changes
@@ -136,6 +144,9 @@ export function createCustomAdapter(baseUrl: string): ApiAdapter {
       async addMechanism(data) { return fetchApi('/hardware/mechanisms', { method: 'POST', body: JSON.stringify(data) }); },
       async updateMechanism(id, data) { return fetchApi(`/hardware/mechanisms/${id}`, { method: 'PUT', body: JSON.stringify(data) }); },
       async deleteMechanism(id) { await fetchApi(`/hardware/mechanisms/${id}`, { method: 'DELETE' }); },
+      async bulkInsert(type, items) { 
+        await fetchApi(`/hardware/${type}/bulk`, { method: 'POST', body: JSON.stringify({ items }) }); 
+      },
     },
 
     assets: {
@@ -188,6 +199,12 @@ export function createCustomAdapter(baseUrl: string): ApiAdapter {
       async create(data) { return fetchApi('/product-assets', { method: 'POST', body: JSON.stringify(data) }); },
       async update(id, data) { return fetchApi(`/product-assets/${id}`, { method: 'PUT', body: JSON.stringify(data) }); },
       async delete(id) { await fetchApi(`/product-assets/${id}`, { method: 'DELETE' }); },
+      async listByWorkstations(wsIds) { 
+        return fetchApi(`/product-assets/by-workstations?ids=${wsIds.join(',')}`); 
+      },
+      async listByUserAndScope(userId, wsIds, modIds) {
+        return fetchApi(`/product-assets/by-scope?userId=${userId}&wsIds=${wsIds.join(',')}&modIds=${modIds.join(',')}`);
+      },
     },
 
     annotations: {
@@ -195,13 +212,35 @@ export function createCustomAdapter(baseUrl: string): ApiAdapter {
       async create(data) { return fetchApi('/annotations', { method: 'POST', body: JSON.stringify(data) }); },
       async update(id, data) { return fetchApi(`/annotations/${id}`, { method: 'PUT', body: JSON.stringify(data) }); },
       async delete(id) { await fetchApi(`/annotations/${id}`, { method: 'DELETE' }); },
+      async listByWorkstations(wsIds) {
+        return fetchApi(`/annotations/by-workstations?ids=${wsIds.join(',')}`);
+      },
+      async listByUser(userId, assetIds) {
+        return fetchApi(`/annotations/by-user?userId=${userId}&assetIds=${assetIds.join(',')}`);
+      },
+      async listByAssetAndWorkstation(assetId, workstationId) {
+        const params = new URLSearchParams({ assetId });
+        if (workstationId) params.append('workstationId', workstationId);
+        return fetchApi(`/annotations/by-asset-workstation?${params}`);
+      },
+      async getLatestVersion(assetId) {
+        const data = await fetchApi(`/annotations/latest-version?assetId=${assetId}`);
+        return data.version || 0;
+      },
     },
 
     pptTemplates: {
       async list() { return fetchApi('/ppt-templates'); },
+      async listByUser(userId) { return fetchApi(`/ppt-templates?userId=${userId}`); },
       async create(data) { return fetchApi('/ppt-templates', { method: 'POST', body: JSON.stringify(data) }); },
       async update(id, data) { return fetchApi(`/ppt-templates/${id}`, { method: 'PUT', body: JSON.stringify(data) }); },
+      async updateWhere(filter, data) {
+        await fetchApi('/ppt-templates/batch-update', { method: 'PUT', body: JSON.stringify({ filter, data }) });
+      },
       async delete(id) { await fetchApi(`/ppt-templates/${id}`, { method: 'DELETE' }); },
+      async deleteByUser(id, userId) { 
+        await fetchApi(`/ppt-templates/${id}?userId=${userId}`, { method: 'DELETE' }); 
+      },
     },
 
     functions: {
@@ -211,6 +250,12 @@ export function createCustomAdapter(baseUrl: string): ApiAdapter {
           body: options?.body ? JSON.stringify(options.body) : undefined,
         });
         return { data, error: null };
+      },
+    },
+
+    admin: {
+      async updateSetting(key, value) {
+        await fetchApi('/admin/settings', { method: 'PUT', body: JSON.stringify({ key, value }) });
       },
     },
   };
