@@ -196,6 +196,7 @@ export type Database = {
           id: string
           lens_id: string | null
           light_id: string | null
+          lighting_photos: Json | null
           measurement_config: Json | null
           name: string
           ocr_config: Json | null
@@ -228,6 +229,7 @@ export type Database = {
           id?: string
           lens_id?: string | null
           light_id?: string | null
+          lighting_photos?: Json | null
           measurement_config?: Json | null
           name: string
           ocr_config?: Json | null
@@ -260,6 +262,7 @@ export type Database = {
           id?: string
           lens_id?: string | null
           light_id?: string | null
+          lighting_photos?: Json | null
           measurement_config?: Json | null
           name?: string
           ocr_config?: Json | null
