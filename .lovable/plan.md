@@ -1,26 +1,44 @@
 
 
-# 将打光照片从页面底部提升为标签页切换
+# FOV 输入改为两个独立数值框
 
-## 改动
+## 问题
 
-在 `ModuleSchematic.tsx` 的 Header 下方添加 `Tabs` 组件，分为两个标签页：
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-- **光学示意图** — 当前的 VisionSystemDiagram 画布 + Module Info Badge + 保存/导出按钮
-- **打光照片** — 当前的 LightingPhotosPanel
+## 修改方案
 
-使用已有的 `src/components/ui/tabs.tsx`（Radix Tabs）实现。
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-## 具体改动
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
+```
 
-**文件：`src/components/canvas/ModuleSchematic.tsx`**
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-1. 引入 `Tabs, TabsList, TabsTrigger, TabsContent`
-2. 在 Header 区域下方包裹 `<Tabs defaultValue="schematic">`
-3. TabsList 放两个 trigger：`光学示意图` 和 `打光照片`（带图标区分）
-4. 将现有的 diagram `div` 放入 `<TabsContent value="schematic">`
-5. 将 `LightingPhotosPanel` 放入 `<TabsContent value="lighting">`
-6. 导出/保存按钮仅在光学示意图标签页可见（或根据当前 tab 切换按钮）
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
 
-改动集中在一个文件，约 20 行调整。
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+
+```
+[宽度输入] × [高度输入]
+```
+
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
