@@ -56,7 +56,7 @@ export function createSupabaseAssetApi(): IAssetApi {
         .from('asset_registry')
         .select('*')
         .eq('related_id', relatedId)
-        .eq('asset_type', assetType)
+        .eq('asset_type', assetType as Database['public']['Enums']['asset_type'])
         .order('version', { ascending: false });
       if (error) throw error;
       return (data || []) as DbAssetRegistry[];

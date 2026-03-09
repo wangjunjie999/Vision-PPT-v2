@@ -13,7 +13,7 @@ export function createSupabaseUserRoleApi(): IUserRoleApi {
         .from('user_roles')
         .select('*')
         .eq('user_id', userId)
-        .eq('role', role)
+        .eq('role', role as Database['public']['Enums']['app_role'])
         .maybeSingle();
       if (error) throw error;
       return data;
