@@ -8,7 +8,7 @@ export function createSupabaseAssetApi(): IAssetApi {
       let query = supabase.from('asset_registry').select('*');
       if (filters.relatedType) query = query.eq('related_type', filters.relatedType);
       if (filters.relatedId) query = query.eq('related_id', filters.relatedId);
-      if (filters.assetType) query = query.eq('asset_type', filters.assetType);
+      if (filters.assetType) query = query.eq('asset_type', filters.assetType as Database['public']['Enums']['asset_type']);
       if (filters.isCurrent !== undefined) query = query.eq('is_current', filters.isCurrent);
       const { data, error } = await query.order('created_at', { ascending: false });
       if (error) throw error;

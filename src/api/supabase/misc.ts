@@ -4,7 +4,7 @@ import type {
   IAnnotationApi, IPPTTemplateApi,
   DbProductAsset, DbProductAnnotation, DbGeneratedDocument, DbPPTTemplate,
 } from '../types';
-import type { Json } from '@/integrations/supabase/types';
+import type { Database, Json } from '@/integrations/supabase/types';
 
 export function createSupabaseUserRoleApi(): IUserRoleApi {
   return {
