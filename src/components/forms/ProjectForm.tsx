@@ -204,7 +204,7 @@ const [formData, setFormData] = useState({
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="code" className="text-xs">项目编号 *</Label>
+                <Label htmlFor="code" className="text-xs font-medium">项目编号 <span className="text-destructive ml-0.5">*</span></Label>
                 <Input 
                   id="code" 
                   value={formData.code}
@@ -215,7 +215,7 @@ const [formData, setFormData] = useState({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="date" className="text-xs">方案日期 *</Label>
+                <Label htmlFor="date" className="text-xs font-medium">方案日期 <span className="text-destructive ml-0.5">*</span></Label>
                 <Input 
                   id="date" 
                   type="date"
@@ -227,7 +227,7 @@ const [formData, setFormData] = useState({
             </div>
             
             <div className="space-y-1.5">
-              <Label htmlFor="name" className="text-xs">项目名称 *</Label>
+              <Label htmlFor="name" className="text-xs font-medium">项目名称 <span className="text-destructive ml-0.5">*</span></Label>
               <Input 
                 id="name" 
                 value={formData.name}
@@ -239,7 +239,7 @@ const [formData, setFormData] = useState({
             </div>
             
             <div className="space-y-1.5">
-              <Label htmlFor="customer" className="text-xs">客户名称 *</Label>
+              <Label htmlFor="customer" className="text-xs font-medium">客户名称 <span className="text-destructive ml-0.5">*</span></Label>
               <Input 
                 id="customer" 
                 value={formData.customer}
@@ -251,7 +251,7 @@ const [formData, setFormData] = useState({
             </div>
             
             <div className="space-y-1.5">
-              <Label htmlFor="production_line" className="text-xs">产线/工厂名称</Label>
+              <Label htmlFor="production_line" className="text-xs font-medium">产线/工厂名称</Label>
               <Input 
                 id="production_line" 
                 value={formData.production_line}
@@ -264,7 +264,7 @@ const [formData, setFormData] = useState({
             
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="process" className="text-xs">产品/工艺段 *</Label>
+                <Label htmlFor="process" className="text-xs font-medium">产品/工艺段 <span className="text-destructive ml-0.5">*</span></Label>
                 <Select 
                   value={formData.product_process}
                   onValueChange={value => setFormData(prev => ({ ...prev, product_process: value }))}
@@ -280,7 +280,7 @@ const [formData, setFormData] = useState({
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="responsible" className="text-xs">项目负责人 *</Label>
+                <Label htmlFor="responsible" className="text-xs font-medium">项目负责人 <span className="text-destructive ml-0.5">*</span></Label>
                 <Input 
                   id="responsible" 
                   value={formData.responsible}
@@ -294,7 +294,7 @@ const [formData, setFormData] = useState({
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="sales_responsible" className="text-xs">销售负责人</Label>
+                <Label htmlFor="sales_responsible" className="text-xs font-medium">销售负责人</Label>
                 <Input 
                   id="sales_responsible" 
                   value={formData.sales_responsible}
@@ -305,7 +305,7 @@ const [formData, setFormData] = useState({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="vision_responsible" className="text-xs">视觉负责人</Label>
+                <Label htmlFor="vision_responsible" className="text-xs font-medium">视觉负责人</Label>
                 <Input 
                   id="vision_responsible" 
                   value={formData.vision_responsible}
@@ -318,7 +318,7 @@ const [formData, setFormData] = useState({
             </div>
             
             <div className="space-y-1.5">
-              <Label htmlFor="template" className="text-xs">PPT母版 *</Label>
+              <Label htmlFor="template" className="text-xs font-medium">PPT母版 <span className="text-destructive ml-0.5">*</span></Label>
               <Select 
                 value={formData.template_id}
                 onValueChange={value => setFormData(prev => ({ ...prev, template_id: value }))}
@@ -353,7 +353,7 @@ const [formData, setFormData] = useState({
           </h3>
           
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-secondary/50 transition-colors">
                 <div className="space-y-0.5">
                   <Label className="text-xs font-medium">使用3D视觉</Label>
@@ -377,7 +377,7 @@ const [formData, setFormData] = useState({
             </div>
             
             <div className="space-y-1.5">
-              <Label htmlFor="main_camera_brand" className="text-xs">主相机品牌</Label>
+              <Label htmlFor="main_camera_brand" className="text-xs font-medium">主相机品牌</Label>
               <Select 
                 value={formData.main_camera_brand}
                 onValueChange={value => setFormData(prev => ({ ...prev, main_camera_brand: value }))}
@@ -404,7 +404,7 @@ const [formData, setFormData] = useState({
           
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="cycleTime" className="text-xs">整线节拍目标 (s/pcs)</Label>
+              <Label htmlFor="cycleTime" className="text-xs font-medium">整线节拍目标 (s/pcs)</Label>
               <Input 
                 id="cycleTime" 
                 type="number"
@@ -417,7 +417,7 @@ const [formData, setFormData] = useState({
             </div>
             
             <div className="space-y-1.5">
-              <Label className="text-xs">现场环境 (多选)</Label>
+              <Label className="text-xs font-medium">现场环境 (多选)</Label>
               <div className="flex flex-wrap gap-2 mt-1">
                 {environmentOptions.map(env => (
                   <label 
@@ -435,7 +435,7 @@ const [formData, setFormData] = useState({
             </div>
             
             <div className="space-y-1.5">
-              <Label htmlFor="quality" className="text-xs">质量策略</Label>
+              <Label htmlFor="quality" className="text-xs font-medium">质量策略</Label>
               <Select 
                 value={formData.quality_strategy}
                 onValueChange={value => setFormData(prev => ({ ...prev, quality_strategy: value as QualityStrategy }))}
@@ -462,7 +462,7 @@ const [formData, setFormData] = useState({
           
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="specVersion" className="text-xs">规格书版本</Label>
+              <Label htmlFor="specVersion" className="text-xs font-medium">规格书版本</Label>
               <Input 
                 id="specVersion" 
                 value={formData.spec_version}
@@ -474,7 +474,7 @@ const [formData, setFormData] = useState({
             </div>
             
             <div className="space-y-1.5">
-              <Label htmlFor="notes" className="text-xs">备注</Label>
+              <Label htmlFor="notes" className="text-xs font-medium">备注</Label>
               <Textarea 
                 id="notes"
                 value={formData.notes}
