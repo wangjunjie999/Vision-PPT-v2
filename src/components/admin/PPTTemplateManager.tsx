@@ -177,17 +177,8 @@ export function PPTTemplateManager() {
     const ext = file.name.split('.').pop();
     const path = `backgrounds/${templateId}.${ext}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('ppt-templates')
-      .upload(path, file, { upsert: true });
-
-    if (uploadError) throw uploadError;
-
-    const { data } = supabase.storage
-      .from('ppt-templates')
-      .getPublicUrl(path);
-
-    return data.publicUrl;
+    await api.storage.upload('ppt-templates', path, file, { upsert: true });
+    return api.storage.getPublicUrl('ppt-templates', path);
   };
 
   const handleSubmit = async () => {
