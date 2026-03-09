@@ -4,7 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useData } from '@/contexts/DataContext';
 import { useState, useMemo, useEffect } from 'react';
-import { CheckCircle2, XCircle, Eye, ImageIcon, Layers, Camera, Box } from 'lucide-react';
+import { CheckCircle2, XCircle, Eye, ImageIcon, Layers, Camera, Box, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -111,12 +111,24 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
         url: (mod as any).schematic_image_url || null,
       }));
 
+      // Lighting photos per module
+      const lightingPhotos: Array<{ moduleName: string; url: string; remark: string }> = [];
+      modules.forEach(mod => {
+        const photos = Array.isArray((mod as any).lighting_photos) ? (mod as any).lighting_photos : [];
+        photos.forEach((p: any) => {
+          if (p?.url) {
+            lightingPhotos.push({ moduleName: mod.name, url: p.url, remark: p.remark || '打光照片' });
+          }
+        });
+      });
+
       layoutImages.forEach(img => img.url ? totalSaved++ : totalMissing++);
       moduleImages.forEach(img => img.url ? totalSaved++ : totalMissing++);
       totalSaved += wsAnnotations.length;
       totalSaved += wsProductImages.length;
+      totalSaved += lightingPhotos.length;
 
-      return { workstation: ws, layoutImages, moduleImages, annotations: wsAnnotations, productImages: wsProductImages };
+      return { workstation: ws, layoutImages, moduleImages, annotations: wsAnnotations, productImages: wsProductImages, lightingPhotos };
     });
 
     return { groups, totalSaved, totalMissing };
