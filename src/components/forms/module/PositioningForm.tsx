@@ -56,8 +56,8 @@ export function PositioningForm({ form, setForm }: PositioningFormProps) {
       <div className="space-y-4">
         {/* 引导模式和机构 */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">引导模式 *</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">引导模式 <span className="text-destructive ml-0.5">*</span></Label>
             <Select 
               value={form.guidingMode} 
               onValueChange={v => setForm(p => ({ ...p, guidingMode: v as GuidingMode }))}
@@ -70,8 +70,8 @@ export function PositioningForm({ form, setForm }: PositioningFormProps) {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">引导机构 *</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">引导机构 <span className="text-destructive ml-0.5">*</span></Label>
             <Select 
               value={form.guidingMechanism} 
               onValueChange={v => setForm(p => ({ ...p, guidingMechanism: v as GuidingMechanism }))}
@@ -88,8 +88,8 @@ export function PositioningForm({ form, setForm }: PositioningFormProps) {
 
         {/* 视野和工作距离 */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">视野范围 (mm) *</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">视野范围 (mm) <span className="text-destructive ml-0.5">*</span></Label>
             <div className="flex items-center gap-1.5">
               <Input
                 value={form.fieldOfViewWidth || ''}
@@ -118,8 +118,8 @@ export function PositioningForm({ form, setForm }: PositioningFormProps) {
               />
             </div>
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">工作距离 (mm)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">工作距离 (mm)</Label>
             <Input
               type="number"
               value={form.workingDistance}
@@ -131,8 +131,8 @@ export function PositioningForm({ form, setForm }: PositioningFormProps) {
         </div>
 
         {/* 定位目标类型 */}
-        <div className="space-y-2">
-          <Label className="text-xs">定位目标类型 *</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">定位目标类型 <span className="text-destructive ml-0.5">*</span></Label>
           <div className="grid grid-cols-3 gap-2">
             {targetTypeOptions.map(opt => (
               <label
@@ -160,8 +160,8 @@ export function PositioningForm({ form, setForm }: PositioningFormProps) {
 
         {/* 精度要求 */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">定位精度 (mm) *</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">定位精度 (mm) <span className="text-destructive ml-0.5">*</span></Label>
             <Input
               type="number"
               step="0.01"
@@ -170,8 +170,8 @@ export function PositioningForm({ form, setForm }: PositioningFormProps) {
               className="h-9"
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">重复性 (mm)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">重复性 (mm)</Label>
             <Input
               type="number"
               step="0.01"
@@ -184,8 +184,8 @@ export function PositioningForm({ form, setForm }: PositioningFormProps) {
 
         {/* 误差容忍 */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">允许误差ΔX (mm)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">允许误差ΔX (mm)</Label>
             <Input
               type="number"
               step="0.01"
@@ -194,8 +194,8 @@ export function PositioningForm({ form, setForm }: PositioningFormProps) {
               className="h-9"
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">允许误差ΔY (mm)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">允许误差ΔY (mm)</Label>
             <Input
               type="number"
               step="0.01"
@@ -207,8 +207,8 @@ export function PositioningForm({ form, setForm }: PositioningFormProps) {
         </div>
 
         {/* 标定方式 */}
-        <div className="space-y-1">
-          <Label className="text-xs">标定方式</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">标定方式</Label>
           <Select 
             value={form.calibrationMethod} 
             onValueChange={v => setForm(p => ({ ...p, calibrationMethod: v as CalibrationMethod }))}
@@ -223,12 +223,12 @@ export function PositioningForm({ form, setForm }: PositioningFormProps) {
         </div>
 
         {/* 工业级参数 */}
-        <div className="space-y-3 pt-2 border-t">
-          <Label className="text-xs font-medium text-muted-foreground">工业级参数（可选）</Label>
+        <div className="space-y-4 pt-2 border-t">
+          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">工业级参数（可选）</Label>
           
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">输出坐标系</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">输出坐标系</Label>
               <Select 
                 value={form.outputCoordinateSystem} 
                 onValueChange={v => setForm(p => ({ ...p, outputCoordinateSystem: v }))}
@@ -241,8 +241,8 @@ export function PositioningForm({ form, setForm }: PositioningFormProps) {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">标定周期</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">标定周期</Label>
               <Input
                 value={form.calibrationCycle}
                 onChange={e => setForm(p => ({ ...p, calibrationCycle: e.target.value }))}
@@ -252,8 +252,8 @@ export function PositioningForm({ form, setForm }: PositioningFormProps) {
             </div>
           </div>
           
-          <div className="space-y-1">
-            <Label className="text-xs">精度验收方法</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">精度验收方法</Label>
             <Input
               value={form.accuracyAcceptanceMethod}
               onChange={e => setForm(p => ({ ...p, accuracyAcceptanceMethod: e.target.value }))}
@@ -263,8 +263,8 @@ export function PositioningForm({ form, setForm }: PositioningFormProps) {
           </div>
           
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">目标特征类型</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">目标特征类型</Label>
               <Input
                 value={form.targetFeatureType}
                 onChange={e => setForm(p => ({ ...p, targetFeatureType: e.target.value }))}
@@ -272,8 +272,8 @@ export function PositioningForm({ form, setForm }: PositioningFormProps) {
                 className="h-9"
               />
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">目标数量</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">目标数量</Label>
               <Input
                 type="number"
                 value={form.targetCount}
@@ -284,8 +284,8 @@ export function PositioningForm({ form, setForm }: PositioningFormProps) {
             </div>
           </div>
           
-          <div className="space-y-1">
-            <Label className="text-xs">遮挡容忍</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">遮挡容忍</Label>
             <Input
               value={form.occlusionTolerance}
               onChange={e => setForm(p => ({ ...p, occlusionTolerance: e.target.value }))}

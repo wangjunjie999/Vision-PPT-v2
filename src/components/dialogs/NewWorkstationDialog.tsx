@@ -98,38 +98,41 @@ export function NewWorkstationDialog({ open, onOpenChange, projectId }: { open: 
       <DialogContent>
         <DialogHeader><DialogTitle>新建工位</DialogTitle></DialogHeader>
         <div className="space-y-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>工位编号 <span className="text-destructive">*</span></Label>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">工位编号 <span className="text-destructive ml-0.5">*</span></Label>
               <Input 
                 value={form.code} 
                 onChange={e => setForm(p => ({ ...p, code: e.target.value }))} 
                 placeholder="WS-XX" 
+                className="h-9"
               />
             </div>
-            <div className="space-y-2">
-              <Label>节拍(s/pcs)</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">节拍(s/pcs)</Label>
               <Input 
                 type="number" 
                 value={form.cycleTime} 
                 onChange={e => setForm(p => ({ ...p, cycleTime: e.target.value }))} 
                 min="0.1"
                 step="0.1"
+                className="h-9"
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>工位名称 <span className="text-destructive">*</span></Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">工位名称 <span className="text-destructive ml-0.5">*</span></Label>
             <Input 
               value={form.name} 
               onChange={e => setForm(p => ({ ...p, name: e.target.value }))} 
               placeholder="请输入工位名称" 
+              className="h-9"
             />
           </div>
-          <div className="space-y-2">
-            <Label>工位类型</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">工位类型</Label>
             <Select value={form.type} onValueChange={v => setForm(p => ({ ...p, type: v as WorkstationType }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="line">线体</SelectItem>
                 <SelectItem value="turntable">转盘</SelectItem>

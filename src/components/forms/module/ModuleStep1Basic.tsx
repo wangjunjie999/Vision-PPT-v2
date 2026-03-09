@@ -16,8 +16,8 @@ export function ModuleStep1Basic({ form, setForm }: ModuleStep1BasicProps) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-xs">模块名称 *</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">模块名称 <span className="text-destructive ml-0.5">*</span></Label>
           <Input 
             value={form.name} 
             onChange={e => setForm(p => ({ ...p, name: e.target.value }))} 
@@ -25,8 +25,8 @@ export function ModuleStep1Basic({ form, setForm }: ModuleStep1BasicProps) {
             placeholder="请输入模块名称"
           />
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs">模块类型 *</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">模块类型 <span className="text-destructive ml-0.5">*</span></Label>
           <Select value={form.type} onValueChange={v => setForm(p => ({ ...p, type: v as ModuleType }))}>
             <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -40,8 +40,8 @@ export function ModuleStep1Basic({ form, setForm }: ModuleStep1BasicProps) {
         </div>
       </div>
       
-      <div className="space-y-1">
-        <Label className="text-xs">功能说明</Label>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium">功能说明</Label>
         <Textarea 
           value={form.description} 
           onChange={e => setForm(p => ({ ...p, description: e.target.value }))} 
@@ -51,8 +51,8 @@ export function ModuleStep1Basic({ form, setForm }: ModuleStep1BasicProps) {
       </div>
       
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-xs">触发方式</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">触发方式</Label>
           <Select value={form.triggerType} onValueChange={v => setForm(p => ({ ...p, triggerType: v as TriggerType }))}>
             <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -63,8 +63,8 @@ export function ModuleStep1Basic({ form, setForm }: ModuleStep1BasicProps) {
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs">处理时限 (ms)</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">处理时限 (ms)</Label>
           <Input 
             type="number"
             value={form.processingTimeLimit} 

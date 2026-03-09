@@ -97,9 +97,9 @@ export function MeasurementForm({ form, setForm }: MeasurementFormProps) {
       
       <div className="space-y-4">
         {/* 测量项目列表 */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium">
-            测量项目 *
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">
+            测量项目 <span className="text-destructive ml-0.5">*</span>
             {form.measurementItems.length === 0 && (
               <span className="text-destructive text-xs ml-2">(至少添加1项)</span>
             )}
@@ -142,12 +142,12 @@ export function MeasurementForm({ form, setForm }: MeasurementFormProps) {
           )}
           
           {/* 添加新项目 */}
-          <div className="p-3 border-2 border-dashed rounded-lg space-y-3 bg-muted/30">
+          <div className="p-3 border-2 border-dashed rounded-lg space-y-4 bg-muted/30">
             <p className="text-xs text-muted-foreground font-medium">添加测量项目</p>
             
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">项目名称</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">项目名称</Label>
                 <Input
                   value={newItem.name}
                   onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))}
@@ -156,8 +156,8 @@ export function MeasurementForm({ form, setForm }: MeasurementFormProps) {
                   onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addMeasurementItem())}
                 />
               </div>
-              <div className="space-y-1">
-                <Label className="text-xs">尺寸类型</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">尺寸类型</Label>
                 <Select 
                   value={newItem.dimType} 
                   onValueChange={v => setNewItem(p => ({ ...p, dimType: v as MeasurementDimType }))}
@@ -173,34 +173,34 @@ export function MeasurementForm({ form, setForm }: MeasurementFormProps) {
             </div>
             
             <div className="grid grid-cols-3 gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs">名义值</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">名义值</Label>
                 <Input
                   type="number"
                   step="0.01"
                   value={newItem.nominalValue}
                   onChange={e => setNewItem(p => ({ ...p, nominalValue: e.target.value }))}
-                  className="h-8"
+                  className="h-9"
                 />
               </div>
-              <div className="space-y-1">
-                <Label className="text-xs">上公差</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">上公差</Label>
                 <Input
                   type="number"
                   step="0.01"
                   value={newItem.upperTolerance}
                   onChange={e => setNewItem(p => ({ ...p, upperTolerance: e.target.value }))}
-                  className="h-8"
+                  className="h-9"
                 />
               </div>
-              <div className="space-y-1">
-                <Label className="text-xs">下公差</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">下公差</Label>
                 <Input
                   type="number"
                   step="0.01"
                   value={newItem.lowerTolerance}
                   onChange={e => setNewItem(p => ({ ...p, lowerTolerance: e.target.value }))}
-                  className="h-8"
+                  className="h-9"
                 />
               </div>
             </div>
@@ -220,8 +220,8 @@ export function MeasurementForm({ form, setForm }: MeasurementFormProps) {
 
         {/* 视野和分辨率 */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">视野大小 (mm) *</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">视野大小 (mm) <span className="text-destructive ml-0.5">*</span></Label>
             <Input
               value={form.measurementFieldOfView}
               onChange={e => setForm(p => ({ ...p, measurementFieldOfView: e.target.value }))}
@@ -229,8 +229,8 @@ export function MeasurementForm({ form, setForm }: MeasurementFormProps) {
               className="h-9"
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">分辨率 (px)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">分辨率 (px)</Label>
             <Input
               value={form.measurementResolution}
               onChange={e => setForm(p => ({ ...p, measurementResolution: e.target.value }))}
@@ -242,8 +242,8 @@ export function MeasurementForm({ form, setForm }: MeasurementFormProps) {
 
         {/* 精度要求 */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">目标精度 (mm) *</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">目标精度 (mm) <span className="text-destructive ml-0.5">*</span></Label>
             <Input
               type="number"
               step="0.001"
@@ -253,8 +253,8 @@ export function MeasurementForm({ form, setForm }: MeasurementFormProps) {
               className="h-9"
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">系统精度 (mm)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">系统精度 (mm)</Label>
             <Input
               type="number"
               step="0.001"
@@ -266,8 +266,8 @@ export function MeasurementForm({ form, setForm }: MeasurementFormProps) {
         </div>
 
         {/* 标定方式 */}
-        <div className="space-y-1">
-          <Label className="text-xs">标定方式</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">标定方式</Label>
           <Select 
             value={form.measurementCalibrationMethod} 
             onValueChange={v => setForm(p => ({ ...p, measurementCalibrationMethod: v as CalibrationMethod }))}
