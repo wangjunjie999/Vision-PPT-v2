@@ -200,5 +200,15 @@ export function createCustomAdapter(baseUrl: string): ApiAdapter {
       async update(id, data) { return fetchApi(`/ppt-templates/${id}`, { method: 'PUT', body: JSON.stringify(data) }); },
       async delete(id) { await fetchApi(`/ppt-templates/${id}`, { method: 'DELETE' }); },
     },
+
+    functions: {
+      async invoke(functionName, options) {
+        const data = await fetchApi(`/functions/${functionName}`, {
+          method: options?.method || 'POST',
+          body: options?.body ? JSON.stringify(options.body) : undefined,
+        });
+        return { data, error: null };
+      },
+    },
   };
 }
