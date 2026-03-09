@@ -207,6 +207,7 @@ interface WorkstationSlideData {
     deep_learning_config?: Record<string, unknown> | null;
     output_types?: string[] | null;
     roi_strategy?: string | null;
+    lighting_photos?: Array<{ url: string; remark?: string; created_at?: string }> | null;
   }>;
   annotations?: Array<{
     snapshot_url: string;
