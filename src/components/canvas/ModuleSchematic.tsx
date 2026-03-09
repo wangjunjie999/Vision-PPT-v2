@@ -25,6 +25,7 @@ import {
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { VisionSystemDiagram } from './VisionSystemDiagram';
+import { LightingPhotosPanel, type LightingPhoto } from './LightingPhotosPanel';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { api } from '@/api';
@@ -238,6 +239,18 @@ export function ModuleSchematic() {
   const [savingSchematic, setSavingSchematic] = useState(false);
   const [schematicSaved, setSchematicSaved] = useState(!!(module as any).schematic_image_url);
 
+  // Lighting photos state
+  const lightingPhotos: LightingPhoto[] = Array.isArray((module as any).lighting_photos) ? (module as any).lighting_photos : [];
+
+  const handleLightingPhotosUpdate = useCallback(async (photos: LightingPhoto[]) => {
+    try {
+      await updateModule(module.id, { lighting_photos: photos } as any);
+    } catch (err) {
+      console.error('Failed to save lighting photos:', err);
+      toast.error('打光照片保存失败');
+    }
+  }, [module.id, updateModule]);
+
   const handleSaveSchematic = async () => {
     if (!diagramRef.current) return;
     
@@ -421,6 +434,16 @@ export function ModuleSchematic() {
               <div>ROI: {(module.roi_strategy || 'full') === 'full' ? '全图检测' : '自定义区域'}</div>
             </div>
           </div>
+        </div>
+
+        {/* Lighting Photos Section */}
+        <div className="mt-6 max-w-5xl mx-auto">
+          <LightingPhotosPanel
+            moduleId={module.id}
+            moduleName={module.name}
+            photos={lightingPhotos}
+            onUpdate={handleLightingPhotosUpdate}
+          />
         </div>
       </div>
     </div>
