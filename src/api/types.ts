@@ -109,6 +109,9 @@ export interface IHardwareApi {
   deleteController(id: string): Promise<void>;
 
   listMechanisms(): Promise<DbMechanism[]>;
+  addMechanism(data: Partial<DbMechanism>): Promise<DbMechanism>;
+  updateMechanism(id: string, data: Partial<DbMechanism>): Promise<DbMechanism>;
+  deleteMechanism(id: string): Promise<void>;
 }
 
 export interface IAssetApi {
