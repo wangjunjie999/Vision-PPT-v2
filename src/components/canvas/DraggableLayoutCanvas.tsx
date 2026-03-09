@@ -25,7 +25,7 @@ import {
   ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Crosshair,
   Move, LayoutGrid, AlignHorizontalJustifyCenter, 
   AlignVerticalJustifyCenter, AlignCenterHorizontal,
-  ImageIcon, Check, ChevronDown, ChevronUp, Settings2, Zap, Layers
+   ImageIcon, Check, ChevronDown, ChevronUp, Settings2, Zap, Layers, GripVertical
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
@@ -138,6 +138,41 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     toast.success('层级设置已保存');
   }, [workstationId, layerOrder]);
   
+  const [draggedLayer, setDraggedLayer] = useState<LayerType | null>(null);
+  const [dragOverLayer, setDragOverLayer] = useState<LayerType | null>(null);
+
+  const handleLayerDragStart = useCallback((type: LayerType) => {
+    setDraggedLayer(type);
+  }, []);
+
+  const handleLayerDragOver = useCallback((e: React.DragEvent, type: LayerType) => {
+    e.preventDefault();
+    setDragOverLayer(type);
+  }, []);
+
+  const handleLayerDrop = useCallback((targetType: LayerType) => {
+    if (!draggedLayer || draggedLayer === targetType) {
+      setDraggedLayer(null);
+      setDragOverLayer(null);
+      return;
+    }
+    setLayerOrder(prev => {
+      const newOrder = [...prev];
+      const oldIndex = newOrder.indexOf(draggedLayer);
+      const newIndex = newOrder.indexOf(targetType);
+      newOrder.splice(oldIndex, 1);
+      newOrder.splice(newIndex, 0, draggedLayer);
+      return newOrder;
+    });
+    setDraggedLayer(null);
+    setDragOverLayer(null);
+  }, [draggedLayer]);
+
+  const handleLayerDragEnd = useCallback(() => {
+    setDraggedLayer(null);
+    setDragOverLayer(null);
+  }, []);
+
   const moveLayer = useCallback((index: number, direction: 'up' | 'down') => {
     setLayerOrder(prev => {
       const newOrder = [...prev];
@@ -1682,40 +1717,32 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 <PopoverContent className="w-56 p-3" align="start">
                   <div className="space-y-2">
                     <div className="text-xs font-semibold text-muted-foreground mb-2">渲染层级（上方 = 最前）</div>
-                    {[...layerOrder].reverse().map((type, reverseIdx) => {
-                      const realIdx = layerOrder.length - 1 - reverseIdx;
+                    {[...layerOrder].reverse().map((type) => {
                       const info = { mechanism: { icon: '🔧', label: '执行机构' }, product: { icon: '📦', label: '产品' }, camera: { icon: '📷', label: '相机' } }[type];
                       return (
-                        <div key={type} className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-muted/50 border border-border/50">
+                        <div
+                          key={type}
+                          draggable
+                          onDragStart={() => handleLayerDragStart(type)}
+                          onDragOver={(e) => handleLayerDragOver(e, type)}
+                          onDrop={() => handleLayerDrop(type)}
+                          onDragEnd={handleLayerDragEnd}
+                          className={cn(
+                            "flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 border border-border/50 cursor-grab active:cursor-grabbing transition-all",
+                            draggedLayer === type && "opacity-40",
+                            dragOverLayer === type && draggedLayer !== type && "border-primary ring-1 ring-primary/30"
+                          )}
+                        >
+                          <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                           <span className="text-xs font-medium flex items-center gap-1.5">
                             <span>{info.icon}</span>
                             {info.label}
                           </span>
-                          <div className="flex gap-0.5">
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              className="h-5 w-5"
-                              disabled={realIdx === layerOrder.length - 1}
-                              onClick={() => moveLayer(realIdx, 'up')}
-                            >
-                              <ChevronUp className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              className="h-5 w-5"
-                              disabled={realIdx === 0}
-                              onClick={() => moveLayer(realIdx, 'down')}
-                            >
-                              <ChevronDown className="h-3 w-3" />
-                            </Button>
-                          </div>
                         </div>
                       );
                     })}
                     <div className="text-[10px] text-muted-foreground mt-1">
-                      上方的对象会显示在最前面
+                      拖拽调整顺序，上方的对象显示在最前面
                     </div>
                     <Button 
                       size="sm" 
