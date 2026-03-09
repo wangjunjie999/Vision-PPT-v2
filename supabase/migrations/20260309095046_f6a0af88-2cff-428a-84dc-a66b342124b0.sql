@@ -1,0 +1,1 @@
+COMMENT ON COLUMN function_modules.lighting_photos IS 'Array of lighting effect photos [{url, remark, created_at}]';

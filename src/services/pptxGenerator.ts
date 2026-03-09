@@ -10,6 +10,7 @@ import {
   generateProductSchematicSlide,
   generateLayoutAndOpticalSlide,
   generateModuleOpticalSlide,
+  generateLightingPhotosSlide,
   generateBOMSlide,
 } from './pptx/workstationSlides';
 import {
@@ -1024,6 +1025,7 @@ export async function generatePPTX(
         deep_learning_config: m.deep_learning_config,
         output_types: m.output_types,
         roi_strategy: m.roi_strategy,
+        lighting_photos: (m as any).lighting_photos || [],
       })),
       annotations: wsAnnotations.map(a => ({
         snapshot_url: a.snapshot_url,
@@ -1067,9 +1069,20 @@ export async function generatePPTX(
       await generateModuleOpticalSlide(ctx, slideData, mi);
     }
     
-    // e. BOM清单+审核
+    // e. 打光照片 × N
+    for (let mi = 0; mi < wsModules.length; mi++) {
+      const photos = (wsModules[mi] as any).lighting_photos || [];
+      if (photos.length > 0) {
+        step++;
+        const modName = wsModules[mi].name;
+        onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '打光照片' : 'Lighting'}: ${modName}`, `[SLIDE:${ws.name}:e${mi + 1}] ${isZh ? '打光照片' : 'Lighting photos'}: ${modName}`);
+        await generateLightingPhotosSlide(ctx, slideData, mi);
+      }
+    }
+
+    // f. BOM清单+审核
     step++;
-    onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? 'BOM清单' : 'BOM'}`, `[SLIDE:${ws.name}:e] ${isZh ? 'BOM清单' : 'BOM list'}`);
+    onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? 'BOM清单' : 'BOM'}`, `[SLIDE:${ws.name}:f] ${isZh ? 'BOM清单' : 'BOM list'}`);
     generateBOMSlide(ctx, slideData);
   }
 

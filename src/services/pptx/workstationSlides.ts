@@ -207,6 +207,7 @@ interface WorkstationSlideData {
     deep_learning_config?: Record<string, unknown> | null;
     output_types?: string[] | null;
     roi_strategy?: string | null;
+    lighting_photos?: Array<{ url: string; remark?: string; created_at?: string }> | null;
   }>;
   annotations?: Array<{
     snapshot_url: string;
@@ -1485,4 +1486,73 @@ export async function generateModuleOpticalSlide(
     x: rightX + 0.1, y: 3.75, w: rightW - 0.2, h: 1.3,
     fontSize: 8, fontFace: FONTS.body, color: COLORS.dark,
   });
+}
+
+/**
+ * Slide: Lighting Photos (打光照片)
+ * Dynamic layout: 1 centered, 2 side-by-side, 3-4 in 2×2 grid
+ */
+export async function generateLightingPhotosSlide(
+  ctx: SlideContext,
+  data: WorkstationSlideData,
+  moduleIndex: number
+): Promise<void> {
+  const mod = data.modules[moduleIndex];
+  const photos = mod.lighting_photos || [];
+  if (photos.length === 0) return;
+
+  const slide = ctx.pptx.addSlide({ masterName: 'MASTER_SLIDE' });
+  const subtitle = `${mod.name} - ${ctx.isZh ? '打光照片' : 'Lighting Photos'}`;
+  addSlideTitle(slide, ctx, subtitle);
+
+  const count = photos.length;
+
+  // Layout configurations
+  const layouts: Record<number, Array<{ x: number; y: number; width: number; height: number }>> = {
+    1: [{ x: 1.5, y: 1.2, width: 7, height: 3.8 }],
+    2: [
+      { x: 0.3, y: 1.2, width: 4.5, height: 3.5 },
+      { x: 5.2, y: 1.2, width: 4.5, height: 3.5 },
+    ],
+    3: [
+      { x: 0.3, y: 1.1, width: 4.5, height: 2.2 },
+      { x: 5.2, y: 1.1, width: 4.5, height: 2.2 },
+      { x: 0.3, y: 3.5, width: 4.5, height: 2.2 },
+    ],
+    4: [
+      { x: 0.3, y: 1.1, width: 4.5, height: 2.2 },
+      { x: 5.2, y: 1.1, width: 4.5, height: 2.2 },
+      { x: 0.3, y: 3.5, width: 4.5, height: 2.2 },
+      { x: 5.2, y: 3.5, width: 4.5, height: 2.2 },
+    ],
+  };
+
+  const positions = layouts[Math.min(count, 4)] || layouts[4];
+
+  for (let i = 0; i < Math.min(count, 4); i++) {
+    const photo = photos[i];
+    const pos = positions[i];
+
+    try {
+      const dataUri = await fetchImageAsDataUri(photo.url);
+      if (dataUri) {
+        const dims = await getImageDimensions(dataUri).catch(() => ({ width: 800, height: 600 }));
+        const fit = calculateContainFit(dims.width, dims.height, pos);
+        slide.addImage({ data: dataUri, x: fit.x, y: fit.y, w: fit.width, h: fit.height });
+      } else {
+        addImagePlaceholder(slide, pos, ctx.isZh ? '图片加载失败' : 'Image load failed', '📷');
+      }
+    } catch {
+      addImagePlaceholder(slide, pos, ctx.isZh ? '图片加载失败' : 'Image load failed', '📷');
+    }
+
+    // Remark text below image
+    if (photo.remark) {
+      const remarkY = count <= 2 ? pos.y + pos.height + 0.05 : pos.y + pos.height + 0.02;
+      slide.addText(photo.remark, {
+        x: pos.x, y: remarkY, w: pos.width, h: 0.2,
+        fontSize: 8, fontFace: FONTS.body, color: COLORS.secondary, align: 'center',
+      });
+    }
+  }
 }

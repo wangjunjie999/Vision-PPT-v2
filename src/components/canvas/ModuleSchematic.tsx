@@ -2,6 +2,7 @@ import { useData } from '@/contexts/DataContext';
 import { useAppStore } from '@/store/useAppStore';
 import { useCameras, useLights, useLenses, useControllers } from '@/hooks/useHardware';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,11 +21,13 @@ import {
   FileImage,
   FileText,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  Camera
 } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { VisionSystemDiagram } from './VisionSystemDiagram';
+import { LightingPhotosPanel } from './LightingPhotosPanel';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
@@ -62,14 +65,152 @@ export function ModuleSchematic() {
   const { getPixelRatio } = useAppStore();
   const diagramRef = useRef<HTMLDivElement>(null);
   
-  // FOV state for interactive editing
   const [fovAngle, setFovAngle] = useState(45);
   const [lightDistance, setLightDistance] = useState(335);
+  const [savingSchematic, setSavingSchematic] = useState(false);
+  const [schematicSaved, setSchematicSaved] = useState(false);
   
   const module = modules.find(m => m.id === selectedModuleId) as any;
   const workstation = workstations.find(w => w.id === selectedWorkstationId) as any;
   const layout = layouts.find(l => l.workstation_id === selectedWorkstationId) as any;
-  
+
+  // All hooks must be above early returns
+  const handleCameraSelect = useCallback((cameraId: string) => {
+    if (!module) return;
+    updateModule(module.id, { camera_id: cameraId } as any);
+    toast.success('相机已更新');
+  }, [module?.id, updateModule]);
+
+  const handleLensSelect = useCallback((lensId: string) => {
+    if (!module) return;
+    updateModule(module.id, { lens_id: lensId } as any);
+    toast.success('镜头已更新');
+  }, [module?.id, updateModule]);
+
+  const handleLightSelect = useCallback((lightId: string) => {
+    if (!module) return;
+    updateModule(module.id, { light_id: lightId } as any);
+    toast.success('光源已更新');
+  }, [module?.id, updateModule]);
+
+  const handleControllerSelect = useCallback((controllerId: string) => {
+    if (!module) return;
+    updateModule(module.id, { controller_id: controllerId } as any);
+    toast.success('工控机已更新');
+  }, [module?.id, updateModule]);
+
+  const handleFovAngleChange = useCallback((angle: number) => {
+    setFovAngle(Math.max(10, Math.min(120, angle)));
+  }, []);
+
+  const handleLightDistanceChange = useCallback((distance: number) => {
+    setLightDistance(Math.max(50, Math.min(1000, distance)));
+  }, []);
+
+  // Export as PNG
+  const handleExportPNG = useCallback(async () => {
+    if (!diagramRef.current || !module) return;
+    
+    try {
+      toast.loading('正在生成PNG...');
+      const pixelRatio = getPixelRatio();
+      
+      const el = diagramRef.current;
+      const originalStyle = el.style.cssText;
+      el.style.width = '1200px';
+      el.style.height = '1100px';
+      el.style.maxWidth = 'none';
+      el.style.overflow = 'hidden';
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      
+      const dataUrl = await toPng(el, {
+        width: 1200,
+        height: 1100,
+        quality: 1,
+        pixelRatio,
+        backgroundColor: '#1a1a2e',
+        skipFonts: true,
+      });
+      
+      el.style.cssText = originalStyle;
+      
+      const link = document.createElement('a');
+      link.download = `${module.name}-视觉系统示意图.png`;
+      link.href = dataUrl;
+      link.click();
+      
+      toast.dismiss();
+      toast.success('PNG已导出');
+    } catch (error) {
+      toast.dismiss();
+      toast.error('导出PNG失败');
+      console.error(error);
+    }
+  }, [module?.name, getPixelRatio]);
+
+  // Export as PDF
+  const handleExportPDF = useCallback(async () => {
+    if (!diagramRef.current || !module) return;
+    
+    try {
+      toast.loading('正在生成PDF...');
+      const pixelRatio = getPixelRatio();
+      
+      const el = diagramRef.current;
+      const originalStyle = el.style.cssText;
+      el.style.width = '1200px';
+      el.style.height = '1100px';
+      el.style.maxWidth = 'none';
+      el.style.overflow = 'hidden';
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      
+      const dataUrl = await toPng(el, {
+        width: 1200,
+        height: 1100,
+        quality: 1,
+        pixelRatio,
+        backgroundColor: '#1a1a2e',
+        skipFonts: true,
+      });
+      
+      el.style.cssText = originalStyle;
+      
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+      });
+      
+      const imgWidth = 280;
+      const imgHeight = (diagramRef.current.offsetHeight / diagramRef.current.offsetWidth) * imgWidth;
+      
+      pdf.setFillColor(26, 26, 46);
+      pdf.rect(0, 0, 297, 210, 'F');
+      
+      pdf.addImage(dataUrl, 'PNG', 8, 10, imgWidth, imgHeight);
+      
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(12);
+      pdf.text(`${module.name} - 视觉系统示意图`, 148, 200, { align: 'center' });
+      
+      pdf.save(`${module.name}-视觉系统示意图.pdf`);
+      
+      toast.dismiss();
+      toast.success('PDF已导出');
+    } catch (error) {
+      toast.dismiss();
+      toast.error('导出PDF失败');
+      console.error(error);
+    }
+  }, [module?.name, getPixelRatio]);
+
+  // Lighting photos save handler
+  const handleSaveLightingPhotos = useCallback(async (photos: Array<{ url: string; remark: string; created_at: string }>) => {
+    if (!module) return;
+    await updateModule(module.id, { lighting_photos: photos } as any);
+  }, [module?.id, updateModule]);
+
+  // Early returns after all hooks
   if (!module || !workstation) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -78,10 +219,7 @@ export function ModuleSchematic() {
     );
   }
 
-  // Check if workstation has a layout configured
-  const hasLayout = !!layout;
-  
-  if (!hasLayout) {
+  if (!layout) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
         <AlertCircle className="h-16 w-16 text-warning" />
@@ -100,143 +238,8 @@ export function ModuleSchematic() {
   const selectedLens = lenses.find(l => l.id === module.selected_lens);
   const selectedLight = lights.find(l => l.id === module.selected_light);
   const selectedController = controllers.find(c => c.id === module.selected_controller);
-  
   const ModuleIcon = moduleTypeIcons[(module.type || 'positioning') as keyof typeof moduleTypeIcons] || Box;
-
-  // Hardware selection handlers - use camera_id, lens_id, light_id, controller_id fields
-  const handleCameraSelect = useCallback((cameraId: string) => {
-    updateModule(module.id, { camera_id: cameraId } as any);
-    toast.success('相机已更新');
-  }, [module.id, updateModule]);
-
-  const handleLensSelect = useCallback((lensId: string) => {
-    updateModule(module.id, { lens_id: lensId } as any);
-    toast.success('镜头已更新');
-  }, [module.id, updateModule]);
-
-  const handleLightSelect = useCallback((lightId: string) => {
-    updateModule(module.id, { light_id: lightId } as any);
-    toast.success('光源已更新');
-  }, [module.id, updateModule]);
-
-  const handleControllerSelect = useCallback((controllerId: string) => {
-    updateModule(module.id, { controller_id: controllerId } as any);
-    toast.success('工控机已更新');
-  }, [module.id, updateModule]);
-
-  const handleFovAngleChange = useCallback((angle: number) => {
-    setFovAngle(Math.max(10, Math.min(120, angle)));
-  }, []);
-
-  const handleLightDistanceChange = useCallback((distance: number) => {
-    setLightDistance(Math.max(50, Math.min(1000, distance)));
-  }, []);
-
-  // Export as PNG
-  const handleExportPNG = useCallback(async () => {
-    if (!diagramRef.current) return;
-    
-    try {
-      toast.loading('正在生成PNG...');
-      const pixelRatio = getPixelRatio();
-      
-      // 临时设置固定尺寸确保完整截取
-      const el = diagramRef.current;
-      const originalStyle = el.style.cssText;
-      el.style.width = '1200px';
-      el.style.height = '1100px';
-      el.style.maxWidth = 'none';
-      el.style.overflow = 'hidden';
-      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-      
-      const dataUrl = await toPng(el, {
-        width: 1200,
-        height: 1100,
-        quality: 1,
-        pixelRatio,
-        backgroundColor: '#1a1a2e',
-        skipFonts: true,
-      });
-      
-      // 恢复原始样式
-      el.style.cssText = originalStyle;
-      
-      // Download the image
-      const link = document.createElement('a');
-      link.download = `${module.name}-视觉系统示意图.png`;
-      link.href = dataUrl;
-      link.click();
-      
-      toast.dismiss();
-      toast.success('PNG已导出');
-    } catch (error) {
-      toast.dismiss();
-      toast.error('导出PNG失败');
-      console.error(error);
-    }
-  }, [module.name]);
-
-  // Export as PDF
-  const handleExportPDF = useCallback(async () => {
-    if (!diagramRef.current) return;
-    
-    try {
-      toast.loading('正在生成PDF...');
-      const pixelRatio = getPixelRatio();
-      
-      // 临时设置固定尺寸确保完整截取
-      const el = diagramRef.current;
-      const originalStyle = el.style.cssText;
-      el.style.width = '1200px';
-      el.style.height = '1100px';
-      el.style.maxWidth = 'none';
-      el.style.overflow = 'hidden';
-      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-      
-      const dataUrl = await toPng(el, {
-        width: 1200,
-        height: 1100,
-        quality: 1,
-        pixelRatio,
-        backgroundColor: '#1a1a2e',
-        skipFonts: true,
-      });
-      
-      // 恢复原始样式
-      el.style.cssText = originalStyle;
-      
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4',
-      });
-      
-      const imgWidth = 280;
-      const imgHeight = (diagramRef.current.offsetHeight / diagramRef.current.offsetWidth) * imgWidth;
-      
-      pdf.setFillColor(26, 26, 46);
-      pdf.rect(0, 0, 297, 210, 'F');
-      
-      pdf.addImage(dataUrl, 'PNG', 8, 10, imgWidth, imgHeight);
-      
-      // Add title
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(12);
-      pdf.text(`${module.name} - 视觉系统示意图`, 148, 200, { align: 'center' });
-      
-      pdf.save(`${module.name}-视觉系统示意图.pdf`);
-      
-      toast.dismiss();
-      toast.success('PDF已导出');
-    } catch (error) {
-      toast.dismiss();
-      toast.error('导出PDF失败');
-      console.error(error);
-    }
-  }, [module.name]);
-
-  const [savingSchematic, setSavingSchematic] = useState(false);
-  const [schematicSaved, setSchematicSaved] = useState(!!(module as any).schematic_image_url);
+  const lightingPhotos = Array.isArray((module as any).lighting_photos) ? (module as any).lighting_photos : [];
 
   const handleSaveSchematic = async () => {
     if (!diagramRef.current) return;
@@ -244,7 +247,6 @@ export function ModuleSchematic() {
     setSavingSchematic(true);
     
     try {
-      // Wait for SVG to fully render using requestAnimationFrame
       await new Promise<void>((resolve) => {
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
@@ -255,11 +257,9 @@ export function ModuleSchematic() {
       
       const pixelRatio = getPixelRatio();
       
-      // 截图前：隐藏 Module Info Badge（避免遮挡内容）
       const badge = diagramRef.current.querySelector('[data-screenshot-hide]') as HTMLElement | null;
       if (badge) badge.style.display = 'none';
       
-      // 注入强制白色文字样式，确保浅色/暗黑模式截图一致
       const forceStyle = document.createElement('style');
       forceStyle.id = 'capture-force-white';
       forceStyle.textContent = `
@@ -269,7 +269,6 @@ export function ModuleSchematic() {
       `;
       diagramRef.current.prepend(forceStyle);
       
-      // 截图前：临时设置固定尺寸确保完整截取
       const el = diagramRef.current;
       const originalStyle = el.style.cssText;
       el.style.width = '1200px';
@@ -278,7 +277,6 @@ export function ModuleSchematic() {
       el.style.overflow = 'hidden';
       el.style.backgroundColor = '#1a1a2e';
       
-      // 等待布局重排完成
       await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
       
       const dataUrl = await toPng(el, {
@@ -290,19 +288,15 @@ export function ModuleSchematic() {
         skipFonts: true,
       });
       
-      // 截图后恢复原始样式、badge 和注入样式
       el.style.cssText = originalStyle;
       if (badge) badge.style.display = '';
       forceStyle.remove();
       
-      // Convert base64 to blob
       const response = await fetch(dataUrl);
       const blob = await response.blob();
       
-      // 使用带时间戳的唯一文件名，避免 CDN/浏览器缓存
       const fileName = `module-schematic-${module.id}-${Date.now()}.png`;
       
-      // 清理该模块所有旧文件
       const { data: oldFiles } = await supabase.storage
         .from('module-schematics')
         .list('', { search: `module-schematic-${module.id}` });
@@ -311,7 +305,6 @@ export function ModuleSchematic() {
           .remove(oldFiles.map(f => f.name));
       }
       
-      // Upload new file
       const { error: uploadError } = await supabase.storage
         .from('module-schematics')
         .upload(fileName, blob, {
@@ -321,12 +314,10 @@ export function ModuleSchematic() {
         
       if (uploadError) throw uploadError;
       
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('module-schematics')
         .getPublicUrl(fileName);
       
-      // Update module with schematic URL
       await updateModule(module.id, { 
         schematic_image_url: publicUrl,
         status: 'complete'
@@ -342,6 +333,7 @@ export function ModuleSchematic() {
     }
   };
 
+
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
       {/* Header */}
@@ -353,87 +345,120 @@ export function ModuleSchematic() {
           <div>
             <h3 className="font-semibold">{module.name}</h3>
             <p className="text-sm text-muted-foreground">
-              {moduleTypeLabels[(module.type || 'positioning') as keyof typeof moduleTypeLabels] || module.type || 'positioning'} · {workstation.name} · 视觉系统示意图
+              {moduleTypeLabels[(module.type || 'positioning') as keyof typeof moduleTypeLabels] || module.type || 'positioning'} · {workstation.name}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <Download className="h-4 w-4" />
-                导出
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-popover">
-              <DropdownMenuItem onClick={handleExportPNG} className="gap-2 cursor-pointer">
-                <FileImage className="h-4 w-4" />
-                导出为 PNG
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportPDF} className="gap-2 cursor-pointer">
-                <FileText className="h-4 w-4" />
-                导出为 PDF
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button onClick={handleSaveSchematic} className="gap-2" disabled={savingSchematic}>
-            {savingSchematic ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : schematicSaved ? (
-              <CheckCircle2 className="h-4 w-4" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            {schematicSaved ? '已保存' : '保存示意图'}
-          </Button>
-        </div>
       </div>
 
-      {/* Schematic Canvas */}
-      <div className="flex-1 p-6 overflow-auto">
-        <div 
-          ref={diagramRef}
-          className="relative w-full max-w-5xl mx-auto bg-background rounded-xl border-2 border-border overflow-hidden" 
-          style={{ minHeight: '500px' }}
-        >
-          {/* Vision System Diagram */}
-          <VisionSystemDiagram
-            camera={selectedCamera || null}
-            lens={selectedLens || null}
-            light={selectedLight || null}
-            controller={selectedController || null}
-            cameras={cameras}
-            lenses={lenses}
-            lights={lights}
-            controllers={controllers}
-            onCameraSelect={handleCameraSelect}
-            onLensSelect={handleLensSelect}
-            onLightSelect={handleLightSelect}
-            onControllerSelect={handleControllerSelect}
-            lightDistance={lightDistance}
-            fovAngle={fovAngle}
-            onFovAngleChange={handleFovAngleChange}
-            onLightDistanceChange={handleLightDistanceChange}
-            roiStrategy={module.roi_strategy || 'full'}
-            moduleType={module.type || 'positioning'}
-            interactive={true}
-            className="w-full h-full"
-          />
+      {/* Tabs */}
+      <Tabs defaultValue="schematic" className="flex-1 flex flex-col overflow-hidden">
+        <div className="px-4 pt-2 border-b border-border bg-card/30">
+          <TabsList className="h-9">
+            <TabsTrigger value="schematic" className="gap-1.5 text-xs">
+              <FileImage className="h-3.5 w-3.5" />
+              光学方案
+            </TabsTrigger>
+            <TabsTrigger value="lighting" className="gap-1.5 text-xs">
+              <Camera className="h-3.5 w-3.5" />
+              打光照片
+              {lightingPhotos.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-medium">
+                  {lightingPhotos.length}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-          {/* Module Info Badge */}
-          <div data-screenshot-hide className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm rounded-lg p-3 border shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <ModuleIcon className="h-4 w-4 text-primary" />
-              <span className="font-medium text-sm">{module.name}</span>
-            </div>
-            <div className="text-xs text-muted-foreground space-y-1">
-              <div>类型: {moduleTypeLabels[(module.type || 'positioning') as keyof typeof moduleTypeLabels] || module.type || 'positioning'}</div>
-              {module.processing_time_limit && <div>处理时限: {module.processing_time_limit}ms</div>}
-              <div>ROI: {(module.roi_strategy || 'full') === 'full' ? '全图检测' : '自定义区域'}</div>
+        <TabsContent value="schematic" className="flex-1 flex flex-col overflow-hidden mt-0">
+          {/* Toolbar for schematic tab */}
+          <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-border">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Download className="h-4 w-4" />
+                  导出
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-popover">
+                <DropdownMenuItem onClick={handleExportPNG} className="gap-2 cursor-pointer">
+                  <FileImage className="h-4 w-4" />
+                  导出为 PNG
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportPDF} className="gap-2 cursor-pointer">
+                  <FileText className="h-4 w-4" />
+                  导出为 PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button onClick={handleSaveSchematic} className="gap-2" disabled={savingSchematic} size="sm">
+              {savingSchematic ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : schematicSaved ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              {schematicSaved ? '已保存' : '保存示意图'}
+            </Button>
+          </div>
+
+          {/* Schematic Canvas */}
+          <div className="flex-1 p-6 overflow-auto">
+            <div 
+              ref={diagramRef}
+              className="relative w-full max-w-5xl mx-auto bg-background rounded-xl border-2 border-border overflow-hidden" 
+              style={{ minHeight: '500px' }}
+            >
+              <VisionSystemDiagram
+                camera={selectedCamera || null}
+                lens={selectedLens || null}
+                light={selectedLight || null}
+                controller={selectedController || null}
+                cameras={cameras}
+                lenses={lenses}
+                lights={lights}
+                controllers={controllers}
+                onCameraSelect={handleCameraSelect}
+                onLensSelect={handleLensSelect}
+                onLightSelect={handleLightSelect}
+                onControllerSelect={handleControllerSelect}
+                lightDistance={lightDistance}
+                fovAngle={fovAngle}
+                onFovAngleChange={handleFovAngleChange}
+                onLightDistanceChange={handleLightDistanceChange}
+                roiStrategy={module.roi_strategy || 'full'}
+                moduleType={module.type || 'positioning'}
+                interactive={true}
+                className="w-full h-full"
+              />
+
+              {/* Module Info Badge */}
+              <div data-screenshot-hide className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm rounded-lg p-3 border shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <ModuleIcon className="h-4 w-4 text-primary" />
+                  <span className="font-medium text-sm">{module.name}</span>
+                </div>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <div>类型: {moduleTypeLabels[(module.type || 'positioning') as keyof typeof moduleTypeLabels] || module.type || 'positioning'}</div>
+                  {module.processing_time_limit && <div>处理时限: {module.processing_time_limit}ms</div>}
+                  <div>ROI: {(module.roi_strategy || 'full') === 'full' ? '全图检测' : '自定义区域'}</div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </TabsContent>
+
+        <TabsContent value="lighting" className="flex-1 overflow-auto mt-0">
+          <LightingPhotosPanel
+            moduleId={module.id}
+            moduleName={module.name}
+            initialPhotos={lightingPhotos}
+            onSave={handleSaveLightingPhotos}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

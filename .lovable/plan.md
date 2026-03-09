@@ -1,99 +1,44 @@
 
 
-# 打光照片功能实现计划
+# FOV 输入改为两个独立数值框
 
-## 现状分析
+## 问题
 
-- `lighting_photos` JSONB 字段**已存在**于数据库 `function_modules` 表中（`DEFAULT '[]'`），但 `types.ts` 尚未反映（需触发一次迁移让类型自动更新）
-- `ModuleSchematic.tsx` 当前是纯示意图页面，无标签页结构
-- PPT 生成流程在 `pptxGenerator.ts:1062-1068`（光学方案循环）和 `1070-1073`（BOM）之间有明确插入点
-- `WorkstationSlideData.modules` 接口需扩展 `lighting_photos` 字段
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-## 改动清单
+## 修改方案
 
-### 1. 数据库迁移（触发类型刷新）
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-运行一个空操作迁移（如添加注释），强制 `types.ts` 重新生成以包含 `lighting_photos` 字段。或者直接在代码中使用 `as any` 过渡——但为了长期正确性，推荐触发一次迁移：
-
-```sql
-COMMENT ON COLUMN function_modules.lighting_photos IS 'Array of lighting effect photos [{url, remark, created_at}]';
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
 ```
 
-### 2. 前端 UI — `LightingPhotosPanel.tsx`（新建）
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-路径：`src/components/canvas/LightingPhotosPanel.tsx`
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
 
-功能：
-- 复用 `DragDropUpload` 上传图片到 `module-schematics` 桶
-- 每张图带备注输入框（如"正面环形光"、"侧面条形光"）
-- 最多 4 张，支持删除、预览
-- 保存时调用 `updateModule(id, { lighting_photos: [...] })`
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
 
-### 3. `ModuleSchematic.tsx` 改造为标签页
-
-将当前页面改为 **Tabs** 布局，两个标签页：
-- **光学方案**（默认）— 现有 VisionSystemDiagram 内容
-- **打光照片** — 嵌入 `LightingPhotosPanel`
-
-标签页放在 header 区域下方，使入口醒目。
-
-### 4. PPT 生成 — 打光照片幻灯片
-
-#### 4a. `WorkstationSlideData` 接口扩展
-
-在 `workstationSlides.ts` 的 modules 数组项中新增：
-```typescript
-lighting_photos?: Array<{ url: string; remark?: string; created_at?: string }> | null;
+```
+[宽度输入] × [高度输入]
 ```
 
-#### 4b. `pptxGenerator.ts` 数据传递
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
 
-在 `modules` 映射中（第 1012-1027 行）加入：
-```typescript
-lighting_photos: (m as any).lighting_photos || [],
-```
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
 
-#### 4c. `pptxGenerator.ts` 插入幻灯片调用
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
 
-在光学方案循环（第 1068 行）之后、BOM（第 1070 行）之前插入：
-```typescript
-// e. 打光照片 × N
-for (let mi = 0; mi < wsModules.length; mi++) {
-  const photos = (wsModules[mi] as any).lighting_photos || [];
-  if (photos.length > 0) {
-    step++;
-    onProgress(...);
-    await generateLightingPhotosSlide(ctx, slideData, mi);
-  }
-}
-```
+### 4. PPT 输出不变
 
-BOM 的注释标号从 `e` 改为 `f`。
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
 
-#### 4d. `workstationSlides.ts` 新增 `generateLightingPhotosSlide()`
+### 5. 自动计算兼容
 
-布局策略：
-- 1 张：居中大图（约 7×4 英寸）
-- 2 张：左右并排（各约 4.3×3.5 英寸）
-- 3-4 张：2×2 网格（各约 4.3×2.2 英寸）
-- 每图下方显示备注文字
-
-### 5. PPT 图片预检
-
-在 `PPTImagePreviewDialog.tsx` 的 `imageData` 计算中，为每个模块额外检查 `lighting_photos` 数组中的 URL 可达性，并在 UI 中显示打光照片的保存状态。
-
-### 6. `useModules.ts` 适配
-
-`updateModule` 方法已支持扩展字段（使用 `as ModuleUpdate` 强转），无需改动。
-
-## 文件变更汇总
-
-| 文件 | 操作 |
-|------|------|
-| 数据库迁移 | COMMENT ON COLUMN（触发类型刷新） |
-| `src/components/canvas/LightingPhotosPanel.tsx` | 新建 |
-| `src/components/canvas/ModuleSchematic.tsx` | 改造为 Tabs 布局 |
-| `src/services/pptx/workstationSlides.ts` | 扩展接口 + 新增 `generateLightingPhotosSlide` |
-| `src/services/pptxGenerator.ts` | 传递 `lighting_photos` + 插入幻灯片调用 |
-| `src/components/dialogs/PPTImagePreviewDialog.tsx` | 增加打光照片检查 |
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
