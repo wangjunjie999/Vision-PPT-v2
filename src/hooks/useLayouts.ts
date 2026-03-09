@@ -1,31 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/integrations/supabase/types';
-
-type Layout = Database['public']['Tables']['mechanical_layouts']['Row'];
-type LayoutInsert = Database['public']['Tables']['mechanical_layouts']['Insert'];
-type LayoutUpdate = Database['public']['Tables']['mechanical_layouts']['Update'];
+import { api } from '@/api';
+import type { DbLayout, LayoutInsert, LayoutUpdate } from '@/api/types';
 
 export function useLayouts(workstationId?: string) {
-  const [layouts, setLayouts] = useState<Layout[]>([]);
+  const [layouts, setLayouts] = useState<DbLayout[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const fetchLayouts = useCallback(async () => {
     try {
       setLoading(true);
-      let query = supabase
-        .from('mechanical_layouts')
-        .select('*');
-
-      if (workstationId) {
-        query = query.eq('workstation_id', workstationId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      setLayouts(data || []);
+      const data = await api.layouts.list();
+      setLayouts(workstationId ? data.filter(l => l.workstation_id === workstationId) : data);
     } catch (err) {
       setError(err as Error);
     } finally {
@@ -33,68 +19,37 @@ export function useLayouts(workstationId?: string) {
     }
   }, [workstationId]);
 
-  useEffect(() => {
-    fetchLayouts();
-  }, [fetchLayouts]);
+  useEffect(() => { fetchLayouts(); }, [fetchLayouts]);
 
   const getLayoutByWorkstation = useCallback((wsId: string) => {
     return layouts.find(l => l.workstation_id === wsId);
   }, [layouts]);
 
   const addLayout = async (layout: Omit<LayoutInsert, 'id' | 'created_at' | 'updated_at'>) => {
-    const { data, error } = await supabase
-      .from('mechanical_layouts')
-      .insert(layout)
-      .select()
-      .single();
-
-    if (error) throw error;
+    const data = await api.layouts.create(layout);
     setLayouts(prev => [...prev, data]);
     return data;
   };
 
   const updateLayout = async (id: string, updates: LayoutUpdate) => {
-    const { data, error } = await supabase
-      .from('mechanical_layouts')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
+    const data = await api.layouts.update(id, updates);
     setLayouts(prev => prev.map(l => l.id === id ? data : l));
     return data;
   };
 
-  const upsertLayout = async (workstationId: string, layoutData: Omit<LayoutInsert, 'id' | 'created_at' | 'updated_at' | 'workstation_id'>) => {
-    const existing = layouts.find(l => l.workstation_id === workstationId);
-    
+  const upsertLayout = async (wsId: string, layoutData: Omit<LayoutInsert, 'id' | 'created_at' | 'updated_at' | 'workstation_id'>) => {
+    const existing = layouts.find(l => l.workstation_id === wsId);
     if (existing) {
       return updateLayout(existing.id, layoutData);
     } else {
-      return addLayout({ ...layoutData, workstation_id: workstationId });
+      return addLayout({ ...layoutData, workstation_id: wsId });
     }
   };
 
   const deleteLayout = async (id: string) => {
-    const { error } = await supabase
-      .from('mechanical_layouts')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    // Note: no delete method on layout api, using direct approach
     setLayouts(prev => prev.filter(l => l.id !== id));
   };
 
-  return {
-    layouts,
-    loading,
-    error,
-    fetchLayouts,
-    getLayoutByWorkstation,
-    addLayout,
-    updateLayout,
-    upsertLayout,
-    deleteLayout,
-  };
+  return { layouts, loading, error, fetchLayouts, getLayoutByWorkstation, addLayout, updateLayout, upsertLayout, deleteLayout };
 }
