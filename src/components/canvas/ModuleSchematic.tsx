@@ -20,8 +20,11 @@ import {
   FileImage,
   FileText,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  Camera,
+  Sun
 } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { VisionSystemDiagram } from './VisionSystemDiagram';
