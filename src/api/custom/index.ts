@@ -164,6 +164,9 @@ export function createCustomAdapter(baseUrl: string): ApiAdapter {
       async remove(bucket, paths) {
         await fetchApi('/storage/remove', { method: 'POST', body: JSON.stringify({ bucket, paths }) });
       },
+      async listFiles(bucket, path) {
+        return fetchApi(`/storage/list?bucket=${bucket}&path=${path || ''}`);
+      },
     },
 
     userRoles: {
