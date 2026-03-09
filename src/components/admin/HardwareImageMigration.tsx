@@ -83,36 +83,25 @@ export function HardwareImageMigration() {
                      localPath.includes('light') ? 'lights' : 'controllers';
         const generatedPath = `${type}/${fileName}`;
         
-        // Upload to Supabase Storage
-        const { data, error } = await supabase.storage
-          .from('hardware-images')
-          .upload(generatedPath, blob, {
-            cacheControl: '3600',
-            upsert: true,
-          });
-        
-        if (error) {
+        // Upload to Storage
+        try {
+          await api.storage.upload('hardware-images', generatedPath, new File([blob], fileName), { upsert: true });
+          return getSupabaseStorageUrl(generatedPath);
+        } catch (error) {
           console.error('Upload error:', error);
           return null;
         }
-        
-        return getSupabaseStorageUrl(generatedPath);
       }
       
-      // Upload to Supabase Storage
-      const { data, error } = await supabase.storage
-        .from('hardware-images')
-        .upload(storagePath, blob, {
-          cacheControl: '3600',
-          upsert: true,
-        });
-      
-      if (error) {
+      // Upload to Storage
+      try {
+        const fileName = storagePath.split('/').pop() || 'image.png';
+        await api.storage.upload('hardware-images', storagePath, new File([blob], fileName), { upsert: true });
+        return getSupabaseStorageUrl(storagePath);
+      } catch (error) {
         console.error('Upload error:', error);
         return null;
       }
-      
-      return getSupabaseStorageUrl(storagePath);
     } catch (error) {
       console.error('Failed to upload image:', error);
       return null;
