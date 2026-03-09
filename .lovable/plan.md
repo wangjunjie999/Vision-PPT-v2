@@ -1,44 +1,43 @@
 
 
-# FOV 输入改为两个独立数值框
+# 验证结果：吸附限制已正确实现
 
-## 问题
+## 当前实现分析
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+经过代码审查，**吸附限制功能已经完整实现**。当前代码架构：
 
-## 修改方案
-
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
-
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
+### 机构分类常量 (MechanismSVG.tsx)
+```typescript
+export const CAMERA_INTERACTION_TYPES = ['camera_mount', 'robot_arm'];
+export const PRODUCT_INTERACTION_TYPES = ['conveyor', 'turntable', 'lift', 'stop', 'cylinder', 'gripper'];
 ```
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+### 吸附点过滤逻辑
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+| 函数 | 位置 | 限制 |
+|------|------|------|
+| `getMechanismMountPoints` | MechanismSVG.tsx:38 | 只为相机交互机构返回相机安装点 |
+| `getProductMountPoints` | MechanismSVG.tsx:71 | 只为产品交互机构返回产品安装点 |
+| `findNearestMountPoint` | CameraMountPoints.tsx:216 | 跳过非相机交互机构 |
+| `findNearestProductMountPoint` | ProductMountPoints.tsx:149 | 跳过非产品交互机构 |
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+### 结果
+- ✅ 相机只能吸附到：相机支架、机械臂
+- ✅ 产品只能吸附到：传送带、转盘、顶升、阻挡、气缸、夹爪
+- ✅ 相机无法吸附到传送带等产品交互机构
+- ✅ 产品无法吸附到相机支架等相机交互机构
 
-```
-[宽度输入] × [高度输入]
-```
+## 建议：可选的UI增强
 
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+如果希望让用户**更清晰地看到**这种限制，可以添加以下增强功能：
 
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+### 选项1：拖拽时显示不兼容提示
+当相机拖近传送带（不兼容机构）时，显示红色禁止图标或提示文字"此机构不支持相机挂载"。
 
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+### 选项2：机构卡片标签
+在机构上显示小标签标识其类型："📷相机" 或 "📦产品"。
 
-### 4. PPT 输出不变
+---
 
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+**是否需要实现上述UI增强功能？或者当前行为已满足需求？**
 
