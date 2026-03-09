@@ -1067,9 +1067,21 @@ export async function generatePPTX(
       await generateModuleOpticalSlide(ctx, slideData, mi);
     }
     
-    // e. BOM清单+审核
+    // e. 打光照片 × N (One page per module with lighting photos)
+    for (let mi = 0; mi < wsModules.length; mi++) {
+      const mod = wsModules[mi] as any;
+      const lightingPhotos = Array.isArray(mod.lighting_photos) ? mod.lighting_photos : [];
+      if (lightingPhotos.length > 0) {
+        step++;
+        onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '打光照片' : 'Lighting'}: ${mod.name}`, `[SLIDE:${ws.name}:e${mi + 1}] ${isZh ? '打光照片' : 'Lighting'}: ${mod.name}`);
+        const { generateLightingPhotosSlide } = await import('./pptx/workstationSlides');
+        await generateLightingPhotosSlide({ pptx, isZh }, ws.name, mod.name, lightingPhotos);
+      }
+    }
+    
+    // f. BOM清单+审核
     step++;
-    onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? 'BOM清单' : 'BOM'}`, `[SLIDE:${ws.name}:e] ${isZh ? 'BOM清单' : 'BOM list'}`);
+    onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? 'BOM清单' : 'BOM'}`, `[SLIDE:${ws.name}:f] ${isZh ? 'BOM清单' : 'BOM list'}`);
     generateBOMSlide(ctx, slideData);
   }
 
