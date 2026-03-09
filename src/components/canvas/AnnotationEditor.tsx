@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/api';
 import { renderAnnotationsToCanvas } from '@/utils/annotationRenderer';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -129,38 +129,20 @@ export function AnnotationEditor() {
       // Render annotations onto image using Canvas compositing
       const blob = await renderAnnotationsToCanvas(annotationSnapshot, annotations);
       const path = `annotations/${annotationAssetId}/${Date.now()}.png`;
-      const { error: uploadError } = await supabase.storage
-        .from('product-snapshots')
-        .upload(path, blob, { contentType: 'image/png' });
+      await api.storage.upload('product-snapshots', path, new File([blob], 'snapshot.png', { type: 'image/png' }));
 
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage.from('product-snapshots').getPublicUrl(path);
-      const snapshotUrl = urlData.publicUrl;
+      const snapshotUrl = api.storage.getPublicUrl('product-snapshots', path);
 
       // If editing existing record, update it
       if (annotationExistingData?.recordId) {
-        const { error } = await supabase
-          .from('product_annotations')
-          .update({
-            snapshot_url: snapshotUrl,
-            annotations_json: annotations as unknown as any,
-            remark: saveRemark || null,
-          })
-          .eq('id', annotationExistingData.recordId);
-        if (error) throw error;
+        await api.annotations.update(annotationExistingData.recordId, {
+          snapshot_url: snapshotUrl,
+          annotations_json: annotations as unknown as any,
+          remark: saveRemark || null,
+        });
       } else {
         // Create new record
-        const { data: existing } = await supabase
-          .from('product_annotations')
-          .select('version')
-          .eq('asset_id', annotationAssetId)
-          .order('version', { ascending: false })
-          .limit(1);
-
-        const nextVersion = existing && existing.length > 0
-          ? existing[0].version + 1
-          : 1;
+        const nextVersion = await api.annotations.getLatestVersion(annotationAssetId) + 1;
 
         const insertData: Record<string, unknown> = {
           asset_id: annotationAssetId,
@@ -176,8 +158,7 @@ export function AnnotationEditor() {
           insertData.workstation_id = annotationWorkstationId;
         }
 
-        const { error } = await supabase.from('product_annotations').insert(insertData as any);
-        if (error) throw error;
+        await api.annotations.create(insertData as any);
       }
 
       setSaveDialogOpen(false);

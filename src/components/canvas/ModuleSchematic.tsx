@@ -27,7 +27,7 @@ import { toast } from 'sonner';
 import { VisionSystemDiagram } from './VisionSystemDiagram';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/api';
 import { getImageSaveErrorMessage } from '@/utils/errorMessages';
 
 const moduleTypeIcons = {
@@ -303,28 +303,17 @@ export function ModuleSchematic() {
       const fileName = `module-schematic-${module.id}-${Date.now()}.png`;
       
       // 清理该模块所有旧文件
-      const { data: oldFiles } = await supabase.storage
-        .from('module-schematics')
-        .list('', { search: `module-schematic-${module.id}` });
-      if (oldFiles?.length) {
-        await supabase.storage.from('module-schematics')
-          .remove(oldFiles.map(f => f.name));
+      const oldFiles = await api.storage.listFiles('module-schematics', '');
+      const toRemove = oldFiles.filter(f => f.name.startsWith(`module-schematic-${module.id}`)).map(f => f.name);
+      if (toRemove.length) {
+        await api.storage.remove('module-schematics', toRemove);
       }
       
       // Upload new file
-      const { error: uploadError } = await supabase.storage
-        .from('module-schematics')
-        .upload(fileName, blob, {
-          contentType: 'image/png',
-          upsert: true
-        });
-        
-      if (uploadError) throw uploadError;
+      await api.storage.upload('module-schematics', fileName, new File([blob], fileName, { type: 'image/png' }), { upsert: true });
       
       // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('module-schematics')
-        .getPublicUrl(fileName);
+      const publicUrl = api.storage.getPublicUrl('module-schematics', fileName);
       
       // Update module with schematic URL
       await updateModule(module.id, { 

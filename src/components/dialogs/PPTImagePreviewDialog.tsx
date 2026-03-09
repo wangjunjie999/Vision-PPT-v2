@@ -6,7 +6,7 @@ import { useData } from '@/contexts/DataContext';
 import { useState, useMemo, useEffect } from 'react';
 import { CheckCircle2, XCircle, Eye, ImageIcon, Layers, Camera, Box } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/api';
 
 interface PPTImagePreviewDialogProps {
   open: boolean;
@@ -44,16 +44,12 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
     const wsIds = projectWorkstations.map(ws => ws.id);
 
     async function fetchData() {
-      // Fetch annotations
-      const { data: annoData } = await supabase
-        .from('product_annotations')
-        .select('id, snapshot_url, remark, workstation_id')
-        .in('workstation_id', wsIds)
-        .order('created_at', { ascending: false });
+      // Fetch annotations via API
+      const annoData = await api.annotations.listByWorkstations(wsIds);
 
       if (annoData) {
         const grouped = new Map<string, AnnotationInfo[]>();
-        for (const row of annoData) {
+        for (const row of annoData as any[]) {
           const wsId = row.workstation_id;
           if (!wsId) continue;
           const arr = grouped.get(wsId) || [];
@@ -63,11 +59,8 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
         setAnnotations(grouped);
       }
 
-      // Fetch product assets preview images
-      const { data: assetData } = await supabase
-        .from('product_assets')
-        .select('workstation_id, preview_images')
-        .in('workstation_id', wsIds);
+      // Fetch product assets preview images via API
+      const assetData = await api.productAssets.listByWorkstations(wsIds);
 
       if (assetData) {
         const grouped = new Map<string, string[]>();

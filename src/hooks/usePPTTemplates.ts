@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { Json } from '@/integrations/supabase/types';
@@ -78,13 +78,7 @@ export function usePPTTemplates() {
     queryFn: async () => {
       if (!user?.id) return [];
       
-      const { data, error } = await supabase
-        .from('ppt_templates')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const data = await api.pptTemplates.listByUser(user.id);
       // Cast structure_meta from Json to our expected type
       return (data || []).map(item => ({
         ...item,
@@ -102,29 +96,24 @@ export function usePPTTemplates() {
 
       // If setting as default, clear other defaults first
       if (template.is_default) {
-        await supabase
-          .from('ppt_templates')
-          .update({ is_default: false })
-          .eq('user_id', user.id);
+        await api.pptTemplates.updateWhere(
+          { user_id: user.id } as any,
+          { is_default: false }
+        );
       }
 
-      const { data, error } = await supabase
-        .from('ppt_templates')
-        .insert({
-          name: template.name,
-          user_id: user.id,
-          description: template.description,
-          version: template.version,
-          file_url: template.file_url,
-          structure_meta: template.structure_meta as unknown as Json,
-          scope: template.scope,
-          is_default: template.is_default,
-          background_image_url: template.background_image_url,
-        })
-        .select()
-        .single();
+      const data = await api.pptTemplates.create({
+        name: template.name,
+        user_id: user.id,
+        description: template.description || null,
+        version: template.version || 1,
+        file_url: template.file_url || null,
+        structure_meta: template.structure_meta as unknown as Json,
+        scope: template.scope || null,
+        is_default: template.is_default || false,
+        background_image_url: template.background_image_url || null,
+      } as any);
 
-      if (error) throw error;
       return data;
     },
     onSuccess: () => {
@@ -142,27 +131,19 @@ export function usePPTTemplates() {
 
       // If setting as default, clear other defaults first
       if (updates.is_default) {
-        await supabase
-          .from('ppt_templates')
-          .update({ is_default: false })
-          .eq('user_id', user.id)
-          .neq('id', id);
+        await api.pptTemplates.updateWhere(
+          { user_id: user.id } as any,
+          { is_default: false }
+        );
       }
 
       const { structure_meta, ...restUpdates } = updates;
       
-      const { data, error } = await supabase
-        .from('ppt_templates')
-        .update({
-          ...restUpdates,
-          ...(structure_meta !== undefined && { structure_meta: structure_meta as unknown as Json }),
-        })
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .select()
-        .single();
+      const data = await api.pptTemplates.update(id, {
+        ...restUpdates,
+        ...(structure_meta !== undefined && { structure_meta: structure_meta as unknown as Json }),
+      });
 
-      if (error) throw error;
       return data;
     },
     onSuccess: () => {
@@ -178,28 +159,19 @@ export function usePPTTemplates() {
     mutationFn: async (id: string) => {
       if (!user?.id) throw new Error('未登录');
 
-      // Get template to check for file_url
-      const { data: template } = await supabase
-        .from('ppt_templates')
-        .select('file_url')
-        .eq('id', id)
-        .single();
+      // Get template to check for file_url (need to fetch first)
+      const templates = await api.pptTemplates.listByUser(user.id);
+      const template = templates.find(t => t.id === id);
 
       // Delete file from storage if exists
       if (template?.file_url) {
         const path = template.file_url.split('/ppt-templates/')[1];
         if (path) {
-          await supabase.storage.from('ppt-templates').remove([path]);
+          await api.storage.remove('ppt-templates', [path]);
         }
       }
 
-      const { error } = await supabase
-        .from('ppt_templates')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      await api.pptTemplates.deleteByUser(id, user.id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ppt_templates'] });
@@ -215,19 +187,13 @@ export function usePPTTemplates() {
       if (!user?.id) throw new Error('未登录');
 
       // Clear all defaults first
-      await supabase
-        .from('ppt_templates')
-        .update({ is_default: false })
-        .eq('user_id', user.id);
+      await api.pptTemplates.updateWhere(
+        { user_id: user.id } as any,
+        { is_default: false }
+      );
 
       // Set new default
-      const { error } = await supabase
-        .from('ppt_templates')
-        .update({ is_default: true })
-        .eq('id', id)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      await api.pptTemplates.update(id, { is_default: true });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ppt_templates'] });
@@ -244,17 +210,8 @@ export function usePPTTemplates() {
     const ext = file.name.split('.').pop();
     const path = `${user.id}/${templateId}.${ext}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('ppt-templates')
-      .upload(path, file, { upsert: true });
-
-    if (uploadError) throw uploadError;
-
-    const { data } = supabase.storage
-      .from('ppt-templates')
-      .getPublicUrl(path);
-
-    return data.publicUrl;
+    await api.storage.upload('ppt-templates', path, file, { upsert: true });
+    return api.storage.getPublicUrl('ppt-templates', path);
   };
 
   return {

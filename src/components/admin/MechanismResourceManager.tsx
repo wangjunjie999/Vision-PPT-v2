@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Plus, Pencil, Trash2, Upload, Loader2, Image as ImageIcon, Search } from 'lucide-react';
 import { useMechanisms, type MechanismInsert, type MechanismUpdate } from '@/hooks/useMechanisms';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/api';
 import { getMechanismImage } from '@/utils/mechanismImageUrls';
 
 // Mechanism image display with error handling
@@ -130,18 +130,12 @@ export function MechanismResourceManager() {
     setUploadingView(viewType);
     try {
       const fileName = `mechanisms/${Date.now()}-${viewType}-${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('product-models')
-        .upload(fileName, file, { contentType: file.type, upsert: true });
+      await api.storage.upload('product-models', fileName, file, { upsert: true });
 
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from('product-models')
-        .getPublicUrl(fileName);
+      const publicUrl = api.storage.getPublicUrl('product-models', fileName);
 
       const urlKey = `${viewType}_view_image_url` as 'front_view_image_url' | 'side_view_image_url' | 'top_view_image_url';
-      setForm(prev => ({ ...prev, [urlKey]: urlData.publicUrl }));
+      setForm(prev => ({ ...prev, [urlKey]: publicUrl }));
       toast.success(`${viewType === 'front' ? '正' : viewType === 'side' ? '侧' : '俯'}视图上传成功`);
     } catch (error) {
       console.error('Upload error:', error);

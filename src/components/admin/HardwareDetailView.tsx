@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/api';
 import {
   Dialog,
   DialogContent,
@@ -121,12 +121,8 @@ export function HardwareDetailView({ type, item, open, onOpenChange }: HardwareD
         controllers: 'selected_controller',
       }[type];
       
-      // Use direct fetch to avoid type instantiation issues
-      const { data: modules, error } = await supabase
-        .from('function_modules')
-        .select('id, name, workstation_id') as { data: any[] | null; error: any };
-
-      if (error) throw error;
+      // Use API to fetch modules
+      const modules = await api.modules.list() as any[];
 
       // Filter modules manually since eq on dynamic field causes type issues
       const filteredModules = (modules || []).filter((m: any) => m[fieldName] === searchValue);
@@ -141,23 +137,15 @@ export function HardwareDetailView({ type, item, open, onOpenChange }: HardwareD
       const workstationIds = [...new Set(filteredModules.map((m: any) => m.workstation_id))] as string[];
       
       // Fetch workstations
-      const { data: workstations, error: wsError } = await supabase
-        .from('workstations')
-        .select('id, name, project_id')
-        .in('id', workstationIds);
-
-      if (wsError) throw wsError;
+      const allWorkstations = await api.workstations.list() as any[];
+      const workstations = allWorkstations.filter(w => workstationIds.includes(w.id));
 
       // Get project IDs
       const projectIds = [...new Set(workstations?.map((w) => w.project_id) || [])] as string[];
       
       // Fetch projects
-      const { data: projects, error: projError } = await supabase
-        .from('projects')
-        .select('*')
-        .in('id', projectIds);
-
-      if (projError) throw projError;
+      const allProjects = await api.projects.list() as any[];
+      const projects = allProjects.filter(p => projectIds.includes(p.id));
 
       // Map data - use type assertion for extended fields
       const usage: UsageInfo[] = filteredModules.map((mod: any) => {

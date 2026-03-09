@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/api';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 
@@ -211,13 +211,14 @@ function HardwareSelectionDialog({ open, onOpenChange, type, onSelect }: Hardwar
   const fetchItems = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from(type)
-        .select('*')
-        .eq('enabled', true);
-
-      if (error) throw error;
-      setItems(data || []);
+      let data: any[] = [];
+      switch (type) {
+        case 'cameras': data = await api.hardware.listCameras(); break;
+        case 'lenses': data = await api.hardware.listLenses(); break;
+        case 'lights': data = await api.hardware.listLights(); break;
+        case 'controllers': data = await api.hardware.listControllers(); break;
+      }
+      setItems(data.filter((item: any) => item.enabled !== false) || []);
     } catch (error) {
       toast.error('Failed to load hardware items');
     } finally {

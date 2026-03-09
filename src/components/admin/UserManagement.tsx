@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/api';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -23,15 +23,15 @@ export function UserManagement() {
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
+      const { session } = await api.auth.getSession();
       if (!session) return;
 
-      const res = await supabase.functions.invoke('admin-users', {
+      const { data, error } = await api.functions.invoke('admin-users', {
         method: 'GET',
       });
 
-      if (res.error) throw res.error;
-      setUsers(res.data.users || []);
+      if (error) throw error;
+      setUsers(data.users || []);
     } catch (err: any) {
       console.error('Failed to fetch users:', err);
       toast.error('获取用户列表失败');
@@ -47,7 +47,7 @@ export function UserManagement() {
   const toggleAdminRole = async (userId: string, currentlyAdmin: boolean) => {
     try {
       setTogglingUser(userId);
-      const res = await supabase.functions.invoke('admin-users', {
+      const { data, error } = await api.functions.invoke('admin-users', {
         method: 'POST',
         body: {
           user_id: userId,
@@ -56,8 +56,8 @@ export function UserManagement() {
         },
       });
 
-      if (res.error) throw res.error;
-      if (res.data?.error) throw new Error(res.data.error);
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast.success(currentlyAdmin ? '已移除管理员角色' : '已授予管理员角色');
       await fetchUsers();

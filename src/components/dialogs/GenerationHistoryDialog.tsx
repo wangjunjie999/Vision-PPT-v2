@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect, useCallback } from 'react';
 import { Download, Trash2, FileText, FileSpreadsheet, File, Loader2, History } from 'lucide-react';
@@ -76,13 +76,7 @@ export function GenerationHistoryDialog({ open, onOpenChange, projectId }: Props
     if (!user?.id || !projectId) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('generated_documents')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
+      const data = await api.documents.list(projectId);
       setDocuments((data as unknown as GeneratedDocument[]) || []);
     } catch (err) {
       console.error('Failed to fetch documents:', err);
@@ -98,12 +92,10 @@ export function GenerationHistoryDialog({ open, onOpenChange, projectId }: Props
 
   const handleDownload = async (doc: GeneratedDocument) => {
     try {
-      const { data } = supabase.storage
-        .from('generated-documents')
-        .getPublicUrl(doc.file_url);
+      const publicUrl = api.storage.getPublicUrl('generated-documents', doc.file_url);
       
       const a = document.createElement('a');
-      a.href = data.publicUrl;
+      a.href = publicUrl;
       a.download = doc.file_name;
       a.target = '_blank';
       document.body.appendChild(a);
@@ -121,17 +113,10 @@ export function GenerationHistoryDialog({ open, onOpenChange, projectId }: Props
     setDeleting(true);
     try {
       // Delete from storage first
-      await supabase.storage
-        .from('generated-documents')
-        .remove([deleteTarget.file_url]);
+      await api.storage.remove('generated-documents', [deleteTarget.file_url]);
 
       // Then delete record
-      const { error } = await supabase
-        .from('generated_documents')
-        .delete()
-        .eq('id', deleteTarget.id);
-
-      if (error) throw error;
+      await api.documents.delete(deleteTarget.id);
       
       setDocuments(prev => prev.filter(d => d.id !== deleteTarget.id));
       toast.success('已删除');
