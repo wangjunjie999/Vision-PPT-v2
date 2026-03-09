@@ -40,7 +40,7 @@ export function createSupabaseAssetApi(): IAssetApi {
     async updateByFilter(filters, updates) {
       let query = supabase.from('asset_registry').update(updates as Database['public']['Tables']['asset_registry']['Update']);
       if (filters.userId) query = query.eq('user_id', filters.userId);
-      if (filters.assetType) query = query.eq('asset_type', filters.assetType);
+      if (filters.assetType) query = query.eq('asset_type', filters.assetType as Database['public']['Enums']['asset_type']);
       if (filters.relatedId) query = query.eq('related_id', filters.relatedId);
       const { error } = await query;
       if (error) throw error;
