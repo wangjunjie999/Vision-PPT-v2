@@ -7,6 +7,7 @@ import { createSupabaseModuleApi } from './modules';
 import { createSupabaseHardwareApi } from './hardware';
 import { createSupabaseAssetApi } from './assets';
 import { createSupabaseStorageApi } from './storage';
+import { createSupabaseEdgeFunctionApi } from './functions';
 import {
   createSupabaseUserRoleApi,
   createSupabaseDocumentApi,
@@ -30,5 +31,6 @@ export function createSupabaseAdapter(): ApiAdapter {
     productAssets: createSupabaseProductAssetApi(),
     annotations: createSupabaseAnnotationApi(),
     pptTemplates: createSupabasePPTTemplateApi(),
+    functions: createSupabaseEdgeFunctionApi(),
   };
 }

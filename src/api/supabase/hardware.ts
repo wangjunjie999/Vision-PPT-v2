@@ -93,5 +93,19 @@ export function createSupabaseHardwareApi(): IHardwareApi {
       if (error) throw error;
       return data || [];
     },
+    async addMechanism(mechanism) {
+      const { data, error } = await supabase.from('mechanisms').insert(mechanism as any).select().single();
+      if (error) throw error;
+      return data;
+    },
+    async updateMechanism(id, updates) {
+      const { data, error } = await supabase.from('mechanisms').update(updates as any).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
+    },
+    async deleteMechanism(id) {
+      const { error } = await supabase.from('mechanisms').delete().eq('id', id);
+      if (error) throw error;
+    },
   };
 }

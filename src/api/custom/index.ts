@@ -133,6 +133,9 @@ export function createCustomAdapter(baseUrl: string): ApiAdapter {
       async updateController(id, data) { return fetchApi(`/hardware/controllers/${id}`, { method: 'PUT', body: JSON.stringify(data) }); },
       async deleteController(id) { await fetchApi(`/hardware/controllers/${id}`, { method: 'DELETE' }); },
       async listMechanisms() { return fetchApi('/hardware/mechanisms'); },
+      async addMechanism(data) { return fetchApi('/hardware/mechanisms', { method: 'POST', body: JSON.stringify(data) }); },
+      async updateMechanism(id, data) { return fetchApi(`/hardware/mechanisms/${id}`, { method: 'PUT', body: JSON.stringify(data) }); },
+      async deleteMechanism(id) { await fetchApi(`/hardware/mechanisms/${id}`, { method: 'DELETE' }); },
     },
 
     assets: {
@@ -163,6 +166,9 @@ export function createCustomAdapter(baseUrl: string): ApiAdapter {
       },
       async remove(bucket, paths) {
         await fetchApi('/storage/remove', { method: 'POST', body: JSON.stringify({ bucket, paths }) });
+      },
+      async listFiles(bucket, path) {
+        return fetchApi(`/storage/list?bucket=${bucket}&path=${path || ''}`);
       },
     },
 
@@ -196,6 +202,16 @@ export function createCustomAdapter(baseUrl: string): ApiAdapter {
       async create(data) { return fetchApi('/ppt-templates', { method: 'POST', body: JSON.stringify(data) }); },
       async update(id, data) { return fetchApi(`/ppt-templates/${id}`, { method: 'PUT', body: JSON.stringify(data) }); },
       async delete(id) { await fetchApi(`/ppt-templates/${id}`, { method: 'DELETE' }); },
+    },
+
+    functions: {
+      async invoke(functionName, options) {
+        const data = await fetchApi(`/functions/${functionName}`, {
+          method: options?.method || 'POST',
+          body: options?.body ? JSON.stringify(options.body) : undefined,
+        });
+        return { data, error: null };
+      },
     },
   };
 }
