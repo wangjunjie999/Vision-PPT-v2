@@ -142,7 +142,7 @@ export interface IDocumentApi {
 export interface IProductAssetApi {
   get(workstationId: string): Promise<DbProductAsset | null>;
   getByModule(moduleId: string): Promise<DbProductAsset | null>;
-  create(data: Omit<DbProductAsset, 'id' | 'created_at' | 'updated_at'>): Promise<DbProductAsset>;
+  create(data: Partial<DbProductAsset> & { user_id: string; scope_type: DbProductAsset['scope_type'] }): Promise<DbProductAsset>;
   update(id: string, data: Partial<DbProductAsset>): Promise<DbProductAsset>;
   delete(id: string): Promise<void>;
   listByWorkstations(wsIds: string[]): Promise<DbProductAsset[]>;
@@ -155,7 +155,7 @@ export interface IAnnotationApi {
   listByUser(userId: string, assetIds: string[]): Promise<DbProductAnnotation[]>;
   listByAssetAndWorkstation(assetId: string, workstationId?: string): Promise<DbProductAnnotation[]>;
   getLatestVersion(assetId: string): Promise<number>;
-  create(data: Omit<DbProductAnnotation, 'id' | 'created_at'>): Promise<DbProductAnnotation>;
+  create(data: Partial<DbProductAnnotation> & { asset_id: string; snapshot_url: string; user_id: string }): Promise<DbProductAnnotation>;
   update(id: string, data: Partial<DbProductAnnotation>): Promise<DbProductAnnotation>;
   delete(id: string): Promise<void>;
 }
