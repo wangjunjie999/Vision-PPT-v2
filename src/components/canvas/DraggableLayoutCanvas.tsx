@@ -122,7 +122,21 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   
   // Layer rendering order: bottom to top
   type LayerType = 'mechanism' | 'product' | 'camera';
-  const [layerOrder, setLayerOrder] = useState<LayerType[]>(['mechanism', 'product', 'camera']);
+  const [layerOrder, setLayerOrder] = useState<LayerType[]>(() => {
+    try {
+      const saved = localStorage.getItem(`layerOrder_${workstationId}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length === 3) return parsed;
+      }
+    } catch {}
+    return ['mechanism', 'product', 'camera'];
+  });
+  
+  const handleSaveLayerOrder = useCallback(() => {
+    localStorage.setItem(`layerOrder_${workstationId}`, JSON.stringify(layerOrder));
+    toast.success('层级设置已保存');
+  }, [workstationId, layerOrder]);
   
   const moveLayer = useCallback((index: number, direction: 'up' | 'down') => {
     setLayerOrder(prev => {
@@ -1703,6 +1717,14 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                     <div className="text-[10px] text-muted-foreground mt-1">
                       上方的对象会显示在最前面
                     </div>
+                    <Button 
+                      size="sm" 
+                      className="w-full mt-2 gap-1.5" 
+                      onClick={handleSaveLayerOrder}
+                    >
+                      <Save className="h-3.5 w-3.5" />
+                      保存层级设置
+                    </Button>
                   </div>
                 </PopoverContent>
               </Popover>
