@@ -65,67 +65,39 @@ export function ModuleSchematic() {
   const { getPixelRatio } = useAppStore();
   const diagramRef = useRef<HTMLDivElement>(null);
   
-  // FOV state for interactive editing
   const [fovAngle, setFovAngle] = useState(45);
   const [lightDistance, setLightDistance] = useState(335);
+  const [savingSchematic, setSavingSchematic] = useState(false);
+  const [schematicSaved, setSchematicSaved] = useState(false);
   
   const module = modules.find(m => m.id === selectedModuleId) as any;
   const workstation = workstations.find(w => w.id === selectedWorkstationId) as any;
   const layout = layouts.find(l => l.workstation_id === selectedWorkstationId) as any;
-  
-  if (!module || !workstation) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <p className="text-muted-foreground">未选择模块</p>
-      </div>
-    );
-  }
 
-  // Check if workstation has a layout configured
-  const hasLayout = !!layout;
-  
-  if (!hasLayout) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-        <AlertCircle className="h-16 w-16 text-warning" />
-        <h3 className="text-lg font-semibold">请先完成工位布局</h3>
-        <p className="text-muted-foreground text-center max-w-md">
-          模块2D示意图需要以工位布局作为参考。请先选择工位"{workstation.name}"并配置机械布局。
-        </p>
-        <Button variant="outline" onClick={() => selectModule(null)}>
-          返回工位配置
-        </Button>
-      </div>
-    );
-  }
-
-  const selectedCamera = cameras.find(c => c.id === module.selected_camera);
-  const selectedLens = lenses.find(l => l.id === module.selected_lens);
-  const selectedLight = lights.find(l => l.id === module.selected_light);
-  const selectedController = controllers.find(c => c.id === module.selected_controller);
-  
-  const ModuleIcon = moduleTypeIcons[(module.type || 'positioning') as keyof typeof moduleTypeIcons] || Box;
-
-  // Hardware selection handlers
+  // All hooks must be above early returns
   const handleCameraSelect = useCallback((cameraId: string) => {
+    if (!module) return;
     updateModule(module.id, { camera_id: cameraId } as any);
     toast.success('相机已更新');
-  }, [module.id, updateModule]);
+  }, [module?.id, updateModule]);
 
   const handleLensSelect = useCallback((lensId: string) => {
+    if (!module) return;
     updateModule(module.id, { lens_id: lensId } as any);
     toast.success('镜头已更新');
-  }, [module.id, updateModule]);
+  }, [module?.id, updateModule]);
 
   const handleLightSelect = useCallback((lightId: string) => {
+    if (!module) return;
     updateModule(module.id, { light_id: lightId } as any);
     toast.success('光源已更新');
-  }, [module.id, updateModule]);
+  }, [module?.id, updateModule]);
 
   const handleControllerSelect = useCallback((controllerId: string) => {
+    if (!module) return;
     updateModule(module.id, { controller_id: controllerId } as any);
     toast.success('工控机已更新');
-  }, [module.id, updateModule]);
+  }, [module?.id, updateModule]);
 
   const handleFovAngleChange = useCallback((angle: number) => {
     setFovAngle(Math.max(10, Math.min(120, angle)));
