@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/api';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,19 +50,7 @@ export function AnnotationRecordsPanel() {
       setLoading(true);
     }
     try {
-      let query = supabase
-        .from('product_annotations')
-        .select('*')
-        .eq('asset_id', annotationAssetId);
-
-      // Filter by workstation_id if available for strict isolation
-      if (annotationWorkstationId) {
-        query = query.eq('workstation_id', annotationWorkstationId);
-      }
-
-      const { data, error } = await query.order('version', { ascending: false });
-
-      if (error) throw error;
+      const data = await api.annotations.listByAssetAndWorkstation(annotationAssetId, annotationWorkstationId || undefined);
 
       const mapped = (data || []).map(a => ({
         ...a,
@@ -93,11 +81,7 @@ export function AnnotationRecordsPanel() {
 
   const handleDelete = async (recordId: string) => {
     try {
-      const { error } = await supabase
-        .from('product_annotations')
-        .delete()
-        .eq('id', recordId);
-      if (error) throw error;
+      await api.annotations.delete(recordId);
       await loadRecords();
       toast.success('记录已删除');
     } catch (error) {

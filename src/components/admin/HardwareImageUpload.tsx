@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, Loader2, X } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/api';
 import { toast } from 'sonner';
 import { validateImageFile } from '@/utils/fileValidation';
 
@@ -46,20 +46,12 @@ export function HardwareImageUpload({
       const fileExt = file.name.split('.').pop();
       const fileName = `${type}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-      const { data, error } = await supabase.storage
-        .from('hardware-images')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
+      const { path } = await api.storage.upload('hardware-images', fileName, file, {
+        cacheControl: '3600',
+      });
 
-      if (error) throw error;
-
-      const { data: urlData } = supabase.storage
-        .from('hardware-images')
-        .getPublicUrl(data.path);
-
-      onUpload(urlData.publicUrl);
+      const publicUrl = api.storage.getPublicUrl('hardware-images', path);
+      onUpload(publicUrl);
       toast.success('图片上传成功');
     } catch (err: any) {
       console.error('Upload error:', err);
