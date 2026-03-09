@@ -169,7 +169,7 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
 
           <ScrollArea className="h-[60vh] pr-2">
             <div className="space-y-6">
-              {imageData.groups.map(({ workstation, layoutImages, moduleImages, annotations: wsAnnotations, productImages: wsProductImages }) => (
+              {imageData.groups.map(({ workstation, layoutImages, moduleImages, annotations: wsAnnotations, productImages: wsProductImages, lightingPhotos: wsLightingPhotos }) => (
                 <div key={workstation.id} className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Layers className="h-4 w-4 text-primary" />
