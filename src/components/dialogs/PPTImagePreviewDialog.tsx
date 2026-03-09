@@ -219,7 +219,7 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
                         ))}
                       </div>
                     </div>
-                  )
+                  )}
 
                   {/* Product preview images */}
                   {wsProductImages.length > 0 && (
