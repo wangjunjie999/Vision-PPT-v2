@@ -27,7 +27,7 @@ import { toast } from 'sonner';
 import { VisionSystemDiagram } from './VisionSystemDiagram';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/api';
 import { getImageSaveErrorMessage } from '@/utils/errorMessages';
 
 const moduleTypeIcons = {

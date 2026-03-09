@@ -6,7 +6,7 @@ import { useData } from '@/contexts/DataContext';
 import { useState, useMemo, useEffect } from 'react';
 import { CheckCircle2, XCircle, Eye, ImageIcon, Layers, Camera, Box } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/api';
 
 interface PPTImagePreviewDialogProps {
   open: boolean;

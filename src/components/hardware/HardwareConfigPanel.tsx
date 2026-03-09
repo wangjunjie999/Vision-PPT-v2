@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/api';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 

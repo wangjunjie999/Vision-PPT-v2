@@ -158,21 +158,26 @@ export function HardwareImageMigration() {
         
         result.newUrl = newUrl;
         
-        // Update database record
-        const tableName = item.type === 'camera' ? 'cameras' : 
-                         item.type === 'lens' ? 'lenses' :
-                         item.type === 'light' ? 'lights' : 'controllers';
-        
-        const { error } = await supabase
-          .from(tableName)
-          .update({ image_url: newUrl })
-          .eq('id', item.id);
-        
-        if (error) {
-          result.status = 'failed';
-          result.error = error.message;
-        } else {
+        // Update database record via API
+        try {
+          switch (item.type) {
+            case 'camera':
+              await api.hardware.updateCamera(item.id, { image_url: newUrl });
+              break;
+            case 'lens':
+              await api.hardware.updateLens(item.id, { image_url: newUrl });
+              break;
+            case 'light':
+              await api.hardware.updateLight(item.id, { image_url: newUrl });
+              break;
+            case 'controller':
+              await api.hardware.updateController(item.id, { image_url: newUrl });
+              break;
+          }
           result.status = 'success';
+        } catch (err: any) {
+          result.status = 'failed';
+          result.error = err.message || '更新失败';
         }
       } catch (error) {
         result.status = 'failed';
