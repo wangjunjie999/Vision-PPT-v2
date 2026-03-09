@@ -57,8 +57,8 @@ export function ModuleStep4Output({
         <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">判定与输出</h4>
         
         {/* Detection object */}
-        <div className="space-y-1">
-          <Label className="text-xs">检测对象/检测内容描述</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">检测对象/检测内容描述</Label>
           <Textarea 
             value={form.detectionObject} 
             onChange={e => setForm(p => ({ ...p, detectionObject: e.target.value }))} 
@@ -68,8 +68,8 @@ export function ModuleStep4Output({
         </div>
         
         {/* Judgment strategy */}
-        <div className="space-y-1">
-          <Label className="text-xs">判定策略</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">判定策略</Label>
           <Select 
             value={form.judgmentStrategy} 
             onValueChange={v => setForm(p => ({ ...p, judgmentStrategy: v as 'no_miss' | 'balanced' | 'allow_pass' }))}
@@ -84,8 +84,8 @@ export function ModuleStep4Output({
         </div>
         
         {/* Output actions */}
-        <div className="space-y-2">
-          <Label className="text-xs">输出动作</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">输出动作</Label>
           <div className="grid grid-cols-3 gap-2">
             {['报警', '停机', '剔除', '标记', '上传MES', '存图'].map(action => (
               <label key={action} className="flex items-center gap-2 p-2 border rounded cursor-pointer hover:bg-muted">
@@ -108,8 +108,8 @@ export function ModuleStep4Output({
         
         {/* Communication */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">通讯方式</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">通讯方式</Label>
             <Select 
               value={form.communicationMethod} 
               onValueChange={v => setForm(p => ({ ...p, communicationMethod: v }))}
@@ -123,8 +123,8 @@ export function ModuleStep4Output({
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">信号定义</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">信号定义</Label>
             <Input 
               value={form.signalDefinition} 
               onChange={e => setForm(p => ({ ...p, signalDefinition: e.target.value }))} 
@@ -136,8 +136,8 @@ export function ModuleStep4Output({
         
         {/* Data retention */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">数据留存策略</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">数据留存策略</Label>
             <Select 
               value={form.dataRetention} 
               onValueChange={v => setForm(p => ({ ...p, dataRetention: v as any }))}
@@ -151,8 +151,8 @@ export function ModuleStep4Output({
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">保存天数</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">保存天数</Label>
             <Input 
               type="number"
               value={form.dataRetentionDays} 
