@@ -479,8 +479,8 @@ export function WorkstationForm() {
   const Step1WorkstationInfo = (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-xs">工位编号 *</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">工位编号 <span className="text-destructive ml-0.5">*</span></Label>
           <Input 
             value={wsForm.code} 
             onChange={e => setWsForm(p => ({ ...p, code: e.target.value }))} 
@@ -488,8 +488,8 @@ export function WorkstationForm() {
             maxLength={20}
           />
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs">节拍 (s/pcs) *</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">节拍 (s/pcs) <span className="text-destructive ml-0.5">*</span></Label>
           <Input 
             type="number" 
             value={wsForm.cycleTime} 
@@ -498,8 +498,8 @@ export function WorkstationForm() {
           />
         </div>
       </div>
-      <div className="space-y-1">
-        <Label className="text-xs">工位名称 *</Label>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium">工位名称 <span className="text-destructive ml-0.5">*</span></Label>
         <Input 
           value={wsForm.name} 
           onChange={e => setWsForm(p => ({ ...p, name: e.target.value }))} 
@@ -507,8 +507,8 @@ export function WorkstationForm() {
           maxLength={100}
         />
       </div>
-      <div className="space-y-1">
-        <Label className="text-xs">工位类型 *</Label>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium">工位类型 <span className="text-destructive ml-0.5">*</span></Label>
         <Select value={wsForm.type} onValueChange={v => setWsForm(p => ({ ...p, type: v as WorkstationType }))}>
           <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -520,8 +520,8 @@ export function WorkstationForm() {
         </Select>
       </div>
       <div className="grid grid-cols-3 gap-2">
-        <div className="space-y-1">
-          <Label className="text-xs">产品长(mm)</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">产品长(mm)</Label>
           <Input 
             type="number" 
             value={wsForm.length} 
@@ -529,8 +529,8 @@ export function WorkstationForm() {
             className="h-9" 
           />
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs">产品宽(mm)</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">产品宽(mm)</Label>
           <Input 
             type="number" 
             value={wsForm.width} 
@@ -538,8 +538,8 @@ export function WorkstationForm() {
             className="h-9" 
           />
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs">产品高(mm)</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">产品高(mm)</Label>
           <Input 
             type="number" 
             value={wsForm.height} 
@@ -561,8 +561,8 @@ export function WorkstationForm() {
       </div>
       
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-xs">所属工艺段</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">所属工艺段</Label>
           <Select 
             value={wsForm.process_stage} 
             onValueChange={v => setWsForm(p => ({ ...p, process_stage: v }))}
@@ -575,8 +575,8 @@ export function WorkstationForm() {
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs">被观察对象</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">被观察对象</Label>
           <Select 
             value={wsForm.observation_target} 
             onValueChange={v => setWsForm(p => ({ ...p, observation_target: v }))}
@@ -591,8 +591,8 @@ export function WorkstationForm() {
         </div>
       </div>
       
-      <div className="space-y-1">
-        <Label className="text-xs">现场环境说明</Label>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium">现场环境说明</Label>
         <Input 
           value={wsForm.environment_description} 
           onChange={e => setWsForm(p => ({ ...p, environment_description: e.target.value }))} 
@@ -604,8 +604,8 @@ export function WorkstationForm() {
       
       {/* New SOP fields: motion, shot count, action script, risk */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-xs">运动方式</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">运动方式</Label>
           <Input 
             value={wsForm.motion_description} 
             onChange={e => setWsForm(p => ({ ...p, motion_description: e.target.value }))} 
@@ -613,8 +613,8 @@ export function WorkstationForm() {
             className="h-9"
           />
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs">拍照次数 (次/节拍)</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">拍照次数 (次/节拍)</Label>
           <Input 
             type="number" 
             value={wsForm.shot_count} 
@@ -625,8 +625,8 @@ export function WorkstationForm() {
         </div>
       </div>
       
-      <div className="space-y-1">
-        <Label className="text-xs">测量方法/动作分解</Label>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium">测量方法/动作分解</Label>
         <textarea 
           value={wsForm.action_script} 
           onChange={e => setWsForm(p => ({ ...p, action_script: e.target.value }))} 
@@ -636,8 +636,8 @@ export function WorkstationForm() {
         />
       </div>
       
-      <div className="space-y-1">
-        <Label className="text-xs">风险/待确认事项</Label>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium">风险/待确认事项</Label>
         <textarea 
           value={wsForm.risk_notes} 
           onChange={e => setWsForm(p => ({ ...p, risk_notes: e.target.value }))} 
@@ -647,8 +647,8 @@ export function WorkstationForm() {
         />
       </div>
       
-      <div className="space-y-1">
-        <Label className="text-xs">备注</Label>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium">备注</Label>
         <textarea 
           value={wsForm.notes} 
           onChange={e => setWsForm(p => ({ ...p, notes: e.target.value }))} 
@@ -662,8 +662,8 @@ export function WorkstationForm() {
 
   const Step2MechanicalLayout = (
     <div className="space-y-4">
-      <div className="space-y-1">
-        <Label className="text-xs">输送/机台类型</Label>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium">输送/机台类型</Label>
         <Input 
           value={layoutForm.conveyorType} 
           onChange={e => setLayoutForm(p => ({ ...p, conveyorType: e.target.value }))} 
@@ -863,8 +863,8 @@ export function WorkstationForm() {
           <span className="text-sm font-medium">主视图 / 辅视图选择</span>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">主视图</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">主视图</Label>
             <Select
               value={layoutForm.primaryView}
               onValueChange={(v) => setLayoutForm(p => ({ ...p, primaryView: v as any }))}
@@ -879,8 +879,8 @@ export function WorkstationForm() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">辅视图</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">辅视图</Label>
             <Select
               value={layoutForm.auxiliaryView}
               onValueChange={(v) => setLayoutForm(p => ({ ...p, auxiliaryView: v as any }))}
@@ -898,8 +898,8 @@ export function WorkstationForm() {
         </div>
 
         {/* Layout Description */}
-        <div className="space-y-1">
-          <Label className="text-xs">布局说明（相机位置、安装角度等）</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">布局说明（相机位置、安装角度等）</Label>
           <Textarea
             value={layoutForm.layoutDescription}
             onChange={(e) => setLayoutForm(p => ({ ...p, layoutDescription: e.target.value }))}

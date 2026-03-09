@@ -57,9 +57,9 @@ export function DefectForm({ form, setForm }: DefectFormProps) {
       
       <div className="space-y-4">
         {/* 缺陷类别 */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium">
-            缺陷类别 *
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">
+            缺陷类别 <span className="text-destructive ml-0.5">*</span>
             {form.defectClasses.length === 0 && (
               <span className="text-destructive text-xs ml-2">(至少添加1个)</span>
             )}
@@ -130,8 +130,8 @@ export function DefectForm({ form, setForm }: DefectFormProps) {
 
         {/* 检测参数 */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">最小缺陷尺寸 (mm) *</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">最小缺陷尺寸 (mm) <span className="text-destructive ml-0.5">*</span></Label>
             <Input
               type="number"
               step="0.1"
@@ -140,8 +140,8 @@ export function DefectForm({ form, setForm }: DefectFormProps) {
               className="h-9"
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">漏检容忍度</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">漏检容忍度</Label>
             <Select 
               value={form.missTolerance} 
               onValueChange={v => setForm(p => ({ ...p, missTolerance: v as MissTolerance }))}
@@ -158,8 +158,8 @@ export function DefectForm({ form, setForm }: DefectFormProps) {
 
         {/* 检测区域 */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">检测区域长度 (mm)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">检测区域长度 (mm)</Label>
             <Input
               type="number"
               value={form.detectionAreaLength}
@@ -168,8 +168,8 @@ export function DefectForm({ form, setForm }: DefectFormProps) {
               className="h-9"
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">检测区域宽度 (mm)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">检测区域宽度 (mm)</Label>
             <Input
               type="number"
               value={form.detectionAreaWidth}
@@ -182,8 +182,8 @@ export function DefectForm({ form, setForm }: DefectFormProps) {
 
         {/* 输送配置 */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">输送方式</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">输送方式</Label>
             <Select 
               value={form.conveyorType} 
               onValueChange={v => setForm(p => ({ ...p, conveyorType: v as ConveyorType }))}
@@ -196,8 +196,8 @@ export function DefectForm({ form, setForm }: DefectFormProps) {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">线速度 (mm/s)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">线速度 (mm/s)</Label>
             <Input
               type="number"
               value={form.lineSpeed}
@@ -209,8 +209,8 @@ export function DefectForm({ form, setForm }: DefectFormProps) {
         </div>
 
         {/* 相机数量 */}
-        <div className="space-y-1">
-          <Label className="text-xs">相机数量</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">相机数量</Label>
           <Select 
             value={form.defectCameraCount} 
             onValueChange={v => setForm(p => ({ ...p, defectCameraCount: v as '1' | '2' | '3' }))}
@@ -225,12 +225,12 @@ export function DefectForm({ form, setForm }: DefectFormProps) {
         </div>
 
         {/* 工业级参数 */}
-        <div className="space-y-3 pt-2 border-t">
-          <Label className="text-xs font-medium text-muted-foreground">工业级参数（可选）</Label>
+        <div className="space-y-4 pt-2 border-t">
+          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">工业级参数（可选）</Label>
           
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">缺陷对比度</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">缺陷对比度</Label>
               <Input
                 value={form.defectContrast}
                 onChange={e => setForm(p => ({ ...p, defectContrast: e.target.value }))}
@@ -238,8 +238,8 @@ export function DefectForm({ form, setForm }: DefectFormProps) {
                 className="h-9"
               />
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">材质反光等级</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">材质反光等级</Label>
               <Select 
                 value={form.materialReflectionLevel} 
                 onValueChange={v => setForm(p => ({ ...p, materialReflectionLevel: v }))}
@@ -255,8 +255,8 @@ export function DefectForm({ form, setForm }: DefectFormProps) {
           </div>
           
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">允许漏检率</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">允许漏检率</Label>
               <Input
                 value={form.allowedMissRate}
                 onChange={e => setForm(p => ({ ...p, allowedMissRate: e.target.value }))}
@@ -264,8 +264,8 @@ export function DefectForm({ form, setForm }: DefectFormProps) {
                 className="h-9"
               />
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">允许误检率</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">允许误检率</Label>
               <Input
                 value={form.allowedFalseRate}
                 onChange={e => setForm(p => ({ ...p, allowedFalseRate: e.target.value }))}
@@ -275,8 +275,8 @@ export function DefectForm({ form, setForm }: DefectFormProps) {
             </div>
           </div>
           
-          <div className="space-y-1">
-            <Label className="text-xs">置信度阈值/NG判定阈值</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">置信度阈值/NG判定阈值</Label>
             <Input
               value={form.confidenceThreshold}
               onChange={e => setForm(p => ({ ...p, confidenceThreshold: e.target.value }))}

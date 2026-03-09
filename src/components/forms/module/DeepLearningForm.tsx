@@ -57,8 +57,8 @@ export function DeepLearningForm({ form, setForm }: DeepLearningFormProps) {
       
       <div className="space-y-4">
         {/* 任务类型 */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">任务类型 *</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">任务类型 <span className="text-destructive ml-0.5">*</span></Label>
           <div className="grid grid-cols-2 gap-2">
             {taskTypeOptions.map(opt => (
               <label
@@ -88,9 +88,9 @@ export function DeepLearningForm({ form, setForm }: DeepLearningFormProps) {
         </div>
 
         {/* 目标类别 */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium">
-            目标类别 *
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">
+            目标类别 <span className="text-destructive ml-0.5">*</span>
             {form.targetClasses.length === 0 && (
               <span className="text-destructive text-xs ml-2">(至少添加1个)</span>
             )}
@@ -161,8 +161,8 @@ export function DeepLearningForm({ form, setForm }: DeepLearningFormProps) {
 
         {/* ROI 尺寸 */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">ROI宽 (mm)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">ROI宽 (mm)</Label>
             <Input
               type="number"
               value={form.dlRoiWidth}
@@ -171,8 +171,8 @@ export function DeepLearningForm({ form, setForm }: DeepLearningFormProps) {
               className="h-9"
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">ROI高 (mm)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">ROI高 (mm)</Label>
             <Input
               type="number"
               value={form.dlRoiHeight}
@@ -181,8 +181,8 @@ export function DeepLearningForm({ form, setForm }: DeepLearningFormProps) {
               className="h-9"
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">视野大小 (mm)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">视野大小 (mm)</Label>
             <Input
               type="number"
               value={form.dlFieldOfView}
@@ -195,8 +195,8 @@ export function DeepLearningForm({ form, setForm }: DeepLearningFormProps) {
 
         {/* 部署目标和推理时限 */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">部署目标 *</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">部署目标 <span className="text-destructive ml-0.5">*</span></Label>
             <Select 
               value={form.deployTarget} 
               onValueChange={v => setForm(p => ({ ...p, deployTarget: v as DeployTarget }))}
@@ -209,8 +209,8 @@ export function DeepLearningForm({ form, setForm }: DeepLearningFormProps) {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">推理时限 (ms) *</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">推理时限 (ms) <span className="text-destructive ml-0.5">*</span></Label>
             <Input
               type="number"
               min="10"
@@ -222,8 +222,8 @@ export function DeepLearningForm({ form, setForm }: DeepLearningFormProps) {
         </div>
 
         {/* 样本规模 */}
-        <div className="space-y-1">
-          <Label className="text-xs">预计样本规模 (张)</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">预计样本规模 (张)</Label>
           <Input
             type="number"
             min="0"

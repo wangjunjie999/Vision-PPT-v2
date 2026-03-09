@@ -83,46 +83,51 @@ export function NewProjectDialog({ open, onOpenChange }: { open: boolean; onOpen
       <DialogContent>
         <DialogHeader><DialogTitle>新建项目</DialogTitle></DialogHeader>
         <div className="space-y-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>项目编号 <span className="text-destructive">*</span></Label>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">项目编号 <span className="text-destructive ml-0.5">*</span></Label>
               <Input 
                 value={form.code} 
                 onChange={e => setForm(p => ({ ...p, code: e.target.value }))} 
                 placeholder="VIS-2024-XXX" 
+                className="h-9"
               />
             </div>
-            <div className="space-y-2">
-              <Label>方案日期</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">方案日期</Label>
               <Input 
                 type="date" 
                 value={form.date} 
                 onChange={e => setForm(p => ({ ...p, date: e.target.value }))} 
+                className="h-9"
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>项目名称 <span className="text-destructive">*</span></Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">项目名称 <span className="text-destructive ml-0.5">*</span></Label>
             <Input 
               value={form.name} 
               onChange={e => setForm(p => ({ ...p, name: e.target.value }))} 
               placeholder="请输入项目名称" 
+              className="h-9"
             />
           </div>
-          <div className="space-y-2">
-            <Label>客户名称 <span className="text-destructive">*</span></Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">客户名称 <span className="text-destructive ml-0.5">*</span></Label>
             <Input 
               value={form.customer} 
               onChange={e => setForm(p => ({ ...p, customer: e.target.value }))} 
               placeholder="请输入客户名称" 
+              className="h-9"
             />
           </div>
-          <div className="space-y-2">
-            <Label>负责人</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">负责人</Label>
             <Input 
               value={form.responsible} 
               onChange={e => setForm(p => ({ ...p, responsible: e.target.value }))} 
               placeholder="请输入负责人" 
+              className="h-9"
             />
           </div>
         </div>

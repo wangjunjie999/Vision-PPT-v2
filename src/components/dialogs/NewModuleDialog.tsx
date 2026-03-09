@@ -90,18 +90,19 @@ export function NewModuleDialog({ open, onOpenChange, workstationId }: { open: b
       <DialogContent>
         <DialogHeader><DialogTitle>新建功能模块</DialogTitle></DialogHeader>
         <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label>模块名称 <span className="text-destructive">*</span></Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">模块名称 <span className="text-destructive ml-0.5">*</span></Label>
             <Input 
               value={form.name} 
               onChange={e => setForm(p => ({ ...p, name: e.target.value }))} 
               placeholder="请输入模块名称" 
+              className="h-9"
             />
           </div>
-          <div className="space-y-2">
-            <Label>模块类型</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">模块类型</Label>
             <Select value={form.type} onValueChange={v => setForm(p => ({ ...p, type: v as ModuleType }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="positioning">引导定位</SelectItem>
                 <SelectItem value="defect">缺陷检测</SelectItem>

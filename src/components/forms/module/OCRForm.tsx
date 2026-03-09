@@ -36,8 +36,8 @@ export function OCRForm({ form, setForm }: OCRFormProps) {
       
       <div className="space-y-4">
         {/* 码制/字符类型 */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">码制/字符类型 *</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">码制/字符类型 <span className="text-destructive ml-0.5">*</span></Label>
           <div className="grid grid-cols-2 gap-2">
             {charTypeOptions.map(opt => (
               <label
@@ -67,8 +67,8 @@ export function OCRForm({ form, setForm }: OCRFormProps) {
         </div>
 
         {/* 内容规则 */}
-        <div className="space-y-1">
-          <Label className="text-xs">内容格式规则 *</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">内容格式规则 <span className="text-destructive ml-0.5">*</span></Label>
           <Input
             value={form.contentRule}
             onChange={e => setForm(p => ({ ...p, contentRule: e.target.value }))}
@@ -79,8 +79,8 @@ export function OCRForm({ form, setForm }: OCRFormProps) {
 
         {/* 字符区域和高度 */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">字符区域宽 (mm)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">字符区域宽 (mm)</Label>
             <Input
               type="number"
               value={form.ocrAreaWidth}
@@ -89,8 +89,8 @@ export function OCRForm({ form, setForm }: OCRFormProps) {
               className="h-9"
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">字符区域高 (mm)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">字符区域高 (mm)</Label>
             <Input
               type="number"
               value={form.ocrAreaHeight}
@@ -99,8 +99,8 @@ export function OCRForm({ form, setForm }: OCRFormProps) {
               className="h-9"
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">字符高度 (mm) *</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">字符高度 (mm) <span className="text-destructive ml-0.5">*</span></Label>
             <Input
               type="number"
               step="0.1"
@@ -113,8 +113,8 @@ export function OCRForm({ form, setForm }: OCRFormProps) {
 
         {/* 字符集和数量 */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">字符集 *</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">字符集 <span className="text-destructive ml-0.5">*</span></Label>
             <Select 
               value={form.charset} 
               onValueChange={v => setForm(p => ({ ...p, charset: v as Charset }))}
@@ -127,8 +127,8 @@ export function OCRForm({ form, setForm }: OCRFormProps) {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">字符数量</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">字符数量</Label>
             <Input
               type="number"
               min="1"
@@ -141,8 +141,8 @@ export function OCRForm({ form, setForm }: OCRFormProps) {
         </div>
 
         {/* 相机视野 */}
-        <div className="space-y-1">
-          <Label className="text-xs">相机视野 (mm)</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">相机视野 (mm)</Label>
           <Input
             type="number"
             value={form.ocrCameraFieldOfView}
@@ -153,12 +153,12 @@ export function OCRForm({ form, setForm }: OCRFormProps) {
         </div>
 
         {/* 工业级参数 */}
-        <div className="space-y-3 pt-2 border-t">
-          <Label className="text-xs font-medium text-muted-foreground">工业级参数（可选）</Label>
+        <div className="space-y-4 pt-2 border-t">
+          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">工业级参数（可选）</Label>
           
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">字符宽度 (mm)</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">字符宽度 (mm)</Label>
               <Input
                 value={form.charWidth}
                 onChange={e => setForm(p => ({ ...p, charWidth: e.target.value }))}
@@ -166,8 +166,8 @@ export function OCRForm({ form, setForm }: OCRFormProps) {
                 className="h-9"
               />
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">最小笔画 (mm)</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">最小笔画 (mm)</Label>
               <Input
                 value={form.minStrokeWidth}
                 onChange={e => setForm(p => ({ ...p, minStrokeWidth: e.target.value }))}
@@ -178,8 +178,8 @@ export function OCRForm({ form, setForm }: OCRFormProps) {
           </div>
           
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">允许旋转角度 (°)</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">允许旋转角度 (°)</Label>
               <Input
                 type="number"
                 value={form.allowedRotationAngle}
@@ -188,8 +188,8 @@ export function OCRForm({ form, setForm }: OCRFormProps) {
                 className="h-9"
               />
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">允许污损等级</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">允许污损等级</Label>
               <Select 
                 value={form.allowedDamageLevel} 
                 onValueChange={v => setForm(p => ({ ...p, allowedDamageLevel: v }))}
@@ -205,8 +205,8 @@ export function OCRForm({ form, setForm }: OCRFormProps) {
             </div>
           </div>
           
-          <div className="space-y-1">
-            <Label className="text-xs">字符规则示例/正则</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">字符规则示例/正则</Label>
             <Input
               value={form.charRuleExample}
               onChange={e => setForm(p => ({ ...p, charRuleExample: e.target.value }))}
