@@ -365,7 +365,7 @@ export function ModuleSchematic() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="schematic" className="flex-1 flex flex-col overflow-hidden" onValueChange={setActiveTab}>
+      <Tabs defaultValue="schematic" className="flex-1 flex flex-col overflow-hidden">
         <div className="px-4 pt-3 border-b border-border bg-card/30">
           <TabsList className="w-auto">
             <TabsTrigger value="schematic" className="gap-2">
