@@ -488,7 +488,7 @@ export function VisionSystemDiagram({
 
         {/* Interactive Camera Element - embedded in SVG */}
         <foreignObject x="175" y="30" width="90" height="85">
-          <div className="w-full h-full">
+          <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
             <HardwareSelectPopover
               type="camera"
               items={cameras}
