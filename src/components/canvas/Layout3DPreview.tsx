@@ -65,36 +65,223 @@ function DraggableGroup({
   );
 }
 
-function MechanismBox({ obj, selected }: { obj: LayoutObject; selected: boolean }) {
+// Helper: standard material props for mechanisms
+function mechMat(color: string, selected: boolean) {
+  const highlightColor = '#facc15';
+  return {
+    color: selected ? highlightColor : color,
+    transparent: true,
+    opacity: selected ? 0.9 : 0.75,
+    emissive: selected ? highlightColor : '#000000',
+    emissiveIntensity: selected ? 0.3 : 0,
+  } as const;
+}
+
+function RobotArmModel({ w, h, d, selected }: { w: number; h: number; d: number; selected: boolean }) {
+  const baseR = Math.min(w, d) * 0.5;
+  const armW = w * 0.25;
+  return (
+    <group>
+      {/* Base cylinder */}
+      <Cylinder args={[baseR, baseR * 1.1, h * 0.2, 16]} position={[0, h * 0.1, 0]}>
+        <meshStandardMaterial {...mechMat('#4a4a4a', selected)} />
+      </Cylinder>
+      {/* Vertical arm */}
+      <Box args={[armW, h * 0.65, armW]} position={[0, h * 0.2 + h * 0.325, 0]}>
+        <meshStandardMaterial {...mechMat('#ea580c', selected)} />
+      </Box>
+      {/* Shoulder joint */}
+      <Sphere args={[armW * 0.6, 12, 12]} position={[0, h * 0.2, 0]}>
+        <meshStandardMaterial {...mechMat('#6b7280', selected)} />
+      </Sphere>
+      {/* End effector joint */}
+      <Sphere args={[armW * 0.5, 12, 12]} position={[0, h * 0.85, 0]}>
+        <meshStandardMaterial {...mechMat('#f97316', selected)} />
+      </Sphere>
+    </group>
+  );
+}
+
+function ConveyorModel({ w, h, d, selected }: { w: number; h: number; d: number; selected: boolean }) {
+  const rollerR = Math.min(h, d) * 0.25;
+  return (
+    <group>
+      {/* Belt surface */}
+      <Box args={[w, h * 0.3, d]} position={[0, h * 0.5, 0]}>
+        <meshStandardMaterial {...mechMat('#6b7280', selected)} />
+      </Box>
+      {/* Left roller */}
+      <Cylinder args={[rollerR, rollerR, d * 0.9, 12]} rotation={[Math.PI / 2, 0, 0]} position={[-w * 0.42, h * 0.35, 0]}>
+        <meshStandardMaterial {...mechMat('#22c55e', selected)} />
+      </Cylinder>
+      {/* Right roller */}
+      <Cylinder args={[rollerR, rollerR, d * 0.9, 12]} rotation={[Math.PI / 2, 0, 0]} position={[w * 0.42, h * 0.35, 0]}>
+        <meshStandardMaterial {...mechMat('#22c55e', selected)} />
+      </Cylinder>
+      {/* Legs */}
+      <Box args={[w * 0.06, h * 0.35, d * 0.06]} position={[-w * 0.4, h * 0.175, -d * 0.4]}>
+        <meshStandardMaterial {...mechMat('#4a4a4a', selected)} />
+      </Box>
+      <Box args={[w * 0.06, h * 0.35, d * 0.06]} position={[w * 0.4, h * 0.175, -d * 0.4]}>
+        <meshStandardMaterial {...mechMat('#4a4a4a', selected)} />
+      </Box>
+      <Box args={[w * 0.06, h * 0.35, d * 0.06]} position={[-w * 0.4, h * 0.175, d * 0.4]}>
+        <meshStandardMaterial {...mechMat('#4a4a4a', selected)} />
+      </Box>
+      <Box args={[w * 0.06, h * 0.35, d * 0.06]} position={[w * 0.4, h * 0.175, d * 0.4]}>
+        <meshStandardMaterial {...mechMat('#4a4a4a', selected)} />
+      </Box>
+    </group>
+  );
+}
+
+function CylinderModel({ w, h, d, selected }: { w: number; h: number; d: number; selected: boolean }) {
+  const r = Math.min(w, d) * 0.35;
+  return (
+    <group>
+      <Cylinder args={[r, r, h, 16]} position={[0, h * 0.5, 0]}>
+        <meshStandardMaterial {...mechMat('#9ca3af', selected)} metalness={0.4} roughness={0.3} />
+      </Cylinder>
+      {/* Piston rod */}
+      <Cylinder args={[r * 0.25, r * 0.25, h * 0.4, 8]} position={[0, h * 0.9, 0]}>
+        <meshStandardMaterial {...mechMat('#d1d5db', selected)} metalness={0.6} roughness={0.2} />
+      </Cylinder>
+    </group>
+  );
+}
+
+function GripperModel({ w, h, d, selected }: { w: number; h: number; d: number; selected: boolean }) {
+  const jawW = w * 0.15;
+  return (
+    <group>
+      {/* Center body */}
+      <Box args={[w * 0.4, h * 0.5, d * 0.6]} position={[0, h * 0.5, 0]}>
+        <meshStandardMaterial {...mechMat('#4b5563', selected)} />
+      </Box>
+      {/* Left jaw */}
+      <Box args={[jawW, h * 0.7, d * 0.2]} position={[-w * 0.35, h * 0.35, 0]}>
+        <meshStandardMaterial {...mechMat('#6b7280', selected)} />
+      </Box>
+      {/* Right jaw */}
+      <Box args={[jawW, h * 0.7, d * 0.2]} position={[w * 0.35, h * 0.35, 0]}>
+        <meshStandardMaterial {...mechMat('#6b7280', selected)} />
+      </Box>
+    </group>
+  );
+}
+
+function TurntableModel({ w, h, d, selected }: { w: number; h: number; d: number; selected: boolean }) {
+  const r = Math.max(w, d) * 0.45;
+  return (
+    <group>
+      {/* Base */}
+      <Cylinder args={[r * 0.8, r, h * 0.4, 20]} position={[0, h * 0.2, 0]}>
+        <meshStandardMaterial {...mechMat('#1e3a5f', selected)} />
+      </Cylinder>
+      {/* Top disc */}
+      <Cylinder args={[r, r, h * 0.08, 20]} position={[0, h * 0.44, 0]}>
+        <meshStandardMaterial {...mechMat('#2563eb', selected)} />
+      </Cylinder>
+    </group>
+  );
+}
+
+function LiftModel({ w, h, d, selected }: { w: number; h: number; d: number; selected: boolean }) {
+  const pillarW = w * 0.12;
+  return (
+    <group>
+      {/* Left pillar */}
+      <Box args={[pillarW, h, pillarW]} position={[-w * 0.35, h * 0.5, 0]}>
+        <meshStandardMaterial {...mechMat('#6b7280', selected)} />
+      </Box>
+      {/* Right pillar */}
+      <Box args={[pillarW, h, pillarW]} position={[w * 0.35, h * 0.5, 0]}>
+        <meshStandardMaterial {...mechMat('#6b7280', selected)} />
+      </Box>
+      {/* Platform */}
+      <Box args={[w * 0.8, h * 0.08, d * 0.8]} position={[0, h * 0.6, 0]}>
+        <meshStandardMaterial {...mechMat('#9ca3af', selected)} />
+      </Box>
+    </group>
+  );
+}
+
+function StopModel({ w, h, d, selected }: { w: number; h: number; d: number; selected: boolean }) {
+  return (
+    <group>
+      {/* Base block */}
+      <Box args={[w * 0.5, h * 0.4, d * 0.5]} position={[0, h * 0.2, 0]}>
+        <meshStandardMaterial {...mechMat('#991b1b', selected)} />
+      </Box>
+      {/* Stop plate */}
+      <Box args={[w * 0.8, h * 0.7, d * 0.1]} position={[0, h * 0.55, d * 0.25]}>
+        <meshStandardMaterial {...mechMat('#dc2626', selected)} />
+      </Box>
+    </group>
+  );
+}
+
+function CameraMountModel({ w, h, d, selected }: { w: number; h: number; d: number; selected: boolean }) {
+  return (
+    <group>
+      {/* Vertical bar */}
+      <Box args={[w * 0.15, h, d * 0.15]} position={[0, h * 0.5, -d * 0.3]}>
+        <meshStandardMaterial {...mechMat('#64748b', selected)} />
+      </Box>
+      {/* Horizontal arm */}
+      <Box args={[w * 0.6, h * 0.1, d * 0.12]} position={[0, h * 0.9, 0]}>
+        <meshStandardMaterial {...mechMat('#94a3b8', selected)} />
+      </Box>
+    </group>
+  );
+}
+
+function DefaultMechanismModel({ w, h, d, selected }: { w: number; h: number; d: number; selected: boolean }) {
+  const isMounted = false;
+  const baseColor = '#f97316';
+  const highlightColor = '#facc15';
+  return (
+    <group position={[0, h / 2, 0]}>
+      <Box args={[w, h, d]}>
+        <meshStandardMaterial {...mechMat(baseColor, selected)} />
+      </Box>
+      <Box args={[w, h, d]}>
+        <meshBasicMaterial color={selected ? highlightColor : baseColor} wireframe />
+      </Box>
+    </group>
+  );
+}
+
+function Mechanism3DModel({ obj, selected }: { obj: LayoutObject; selected: boolean }) {
   const w = (obj.width || 100) * SCALE;
   const h = (obj.height || 100) * SCALE;
   const d = ((obj as any).depth || 80) * SCALE;
-  const isMounted = !!obj.mountedToMechanismId;
-  const baseColor = isMounted ? '#16a34a' : '#f97316';
+  const mechType = obj.mechanismType || '';
   const highlightColor = '#facc15';
+
+  let model: React.ReactNode;
+  switch (mechType) {
+    case 'robot_arm': model = <RobotArmModel w={w} h={h} d={d} selected={selected} />; break;
+    case 'conveyor': model = <ConveyorModel w={w} h={h} d={d} selected={selected} />; break;
+    case 'cylinder': model = <CylinderModel w={w} h={h} d={d} selected={selected} />; break;
+    case 'gripper': model = <GripperModel w={w} h={h} d={d} selected={selected} />; break;
+    case 'turntable': model = <TurntableModel w={w} h={h} d={d} selected={selected} />; break;
+    case 'lift': model = <LiftModel w={w} h={h} d={d} selected={selected} />; break;
+    case 'stop': model = <StopModel w={w} h={h} d={d} selected={selected} />; break;
+    case 'camera_mount': model = <CameraMountModel w={w} h={h} d={d} selected={selected} />; break;
+    default: model = <DefaultMechanismModel w={w} h={h} d={d} selected={selected} />; break;
+  }
 
   return (
     <>
-      <group position={[0, h / 2, 0]}>
-        <Box args={[w, h, d]}>
-          <meshStandardMaterial
-            color={selected ? highlightColor : baseColor}
-            transparent opacity={selected ? 0.9 : 0.75}
-            emissive={selected ? highlightColor : '#000000'}
-            emissiveIntensity={selected ? 0.3 : 0}
-          />
+      {model}
+      {selected && (
+        <Box args={[w + 0.06, h + 0.06, d + 0.06]} position={[0, h / 2, 0]}>
+          <meshBasicMaterial color={highlightColor} wireframe transparent opacity={0.5} />
         </Box>
-        <Box args={[w, h, d]}>
-          <meshBasicMaterial color={selected ? highlightColor : baseColor} wireframe />
-        </Box>
-        {selected && (
-          <Box args={[w + 0.06, h + 0.06, d + 0.06]}>
-            <meshBasicMaterial color={highlightColor} wireframe transparent opacity={0.5} />
-          </Box>
-        )}
-      </group>
+      )}
       <Text
-        position={[0, (obj.height || 100) * SCALE + 0.15, 0]}
+        position={[0, h + 0.15, 0]}
         fontSize={0.18}
         color="#fafafa"
         anchorX="center"
