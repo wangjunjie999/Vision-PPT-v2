@@ -210,7 +210,7 @@ export function VisionSystemDiagram({
         className="w-full h-full"
         preserveAspectRatio="xMidYMid meet"
         shapeRendering="geometricPrecision"
-        style={{ maxHeight: '100%', transform: 'translateZ(0)', aspectRatio: '800/750' }}
+        style={{ maxHeight: '100%', transform: 'translateZ(0)' }}
       >
         <defs>
           {/* Camera FOV gradient */}
@@ -374,10 +374,7 @@ export function VisionSystemDiagram({
 
         {/* Focus point indicator */}
         <g transform="translate(220, 340)">
-          <circle r="8" fill="hsl(220, 80%, 50%)" opacity="0.3">
-            <animate attributeName="r" values="4;10;4" dur="2s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.4;0.1;0.4" dur="2s" repeatCount="indefinite" />
-          </circle>
+          <circle r="8" fill="hsl(220, 80%, 50%)" opacity="0.2" />
           <circle r="4" fill="hsl(220, 80%, 50%)" />
           <line x1="-12" y1="0" x2="-6" y2="0" stroke="hsl(220, 80%, 50%)" strokeWidth="1.5" />
           <line x1="6" y1="0" x2="12" y2="0" stroke="hsl(220, 80%, 50%)" strokeWidth="1.5" />
