@@ -2,7 +2,7 @@ import { memo, useRef, useCallback, useState, Suspense } from 'react';
 import { Canvas, useThree, useFrame, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Box, Cone, Line, Text, Grid, Plane } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, X, Move, MousePointer } from 'lucide-react';
+import { RotateCcw, X, Move, MousePointer, Magnet } from 'lucide-react';
 import type { LayoutObject } from './ObjectPropertyPanel';
 import * as THREE from 'three';
 
@@ -322,6 +322,8 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
   const [dragMode, setDragMode] = useState(false);
+  const [snapEnabled, setSnapEnabled] = useState(true);
+  const SNAP_GRID = 10; // mm
   const dragStateRef = useRef<DragState>({
     isDragging: false,
     objectId: null,
@@ -382,11 +384,17 @@ export const Layout3DPreview = memo(function Layout3DPreview({
     }
 
     // Convert 3D delta back to mm: x maps to posX, z maps to posY
-    const newPosX = Math.round(state.startPos.posX + dx * INV_SCALE);
-    const newPosY = Math.round(state.startPos.posY + dz * INV_SCALE);
+    let newPosX = Math.round(state.startPos.posX + dx * INV_SCALE);
+    let newPosY = Math.round(state.startPos.posY + dz * INV_SCALE);
+
+    // Snap to grid
+    if (snapEnabled) {
+      newPosX = Math.round(newPosX / SNAP_GRID) * SNAP_GRID;
+      newPosY = Math.round(newPosY / SNAP_GRID) * SNAP_GRID;
+    }
 
     onUpdateObject(state.objectId, { posX: newPosX, posY: newPosY });
-  }, [onUpdateObject]);
+  }, [onUpdateObject, snapEnabled, SNAP_GRID]);
 
   const handleDragEnd = useCallback(() => {
     dragStateRef.current = {
@@ -520,6 +528,19 @@ export const Layout3DPreview = memo(function Layout3DPreview({
               拖拽移动
             </button>
           </div>
+          {dragMode && (
+            <button
+              onClick={() => setSnapEnabled(!snapEnabled)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs mt-1.5 rounded-lg border backdrop-blur-sm transition-colors ${
+                snapEnabled
+                  ? 'bg-emerald-600 text-white border-emerald-500/50'
+                  : 'bg-slate-800/90 text-slate-400 border-slate-600/50 hover:text-slate-200'
+              }`}
+            >
+              <Magnet className="h-3.5 w-3.5" />
+              网格吸附 ({SNAP_GRID}mm)
+            </button>
+          )}
         </div>
       )}
 
