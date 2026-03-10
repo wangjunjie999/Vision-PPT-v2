@@ -592,6 +592,8 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       startPoint: null,
       startPos: null,
     };
+    // Delay reset so click event fires first and can check dragMovedRef
+    setTimeout(() => { dragMovedRef.current = false; }, 0);
   }, []);
 
   const selectedObj = activeSelectedId
