@@ -47,14 +47,6 @@ export const CanvasHUD = memo(function CanvasHUD({ currentView }: CanvasHUDProps
         </div>
       </div>
 
-      {/* Isometric read-only badge */}
-      {isIsometric && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-          <div className="bg-violet-600/90 text-white text-xs font-semibold px-4 py-1.5 rounded-full border border-violet-400/40 shadow-lg">
-            🔒 只读预览 — 切换到三视图进行编辑
-          </div>
-        </div>
-      )}
     </>
   );
 });
