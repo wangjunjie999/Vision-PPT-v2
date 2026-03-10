@@ -532,8 +532,8 @@ export function VisionSystemDiagram({
               <div className={cn(
                 "relative w-full h-full cursor-pointer group"
               )}>
-                <svg width="96" height="62" viewBox="0 0 96 62" className="group-hover:drop-shadow-lg transition-all">
-                  <rect x="8" y="0" width="80" height="50" rx="3" fill="url(#lensBody)" className="group-hover:brightness-110" />
+                <svg width="96" height="62" viewBox="0 0 96 62">
+                  <rect x="8" y="0" width="80" height="50" rx="3" fill="url(#lensBody)" />
                   <ellipse cx="48" cy="40" rx="25" ry="8" fill="url(#lensGlass)" />
                   <rect x="0" y="45" width="96" height="12" rx="2" fill="hsl(0, 0%, 20%)" />
                   <rect x="13" y="12" width="70" height="3" fill="hsl(30, 15%, 45%)" rx="1" />
