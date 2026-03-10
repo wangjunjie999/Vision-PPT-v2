@@ -821,7 +821,13 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       {/* Canvas Container */}
       <div ref={containerRef} className="flex-1 overflow-hidden relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         {isIsometric ? (
-          <Layout3DPreview objects={objects} productDimensions={productDimensions} />
+          <Layout3DPreview
+            objects={objects}
+            productDimensions={productDimensions}
+            onUpdateObject={updateObjectWithFollowers}
+            selectedObjectId={selectedId}
+            onSelectObject={(id) => setSelectedIds(id ? [id] : [])}
+          />
         ) : (
         <ContextMenu>
           <ContextMenuTrigger asChild>
