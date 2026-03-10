@@ -1,40 +1,51 @@
-import { memo, useRef, useCallback, Suspense } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { memo, useRef, useCallback, useState, Suspense } from 'react';
+import { Canvas, useThree, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Box, Cone, Line, Text, Grid } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, Eye } from 'lucide-react';
+import { RotateCcw, X } from 'lucide-react';
 import type { LayoutObject } from './ObjectPropertyPanel';
 import * as THREE from 'three';
 
 interface Layout3DPreviewProps {
   objects: LayoutObject[];
   productDimensions: { length: number; width: number; height: number };
+  onSelectObject?: (id: string | null) => void;
+  selectedObjectId?: string | null;
 }
 
-// Scale factor: convert mm to Three.js units (1 unit = 100mm)
 const SCALE = 0.01;
 
-function MechanismBox({ obj }: { obj: LayoutObject }) {
+function MechanismBox({ obj, selected, onSelect }: { obj: LayoutObject; selected: boolean; onSelect: (id: string) => void }) {
   const w = (obj.width || 100) * SCALE;
   const h = (obj.height || 100) * SCALE;
   const d = ((obj as any).depth || 80) * SCALE;
   const px = (obj.posX ?? 0) * SCALE;
-  const py = (obj.posZ ?? 0) * SCALE; // Z in layout = Y in 3D (up)
+  const py = (obj.posZ ?? 0) * SCALE;
   const pz = (obj.posY ?? 0) * SCALE;
   const isMounted = !!obj.mountedToMechanismId;
 
+  const baseColor = isMounted ? '#16a34a' : '#f97316';
+  const highlightColor = '#facc15';
+
   return (
-    <group position={[px, py + h / 2, pz]}>
+    <group position={[px, py + h / 2, pz]} onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); onSelect(obj.id); }}>
       <Box args={[w, h, d]}>
         <meshStandardMaterial
-          color={isMounted ? '#16a34a' : '#f97316'}
+          color={selected ? highlightColor : baseColor}
           transparent
-          opacity={0.75}
+          opacity={selected ? 0.9 : 0.75}
+          emissive={selected ? highlightColor : '#000000'}
+          emissiveIntensity={selected ? 0.3 : 0}
         />
       </Box>
       <Box args={[w, h, d]}>
-        <meshBasicMaterial color={isMounted ? '#16a34a' : '#f97316'} wireframe />
+        <meshBasicMaterial color={selected ? highlightColor : baseColor} wireframe />
       </Box>
+      {selected && (
+        <Box args={[w + 0.06, h + 0.06, d + 0.06]}>
+          <meshBasicMaterial color={highlightColor} wireframe transparent opacity={0.5} />
+        </Box>
+      )}
       <Text
         position={[0, h / 2 + 0.15, 0]}
         fontSize={0.18}
@@ -48,19 +59,31 @@ function MechanismBox({ obj }: { obj: LayoutObject }) {
   );
 }
 
-function ProductBox({ dimensions }: { dimensions: { length: number; width: number; height: number } }) {
+function ProductBox({ dimensions, selected, onSelect }: { dimensions: { length: number; width: number; height: number }; selected: boolean; onSelect: () => void }) {
   const w = dimensions.length * SCALE;
   const h = dimensions.height * SCALE;
   const d = dimensions.width * SCALE;
+  const highlightColor = '#facc15';
 
   return (
-    <group position={[0, h / 2, 0]}>
+    <group position={[0, h / 2, 0]} onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); onSelect(); }}>
       <Box args={[w, h, d]}>
-        <meshStandardMaterial color="#06b6d4" transparent opacity={0.5} />
+        <meshStandardMaterial
+          color={selected ? highlightColor : '#06b6d4'}
+          transparent
+          opacity={selected ? 0.8 : 0.5}
+          emissive={selected ? highlightColor : '#000000'}
+          emissiveIntensity={selected ? 0.3 : 0}
+        />
       </Box>
       <Box args={[w, h, d]}>
-        <meshBasicMaterial color="#06b6d4" wireframe />
+        <meshBasicMaterial color={selected ? highlightColor : '#06b6d4'} wireframe />
       </Box>
+      {selected && (
+        <Box args={[w + 0.06, h + 0.06, d + 0.06]}>
+          <meshBasicMaterial color={highlightColor} wireframe transparent opacity={0.5} />
+        </Box>
+      )}
       <Text
         position={[0, h / 2 + 0.15, 0]}
         fontSize={0.18}
@@ -74,24 +97,38 @@ function ProductBox({ dimensions }: { dimensions: { length: number; width: numbe
   );
 }
 
-function CameraObject({ obj }: { obj: LayoutObject }) {
+function CameraObject({ obj, selected, onSelect }: { obj: LayoutObject; selected: boolean; onSelect: (id: string) => void }) {
   const px = (obj.posX ?? 0) * SCALE;
   const py = (obj.posZ ?? 0) * SCALE;
   const pz = (obj.posY ?? 0) * SCALE;
   const isMounted = !!obj.mountedToMechanismId;
+  const baseColor = isMounted ? '#16a34a' : '#3b82f6';
+  const baseDark = isMounted ? '#15803d' : '#1d4ed8';
+  const highlightColor = '#facc15';
 
   return (
-    <group position={[px, py, pz]}>
-      {/* Camera body */}
+    <group position={[px, py, pz]} onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); onSelect(obj.id); }}>
       <Box args={[0.3, 0.25, 0.4]}>
-        <meshStandardMaterial color={isMounted ? '#16a34a' : '#3b82f6'} />
+        <meshStandardMaterial
+          color={selected ? highlightColor : baseColor}
+          emissive={selected ? highlightColor : '#000000'}
+          emissiveIntensity={selected ? 0.3 : 0}
+        />
       </Box>
-      {/* Lens cone pointing down */}
       <group position={[0, -0.25, 0]} rotation={[Math.PI, 0, 0]}>
         <Cone args={[0.15, 0.3, 8]}>
-          <meshStandardMaterial color={isMounted ? '#15803d' : '#1d4ed8'} />
+          <meshStandardMaterial
+            color={selected ? highlightColor : baseDark}
+            emissive={selected ? highlightColor : '#000000'}
+            emissiveIntensity={selected ? 0.2 : 0}
+          />
         </Cone>
       </group>
+      {selected && (
+        <Box args={[0.4, 0.35, 0.5]}>
+          <meshBasicMaterial color={highlightColor} wireframe transparent opacity={0.5} />
+        </Box>
+      )}
       <Text
         position={[0, 0.25, 0]}
         fontSize={0.16}
@@ -112,17 +149,10 @@ function MountingLines({ objects }: { objects: LayoutObject[] }) {
     if (obj.mountedToMechanismId) {
       const parent = objects.find(o => o.id === obj.mountedToMechanismId);
       if (parent) {
-        const start: [number, number, number] = [
-          (obj.posX ?? 0) * SCALE,
-          (obj.posZ ?? 0) * SCALE,
-          (obj.posY ?? 0) * SCALE,
-        ];
-        const end: [number, number, number] = [
-          (parent.posX ?? 0) * SCALE,
-          (parent.posZ ?? 0) * SCALE,
-          (parent.posY ?? 0) * SCALE,
-        ];
-        lines.push({ start, end });
+        lines.push({
+          start: [(obj.posX ?? 0) * SCALE, (obj.posZ ?? 0) * SCALE, (obj.posY ?? 0) * SCALE],
+          end: [(parent.posX ?? 0) * SCALE, (parent.posZ ?? 0) * SCALE, (parent.posY ?? 0) * SCALE],
+        });
       }
     }
   });
@@ -130,77 +160,12 @@ function MountingLines({ objects }: { objects: LayoutObject[] }) {
   return (
     <>
       {lines.map((line, i) => (
-        <Line
-          key={i}
-          points={[line.start, line.end]}
-          color="#22c55e"
-          lineWidth={1.5}
-          dashed
-          dashSize={0.15}
-          gapSize={0.1}
-        />
+        <Line key={i} points={[line.start, line.end]} color="#22c55e" lineWidth={1.5} dashed dashSize={0.15} gapSize={0.1} />
       ))}
     </>
   );
 }
 
-function SceneContent({ objects, productDimensions }: Layout3DPreviewProps) {
-  const mechanisms = objects.filter(o => o.type === 'mechanism');
-  const cameras = objects.filter(o => o.type === 'camera');
-  // Product objects exist but we use productDimensions for the main product
-
-  return (
-    <>
-      {/* Lighting */}
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[5, 8, 5]} intensity={0.8} />
-      <directionalLight position={[-3, 5, -3]} intensity={0.3} />
-
-      {/* Ground grid */}
-      <Grid
-        args={[20, 20]}
-        cellSize={1}
-        cellThickness={0.5}
-        cellColor="#334155"
-        sectionSize={5}
-        sectionThickness={1}
-        sectionColor="#475569"
-        fadeDistance={30}
-        position={[0, -0.01, 0]}
-      />
-
-      {/* Axes helper */}
-      <axesHelper args={[3]} />
-
-      {/* Product */}
-      <ProductBox dimensions={productDimensions} />
-
-      {/* Mechanisms */}
-      {mechanisms.map(obj => (
-        <MechanismBox key={obj.id} obj={obj} />
-      ))}
-
-      {/* Cameras */}
-      {cameras.map(obj => (
-        <CameraObject key={obj.id} obj={obj} />
-      ))}
-
-      {/* Mounting lines */}
-      <MountingLines objects={objects} />
-
-      {/* Orbit controls */}
-      <OrbitControls
-        makeDefault
-        enableDamping
-        dampingFactor={0.1}
-        minDistance={2}
-        maxDistance={30}
-      />
-    </>
-  );
-}
-
-// View preset camera positions
 const VIEW_PRESETS = [
   { label: '正视', icon: '🎯', position: [0, 3, 10] as [number, number, number], target: [0, 1.5, 0] as [number, number, number] },
   { label: '侧视', icon: '📐', position: [10, 3, 0] as [number, number, number], target: [0, 1.5, 0] as [number, number, number] },
@@ -212,7 +177,6 @@ function CameraController({ cameraRef }: { cameraRef: React.MutableRefObject<{ p
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
 
-  // Check if we need to update camera
   if (cameraRef.current) {
     const { position, target } = cameraRef.current;
     camera.position.set(...position);
@@ -224,54 +188,86 @@ function CameraController({ cameraRef }: { cameraRef: React.MutableRefObject<{ p
   }
 
   return (
-    <OrbitControls
-      ref={controlsRef}
-      makeDefault
-      enableDamping
-      dampingFactor={0.1}
-      minDistance={2}
-      maxDistance={30}
-    />
+    <OrbitControls ref={controlsRef} makeDefault enableDamping dampingFactor={0.1} minDistance={2} maxDistance={30} />
+  );
+}
+
+function SelectedInfoPanel({ obj, onDeselect }: { obj: LayoutObject | null; onDeselect: () => void }) {
+  if (!obj) return null;
+
+  const typeLabel = obj.type === 'camera' ? '相机' : obj.type === 'mechanism' ? '机构' : '产品';
+
+  return (
+    <div className="absolute top-3 left-3 bg-slate-800/90 backdrop-blur-sm rounded-lg border border-yellow-500/50 p-3 z-10 min-w-[160px]">
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <span className="text-xs font-semibold text-yellow-400">已选中</span>
+        <button onClick={onDeselect} className="text-slate-400 hover:text-slate-200 transition-colors">
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <div className="text-sm font-medium text-slate-100 truncate">{obj.name || '未命名'}</div>
+      <div className="text-[10px] text-slate-400 mt-1">类型: {typeLabel}</div>
+      <div className="text-[10px] text-slate-400">
+        位置: ({obj.posX ?? 0}, {obj.posY ?? 0}, {obj.posZ ?? 0})
+      </div>
+      {obj.width && obj.height && (
+        <div className="text-[10px] text-slate-400">
+          尺寸: {obj.width}×{obj.height}{(obj as any).depth ? `×${(obj as any).depth}` : ''}
+        </div>
+      )}
+    </div>
   );
 }
 
 export const Layout3DPreview = memo(function Layout3DPreview({
   objects,
   productDimensions,
+  onSelectObject,
+  selectedObjectId,
 }: Layout3DPreviewProps) {
   const cameraActionRef = useRef<{ position: [number, number, number]; target: [number, number, number] } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
+
+  const activeSelectedId = selectedObjectId !== undefined ? selectedObjectId : localSelectedId;
+
+  const handleSelect = useCallback((id: string | null) => {
+    const newId = activeSelectedId === id ? null : id;
+    setLocalSelectedId(newId);
+    onSelectObject?.(newId);
+  }, [activeSelectedId, onSelectObject]);
+
+  const handleDeselect = useCallback(() => {
+    setLocalSelectedId(null);
+    onSelectObject?.(null);
+  }, [onSelectObject]);
 
   const handleViewPreset = useCallback((position: [number, number, number], target: [number, number, number]) => {
     cameraActionRef.current = { position, target };
-    // Force a re-render to apply
     if (canvasRef.current) {
       canvasRef.current.dispatchEvent(new Event('resize'));
     }
   }, []);
 
+  const selectedObj = activeSelectedId ? objects.find(o => o.id === activeSelectedId) || null : null;
+
+  const mechanisms = objects.filter(o => o.type === 'mechanism');
+  const cameras = objects.filter(o => o.type === 'camera');
+
   return (
     <div className="relative w-full h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <Canvas
         ref={canvasRef}
-        camera={{
-          position: [7, 6, 7],
-          fov: 50,
-          near: 0.1,
-          far: 100,
-        }}
+        camera={{ position: [7, 6, 7], fov: 50, near: 0.1, far: 100 }}
         gl={{ antialias: true, alpha: false }}
-        onCreated={({ gl }) => {
-          gl.setClearColor('#0f172a');
-        }}
+        onCreated={({ gl }) => { gl.setClearColor('#0f172a'); }}
+        onPointerMissed={() => handleSelect(null)}
       >
         <Suspense fallback={null}>
-          {/* Lighting */}
           <ambientLight intensity={0.5} />
           <directionalLight position={[5, 8, 5]} intensity={0.8} />
           <directionalLight position={[-3, 5, -3]} intensity={0.3} />
 
-          {/* Ground grid */}
           <Grid
             args={[20, 20]}
             cellSize={1}
@@ -286,23 +282,29 @@ export const Layout3DPreview = memo(function Layout3DPreview({
 
           <axesHelper args={[3]} />
 
-          <ProductBox dimensions={productDimensions} />
+          <ProductBox
+            dimensions={productDimensions}
+            selected={activeSelectedId === '__product__'}
+            onSelect={() => handleSelect('__product__')}
+          />
 
-          {objects.filter(o => o.type === 'mechanism').map(obj => (
-            <MechanismBox key={obj.id} obj={obj} />
+          {mechanisms.map(obj => (
+            <MechanismBox key={obj.id} obj={obj} selected={activeSelectedId === obj.id} onSelect={handleSelect} />
           ))}
 
-          {objects.filter(o => o.type === 'camera').map(obj => (
-            <CameraObject key={obj.id} obj={obj} />
+          {cameras.map(obj => (
+            <CameraObject key={obj.id} obj={obj} selected={activeSelectedId === obj.id} onSelect={handleSelect} />
           ))}
 
           <MountingLines objects={objects} />
-
           <CameraController cameraRef={cameraActionRef} />
         </Suspense>
       </Canvas>
 
-      {/* View presets overlay */}
+      {/* Selected object info */}
+      <SelectedInfoPanel obj={selectedObj} onDeselect={handleDeselect} />
+
+      {/* View presets */}
       <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-10">
         {VIEW_PRESETS.map((preset) => (
           <Button
@@ -344,12 +346,14 @@ export const Layout3DPreview = memo(function Layout3DPreview({
           <div className="flex items-center gap-2 text-xs text-slate-300">
             <span className="w-3 h-3 rounded-sm bg-green-500/70" />已挂载
           </div>
+          <div className="flex items-center gap-2 text-xs text-slate-300">
+            <span className="w-3 h-3 rounded-sm bg-yellow-400/70" />选中
+          </div>
         </div>
       </div>
 
-      {/* Interaction hint */}
       <div className="absolute bottom-3 right-3 text-[10px] text-slate-500 bg-slate-800/60 backdrop-blur-sm rounded px-2 py-1 z-10">
-        🖱 左键旋转 · 右键平移 · 滚轮缩放
+        🖱 左键旋转 · 右键平移 · 滚轮缩放 · 点击选中
       </div>
     </div>
   );
