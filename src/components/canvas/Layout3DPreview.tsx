@@ -384,8 +384,14 @@ export const Layout3DPreview = memo(function Layout3DPreview({
     }
 
     // Convert 3D delta back to mm: x maps to posX, z maps to posY
-    const newPosX = Math.round(state.startPos.posX + dx * INV_SCALE);
-    const newPosY = Math.round(state.startPos.posY + dz * INV_SCALE);
+    let newPosX = Math.round(state.startPos.posX + dx * INV_SCALE);
+    let newPosY = Math.round(state.startPos.posY + dz * INV_SCALE);
+
+    // Snap to grid
+    if (snapEnabled) {
+      newPosX = Math.round(newPosX / SNAP_GRID) * SNAP_GRID;
+      newPosY = Math.round(newPosY / SNAP_GRID) * SNAP_GRID;
+    }
 
     onUpdateObject(state.objectId, { posX: newPosX, posY: newPosY });
   }, [onUpdateObject]);
