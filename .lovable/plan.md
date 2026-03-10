@@ -1,44 +1,49 @@
 
 
-# FOV 输入改为两个独立数值框
+# 方向键移动 + 高对比度配色 + 透视交互模式
 
-## 问题
+## 1. 方向键移动选中对象
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+在 `Layout3DPreview` 组件中添加键盘事件监听：
 
-## 修改方案
+- **←→ 方向键**：移动 posX（水平方向），步进 = `SNAP_GRID`(10mm)
+- **↑↓ 方向键**：移动 posY（前后方向），步进 = 10mm
+- **Shift + ↑↓**：移动 posZ（高度/垂直方向），步进 = 10mm — 解决当前无法上下移动的核心缺陷
+- 仅在 `dragMode` 开启且有选中对象时生效
+- 使用 `useEffect` + `window.addEventListener('keydown', ...)` 实现
+- 按住方向键连续移动，调用 `onUpdateObject` 更新坐标
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+## 2. 执行机构高对比度配色
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
+将各机构模型的主色调从暗灰色系调整为高饱和度工业色：
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+| 机构 | 当前颜色 | 新颜色 |
+|------|----------|--------|
+| RobotArm | `#ea580c` (暗橙) | `#f97316` 主体 + `#ff6b00` 关节，白色底座 |
+| Conveyor | `#4b5563` (暗灰) | `#22c55e` 绿色皮带 + `#e2e8f0` 浅灰框架 |
+| Cylinder | `#9ca3af` (灰) | `#0ea5e9` 蓝色缸体 + `#e5e7eb` 银色活塞 |
+| Gripper | `#4b5563` (暗灰) | `#8b5cf6` 紫色主体 + `#c4b5fd` 浅紫夹爪 |
+| Turntable | `#1e3a5f` (暗蓝) | `#2563eb` 蓝色圆盘 + `#bfdbfe` 浅蓝底座 |
+| Lift | `#6b7280` (灰) | `#f59e0b` 黄色框架 + `#fef3c7` 浅黄平台 |
+| Stop | `#991b1b` (暗红) | `#ef4444` 鲜红挡板 + `#fca5a5` 浅红底座 |
+| CameraMount | `#64748b` (灰) | `#e2e8f0` 银白支架 + `#94a3b8` 细节 |
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+关键：提高主体与细节之间的**明暗对比**，而非整体变亮。深色部件用 `#1e293b`，亮色用各机构的主题色。
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+## 3. X-Ray 透视模式
 
-```
-[宽度输入] × [高度输入]
-```
+在工具栏添加第三个模式按钮 "透视模式"（`Eye` 图标）：
 
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+- 开启后所有机构变为**半透明线框**（`opacity: 0.15` + `wireframe: true`），内部结构和被遮挡的相机/产品清晰可见
+- 相机和产品保持不透明，确保可见
+- 关系线条加粗并保持不透明
+- 通过 `xrayMode` state 控制，传入各模型组件
 
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+### 文件修改
 
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+仅修改 `src/components/canvas/Layout3DPreview.tsx`：
+- 添加 `useEffect` 键盘监听 + `handleKeyMove` 回调
+- 更新各 Model 组件的颜色常量
+- 添加 `xrayMode` state + 工具栏按钮
+- 在各机构模型中根据 `xrayMode` 切换材质
 
