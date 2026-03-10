@@ -208,7 +208,9 @@ export function VisionSystemDiagram({
       <svg 
         viewBox="0 0 800 750"
         className="w-full h-full"
-        style={{ maxHeight: '100%' }}
+        preserveAspectRatio="xMidYMid meet"
+        shapeRendering="geometricPrecision"
+        style={{ maxHeight: '100%', transform: 'translateZ(0)', aspectRatio: '800/750' }}
       >
         <defs>
           {/* Camera FOV gradient */}
