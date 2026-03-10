@@ -612,6 +612,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
         onCreated={({ gl }) => { gl.setClearColor('#0f172a'); }}
         onPointerMissed={() => {
           if (!dragStateRef.current.isDragging) {
+            dragMovedRef.current = false;
             handleSelect(null);
           }
         }}
