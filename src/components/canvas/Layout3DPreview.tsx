@@ -79,25 +79,50 @@ function mechMat(color: string, selected: boolean) {
 
 function RobotArmModel({ w, h, d, selected }: { w: number; h: number; d: number; selected: boolean }) {
   const baseR = Math.min(w, d) * 0.5;
-  const armW = w * 0.25;
+  const jointR = w * 0.12;
+  const armR = w * 0.08;
+  const arm1L = h * 0.38;
+  const arm2L = h * 0.30;
+  const waistH = h * 0.12;
+
   return (
-    <group>
-      {/* Base cylinder */}
-      <Cylinder args={[baseR, baseR * 1.1, h * 0.2, 16]} position={[0, h * 0.1, 0]}>
+    <group position={[0, 0, 0]}>
+      {/* 底座 - 大扁圆柱 */}
+      <Cylinder args={[baseR, baseR * 1.1, h * 0.08, 24]} position={[0, h * 0.04, 0]}>
+        <meshStandardMaterial {...mechMat('#3a3a3a', selected)} />
+      </Cylinder>
+      {/* 腰部转台 */}
+      <Cylinder args={[baseR * 0.6, baseR * 0.65, waistH, 20]} position={[0, h * 0.08 + waistH / 2, 0]}>
         <meshStandardMaterial {...mechMat('#4a4a4a', selected)} />
       </Cylinder>
-      {/* Vertical arm */}
-      <Box args={[armW, h * 0.65, armW]} position={[0, h * 0.2 + h * 0.325, 0]}>
+      {/* 肩关节 (关节1) */}
+      <Sphere args={[jointR, 16, 16]} position={[0, h * 0.08 + waistH, 0]}>
         <meshStandardMaterial {...mechMat('#ea580c', selected)} />
-      </Box>
-      {/* Shoulder joint */}
-      <Sphere args={[armW * 0.6, 12, 12]} position={[0, h * 0.2, 0]}>
-        <meshStandardMaterial {...mechMat('#6b7280', selected)} />
       </Sphere>
-      {/* End effector joint */}
-      <Sphere args={[armW * 0.5, 12, 12]} position={[0, h * 0.85, 0]}>
-        <meshStandardMaterial {...mechMat('#f97316', selected)} />
-      </Sphere>
+      {/* 大臂 - 向后倾斜约30° */}
+      <group position={[0, h * 0.08 + waistH, 0]} rotation={[0, 0, 0.5]}>
+        <Cylinder args={[armR, armR * 0.9, arm1L, 12]} position={[0, arm1L / 2, 0]}>
+          <meshStandardMaterial {...mechMat('#ea580c', selected)} />
+        </Cylinder>
+        {/* 肘关节 (关节2) */}
+        <Sphere args={[jointR * 0.85, 16, 16]} position={[0, arm1L, 0]}>
+          <meshStandardMaterial {...mechMat('#6b7280', selected)} />
+        </Sphere>
+        {/* 小臂 - 向前弯折 */}
+        <group position={[0, arm1L, 0]} rotation={[0, 0, -1.2]}>
+          <Cylinder args={[armR * 0.85, armR * 0.75, arm2L, 12]} position={[0, arm2L / 2, 0]}>
+            <meshStandardMaterial {...mechMat('#f97316', selected)} />
+          </Cylinder>
+          {/* 腕关节 (关节3) */}
+          <Sphere args={[jointR * 0.65, 14, 14]} position={[0, arm2L, 0]}>
+            <meshStandardMaterial {...mechMat('#6b7280', selected)} />
+          </Sphere>
+          {/* 末端执行器 - 法兰盘 */}
+          <Box args={[w * 0.12, h * 0.06, d * 0.12]} position={[0, arm2L + h * 0.04, 0]}>
+            <meshStandardMaterial {...mechMat('#facc15', selected)} />
+          </Box>
+        </group>
+      </group>
     </group>
   );
 }
