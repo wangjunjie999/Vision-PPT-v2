@@ -528,6 +528,19 @@ export const Layout3DPreview = memo(function Layout3DPreview({
               拖拽移动
             </button>
           </div>
+          {dragMode && (
+            <button
+              onClick={() => setSnapEnabled(!snapEnabled)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs mt-1.5 rounded-lg border backdrop-blur-sm transition-colors ${
+                snapEnabled
+                  ? 'bg-emerald-600 text-white border-emerald-500/50'
+                  : 'bg-slate-800/90 text-slate-400 border-slate-600/50 hover:text-slate-200'
+              }`}
+            >
+              <Magnet className="h-3.5 w-3.5" />
+              网格吸附 ({SNAP_GRID}mm)
+            </button>
+          )}
         </div>
       )}
 
