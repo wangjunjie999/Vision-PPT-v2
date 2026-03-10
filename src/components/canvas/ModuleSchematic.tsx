@@ -371,7 +371,7 @@ export function ModuleSchematic() {
           </TabsList>
         </div>
 
-        <TabsContent value="schematic" className="flex-1 flex flex-col overflow-hidden mt-0">
+        <TabsContent value="schematic" className="flex-1 overflow-hidden mt-0 data-[state=active]:flex data-[state=active]:flex-col">
           {/* Toolbar for schematic tab */}
           <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-border">
             <DropdownMenu>
@@ -450,13 +450,15 @@ export function ModuleSchematic() {
           </div>
         </TabsContent>
 
-        <TabsContent value="lighting" className="flex-1 overflow-auto mt-0">
-          <LightingPhotosPanel
-            moduleId={module.id}
-            moduleName={module.name}
-            initialPhotos={lightingPhotos}
-            onSave={handleSaveLightingPhotos}
-          />
+        <TabsContent value="lighting" className="flex-1 overflow-hidden mt-0 data-[state=active]:flex data-[state=active]:flex-col">
+          <div className="flex-1 overflow-auto">
+            <LightingPhotosPanel
+              moduleId={module.id}
+              moduleName={module.name}
+              initialPhotos={lightingPhotos}
+              onSave={handleSaveLightingPhotos}
+            />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
