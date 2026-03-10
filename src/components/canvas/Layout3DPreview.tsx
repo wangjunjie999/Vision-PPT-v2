@@ -466,12 +466,16 @@ function CameraController({
 /** Invisible ground plane for raycasting during drag */
 function DragPlane({
   dragStateRef,
+  dragMovedRef,
   onDragMove,
   onDragEnd,
+  onDeselect,
 }: {
   dragStateRef: React.MutableRefObject<DragState>;
+  dragMovedRef: React.MutableRefObject<boolean>;
   onDragMove: (point: THREE.Vector3) => void;
   onDragEnd: () => void;
+  onDeselect: () => void;
 }) {
   const planeRef = useRef<THREE.Mesh>(null);
 
@@ -492,6 +496,12 @@ function DragPlane({
         if (dragStateRef.current.isDragging) {
           e.stopPropagation();
           onDragEnd();
+        }
+      }}
+      onClick={(e: ThreeEvent<MouseEvent>) => {
+        if (!dragStateRef.current.isDragging && !dragMovedRef.current) {
+          e.stopPropagation();
+          onDeselect();
         }
       }}
     >
@@ -664,8 +674,10 @@ export const Layout3DPreview = memo(function Layout3DPreview({
           {/* Invisible drag plane */}
           <DragPlane
             dragStateRef={dragStateRef}
+            dragMovedRef={dragMovedRef}
             onDragMove={handleDragMove}
             onDragEnd={handleDragEnd}
+            onDeselect={() => handleSelect(null)}
           />
 
           {/* Product (not draggable, always at origin) */}
