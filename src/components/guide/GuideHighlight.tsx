@@ -58,8 +58,9 @@ export function GuideHighlight({
                 repeat: Infinity,
                 ease: 'easeInOut',
               }}
-              style={{ willChange: 'transform, opacity', transform: 'translateZ(0)' }}
               style={{
+                willChange: 'transform, opacity',
+                transform: 'translateZ(0)',
                 background: pulseColor === 'primary' 
                   ? 'radial-gradient(ellipse at center, rgba(255, 107, 53, 0.2) 0%, transparent 70%)'
                   : pulseColor === 'success'
