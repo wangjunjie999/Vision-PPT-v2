@@ -322,6 +322,8 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
   const [dragMode, setDragMode] = useState(false);
+  const [snapEnabled, setSnapEnabled] = useState(true);
+  const SNAP_GRID = 10; // mm
   const dragStateRef = useRef<DragState>({
     isDragging: false,
     objectId: null,
