@@ -637,6 +637,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     setIsSaving(true);
     setIsSavingAllViews(true);
     setSaveProgress(0);
+    const originalView = currentView;
     try {
       const updates = { layout_objects: objects, grid_enabled: gridEnabled, snap_enabled: snapEnabled, show_distances: showDistances };
       let layoutId = layout?.id;
@@ -652,10 +653,18 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         const views: ViewType[] = ['front', 'side', 'top'];
         const preset = QUALITY_PRESETS[saveQuality];
         const viewImages: { view: ViewType; blob: Blob }[] = [];
+
+        // If currently in isometric (3D) mode, switch to first 2D view and wait for render
+        const wasIsometric = originalView === 'isometric';
+        if (wasIsometric) {
+          setCurrentView('front');
+          await new Promise(r => setTimeout(r, 400));
+        }
+
         for (let i = 0; i < views.length; i++) {
           const view = views[i];
           setCurrentView(view);
-          await new Promise(r => setTimeout(r, 200));
+          await new Promise(r => setTimeout(r, wasIsometric ? 400 : 200));
           const dataUrl = await toPng(svg as unknown as HTMLElement, { quality: preset.quality, pixelRatio: preset.pixelRatio, backgroundColor: '#1e293b', skipFonts: true });
           const originalBlob = dataUrlToBlob(dataUrl);
           const compressedBlob = await compressImage(originalBlob, { quality: preset.quality, maxWidth: preset.maxWidth, maxHeight: preset.maxHeight, format: 'image/jpeg' });
@@ -682,6 +691,8 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       console.error('Save all error:', error);
       toast.error('保存失败: ' + (error instanceof Error ? error.message : '未知错误'));
     } finally {
+      // Restore original view (e.g. back to isometric)
+      setCurrentView(originalView);
       setIsSaving(false);
       setIsSavingAllViews(false);
       setSaveProgress(0);
