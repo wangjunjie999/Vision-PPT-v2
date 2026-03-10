@@ -413,15 +413,17 @@ function CameraController({
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
 
-  if (cameraRef.current) {
-    const { position, target } = cameraRef.current;
-    camera.position.set(...position);
-    if (controlsRef.current) {
-      controlsRef.current.target.set(...target);
-      controlsRef.current.update();
+  useFrame(() => {
+    if (cameraRef.current) {
+      const { position, target } = cameraRef.current;
+      camera.position.set(...position);
+      if (controlsRef.current) {
+        controlsRef.current.target.set(...target);
+        controlsRef.current.update();
+      }
+      cameraRef.current = null;
     }
-    cameraRef.current = null;
-  }
+  });
 
   return (
     <OrbitControls
