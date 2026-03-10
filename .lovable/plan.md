@@ -1,44 +1,26 @@
 
 
-# FOV 输入改为两个独立数值框
+# 修复光学方案图残余CSS动画导致的抖动
 
-## 问题
+## 问题根因
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+在 `VisionSystemDiagram.tsx` 中，4个 `foreignObject` 内嵌的硬件选择器SVG存在以下CSS动画/滤镜问题：
 
-## 修改方案
+| 位置 | 问题CSS | 影响 |
+|------|---------|------|
+| 行 500, 535, 570, 604 | `transition-all` | 在foreignObject内过渡ALL属性，触发SVG容器持续重排 |
+| 行 501, 536, 571, 606 | `group-hover:brightness-110` | CSS滤镜在foreignObject/SVG混合渲染中引发重绘抖动 |
+| 行 500, 535, 570, 604 | `group-hover:drop-shadow-lg` | CSS阴影滤镜同样触发foreignObject重绘 |
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+核心问题：`foreignObject` 内嵌DOM元素使用CSS `transition-all` + `filter`（brightness/drop-shadow），浏览器需要在SVG坐标系和DOM坐标系之间反复计算布局，导致整个SVG容器抖动。
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
+## 修复方案
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+### 文件：`src/components/canvas/VisionSystemDiagram.tsx`
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+1. **移除 `transition-all` 和 `drop-shadow-lg`**：将4处嵌套SVG的 `className="group-hover:drop-shadow-lg transition-all"` 全部移除，改为无过渡
+2. **移除 `brightness-110`**：将4处SVG rect的 `className="group-hover:brightness-110"` 移除
+3. **保留安全的过渡**：`transition-opacity`（编辑按钮淡入）和 `transition-colors`（popover列表项）不在foreignObject的SVG渲染路径中，可保留
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
-
-```
-[宽度输入] × [高度输入]
-```
-
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
-
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+共修改8处className，均在同一文件中。
 
