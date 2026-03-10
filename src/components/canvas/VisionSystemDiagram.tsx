@@ -558,7 +558,7 @@ export function VisionSystemDiagram({
 
         {/* Interactive Light Element - embedded in SVG */}
         <foreignObject x="150" y="195" width="140" height="40">
-          <div className="w-full h-full">
+          <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
             <HardwareSelectPopover
               type="light"
               items={lights}
