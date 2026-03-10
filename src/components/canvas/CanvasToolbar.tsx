@@ -112,7 +112,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
                 : 'bg-muted hover:bg-muted/80 text-muted-foreground'
             )}
           >
-            🧊 2.5D 预览
+            🧊 3D 预览
           </button>
         </div>
 
