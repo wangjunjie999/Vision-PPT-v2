@@ -405,7 +405,7 @@ export function ModuleSchematic() {
           </div>
 
           {/* Schematic Canvas */}
-          <div className="flex-1 p-6 overflow-auto">
+          <div className="flex-1 p-6 overflow-y-scroll">
             <div 
               ref={diagramRef}
               className="relative w-full max-w-5xl mx-auto bg-background rounded-xl border-2 border-border overflow-hidden" 
