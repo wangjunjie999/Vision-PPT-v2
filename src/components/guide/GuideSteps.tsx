@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { Check, FolderPlus, Layers, Box, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GuideStep, useGuide } from '@/contexts/GuideContext';
