@@ -497,8 +497,8 @@ export function VisionSystemDiagram({
               <div className={cn(
                 "relative w-full h-full cursor-pointer group"
               )}>
-                <svg width="90" height="85" viewBox="0 0 90 85" className="group-hover:drop-shadow-lg transition-all">
-                  <rect x="0" y="0" width="90" height="75" rx="6" fill="url(#cameraBody)" className="group-hover:brightness-110" />
+                <svg width="90" height="85" viewBox="0 0 90 85">
+                  <rect x="0" y="0" width="90" height="75" rx="6" fill="url(#cameraBody)" />
                   <rect x="10" y="5" width="25" height="8" rx="2" fill="hsl(270, 30%, 60%)" opacity="0.5" />
                   <circle cx="75" cy="12" r="4" fill="hsl(120, 70%, 50%)" />
                   <text x="45" y="50" textAnchor="middle" fill="white" style={{ fontSize: '14px', fontWeight: 600 }}>Cam1</text>
