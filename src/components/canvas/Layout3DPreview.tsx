@@ -674,8 +674,10 @@ export const Layout3DPreview = memo(function Layout3DPreview({
           {/* Invisible drag plane */}
           <DragPlane
             dragStateRef={dragStateRef}
+            dragMovedRef={dragMovedRef}
             onDragMove={handleDragMove}
             onDragEnd={handleDragEnd}
+            onDeselect={() => handleSelect(null)}
           />
 
           {/* Product (not draggable, always at origin) */}
