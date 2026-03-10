@@ -371,7 +371,7 @@ export function ModuleSchematic() {
           </TabsList>
         </div>
 
-        <TabsContent value="schematic" className="flex-1 flex flex-col overflow-hidden mt-0">
+        <TabsContent value="schematic" className="flex-1 overflow-hidden mt-0 data-[state=active]:flex data-[state=active]:flex-col">
           {/* Toolbar for schematic tab */}
           <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-border">
             <DropdownMenu>
