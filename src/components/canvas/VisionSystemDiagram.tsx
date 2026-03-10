@@ -567,8 +567,8 @@ export function VisionSystemDiagram({
               <div className={cn(
                 "relative w-full h-full cursor-pointer group"
               )}>
-                <svg width="140" height="40" viewBox="0 0 140 40" className="group-hover:drop-shadow-lg transition-all">
-                  <rect x="0" y="0" width="140" height="40" rx="6" fill="hsl(0, 0%, 45%)" className="group-hover:brightness-110" />
+                <svg width="140" height="40" viewBox="0 0 140 40">
+                  <rect x="0" y="0" width="140" height="40" rx="6" fill="hsl(0, 0%, 45%)" />
                   <rect x="5" y="5" width="130" height="30" rx="4" fill="hsl(0, 0%, 35%)" />
                   <rect x="40" y="8" width="60" height="24" rx="3" fill="hsl(0, 0%, 15%)" />
                   <rect x="10" y="12" width="25" height="16" fill="hsl(0, 75%, 50%)" rx="2" />
