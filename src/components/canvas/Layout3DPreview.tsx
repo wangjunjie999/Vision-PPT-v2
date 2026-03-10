@@ -1,9 +1,10 @@
-import { memo, useRef, useCallback, useState, Suspense } from 'react';
+import { memo, useRef, useCallback, useState, useMemo, Suspense } from 'react';
 import { Canvas, useThree, useFrame, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Box, Cone, Line, Text, Grid, Plane, Sphere, Cylinder } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
 import { RotateCcw, X, Move, MousePointer, Magnet } from 'lucide-react';
 import type { LayoutObject } from './ObjectPropertyPanel';
+import { CAMERA_INTERACTION_TYPES, PRODUCT_INTERACTION_TYPES } from './MechanismSVG';
 import * as THREE from 'three';
 
 interface Layout3DPreviewProps {
@@ -23,6 +24,39 @@ interface DragState {
   objectId: string | null;
   startPoint: THREE.Vector3 | null;
   startPos: { posX: number; posY: number; posZ: number } | null;
+}
+
+// --- Utility: check if a mechanism supports camera mounting ---
+function isCameraMountable(mechType: string): boolean {
+  return CAMERA_INTERACTION_TYPES.includes(mechType);
+}
+function isProductInteraction(mechType: string): boolean {
+  return PRODUCT_INTERACTION_TYPES.includes(mechType);
+}
+
+// --- Compute related IDs for focus mode ---
+function getRelatedIds(selectedId: string | null, objects: LayoutObject[]): Set<string> {
+  if (!selectedId || selectedId === '__product__') return new Set();
+  const related = new Set<string>();
+  related.add(selectedId);
+  const selectedObj = objects.find(o => o.id === selectedId);
+  if (!selectedObj) return related;
+
+  // If selected is a camera mounted to a mechanism, include the mechanism
+  if (selectedObj.mountedToMechanismId) {
+    related.add(selectedObj.mountedToMechanismId);
+  }
+  // If selected is a mechanism, include all cameras/objects mounted to it
+  objects.forEach(o => {
+    if (o.mountedToMechanismId === selectedId) {
+      related.add(o.id);
+    }
+  });
+  // Product interaction mechanisms relate to product
+  if (selectedObj.type === 'mechanism' && isProductInteraction(selectedObj.mechanismType || '')) {
+    related.add('__product__');
+  }
+  return related;
 }
 
 function DraggableGroup({
@@ -48,7 +82,6 @@ function DraggableGroup({
       position={position}
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
-        // Only start drag with left button
         if (e.button === 0) {
           onDragStart(objectId, e.point);
         }
@@ -84,6 +117,15 @@ function rubberMat(color: string, selected: boolean) {
   return mechMat(color, selected, 0.05, 0.8);
 }
 
+// --- Dimmed material wrapper for focus mode ---
+function dimmedMechMat(color: string, selected: boolean, dimmed: boolean, metalness = 0.6, roughness = 0.3) {
+  const base = mechMat(color, selected, metalness, roughness);
+  if (dimmed) {
+    return { ...base, opacity: 0.2 };
+  }
+  return base;
+}
+
 function RobotArmModel({ w, h, d, selected }: { w: number; h: number; d: number; selected: boolean }) {
   const baseR = Math.min(w, d) * 0.5;
   const jointR = w * 0.12;
@@ -95,11 +137,9 @@ function RobotArmModel({ w, h, d, selected }: { w: number; h: number; d: number;
 
   return (
     <group position={[0, 0, 0]}>
-      {/* 底座 - 大扁圆柱 */}
       <Cylinder args={[baseR, baseR * 1.1, h * 0.08, 24]} position={[0, h * 0.04, 0]}>
         <meshStandardMaterial {...mechMat('#3a3a3a', selected, 0.7, 0.25)} />
       </Cylinder>
-      {/* 底座加强筋 */}
       {Array.from({ length: ribCount }).map((_, i) => {
         const angle = (i / ribCount) * Math.PI * 2;
         return (
@@ -110,45 +150,35 @@ function RobotArmModel({ w, h, d, selected }: { w: number; h: number; d: number;
           </Box>
         );
       })}
-      {/* 腰部转台 */}
       <Cylinder args={[baseR * 0.6, baseR * 0.65, waistH, 20]} position={[0, h * 0.08 + waistH / 2, 0]}>
         <meshStandardMaterial {...mechMat('#4a4a4a', selected, 0.6, 0.35)} />
       </Cylinder>
-      {/* 肩关节 (关节1) */}
       <Sphere args={[jointR, 16, 16]} position={[0, h * 0.08 + waistH, 0]}>
         <meshStandardMaterial {...mechMat('#ea580c', selected, 0.5, 0.4)} />
       </Sphere>
-      {/* 大臂 */}
       <group position={[0, h * 0.08 + waistH, 0]} rotation={[0, 0, 0.5]}>
         <Cylinder args={[armR, armR * 0.9, arm1L, 12]} position={[0, arm1L / 2, 0]}>
           <meshStandardMaterial {...mechMat('#ea580c', selected, 0.5, 0.4)} />
         </Cylinder>
-        {/* 线缆管道沿大臂 */}
         <Cylinder args={[armR * 0.15, armR * 0.15, arm1L * 0.85, 6]} position={[armR * 1.2, arm1L / 2, 0]}>
           <meshStandardMaterial {...rubberMat('#1a1a1a', selected)} />
         </Cylinder>
-        {/* 肘关节 (关节2) */}
         <Sphere args={[jointR * 0.85, 16, 16]} position={[0, arm1L, 0]}>
           <meshStandardMaterial {...mechMat('#6b7280', selected, 0.65, 0.25)} />
         </Sphere>
-        {/* 小臂 */}
         <group position={[0, arm1L, 0]} rotation={[0, 0, -1.2]}>
           <Cylinder args={[armR * 0.85, armR * 0.75, arm2L, 12]} position={[0, arm2L / 2, 0]}>
             <meshStandardMaterial {...mechMat('#f97316', selected, 0.5, 0.4)} />
           </Cylinder>
-          {/* 线缆管道沿小臂 */}
           <Cylinder args={[armR * 0.12, armR * 0.12, arm2L * 0.8, 6]} position={[armR * 1.0, arm2L / 2, 0]}>
             <meshStandardMaterial {...rubberMat('#1a1a1a', selected)} />
           </Cylinder>
-          {/* 腕关节 (关节3) */}
           <Sphere args={[jointR * 0.65, 14, 14]} position={[0, arm2L, 0]}>
             <meshStandardMaterial {...mechMat('#6b7280', selected, 0.65, 0.25)} />
           </Sphere>
-          {/* 腕关节4 - 小旋转关节 */}
           <Cylinder args={[jointR * 0.35, jointR * 0.35, h * 0.04, 10]} position={[0, arm2L + h * 0.03, 0]}>
             <meshStandardMaterial {...mechMat('#4b5563', selected, 0.6, 0.3)} />
           </Cylinder>
-          {/* 末端法兰盘 */}
           <Cylinder args={[w * 0.08, w * 0.08, h * 0.03, 16]} position={[0, arm2L + h * 0.06, 0]}>
             <meshStandardMaterial {...mechMat('#facc15', selected, 0.5, 0.35)} />
           </Cylinder>
@@ -163,18 +193,15 @@ function ConveyorModel({ w, h, d, selected }: { w: number; h: number; d: number;
   const rollerCount = 5;
   return (
     <group>
-      {/* Belt surface */}
       <Box args={[w, h * 0.28, d]} position={[0, h * 0.5, 0]}>
         <meshStandardMaterial {...rubberMat('#4b5563', selected)} />
       </Box>
-      {/* Belt texture stripes */}
       {Array.from({ length: 8 }).map((_, i) => (
         <Box key={`stripe-${i}`} args={[w * 0.01, h * 0.29, d * 0.98]}
           position={[-w * 0.4 + (i / 7) * w * 0.8, h * 0.5, 0]}>
           <meshStandardMaterial {...rubberMat('#374151', selected)} />
         </Box>
       ))}
-      {/* Rollers distributed evenly */}
       {Array.from({ length: rollerCount }).map((_, i) => {
         const xPos = -w * 0.42 + (i / (rollerCount - 1)) * w * 0.84;
         return (
@@ -184,21 +211,18 @@ function ConveyorModel({ w, h, d, selected }: { w: number; h: number; d: number;
           </Cylinder>
         );
       })}
-      {/* Side guard rails */}
       <Box args={[w * 1.02, h * 0.15, d * 0.04]} position={[0, h * 0.58, -d * 0.52]}>
         <meshStandardMaterial {...mechMat('#c0c0c0', selected, 0.6, 0.3)} />
       </Box>
       <Box args={[w * 1.02, h * 0.15, d * 0.04]} position={[0, h * 0.58, d * 0.52]}>
         <meshStandardMaterial {...mechMat('#c0c0c0', selected, 0.6, 0.3)} />
       </Box>
-      {/* 4 Legs */}
       {[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sz], i) => (
         <Box key={`leg-${i}`} args={[w * 0.06, h * 0.35, d * 0.06]}
           position={[sx * w * 0.4, h * 0.175, sz * d * 0.4]}>
           <meshStandardMaterial {...mechMat('#4a4a4a', selected, 0.6, 0.35)} />
         </Box>
       ))}
-      {/* Cross beams between legs */}
       <Box args={[w * 0.86, h * 0.04, d * 0.04]} position={[0, h * 0.08, -d * 0.4]}>
         <meshStandardMaterial {...mechMat('#4a4a4a', selected, 0.6, 0.35)} />
       </Box>
@@ -213,30 +237,24 @@ function CylinderModel({ w, h, d, selected }: { w: number; h: number; d: number;
   const r = Math.min(w, d) * 0.35;
   return (
     <group>
-      {/* Main cylinder body */}
       <Cylinder args={[r, r, h, 20]} position={[0, h * 0.5, 0]}>
         <meshStandardMaterial {...mechMat('#9ca3af', selected, 0.55, 0.3)} />
       </Cylinder>
-      {/* End cap top */}
       <Cylinder args={[r * 1.08, r * 1.08, h * 0.06, 20]} position={[0, h * 0.97, 0]}>
         <meshStandardMaterial {...mechMat('#6b7280', selected, 0.65, 0.25)} />
       </Cylinder>
-      {/* End cap bottom */}
       <Cylinder args={[r * 1.08, r * 1.08, h * 0.06, 20]} position={[0, h * 0.03, 0]}>
         <meshStandardMaterial {...mechMat('#6b7280', selected, 0.65, 0.25)} />
       </Cylinder>
-      {/* Piston rod */}
       <Cylinder args={[r * 0.22, r * 0.22, h * 0.4, 10]} position={[0, h * 0.9, 0]}>
         <meshStandardMaterial {...mechMat('#e5e7eb', selected, 0.75, 0.15)} />
       </Cylinder>
-      {/* Mounting ears (left & right) */}
       <Cylinder args={[r * 0.2, r * 0.2, d * 0.15, 10]} rotation={[Math.PI / 2, 0, 0]} position={[-r * 0.05, h * 0.03, r * 1.2]}>
         <meshStandardMaterial {...mechMat('#6b7280', selected, 0.6, 0.3)} />
       </Cylinder>
       <Cylinder args={[r * 0.2, r * 0.2, d * 0.15, 10]} rotation={[Math.PI / 2, 0, 0]} position={[-r * 0.05, h * 0.03, -r * 1.2]}>
         <meshStandardMaterial {...mechMat('#6b7280', selected, 0.6, 0.3)} />
       </Cylinder>
-      {/* Pneumatic port fittings */}
       <Cylinder args={[r * 0.1, r * 0.08, h * 0.08, 8]} position={[r * 0.8, h * 0.8, 0]} rotation={[0, 0, Math.PI / 2]}>
         <meshStandardMaterial {...mechMat('#d4a017', selected, 0.7, 0.2)} />
       </Cylinder>
@@ -251,38 +269,30 @@ function GripperModel({ w, h, d, selected }: { w: number; h: number; d: number; 
   const jawW = w * 0.15;
   return (
     <group>
-      {/* Mounting flange (top) */}
       <Cylinder args={[w * 0.18, w * 0.18, h * 0.06, 16]} position={[0, h * 0.82, 0]}>
         <meshStandardMaterial {...mechMat('#c0c0c0', selected, 0.6, 0.3)} />
       </Cylinder>
-      {/* Center body */}
       <Box args={[w * 0.4, h * 0.5, d * 0.6]} position={[0, h * 0.5, 0]}>
         <meshStandardMaterial {...mechMat('#4b5563', selected, 0.55, 0.35)} />
       </Box>
-      {/* Guide rail slots */}
       <Box args={[w * 0.75, h * 0.04, d * 0.08]} position={[0, h * 0.4, d * 0.2]}>
         <meshStandardMaterial {...mechMat('#374151', selected, 0.6, 0.3)} />
       </Box>
       <Box args={[w * 0.75, h * 0.04, d * 0.08]} position={[0, h * 0.4, -d * 0.2]}>
         <meshStandardMaterial {...mechMat('#374151', selected, 0.6, 0.3)} />
       </Box>
-      {/* Left jaw */}
       <Box args={[jawW, h * 0.65, d * 0.2]} position={[-w * 0.35, h * 0.35, 0]}>
         <meshStandardMaterial {...mechMat('#6b7280', selected, 0.55, 0.35)} />
       </Box>
-      {/* Left jaw fingertip (cone) */}
-      <Cone args={[jawW * 0.5, h * 0.12, 8]} position={[-w * 0.35, h * 0.02, 0]} rotation={[0, 0, 0]}>
+      <Cone args={[jawW * 0.5, h * 0.12, 8]} position={[-w * 0.35, h * 0.02, 0]}>
         <meshStandardMaterial {...mechMat('#9ca3af', selected, 0.6, 0.25)} />
       </Cone>
-      {/* Right jaw */}
       <Box args={[jawW, h * 0.65, d * 0.2]} position={[w * 0.35, h * 0.35, 0]}>
         <meshStandardMaterial {...mechMat('#6b7280', selected, 0.55, 0.35)} />
       </Box>
-      {/* Right jaw fingertip (cone) */}
-      <Cone args={[jawW * 0.5, h * 0.12, 8]} position={[w * 0.35, h * 0.02, 0]} rotation={[0, 0, 0]}>
+      <Cone args={[jawW * 0.5, h * 0.12, 8]} position={[w * 0.35, h * 0.02, 0]}>
         <meshStandardMaterial {...mechMat('#9ca3af', selected, 0.6, 0.25)} />
       </Cone>
-      {/* Pneumatic port */}
       <Cylinder args={[w * 0.04, w * 0.03, h * 0.08, 6]} position={[w * 0.22, h * 0.72, d * 0.32]} rotation={[Math.PI / 2, 0, 0]}>
         <meshStandardMaterial {...mechMat('#d4a017', selected, 0.7, 0.2)} />
       </Cylinder>
@@ -294,11 +304,9 @@ function TurntableModel({ w, h, d, selected }: { w: number; h: number; d: number
   const r = Math.max(w, d) * 0.45;
   return (
     <group>
-      {/* Base */}
       <Cylinder args={[r * 0.8, r, h * 0.4, 24]} position={[0, h * 0.2, 0]}>
         <meshStandardMaterial {...mechMat('#1e3a5f', selected, 0.55, 0.35)} />
       </Cylinder>
-      {/* Mounting holes on base (4) */}
       {[0, 1, 2, 3].map(i => {
         const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
         return (
@@ -308,18 +316,15 @@ function TurntableModel({ w, h, d, selected }: { w: number; h: number; d: number
           </Cylinder>
         );
       })}
-      {/* Bearing ring */}
       <Cylinder args={[r * 0.55, r * 0.55, h * 0.04, 24]} position={[0, h * 0.4, 0]}>
         <meshStandardMaterial {...mechMat('#94a3b8', selected, 0.7, 0.2)} />
       </Cylinder>
       <Cylinder args={[r * 0.45, r * 0.45, h * 0.05, 24]} position={[0, h * 0.4, 0]}>
         <meshStandardMaterial {...mechMat('#64748b', selected, 0.7, 0.2)} />
       </Cylinder>
-      {/* Top disc */}
       <Cylinder args={[r, r, h * 0.08, 24]} position={[0, h * 0.46, 0]}>
         <meshStandardMaterial {...mechMat('#2563eb', selected, 0.5, 0.35)} />
       </Cylinder>
-      {/* Positioning pins on top */}
       {[0, 1, 2].map(i => {
         const angle = (i / 3) * Math.PI * 2;
         return (
@@ -337,18 +342,15 @@ function LiftModel({ w, h, d, selected }: { w: number; h: number; d: number; sel
   const pillarW = w * 0.1;
   return (
     <group>
-      {/* Base plate */}
       <Box args={[w * 0.9, h * 0.04, d * 0.7]} position={[0, h * 0.02, 0]}>
         <meshStandardMaterial {...mechMat('#4a4a4a', selected, 0.6, 0.3)} />
       </Box>
-      {/* Left pillar with guide slot */}
       <Box args={[pillarW, h, pillarW]} position={[-w * 0.35, h * 0.5, 0]}>
         <meshStandardMaterial {...mechMat('#6b7280', selected, 0.6, 0.3)} />
       </Box>
       <Box args={[pillarW * 0.3, h * 0.9, pillarW * 0.3]} position={[-w * 0.35 + pillarW * 0.4, h * 0.5, 0]}>
         <meshStandardMaterial {...mechMat('#4b5563', selected, 0.6, 0.3)} />
       </Box>
-      {/* Right pillar with guide slot */}
       <Box args={[pillarW, h, pillarW]} position={[w * 0.35, h * 0.5, 0]}>
         <meshStandardMaterial {...mechMat('#6b7280', selected, 0.6, 0.3)} />
       </Box>
@@ -356,27 +358,21 @@ function LiftModel({ w, h, d, selected }: { w: number; h: number; d: number; sel
         <meshStandardMaterial {...mechMat('#4b5563', selected, 0.6, 0.3)} />
       </Box>
       {/* Scissor X arms */}
-      <Box args={[w * 0.55, h * 0.03, d * 0.06]} position={[0, h * 0.35, d * 0.15]}
-        rotation={[0, 0, 0.4]}>
+      <Box args={[w * 0.55, h * 0.03, d * 0.06]} position={[0, h * 0.35, d * 0.15]} rotation={[0, 0, 0.4]}>
         <meshStandardMaterial {...mechMat('#9ca3af', selected, 0.6, 0.3)} />
       </Box>
-      <Box args={[w * 0.55, h * 0.03, d * 0.06]} position={[0, h * 0.35, d * 0.15]}
-        rotation={[0, 0, -0.4]}>
+      <Box args={[w * 0.55, h * 0.03, d * 0.06]} position={[0, h * 0.35, d * 0.15]} rotation={[0, 0, -0.4]}>
         <meshStandardMaterial {...mechMat('#9ca3af', selected, 0.6, 0.3)} />
       </Box>
-      <Box args={[w * 0.55, h * 0.03, d * 0.06]} position={[0, h * 0.35, -d * 0.15]}
-        rotation={[0, 0, 0.4]}>
+      <Box args={[w * 0.55, h * 0.03, d * 0.06]} position={[0, h * 0.35, -d * 0.15]} rotation={[0, 0, 0.4]}>
         <meshStandardMaterial {...mechMat('#9ca3af', selected, 0.6, 0.3)} />
       </Box>
-      <Box args={[w * 0.55, h * 0.03, d * 0.06]} position={[0, h * 0.35, -d * 0.15]}
-        rotation={[0, 0, -0.4]}>
+      <Box args={[w * 0.55, h * 0.03, d * 0.06]} position={[0, h * 0.35, -d * 0.15]} rotation={[0, 0, -0.4]}>
         <meshStandardMaterial {...mechMat('#9ca3af', selected, 0.6, 0.3)} />
       </Box>
-      {/* Platform */}
       <Box args={[w * 0.8, h * 0.06, d * 0.8]} position={[0, h * 0.6, 0]}>
         <meshStandardMaterial {...mechMat('#c0c0c0', selected, 0.6, 0.3)} />
       </Box>
-      {/* Platform surface texture */}
       <Box args={[w * 0.78, h * 0.01, d * 0.78]} position={[0, h * 0.635, 0]}>
         <meshStandardMaterial {...mechMat('#d4d4d8', selected, 0.5, 0.4)} />
       </Box>
@@ -387,26 +383,21 @@ function LiftModel({ w, h, d, selected }: { w: number; h: number; d: number; sel
 function StopModel({ w, h, d, selected }: { w: number; h: number; d: number; selected: boolean }) {
   return (
     <group>
-      {/* Base block */}
       <Box args={[w * 0.5, h * 0.4, d * 0.5]} position={[0, h * 0.2, 0]}>
         <meshStandardMaterial {...mechMat('#991b1b', selected, 0.5, 0.4)} />
       </Box>
-      {/* Mounting bolts (4) */}
       {[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sz], i) => (
         <Cylinder key={`bolt-${i}`} args={[w * 0.025, w * 0.025, h * 0.06, 6]}
           position={[sx * w * 0.2, h * 0.01, sz * d * 0.2]}>
           <meshStandardMaterial {...mechMat('#c0c0c0', selected, 0.7, 0.2)} />
         </Cylinder>
       ))}
-      {/* Cylinder driving rod */}
       <Cylinder args={[w * 0.04, w * 0.04, h * 0.35, 8]} position={[0, h * 0.4 + h * 0.175, -d * 0.1]}>
         <meshStandardMaterial {...mechMat('#9ca3af', selected, 0.7, 0.2)} />
       </Cylinder>
-      {/* Stop plate */}
       <Box args={[w * 0.8, h * 0.7, d * 0.08]} position={[0, h * 0.55, d * 0.25]}>
         <meshStandardMaterial {...mechMat('#dc2626', selected, 0.5, 0.35)} />
       </Box>
-      {/* Rubber bumper pad */}
       <Box args={[w * 0.7, h * 0.5, d * 0.04]} position={[0, h * 0.55, d * 0.31]}>
         <meshStandardMaterial {...rubberMat('#1a1a1a', selected)} />
       </Box>
@@ -417,29 +408,23 @@ function StopModel({ w, h, d, selected }: { w: number; h: number; d: number; sel
 function CameraMountModel({ w, h, d, selected }: { w: number; h: number; d: number; selected: boolean }) {
   return (
     <group>
-      {/* Mounting base plate */}
       <Box args={[w * 0.35, h * 0.04, d * 0.35]} position={[0, h * 0.02, -d * 0.3]}>
         <meshStandardMaterial {...mechMat('#4a4a4a', selected, 0.6, 0.3)} />
       </Box>
-      {/* Vertical bar */}
       <Box args={[w * 0.12, h, d * 0.12]} position={[0, h * 0.5, -d * 0.3]}>
         <meshStandardMaterial {...mechMat('#64748b', selected, 0.6, 0.3)} />
       </Box>
-      {/* Horizontal arm */}
       <Box args={[w * 0.6, h * 0.08, d * 0.1]} position={[0, h * 0.9, 0]}>
         <meshStandardMaterial {...mechMat('#94a3b8', selected, 0.6, 0.3)} />
       </Box>
-      {/* Diagonal brace */}
       <Box args={[w * 0.04, h * 0.35, d * 0.04]}
         position={[0, h * 0.72, -d * 0.12]}
         rotation={[0.6, 0, 0]}>
         <meshStandardMaterial {...mechMat('#64748b', selected, 0.6, 0.3)} />
       </Box>
-      {/* Adjustment knob */}
       <Sphere args={[w * 0.04, 10, 10]} position={[w * 0.08, h * 0.9, -d * 0.08]}>
         <meshStandardMaterial {...mechMat('#1a1a1a', selected, 0.3, 0.6)} />
       </Sphere>
-      {/* Cable channel */}
       <Cylinder args={[w * 0.025, w * 0.025, h * 0.7, 6]} position={[w * 0.1, h * 0.55, -d * 0.3]}>
         <meshStandardMaterial {...rubberMat('#1a1a1a', selected)} />
       </Cylinder>
@@ -462,12 +447,21 @@ function DefaultMechanismModel({ w, h, d, selected }: { w: number; h: number; d:
   );
 }
 
-function Mechanism3DModel({ obj, selected }: { obj: LayoutObject; selected: boolean }) {
+// --- Mechanism model with interaction type badge ---
+function Mechanism3DModel({ obj, selected, dimmed, hasIllegalMount, objects }: {
+  obj: LayoutObject;
+  selected: boolean;
+  dimmed: boolean;
+  hasIllegalMount: boolean;
+  objects: LayoutObject[];
+}) {
   const w = (obj.width || 100) * SCALE;
   const h = (obj.height || 100) * SCALE;
   const d = ((obj as any).depth || 80) * SCALE;
   const mechType = obj.mechanismType || '';
   const highlightColor = '#facc15';
+  const isCamType = isCameraMountable(mechType);
+  const isProdType = isProductInteraction(mechType);
 
   let model: React.ReactNode;
   switch (mechType) {
@@ -482,47 +476,94 @@ function Mechanism3DModel({ obj, selected }: { obj: LayoutObject; selected: bool
     default: model = <DefaultMechanismModel w={w} h={h} d={d} selected={selected} />; break;
   }
 
+  // Count mounted cameras
+  const mountedCameras = objects.filter(o => o.type === 'camera' && o.mountedToMechanismId === obj.id);
+
   return (
-    <>
+    <group>
+      {/* Dim overlay when in focus mode and not related */}
+      {dimmed && (
+        <Box args={[w + 0.02, h + 0.02, d + 0.02]} position={[0, h / 2, 0]}>
+          <meshBasicMaterial color="#0f172a" transparent opacity={0.7} depthWrite={false} />
+        </Box>
+      )}
       {model}
+      {/* Selection highlight */}
       {selected && (
         <Box args={[w + 0.06, h + 0.06, d + 0.06]} position={[0, h / 2, 0]}>
           <meshBasicMaterial color={highlightColor} wireframe transparent opacity={0.5} />
         </Box>
       )}
+      {/* Illegal mount warning - red border */}
+      {hasIllegalMount && (
+        <Box args={[w + 0.08, h + 0.08, d + 0.08]} position={[0, h / 2, 0]}>
+          <meshBasicMaterial color="#ef4444" wireframe transparent opacity={0.6} />
+        </Box>
+      )}
+      {/* Mechanism name */}
       <Text
         position={[0, h + 0.15, 0]}
-        fontSize={0.18}
+        fontSize={0.16}
         color="#fafafa"
         anchorX="center"
         anchorY="bottom"
       >
         {obj.name || '机构'}
       </Text>
-    </>
+      {/* Interaction type badge */}
+      <Text
+        position={[0, h + 0.32, 0]}
+        fontSize={0.12}
+        color={isCamType ? '#60a5fa' : isProdType ? '#34d399' : '#94a3b8'}
+        anchorX="center"
+        anchorY="bottom"
+      >
+        {isCamType ? '📷 相机交互' : isProdType ? '📦 产品交互' : ''}
+      </Text>
+      {/* Show mounted camera count if any */}
+      {mountedCameras.length > 0 && isCamType && (
+        <Text
+          position={[0, h + 0.46, 0]}
+          fontSize={0.10}
+          color="#60a5fa"
+          anchorX="center"
+          anchorY="bottom"
+        >
+          {`已挂载 ${mountedCameras.length} 台相机`}
+        </Text>
+      )}
+      {/* Warning text for illegal mounts */}
+      {hasIllegalMount && (
+        <Text
+          position={[0, h + 0.46, 0]}
+          fontSize={0.11}
+          color="#ef4444"
+          anchorX="center"
+          anchorY="bottom"
+        >
+          ⚠ 非法相机挂载!
+        </Text>
+      )}
+    </group>
   );
 }
 
-function ProductBox({ dimensions, selected }: { dimensions: { length: number; width: number; height: number }; selected: boolean }) {
+function ProductBox({ dimensions, selected, dimmed }: { dimensions: { length: number; width: number; height: number }; selected: boolean; dimmed: boolean }) {
   const w = dimensions.length * SCALE;
   const h = dimensions.height * SCALE;
   const d = dimensions.width * SCALE;
   const highlightColor = '#facc15';
   const edgeR = 0.008;
 
-  // 12 edges of a box
   const edges: { pos: [number, number, number]; rot: [number, number, number]; len: number }[] = [
-    // bottom 4
     { pos: [-w/2, 0, -d/2], rot: [0, 0, 0], len: h },
     { pos: [w/2, 0, -d/2], rot: [0, 0, 0], len: h },
     { pos: [-w/2, 0, d/2], rot: [0, 0, 0], len: h },
     { pos: [w/2, 0, d/2], rot: [0, 0, 0], len: h },
-    // top horizontal (x-axis)
     { pos: [0, h, -d/2], rot: [0, 0, Math.PI/2], len: w },
     { pos: [0, h, d/2], rot: [0, 0, Math.PI/2], len: w },
     { pos: [0, 0, -d/2], rot: [0, 0, Math.PI/2], len: w },
     { pos: [0, 0, d/2], rot: [0, 0, Math.PI/2], len: w },
-    // depth (z-axis)
     { pos: [-w/2, h, 0], rot: [Math.PI/2, 0, 0], len: d },
     { pos: [w/2, h, 0], rot: [Math.PI/2, 0, 0], len: d },
     { pos: [-w/2, 0, 0], rot: [Math.PI/2, 0, 0], len: d },
@@ -531,6 +572,11 @@ function ProductBox({ dimensions, selected }: { dimensions: { length: number; wi
 
   return (
     <>
+      {dimmed && (
+        <Box args={[w + 0.02, h + 0.02, d + 0.02]} position={[0, h / 2, 0]}>
+          <meshBasicMaterial color="#0f172a" transparent opacity={0.7} depthWrite={false} />
+        </Box>
+      )}
       <group position={[0, h / 2, 0]}>
         <Box args={[w, h, d]}>
           <meshStandardMaterial
@@ -542,14 +588,12 @@ function ProductBox({ dimensions, selected }: { dimensions: { length: number; wi
             roughness={0.6}
           />
         </Box>
-        {/* Edge chamfer cylinders */}
         {edges.map((edge, i) => (
           <Cylinder key={`edge-${i}`} args={[edgeR, edgeR, edge.len, 4]}
             position={edge.pos} rotation={edge.rot}>
             <meshStandardMaterial color={selected ? highlightColor : '#22d3ee'} metalness={0.3} roughness={0.5} />
           </Cylinder>
         ))}
-        {/* Front face marker */}
         <Box args={[w * 0.15, h * 0.15, d * 0.01]} position={[0, 0, d / 2 + 0.005]}>
           <meshStandardMaterial color="#0891b2" metalness={0.2} roughness={0.5} />
         </Box>
@@ -572,14 +616,21 @@ function ProductBox({ dimensions, selected }: { dimensions: { length: number; wi
   );
 }
 
-function CameraObject({ obj, selected }: { obj: LayoutObject; selected: boolean }) {
+function CameraObject({ obj, selected, dimmed }: { obj: LayoutObject; selected: boolean; dimmed: boolean }) {
   const isMounted = !!obj.mountedToMechanismId;
   const baseColor = isMounted ? '#16a34a' : '#3b82f6';
   const baseDark = isMounted ? '#15803d' : '#1d4ed8';
   const highlightColor = '#facc15';
+  // Float up slightly when selected
+  const yOffset = selected ? 0.15 : 0;
 
   return (
-    <>
+    <group position={[0, yOffset, 0]}>
+      {dimmed && (
+        <Box args={[0.42, 0.37, 0.52]}>
+          <meshBasicMaterial color="#0f172a" transparent opacity={0.7} depthWrite={false} />
+        </Box>
+      )}
       {/* Main camera body */}
       <Box args={[0.3, 0.25, 0.4]}>
         <meshStandardMaterial
@@ -590,24 +641,19 @@ function CameraObject({ obj, selected }: { obj: LayoutObject; selected: boolean 
           roughness={0.35}
         />
       </Box>
-      {/* Back panel / interface plate */}
       <Box args={[0.28, 0.22, 0.02]} position={[0, 0, 0.21]}>
         <meshStandardMaterial {...mechMat('#1a1a1a', selected, 0.3, 0.6)} />
       </Box>
-      {/* Cooling fins on the back */}
       {Array.from({ length: 5 }).map((_, i) => (
         <Box key={`fin-${i}`} args={[0.26, 0.03, 0.015]}
           position={[0, -0.09 + i * 0.045, 0.2]}>
           <meshStandardMaterial {...mechMat('#2a2a2a', selected, 0.5, 0.4)} />
         </Box>
       ))}
-      {/* Lens assembly */}
       <group position={[0, -0.25, 0]} rotation={[Math.PI, 0, 0]}>
-        {/* Lens ring */}
         <Cylinder args={[0.16, 0.16, 0.04, 16]} position={[0, -0.02, 0]}>
           <meshStandardMaterial {...mechMat('#374151', selected, 0.6, 0.25)} />
         </Cylinder>
-        {/* Lens cone */}
         <Cone args={[0.14, 0.28, 12]}>
           <meshStandardMaterial
             color={selected ? highlightColor : baseDark}
@@ -617,12 +663,10 @@ function CameraObject({ obj, selected }: { obj: LayoutObject; selected: boolean 
             roughness={0.3}
           />
         </Cone>
-        {/* Glass element at tip */}
         <Cylinder args={[0.04, 0.04, 0.02, 12]} position={[0, 0.15, 0]}>
           <meshStandardMaterial color="#94a3b8" metalness={0.8} roughness={0.1} transparent opacity={0.7} />
         </Cylinder>
       </group>
-      {/* Status LED (green emissive) */}
       <Sphere args={[0.02, 8, 8]} position={[0.12, 0.1, -0.2]}>
         <meshStandardMaterial
           color="#22c55e"
@@ -646,27 +690,129 @@ function CameraObject({ obj, selected }: { obj: LayoutObject; selected: boolean 
       >
         {obj.name || 'CAM'}
       </Text>
-    </>
+    </group>
   );
 }
 
-function MountingLines({ objects }: { objects: LayoutObject[] }) {
-  const lines: { start: [number, number, number]; end: [number, number, number] }[] = [];
-  objects.forEach(obj => {
-    if (obj.mountedToMechanismId) {
+// --- Categorized relationship lines ---
+interface RelLine {
+  start: [number, number, number];
+  end: [number, number, number];
+  color: string;
+  dashed: boolean;
+  label: string;
+  midpoint: [number, number, number];
+  isIllegal: boolean;
+}
+
+function RelationshipLines({ objects }: { objects: LayoutObject[] }) {
+  const lines = useMemo(() => {
+    const result: RelLine[] = [];
+
+    objects.forEach(obj => {
+      if (!obj.mountedToMechanismId) return;
       const parent = objects.find(o => o.id === obj.mountedToMechanismId);
-      if (parent) {
-        lines.push({
-          start: [(obj.posX ?? 0) * SCALE, (obj.posZ ?? 0) * SCALE, (obj.posY ?? 0) * SCALE],
-          end: [(parent.posX ?? 0) * SCALE, (parent.posZ ?? 0) * SCALE, (parent.posY ?? 0) * SCALE],
+      if (!parent) return;
+
+      const start: [number, number, number] = [
+        (obj.posX ?? 0) * SCALE,
+        (obj.posZ ?? 0) * SCALE,
+        (obj.posY ?? 0) * SCALE,
+      ];
+      const end: [number, number, number] = [
+        (parent.posX ?? 0) * SCALE,
+        (parent.posZ ?? 0) * SCALE,
+        (parent.posY ?? 0) * SCALE,
+      ];
+      const mid: [number, number, number] = [
+        (start[0] + end[0]) / 2,
+        (start[1] + end[1]) / 2 + 0.2,
+        (start[2] + end[2]) / 2,
+      ];
+
+      const parentMechType = parent.mechanismType || '';
+
+      if (obj.type === 'camera') {
+        // Camera → mechanism
+        const isLegal = isCameraMountable(parentMechType);
+        result.push({
+          start, end, midpoint: mid,
+          color: isLegal ? '#3b82f6' : '#ef4444',
+          dashed: !isLegal,
+          label: isLegal ? '📷' : '⚠ 非法',
+          isIllegal: !isLegal,
+        });
+      } else {
+        // Product/other → mechanism (product interaction)
+        const isProductMech = isProductInteraction(parentMechType);
+        result.push({
+          start, end, midpoint: mid,
+          color: isProductMech ? '#22d3ee' : '#f97316',
+          dashed: false,
+          label: '📦',
+          isIllegal: false,
         });
       }
-    }
-  });
+    });
+
+    // Product → product-interaction mechanisms (implicit relationship lines)
+    objects.forEach(obj => {
+      if (obj.type === 'mechanism' && isProductInteraction(obj.mechanismType || '')) {
+        const mechPos: [number, number, number] = [
+          (obj.posX ?? 0) * SCALE,
+          (obj.posZ ?? 0) * SCALE,
+          (obj.posY ?? 0) * SCALE,
+        ];
+        const productPos: [number, number, number] = [0, 0, 0];
+        const mid: [number, number, number] = [
+          mechPos[0] / 2,
+          mechPos[1] / 2 + 0.15,
+          mechPos[2] / 2,
+        ];
+        result.push({
+          start: productPos, end: mechPos, midpoint: mid,
+          color: '#22d3ee',
+          dashed: true,
+          label: '📦',
+          isIllegal: false,
+        });
+      }
+    });
+
+    return result;
+  }, [objects]);
+
   return (
     <>
       {lines.map((line, i) => (
-        <Line key={i} points={[line.start, line.end]} color="#22c55e" lineWidth={1.5} dashed dashSize={0.15} gapSize={0.1} />
+        <group key={`rel-${i}`}>
+          <Line
+            points={[line.start, line.end]}
+            color={line.color}
+            lineWidth={2.5}
+            dashed={line.dashed}
+            dashSize={line.dashed ? 0.12 : undefined}
+            gapSize={line.dashed ? 0.08 : undefined}
+          />
+          {/* Start endpoint marker */}
+          <Sphere args={[0.04, 6, 6]} position={line.start}>
+            <meshBasicMaterial color={line.color} />
+          </Sphere>
+          {/* End endpoint marker */}
+          <Sphere args={[0.04, 6, 6]} position={line.end}>
+            <meshBasicMaterial color={line.color} />
+          </Sphere>
+          {/* Label at midpoint */}
+          <Text
+            position={line.midpoint}
+            fontSize={0.12}
+            color={line.color}
+            anchorX="center"
+            anchorY="bottom"
+          >
+            {line.label}
+          </Text>
+        </group>
       ))}
     </>
   );
@@ -714,7 +860,6 @@ function CameraController({
   );
 }
 
-/** Invisible ground plane for raycasting during drag */
 function DragPlane({
   dragStateRef,
   dragMovedRef,
@@ -728,11 +873,8 @@ function DragPlane({
   onDragEnd: () => void;
   onDeselect: () => void;
 }) {
-  const planeRef = useRef<THREE.Mesh>(null);
-
   return (
     <Plane
-      ref={planeRef}
       args={[200, 200]}
       rotation={[-Math.PI / 2, 0, 0]}
       position={[0, 0, 0]}
@@ -761,11 +903,75 @@ function DragPlane({
   );
 }
 
-function SelectedInfoPanel({ obj, onDeselect }: { obj: LayoutObject | null; onDeselect: () => void }) {
+// --- Enhanced info panel with mount info ---
+function SelectedInfoPanel({ obj, objects, onDeselect }: { obj: LayoutObject | null; objects: LayoutObject[]; onDeselect: () => void }) {
   if (!obj) return null;
   const typeLabel = obj.type === 'camera' ? '相机' : obj.type === 'mechanism' ? '机构' : '产品';
+  const mechType = obj.mechanismType || '';
+
+  // Camera mount info
+  let mountInfo: React.ReactNode = null;
+  if (obj.type === 'camera') {
+    if (obj.mountedToMechanismId) {
+      const parent = objects.find(o => o.id === obj.mountedToMechanismId);
+      const parentType = parent?.mechanismType || '';
+      const isLegal = isCameraMountable(parentType);
+      mountInfo = (
+        <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
+          <div className="text-[10px] text-slate-400">
+            挂载到: <span className="text-slate-200">{parent?.name || '未知'}</span>
+          </div>
+          <div className={`text-[10px] font-medium ${isLegal ? 'text-green-400' : 'text-red-400'}`}>
+            {isLegal ? '✅ 合法挂载' : '⚠️ 非法挂载 — 该机构不支持相机'}
+          </div>
+        </div>
+      );
+    } else {
+      mountInfo = (
+        <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
+          <div className="text-[10px] text-slate-400">未挂载到任何机构</div>
+        </div>
+      );
+    }
+  }
+
+  // Mechanism type & mounted objects info
+  let mechInfo: React.ReactNode = null;
+  if (obj.type === 'mechanism') {
+    const isCamType = isCameraMountable(mechType);
+    const isProdType = isProductInteraction(mechType);
+    const mountedChildren = objects.filter(o => o.mountedToMechanismId === obj.id);
+    const illegalCameras = mountedChildren.filter(o => o.type === 'camera' && !isCamType);
+
+    mechInfo = (
+      <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
+        <div className="text-[10px]">
+          <span className={isCamType ? 'text-blue-400' : isProdType ? 'text-emerald-400' : 'text-slate-400'}>
+            {isCamType ? '📷 相机交互类' : isProdType ? '📦 产品交互类' : '未分类'}
+          </span>
+        </div>
+        {isCamType && (
+          <div className="text-[10px] text-slate-400 mt-0.5">支持安装相机</div>
+        )}
+        {isProdType && (
+          <div className="text-[10px] text-slate-400 mt-0.5">承载/传递产品 · 不支持安装相机</div>
+        )}
+        {mountedChildren.length > 0 && (
+          <div className="text-[10px] text-slate-300 mt-1">
+            已挂载: {mountedChildren.map(c => c.name || c.id.slice(0, 6)).join(', ')}
+          </div>
+        )}
+        {illegalCameras.length > 0 && (
+          <div className="text-[10px] text-red-400 mt-0.5">
+            ⚠ {illegalCameras.length} 台相机非法挂载!
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="absolute top-3 left-3 bg-slate-800/90 backdrop-blur-sm rounded-lg border border-yellow-500/50 p-3 z-10 min-w-[160px]">
+    <div className="absolute top-3 left-3 bg-slate-800/90 backdrop-blur-sm rounded-lg border border-yellow-500/50 p-3 z-10 min-w-[180px] max-w-[240px]">
       <div className="flex items-center justify-between gap-2 mb-2">
         <span className="text-xs font-semibold text-yellow-400">已选中</span>
         <button onClick={onDeselect} className="text-slate-400 hover:text-slate-200 transition-colors">
@@ -782,6 +988,8 @@ function SelectedInfoPanel({ obj, onDeselect }: { obj: LayoutObject | null; onDe
           尺寸: {obj.width}×{obj.height}{(obj as any).depth ? `×${(obj as any).depth}` : ''}
         </div>
       )}
+      {mountInfo}
+      {mechInfo}
     </div>
   );
 }
@@ -798,17 +1006,34 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
   const [dragMode, setDragMode] = useState(false);
   const [snapEnabled, setSnapEnabled] = useState(true);
-  const SNAP_GRID = 10; // mm
+  const SNAP_GRID = 10;
   const dragStateRef = useRef<DragState>({
     isDragging: false,
     objectId: null,
     startPoint: null,
     startPos: null,
   });
-  // Track if a real drag happened (moved > threshold)
   const dragMovedRef = useRef(false);
 
   const activeSelectedId = selectedObjectId !== undefined ? selectedObjectId : localSelectedId;
+
+  // Compute related IDs for focus/dim mode
+  const relatedIds = useMemo(() => getRelatedIds(activeSelectedId, objects), [activeSelectedId, objects]);
+  const hasFocus = !!activeSelectedId;
+
+  // Compute which mechanisms have illegal camera mounts
+  const illegalMountMechIds = useMemo(() => {
+    const ids = new Set<string>();
+    objects.forEach(obj => {
+      if (obj.type === 'camera' && obj.mountedToMechanismId) {
+        const parent = objects.find(o => o.id === obj.mountedToMechanismId);
+        if (parent && !isCameraMountable(parent.mechanismType || '')) {
+          ids.add(parent.id);
+        }
+      }
+    });
+    return ids;
+  }, [objects]);
 
   const handleSelect = useCallback((id: string | null) => {
     const newId = activeSelectedId === id ? null : id;
@@ -828,7 +1053,6 @@ export const Layout3DPreview = memo(function Layout3DPreview({
     }
   }, []);
 
-  // Drag handlers
   const handleDragStart = useCallback((id: string, point: THREE.Vector3) => {
     if (!dragMode || !onUpdateObject) return;
     const obj = objects.find(o => o.id === id);
@@ -841,8 +1065,6 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       startPos: { posX: obj.posX ?? 0, posY: obj.posY ?? 0, posZ: obj.posZ ?? 0 },
     };
     dragMovedRef.current = false;
-
-    // Select the object being dragged
     setLocalSelectedId(id);
     onSelectObject?.(id);
   }, [dragMode, onUpdateObject, objects, onSelectObject]);
@@ -858,11 +1080,9 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       dragMovedRef.current = true;
     }
 
-    // Convert 3D delta back to mm: x maps to posX, z maps to posY
     let newPosX = Math.round(state.startPos.posX + dx * INV_SCALE);
     let newPosY = Math.round(state.startPos.posY + dz * INV_SCALE);
 
-    // Snap to grid
     if (snapEnabled) {
       newPosX = Math.round(newPosX / SNAP_GRID) * SNAP_GRID;
       newPosY = Math.round(newPosY / SNAP_GRID) * SNAP_GRID;
@@ -878,7 +1098,6 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       startPoint: null,
       startPos: null,
     };
-    // Delay reset so click event fires first and can check dragMovedRef
     setTimeout(() => { dragMovedRef.current = false; }, 0);
   }, []);
 
@@ -924,7 +1143,6 @@ export const Layout3DPreview = memo(function Layout3DPreview({
 
           <axesHelper args={[3]} />
 
-          {/* Invisible drag plane */}
           <DragPlane
             dragStateRef={dragStateRef}
             dragMovedRef={dragMovedRef}
@@ -933,7 +1151,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
             onDeselect={() => handleSelect(null)}
           />
 
-          {/* Product (not draggable, always at origin) */}
+          {/* Product */}
           <group
             position={[0, 0, 0]}
             onClick={(e: ThreeEvent<MouseEvent>) => {
@@ -944,44 +1162,59 @@ export const Layout3DPreview = memo(function Layout3DPreview({
             <ProductBox
               dimensions={productDimensions}
               selected={activeSelectedId === '__product__'}
+              dimmed={hasFocus && !relatedIds.has('__product__') && activeSelectedId !== '__product__'}
             />
           </group>
 
           {/* Mechanisms */}
-          {mechanisms.map(obj => (
-            <DraggableGroup
-              key={obj.id}
-              objectId={obj.id}
-              position={[(obj.posX ?? 0) * SCALE, (obj.posZ ?? 0) * SCALE, (obj.posY ?? 0) * SCALE]}
-              dragState={dragStateRef}
-              onDragStart={handleDragStart}
-              onClick={(id) => { if (!dragMovedRef.current) handleSelect(id); }}
-            >
-              <Mechanism3DModel obj={obj} selected={activeSelectedId === obj.id} />
-            </DraggableGroup>
-          ))}
+          {mechanisms.map(obj => {
+            const isSelected = activeSelectedId === obj.id;
+            const isDimmed = hasFocus && !relatedIds.has(obj.id) && !isSelected;
+            return (
+              <DraggableGroup
+                key={obj.id}
+                objectId={obj.id}
+                position={[(obj.posX ?? 0) * SCALE, (obj.posZ ?? 0) * SCALE, (obj.posY ?? 0) * SCALE]}
+                dragState={dragStateRef}
+                onDragStart={handleDragStart}
+                onClick={(id) => { if (!dragMovedRef.current) handleSelect(id); }}
+              >
+                <Mechanism3DModel
+                  obj={obj}
+                  selected={isSelected}
+                  dimmed={isDimmed}
+                  hasIllegalMount={illegalMountMechIds.has(obj.id)}
+                  objects={objects}
+                />
+              </DraggableGroup>
+            );
+          })}
 
           {/* Cameras */}
-          {cameras.map(obj => (
-            <DraggableGroup
-              key={obj.id}
-              objectId={obj.id}
-              position={[(obj.posX ?? 0) * SCALE, (obj.posZ ?? 0) * SCALE, (obj.posY ?? 0) * SCALE]}
-              dragState={dragStateRef}
-              onDragStart={handleDragStart}
-              onClick={(id) => { if (!dragMovedRef.current) handleSelect(id); }}
-            >
-              <CameraObject obj={obj} selected={activeSelectedId === obj.id} />
-            </DraggableGroup>
-          ))}
+          {cameras.map(obj => {
+            const isSelected = activeSelectedId === obj.id;
+            const isDimmed = hasFocus && !relatedIds.has(obj.id) && !isSelected;
+            return (
+              <DraggableGroup
+                key={obj.id}
+                objectId={obj.id}
+                position={[(obj.posX ?? 0) * SCALE, (obj.posZ ?? 0) * SCALE, (obj.posY ?? 0) * SCALE]}
+                dragState={dragStateRef}
+                onDragStart={handleDragStart}
+                onClick={(id) => { if (!dragMovedRef.current) handleSelect(id); }}
+              >
+                <CameraObject obj={obj} selected={isSelected} dimmed={isDimmed} />
+              </DraggableGroup>
+            );
+          })}
 
-          <MountingLines objects={objects} />
+          <RelationshipLines objects={objects} />
           <CameraController cameraRef={cameraActionRef} dragMode={dragStateRef.current.isDragging} />
         </Suspense>
       </Canvas>
 
       {/* Selected object info */}
-      <SelectedInfoPanel obj={selectedObj} onDeselect={handleDeselect} />
+      <SelectedInfoPanel obj={selectedObj} objects={objects} onDeselect={handleDeselect} />
 
       {/* Drag mode toggle */}
       {onUpdateObject && (
@@ -1058,16 +1291,25 @@ export const Layout3DPreview = memo(function Layout3DPreview({
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-xs text-slate-300"><span className="w-3 h-3 rounded-sm bg-cyan-500/70" />产品</div>
           <div className="flex items-center gap-2 text-xs text-slate-300"><span className="w-3 h-3 rounded-sm bg-orange-500/70" />机构</div>
-          <div className="flex items-center gap-2 text-xs text-slate-300"><span className="w-3 h-3 rounded-sm bg-blue-500/70" />相机</div>
+          <div className="flex items-center gap-2 text-xs text-slate-300"><span className="w-3 h-3 rounded-sm bg-blue-500/70" />相机 (📷交互)</div>
           <div className="flex items-center gap-2 text-xs text-slate-300"><span className="w-3 h-3 rounded-sm bg-green-500/70" />已挂载</div>
           <div className="flex items-center gap-2 text-xs text-slate-300"><span className="w-3 h-3 rounded-sm bg-yellow-400/70" />选中</div>
+          <div className="flex items-center gap-2 text-xs text-slate-300">
+            <span className="w-3 h-0.5 bg-blue-500" />📷 相机连线
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-300">
+            <span className="w-3 h-0.5 bg-cyan-400" />📦 产品连线
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-300">
+            <span className="w-3 h-0.5 bg-red-500 border-dashed" style={{ borderTop: '2px dashed' }} />⚠ 非法挂载
+          </div>
         </div>
       </div>
 
       <div className="absolute bottom-3 right-3 text-[10px] text-slate-500 bg-slate-800/60 backdrop-blur-sm rounded px-2 py-1 z-10">
         {dragMode
           ? '🖐 拖拽对象移动 · 点击切换到旋转模式'
-          : '🖱 左键旋转 · 右键平移 · 滚轮缩放 · 点击选中'}
+          : '🖱 左键旋转 · 右键平移 · 滚轮缩放 · 点击选中(聚焦模式)'}
       </div>
     </div>
   );
