@@ -1,44 +1,29 @@
 
 
-# FOV 输入改为两个独立数值框
+# 改进机械臂 3D 模型
 
 ## 问题
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+当前机械臂模型过于简单：一个底座圆柱 + 一根竖直方柱 + 两个球关节，看起来不像真实的多关节机械臂。
 
-## 修改方案
+## 方案
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+重写 `RobotArmModel`，改为多段关节式机械臂：
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
+| 部件 | 几何体 | 颜色 | 说明 |
+|------|--------|------|------|
+| 底座 | 大圆柱(扁) | 深灰 #3a3a3a | 固定在地面 |
+| 腰部转台 | 较小圆柱 | 深灰 #4a4a4a | 在底座上方，旋转关节 |
+| 关节1 | 球体 | 橙 #ea580c | 腰部-大臂连接 |
+| 大臂(Arm1) | 圆柱(竖直倾斜30°) | 橙 #ea580c | 主臂段 |
+| 关节2(肘) | 球体 | 深灰 #6b7280 | 大臂-小臂连接 |
+| 小臂(Arm2) | 圆柱(向前伸出) | 橙 #f97316 | 前臂段 |
+| 关节3(腕) | 球体 | 深灰 | 小臂末端 |
+| 末端执行器 | 小方块 | 黄 #facc15 | 法兰盘/工具接口 |
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+整体用 group 嵌套实现各段的位置偏移，大臂向后倾斜约30°、小臂向前弯折，呈现典型的6轴机械臂静态造型。尺寸基于 `w/h/d` 按比例缩放。
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+## 文件
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
-
-```
-[宽度输入] × [高度输入]
-```
-
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
-
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+仅修改 `src/components/canvas/Layout3DPreview.tsx` 中的 `RobotArmModel` 函数（约80-102行）。
 
