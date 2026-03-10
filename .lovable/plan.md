@@ -1,44 +1,44 @@
 
 
-# 3D预览：分类机构建模 + 修复视角切换 + 修复取消选中
+# FOV 输入改为两个独立数值框
 
-## 问题清单
+## 问题
 
-1. **所有机构都是同一个方盒子** — 需要根据 `mechanismType` 渲染不同的 3D 模型
-2. **视角预设按钮点击无效** — `CameraController` 在渲染函数体内直接设置相机位置，只在首次渲染时生效；需要改为 `useFrame` 循环检测
-3. **拖拽后无法取消选中** — `dragMovedRef` 在拖拽结束后未重置为 `false`，导致后续点击空白处 `handleSelect(null)` 被跳过
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-## 改动
+## 修改方案
 
-### `src/components/canvas/Layout3DPreview.tsx`
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-#### A. 按 mechanismType 分类渲染不同 3D 模型
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
+```
 
-替换统一的 `MechanismBox`，新建 `Mechanism3DModel` 组件，根据 `obj.mechanismType` 分发：
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-| mechanismType | 3D 形状 | 颜色 |
-|---|---|---|
-| `robot_arm` | 底座圆柱 + 竖直长臂(Box) + 末端关节(Sphere) | 深灰/橙 |
-| `conveyor` | 扁平长方体 + 两端圆柱滚轮 | 灰/绿 |
-| `cylinder` | 圆柱体(Cylinder) | 银灰 |
-| `gripper` | 中心块 + 两个对称夹爪(Box) | 深灰 |
-| `turntable` | 大圆柱底座 + 薄圆盘顶面 | 深蓝 |
-| `lift` | 竖直立柱(Box) + 可升降平台(Box) | 灰 |
-| `stop` | 小方块 + 顶部挡板 | 红 |
-| `camera_mount` | L型支架(两个Box拼接) | 蓝灰 |
-| 默认 | 当前方盒子 | 橙 |
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
 
-每种模型的尺寸均基于 `obj.width/height/depth`，按比例缩放。
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
 
-#### B. 修复视角预设按钮
+```
+[宽度输入] × [高度输入]
+```
 
-`CameraController` 改用 `useFrame` 在每帧检测 `cameraRef.current` 是否有值，有则设置相机并清空，确保点击按钮后相机位置实际更新。
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
 
-#### C. 修复拖拽后无法取消选中
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
 
-在 `handleDragEnd` 中延迟重置 `dragMovedRef.current = false`（用 `setTimeout` 0ms，让 click 事件先触发后再重置），同时在 `onPointerMissed` 中也重置 `dragMovedRef`。
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
 
-### 涉及文件
+### 4. PPT 输出不变
 
-仅 `src/components/canvas/Layout3DPreview.tsx`
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
