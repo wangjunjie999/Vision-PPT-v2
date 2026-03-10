@@ -1,44 +1,51 @@
 
 
-# FOV 输入改为两个独立数值框
+# 将 2.5D 等轴测预览替换为真正的 3D 视图
 
-## 问题
+## 现状
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+- 当前 isometric 视图是 SVG 内的 30° 投影模拟，只读，不可旋转
+- 项目已安装 `@react-three/fiber@^8.18`、`@react-three/drei@^9.122`、`three@^0.169`
+- `Product3DViewer.tsx` 已有 Three.js + OrbitControls 的使用模式可参考
 
-## 修改方案
+## 方案
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+当用户切换到「3D 预览」视图时，隐藏 SVG 画布，改为渲染一个 Three.js `<Canvas>` 组件，用户可自由拖拽旋转视角。
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
+## 改动清单
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+### 1. 新建 `src/components/canvas/Layout3DPreview.tsx`
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+Three.js 场景，读取 `objects` 数组渲染：
+- **机构** → `<Box>` 几何体（橙色），尺寸取自 `obj.width/height`，位置取自 `posX/posY/posZ`
+- **产品** → `<Box>` 几何体（青色），尺寸取自 `productDimensions`
+- **相机** → 小型锥体 `<Cone>`（蓝色），位置取自 `posX/posY/posZ`
+- 已挂载的对象用绿色显示 + 虚线连接父机构
+- 地面网格 `<gridHelper>`、XYZ 坐标轴 `<axesHelper>`
+- `<OrbitControls>` 支持拖拽旋转、缩放、平移
+- 右上角视角预设按钮（正视/侧视/俯视/等轴测）
+- 场景只读，不支持编辑
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+### 2. 修改 `DraggableLayoutCanvas.tsx`
 
-```
-[宽度输入] × [高度输入]
-```
+- 当 `currentView === 'isometric'` 时，用 `<Layout3DPreview>` 替换 SVG 区域
+- 传入 `objects`、`productDimensions` 等数据
+- 保留工具栏和侧面板
 
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+### 3. 修改 `CanvasToolbar.tsx`
 
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+- 按钮文字从「🧊 2.5D 预览」改为「🧊 3D 预览」
 
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+### 4. 清理
 
-### 4. PPT 输出不变
+- `IsometricGrid.tsx` 不再在主画布使用（保留文件，避免破坏引用）
+- `ProductRenderer` 和 `CameraRenderer` 中的 isometric 分支代码保留但不再触发
 
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+## 文件变更
 
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+| 文件 | 操作 |
+|------|------|
+| `src/components/canvas/Layout3DPreview.tsx` | 新建 |
+| `src/components/canvas/DraggableLayoutCanvas.tsx` | 条件渲染 3D 视图 |
+| `src/components/canvas/CanvasToolbar.tsx` | 更新按钮标签 |
 
