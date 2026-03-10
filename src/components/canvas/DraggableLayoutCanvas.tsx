@@ -820,6 +820,9 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
 
       {/* Canvas Container */}
       <div ref={containerRef} className="flex-1 overflow-hidden relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        {isIsometric ? (
+          <Layout3DPreview objects={objects} productDimensions={productDimensions} />
+        ) : (
         <ContextMenu>
           <ContextMenuTrigger asChild>
             <svg
@@ -852,16 +855,12 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 <text x={0} y={6} textAnchor="middle" fill="#e2e8f0" fontSize="14" fontWeight="600">
                   {currentView === 'front' ? '🎯 正视图 | X↔ Z↕'
                     : currentView === 'side' ? '📐 左视图 | Y↔ Z↕'
-                    : currentView === 'isometric' ? '🧊 2.5D 等轴测预览（只读）'
                     : '🔍 俯视图 | X↔ Y↕'}
                 </text>
               </g>
 
-              {/* Isometric grid */}
-              {isIsometric && <IsometricGrid isoProject={isoProject} />}
-
               {/* Connection lines */}
-              <ConnectionLines objects={objects} isIsometric={isIsometric} />
+              <ConnectionLines objects={objects} isIsometric={false} />
 
               {/* Dynamic layer rendering */}
               {layerOrder.map((layerType) => (
@@ -877,7 +876,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                   {layerType === 'product' && (
                     <ProductRenderer
                       objects={objects} selectedId={selectedId} secondSelectedId={secondSelectedId}
-                      panMode={panMode} isIsometric={isIsometric}
+                      panMode={panMode} isIsometric={false}
                       onMouseDown={handleMouseDown} onResize={handleResize}
                       productDimensions={productDimensions}
                       productW={productW} productH={productH} productD={productD}
@@ -887,7 +886,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                   {layerType === 'camera' && (
                     <CameraRenderer
                       objects={objects} selectedId={selectedId} secondSelectedId={secondSelectedId}
-                      panMode={panMode} isIsometric={isIsometric}
+                      panMode={panMode} isIsometric={false}
                       onMouseDown={handleMouseDown} onResize={handleResize}
                       isoProject={isoProject}
                     />
@@ -901,12 +900,10 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               )}
 
               {/* Coordinate system */}
-              {!isIsometric && (
-                <CoordinateSystem centerX={centerX} centerY={centerY} canvasWidth={canvasWidth} canvasHeight={canvasHeight} scale={scale} currentView={currentView as StandardViewType} gridSize={gridSize} />
-              )}
+              <CoordinateSystem centerX={centerX} centerY={centerY} canvasWidth={canvasWidth} canvasHeight={canvasHeight} scale={scale} currentView={currentView as StandardViewType} gridSize={gridSize} />
 
               {/* Camera mount points */}
-              {isDragging && !isIsometric && draggingObject?.type === 'camera' && objects
+              {isDragging && draggingObject?.type === 'camera' && objects
                 .filter(o => o.type === 'mechanism' && CAMERA_INTERACTION_TYPES.includes(o.mechanismType || ''))
                 .map(mech => (
                   <g key={`mount-${mech.id}`} transform={`translate(${mech.x}, ${mech.y})`}>
@@ -923,7 +920,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                 ))}
 
               {/* Product mount points */}
-              {isDragging && !isIsometric && draggingObject?.type === 'product' && objects
+              {isDragging && draggingObject?.type === 'product' && objects
                 .filter(o => o.type === 'mechanism' && PRODUCT_INTERACTION_TYPES.includes(o.mechanismType || ''))
                 .map(mech => (
                   <g key={`product-mount-${mech.id}`} transform={`translate(${mech.x}, ${mech.y})`}>
@@ -955,6 +952,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
             <ContextMenuItem onClick={fitToScreen} className="gap-2"><Crosshair className="h-4 w-4" />适应屏幕</ContextMenuItem>
           </ContextMenuContent>
         </ContextMenu>
+        )}
 
         {/* HUD overlays */}
         <CanvasHUD currentView={currentView} />
