@@ -812,10 +812,9 @@ function CameraObject({ obj, selected, dimmed }: { obj: LayoutObject; selected: 
   const baseColor = isMounted ? '#16a34a' : '#3b82f6';
   const baseDark = isMounted ? '#15803d' : '#1d4ed8';
   const highlightColor = '#facc15';
-  const yOffset = selected ? 0.15 : 0;
 
   return (
-    <group position={[0, yOffset, 0]}>
+    <group>
       {dimmed && (
         <Box args={[0.42, 0.37, 0.52]}>
           <meshBasicMaterial color="#0f172a" transparent opacity={0.7} depthWrite={false} />

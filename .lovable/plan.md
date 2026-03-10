@@ -1,31 +1,44 @@
 
 
-# 选中硬件后自动位移问题
+# FOV 输入改为两个独立数值框
 
-## 根因
+## 问题
 
-在 `src/components/canvas/Layout3DPreview.tsx` 第 815 行：
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-```tsx
-const yOffset = selected ? 0.15 : 0;
+## 修改方案
+
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
 ```
 
-第 818 行将此偏移应用到相机的 group position：
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-```tsx
-<group position={[0, yOffset, 0]}>
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+
+```
+[宽度输入] × [高度输入]
 ```
 
-这意味着每次选中相机时，它会在 Y 轴（垂直方向）向上浮起 0.15 单位。这是之前为"防止选中相机被其他物体遮挡"而添加的效果，但实际体验是选中后硬件会跳动。
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
 
-## 修复方案
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
 
-**文件：`src/components/canvas/Layout3DPreview.tsx`**
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
 
-移除 `yOffset` 逻辑，让选中状态仅通过已有的黄色高亮边框（wireframe）来表示，不改变物体位置：
+### 4. PPT 输出不变
 
-- 删除第 815 行的 `yOffset` 计算
-- 将第 818 行的 `position={[0, yOffset, 0]}` 改为 `position={[0, 0, 0]}`（或直接移除 position 属性）
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
 
-选中反馈仍然通过第 868-872 行的黄色 wireframe box 和发光材质提供，视觉效果不受影响。
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
