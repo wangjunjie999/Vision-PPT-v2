@@ -41,6 +41,7 @@ export function GuideHighlight({
                 repeat: Infinity,
                 ease: 'easeInOut',
               }}
+              style={{ willChange: 'opacity', transform: 'translateZ(0)' }}
             />
             
             {/* Glow effect */}
