@@ -208,7 +208,9 @@ export function VisionSystemDiagram({
       <svg 
         viewBox="0 0 800 750"
         className="w-full h-full"
-        style={{ maxHeight: '100%' }}
+        preserveAspectRatio="xMidYMid meet"
+        shapeRendering="geometricPrecision"
+        style={{ maxHeight: '100%', transform: 'translateZ(0)', aspectRatio: '800/750' }}
       >
         <defs>
           {/* Camera FOV gradient */}
@@ -486,7 +488,7 @@ export function VisionSystemDiagram({
 
         {/* Interactive Camera Element - embedded in SVG */}
         <foreignObject x="175" y="30" width="90" height="85">
-          <div className="w-full h-full">
+          <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
             <HardwareSelectPopover
               type="camera"
               items={cameras}
@@ -521,7 +523,7 @@ export function VisionSystemDiagram({
 
         {/* Interactive Lens Element - embedded in SVG */}
         <foreignObject x="172" y="115" width="96" height="62">
-          <div className="w-full h-full">
+          <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
             <HardwareSelectPopover
               type="lens"
               items={lenses}
@@ -556,7 +558,7 @@ export function VisionSystemDiagram({
 
         {/* Interactive Light Element - embedded in SVG */}
         <foreignObject x="150" y="195" width="140" height="40">
-          <div className="w-full h-full">
+          <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
             <HardwareSelectPopover
               type="light"
               items={lights}
@@ -592,7 +594,7 @@ export function VisionSystemDiagram({
         {/* Interactive Controller Element - positioned at bottom right, only show if controller is selected */}
         {hasController && (
           <foreignObject x="340" y="430" width="140" height="80">
-            <div className="w-full h-full">
+            <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
               <HardwareSelectPopover
                 type="controller"
                 items={controllers}
@@ -651,7 +653,7 @@ export function VisionSystemDiagram({
 
         {/* Annotations in SVG - moved further right */}
         <foreignObject x="500" y="20" width="290" height="720">
-          <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px', transform: 'translateZ(0)' }}>
             {/* Camera specs */}
             <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 28%)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
