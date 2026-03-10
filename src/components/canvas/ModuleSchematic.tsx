@@ -450,7 +450,7 @@ export function ModuleSchematic() {
           </div>
         </TabsContent>
 
-        <TabsContent value="lighting" className="flex-1 overflow-auto mt-0">
+        <TabsContent value="lighting" className="flex-1 overflow-hidden mt-0 data-[state=active]:flex data-[state=active]:flex-col">
           <LightingPhotosPanel
             moduleId={module.id}
             moduleName={module.name}
