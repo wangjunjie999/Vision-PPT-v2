@@ -523,7 +523,7 @@ export function VisionSystemDiagram({
 
         {/* Interactive Lens Element - embedded in SVG */}
         <foreignObject x="172" y="115" width="96" height="62">
-          <div className="w-full h-full">
+          <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
             <HardwareSelectPopover
               type="lens"
               items={lenses}
