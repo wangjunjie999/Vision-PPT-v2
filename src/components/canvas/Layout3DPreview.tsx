@@ -904,9 +904,11 @@ export const Layout3DPreview = memo(function Layout3DPreview({
         }}
       >
         <Suspense fallback={null}>
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[5, 8, 5]} intensity={0.8} />
+          <ambientLight intensity={0.4} />
+          <hemisphereLight args={['#b0c4de', '#2d2d2d', 0.5]} />
+          <directionalLight position={[5, 8, 5]} intensity={0.8} castShadow />
           <directionalLight position={[-3, 5, -3]} intensity={0.3} />
+          <pointLight position={[8, 10, 8]} intensity={0.6} distance={30} decay={2} />
 
           <Grid
             args={[20, 20]}
