@@ -497,8 +497,8 @@ export function VisionSystemDiagram({
               <div className={cn(
                 "relative w-full h-full cursor-pointer group"
               )}>
-                <svg width="90" height="85" viewBox="0 0 90 85" className="group-hover:drop-shadow-lg transition-all">
-                  <rect x="0" y="0" width="90" height="75" rx="6" fill="url(#cameraBody)" className="group-hover:brightness-110" />
+                <svg width="90" height="85" viewBox="0 0 90 85">
+                  <rect x="0" y="0" width="90" height="75" rx="6" fill="url(#cameraBody)" />
                   <rect x="10" y="5" width="25" height="8" rx="2" fill="hsl(270, 30%, 60%)" opacity="0.5" />
                   <circle cx="75" cy="12" r="4" fill="hsl(120, 70%, 50%)" />
                   <text x="45" y="50" textAnchor="middle" fill="white" style={{ fontSize: '14px', fontWeight: 600 }}>Cam1</text>
@@ -532,8 +532,8 @@ export function VisionSystemDiagram({
               <div className={cn(
                 "relative w-full h-full cursor-pointer group"
               )}>
-                <svg width="96" height="62" viewBox="0 0 96 62" className="group-hover:drop-shadow-lg transition-all">
-                  <rect x="8" y="0" width="80" height="50" rx="3" fill="url(#lensBody)" className="group-hover:brightness-110" />
+                <svg width="96" height="62" viewBox="0 0 96 62">
+                  <rect x="8" y="0" width="80" height="50" rx="3" fill="url(#lensBody)" />
                   <ellipse cx="48" cy="40" rx="25" ry="8" fill="url(#lensGlass)" />
                   <rect x="0" y="45" width="96" height="12" rx="2" fill="hsl(0, 0%, 20%)" />
                   <rect x="13" y="12" width="70" height="3" fill="hsl(30, 15%, 45%)" rx="1" />
@@ -567,8 +567,8 @@ export function VisionSystemDiagram({
               <div className={cn(
                 "relative w-full h-full cursor-pointer group"
               )}>
-                <svg width="140" height="40" viewBox="0 0 140 40" className="group-hover:drop-shadow-lg transition-all">
-                  <rect x="0" y="0" width="140" height="40" rx="6" fill="hsl(0, 0%, 45%)" className="group-hover:brightness-110" />
+                <svg width="140" height="40" viewBox="0 0 140 40">
+                  <rect x="0" y="0" width="140" height="40" rx="6" fill="hsl(0, 0%, 45%)" />
                   <rect x="5" y="5" width="130" height="30" rx="4" fill="hsl(0, 0%, 35%)" />
                   <rect x="40" y="8" width="60" height="24" rx="3" fill="hsl(0, 0%, 15%)" />
                   <rect x="10" y="12" width="25" height="16" fill="hsl(0, 75%, 50%)" rx="2" />
@@ -601,9 +601,9 @@ export function VisionSystemDiagram({
                 disabled={!interactive || !onControllerSelect}
               >
                 <div className="relative w-full h-full cursor-pointer group">
-                  <svg width="140" height="80" viewBox="0 0 140 80" className="group-hover:drop-shadow-lg transition-all">
+                  <svg width="140" height="80" viewBox="0 0 140 80">
                     {/* IPC Body - compact version */}
-                    <rect x="0" y="5" width="140" height="70" rx="3" fill="hsl(220, 15%, 25%)" className="group-hover:brightness-110" />
+                    <rect x="0" y="5" width="140" height="70" rx="3" fill="hsl(220, 15%, 25%)" />
                     <rect x="4" y="9" width="132" height="62" rx="2" fill="hsl(220, 15%, 20%)" />
                     
                     {/* Front panel */}
