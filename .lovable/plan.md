@@ -1,25 +1,44 @@
 
 
-# 3D 模式下保存按钮同步保存三视图
+# FOV 输入改为两个独立数值框
 
 ## 问题
 
-当前在 3D（等轴测）视图下点击保存按钮时，`handleSaveAll` 尝试从 SVG canvas 截图，但此时渲染的是 Three.js Canvas，SVG 元素不可见，导致三视图截图无法正确生成。
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-## 修复方案
+## 修改方案
 
-**文件：`src/components/canvas/DraggableLayoutCanvas.tsx`**
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-修改 `handleSaveAll` 函数（第636行），使其在 3D 模式下也能正确保存三视图：
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
+```
 
-1. **保存布局数据** — 与当前逻辑一致，先保存 objects 等数据到数据库
-2. **临时切换到 2D 视图截图** — 如果当前是 isometric 模式，依次将 `currentView` 切换为 front/side/top，等待 SVG 渲染完成后截图，截图完成后切回 isometric
-3. **上传截图** — 与现有逻辑一致
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-核心改动：
-- 在 `handleSaveAll` 开头记录 `originalView = currentView`
-- 截图循环前，如果 `originalView === 'isometric'`，先切到第一个标准视图并等待渲染
-- 截图循环中照常依次切换 front → side → top 截图
-- 全部完成后，恢复 `setCurrentView(originalView)`
-- 增加渲染等待时间（从200ms提升到400ms），确保从 3D 切换到 2D 后 SVG 完全渲染
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+
+```
+[宽度输入] × [高度输入]
+```
+
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
