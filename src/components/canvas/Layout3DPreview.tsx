@@ -394,7 +394,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
     }
 
     onUpdateObject(state.objectId, { posX: newPosX, posY: newPosY });
-  }, [onUpdateObject]);
+  }, [onUpdateObject, snapEnabled, SNAP_GRID]);
 
   const handleDragEnd = useCallback(() => {
     dragStateRef.current = {
