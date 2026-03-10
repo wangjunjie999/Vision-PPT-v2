@@ -17,7 +17,7 @@ const SCALE = 0.01;
 function MechanismBox({ obj }: { obj: LayoutObject }) {
   const w = (obj.width || 100) * SCALE;
   const h = (obj.height || 100) * SCALE;
-  const d = (obj.depth || 80) * SCALE;
+  const d = ((obj as any).depth || 80) * SCALE;
   const px = (obj.posX ?? 0) * SCALE;
   const py = (obj.posZ ?? 0) * SCALE; // Z in layout = Y in 3D (up)
   const pz = (obj.posY ?? 0) * SCALE;
