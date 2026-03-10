@@ -1,8 +1,8 @@
 import { memo, useRef, useCallback, useState, Suspense } from 'react';
-import { Canvas, useThree, ThreeEvent } from '@react-three/fiber';
-import { OrbitControls, Box, Cone, Line, Text, Grid } from '@react-three/drei';
+import { Canvas, useThree, useFrame, ThreeEvent } from '@react-three/fiber';
+import { OrbitControls, Box, Cone, Line, Text, Grid, Plane } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, X } from 'lucide-react';
+import { RotateCcw, X, Move, MousePointer } from 'lucide-react';
 import type { LayoutObject } from './ObjectPropertyPanel';
 import * as THREE from 'three';
 
@@ -11,43 +11,90 @@ interface Layout3DPreviewProps {
   productDimensions: { length: number; width: number; height: number };
   onSelectObject?: (id: string | null) => void;
   selectedObjectId?: string | null;
+  onUpdateObject?: (id: string, updates: Partial<LayoutObject>) => void;
 }
 
 const SCALE = 0.01;
+const INV_SCALE = 100; // 1 / SCALE
 
-function MechanismBox({ obj, selected, onSelect }: { obj: LayoutObject; selected: boolean; onSelect: (id: string) => void }) {
+// Shared drag state across components
+interface DragState {
+  isDragging: boolean;
+  objectId: string | null;
+  startPoint: THREE.Vector3 | null;
+  startPos: { posX: number; posY: number; posZ: number } | null;
+}
+
+function DraggableGroup({
+  children,
+  objectId,
+  position,
+  dragState,
+  onDragStart,
+  onClick,
+}: {
+  children: React.ReactNode;
+  objectId: string;
+  position: [number, number, number];
+  dragState: React.MutableRefObject<DragState>;
+  onDragStart: (id: string, point: THREE.Vector3) => void;
+  onClick: (id: string) => void;
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+
+  return (
+    <group
+      ref={groupRef}
+      position={position}
+      onPointerDown={(e: ThreeEvent<PointerEvent>) => {
+        e.stopPropagation();
+        // Only start drag with left button
+        if (e.button === 0) {
+          onDragStart(objectId, e.point);
+        }
+      }}
+      onClick={(e: ThreeEvent<MouseEvent>) => {
+        e.stopPropagation();
+        if (!dragState.current.isDragging) {
+          onClick(objectId);
+        }
+      }}
+    >
+      {children}
+    </group>
+  );
+}
+
+function MechanismBox({ obj, selected }: { obj: LayoutObject; selected: boolean }) {
   const w = (obj.width || 100) * SCALE;
   const h = (obj.height || 100) * SCALE;
   const d = ((obj as any).depth || 80) * SCALE;
-  const px = (obj.posX ?? 0) * SCALE;
-  const py = (obj.posZ ?? 0) * SCALE;
-  const pz = (obj.posY ?? 0) * SCALE;
   const isMounted = !!obj.mountedToMechanismId;
-
   const baseColor = isMounted ? '#16a34a' : '#f97316';
   const highlightColor = '#facc15';
 
   return (
-    <group position={[px, py + h / 2, pz]} onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); onSelect(obj.id); }}>
-      <Box args={[w, h, d]}>
-        <meshStandardMaterial
-          color={selected ? highlightColor : baseColor}
-          transparent
-          opacity={selected ? 0.9 : 0.75}
-          emissive={selected ? highlightColor : '#000000'}
-          emissiveIntensity={selected ? 0.3 : 0}
-        />
-      </Box>
-      <Box args={[w, h, d]}>
-        <meshBasicMaterial color={selected ? highlightColor : baseColor} wireframe />
-      </Box>
-      {selected && (
-        <Box args={[w + 0.06, h + 0.06, d + 0.06]}>
-          <meshBasicMaterial color={highlightColor} wireframe transparent opacity={0.5} />
+    <>
+      <group position={[0, h / 2, 0]}>
+        <Box args={[w, h, d]}>
+          <meshStandardMaterial
+            color={selected ? highlightColor : baseColor}
+            transparent opacity={selected ? 0.9 : 0.75}
+            emissive={selected ? highlightColor : '#000000'}
+            emissiveIntensity={selected ? 0.3 : 0}
+          />
         </Box>
-      )}
+        <Box args={[w, h, d]}>
+          <meshBasicMaterial color={selected ? highlightColor : baseColor} wireframe />
+        </Box>
+        {selected && (
+          <Box args={[w + 0.06, h + 0.06, d + 0.06]}>
+            <meshBasicMaterial color={highlightColor} wireframe transparent opacity={0.5} />
+          </Box>
+        )}
+      </group>
       <Text
-        position={[0, h / 2 + 0.15, 0]}
+        position={[0, (obj.height || 100) * SCALE + 0.15, 0]}
         fontSize={0.18}
         color="#fafafa"
         anchorX="center"
@@ -55,37 +102,38 @@ function MechanismBox({ obj, selected, onSelect }: { obj: LayoutObject; selected
       >
         {obj.name || '机构'}
       </Text>
-    </group>
+    </>
   );
 }
 
-function ProductBox({ dimensions, selected, onSelect }: { dimensions: { length: number; width: number; height: number }; selected: boolean; onSelect: () => void }) {
+function ProductBox({ dimensions, selected }: { dimensions: { length: number; width: number; height: number }; selected: boolean }) {
   const w = dimensions.length * SCALE;
   const h = dimensions.height * SCALE;
   const d = dimensions.width * SCALE;
   const highlightColor = '#facc15';
 
   return (
-    <group position={[0, h / 2, 0]} onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); onSelect(); }}>
-      <Box args={[w, h, d]}>
-        <meshStandardMaterial
-          color={selected ? highlightColor : '#06b6d4'}
-          transparent
-          opacity={selected ? 0.8 : 0.5}
-          emissive={selected ? highlightColor : '#000000'}
-          emissiveIntensity={selected ? 0.3 : 0}
-        />
-      </Box>
-      <Box args={[w, h, d]}>
-        <meshBasicMaterial color={selected ? highlightColor : '#06b6d4'} wireframe />
-      </Box>
-      {selected && (
-        <Box args={[w + 0.06, h + 0.06, d + 0.06]}>
-          <meshBasicMaterial color={highlightColor} wireframe transparent opacity={0.5} />
+    <>
+      <group position={[0, h / 2, 0]}>
+        <Box args={[w, h, d]}>
+          <meshStandardMaterial
+            color={selected ? highlightColor : '#06b6d4'}
+            transparent opacity={selected ? 0.8 : 0.5}
+            emissive={selected ? highlightColor : '#000000'}
+            emissiveIntensity={selected ? 0.3 : 0}
+          />
         </Box>
-      )}
+        <Box args={[w, h, d]}>
+          <meshBasicMaterial color={selected ? highlightColor : '#06b6d4'} wireframe />
+        </Box>
+        {selected && (
+          <Box args={[w + 0.06, h + 0.06, d + 0.06]}>
+            <meshBasicMaterial color={highlightColor} wireframe transparent opacity={0.5} />
+          </Box>
+        )}
+      </group>
       <Text
-        position={[0, h / 2 + 0.15, 0]}
+        position={[0, h + 0.15, 0]}
         fontSize={0.18}
         color="#fafafa"
         anchorX="center"
@@ -93,21 +141,18 @@ function ProductBox({ dimensions, selected, onSelect }: { dimensions: { length: 
       >
         产品
       </Text>
-    </group>
+    </>
   );
 }
 
-function CameraObject({ obj, selected, onSelect }: { obj: LayoutObject; selected: boolean; onSelect: (id: string) => void }) {
-  const px = (obj.posX ?? 0) * SCALE;
-  const py = (obj.posZ ?? 0) * SCALE;
-  const pz = (obj.posY ?? 0) * SCALE;
+function CameraObject({ obj, selected }: { obj: LayoutObject; selected: boolean }) {
   const isMounted = !!obj.mountedToMechanismId;
   const baseColor = isMounted ? '#16a34a' : '#3b82f6';
   const baseDark = isMounted ? '#15803d' : '#1d4ed8';
   const highlightColor = '#facc15';
 
   return (
-    <group position={[px, py, pz]} onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); onSelect(obj.id); }}>
+    <>
       <Box args={[0.3, 0.25, 0.4]}>
         <meshStandardMaterial
           color={selected ? highlightColor : baseColor}
@@ -138,13 +183,12 @@ function CameraObject({ obj, selected, onSelect }: { obj: LayoutObject; selected
       >
         {obj.name || 'CAM'}
       </Text>
-    </group>
+    </>
   );
 }
 
 function MountingLines({ objects }: { objects: LayoutObject[] }) {
   const lines: { start: [number, number, number]; end: [number, number, number] }[] = [];
-
   objects.forEach(obj => {
     if (obj.mountedToMechanismId) {
       const parent = objects.find(o => o.id === obj.mountedToMechanismId);
@@ -156,7 +200,6 @@ function MountingLines({ objects }: { objects: LayoutObject[] }) {
       }
     }
   });
-
   return (
     <>
       {lines.map((line, i) => (
@@ -173,7 +216,13 @@ const VIEW_PRESETS = [
   { label: '等轴测', icon: '🧊', position: [7, 6, 7] as [number, number, number], target: [0, 1, 0] as [number, number, number] },
 ] as const;
 
-function CameraController({ cameraRef }: { cameraRef: React.MutableRefObject<{ position: [number, number, number]; target: [number, number, number] } | null> }) {
+function CameraController({
+  cameraRef,
+  dragMode,
+}: {
+  cameraRef: React.MutableRefObject<{ position: [number, number, number]; target: [number, number, number] } | null>;
+  dragMode: boolean;
+}) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
 
@@ -188,15 +237,58 @@ function CameraController({ cameraRef }: { cameraRef: React.MutableRefObject<{ p
   }
 
   return (
-    <OrbitControls ref={controlsRef} makeDefault enableDamping dampingFactor={0.1} minDistance={2} maxDistance={30} />
+    <OrbitControls
+      ref={controlsRef}
+      makeDefault
+      enableDamping
+      dampingFactor={0.1}
+      minDistance={2}
+      maxDistance={30}
+      enabled={!dragMode}
+    />
+  );
+}
+
+/** Invisible ground plane for raycasting during drag */
+function DragPlane({
+  dragStateRef,
+  onDragMove,
+  onDragEnd,
+}: {
+  dragStateRef: React.MutableRefObject<DragState>;
+  onDragMove: (point: THREE.Vector3) => void;
+  onDragEnd: () => void;
+}) {
+  const planeRef = useRef<THREE.Mesh>(null);
+
+  return (
+    <Plane
+      ref={planeRef}
+      args={[200, 200]}
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, 0, 0]}
+      visible={false}
+      onPointerMove={(e: ThreeEvent<PointerEvent>) => {
+        if (dragStateRef.current.isDragging) {
+          e.stopPropagation();
+          onDragMove(e.point);
+        }
+      }}
+      onPointerUp={(e: ThreeEvent<PointerEvent>) => {
+        if (dragStateRef.current.isDragging) {
+          e.stopPropagation();
+          onDragEnd();
+        }
+      }}
+    >
+      <meshBasicMaterial transparent opacity={0} />
+    </Plane>
   );
 }
 
 function SelectedInfoPanel({ obj, onDeselect }: { obj: LayoutObject | null; onDeselect: () => void }) {
   if (!obj) return null;
-
   const typeLabel = obj.type === 'camera' ? '相机' : obj.type === 'mechanism' ? '机构' : '产品';
-
   return (
     <div className="absolute top-3 left-3 bg-slate-800/90 backdrop-blur-sm rounded-lg border border-yellow-500/50 p-3 z-10 min-w-[160px]">
       <div className="flex items-center justify-between gap-2 mb-2">
@@ -224,10 +316,20 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   productDimensions,
   onSelectObject,
   selectedObjectId,
+  onUpdateObject,
 }: Layout3DPreviewProps) {
   const cameraActionRef = useRef<{ position: [number, number, number]; target: [number, number, number] } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
+  const [dragMode, setDragMode] = useState(false);
+  const dragStateRef = useRef<DragState>({
+    isDragging: false,
+    objectId: null,
+    startPoint: null,
+    startPos: null,
+  });
+  // Track if a real drag happened (moved > threshold)
+  const dragMovedRef = useRef(false);
 
   const activeSelectedId = selectedObjectId !== undefined ? selectedObjectId : localSelectedId;
 
@@ -249,7 +351,55 @@ export const Layout3DPreview = memo(function Layout3DPreview({
     }
   }, []);
 
-  const selectedObj = activeSelectedId ? objects.find(o => o.id === activeSelectedId) || null : null;
+  // Drag handlers
+  const handleDragStart = useCallback((id: string, point: THREE.Vector3) => {
+    if (!dragMode || !onUpdateObject) return;
+    const obj = objects.find(o => o.id === id);
+    if (!obj || obj.locked) return;
+
+    dragStateRef.current = {
+      isDragging: true,
+      objectId: id,
+      startPoint: point.clone(),
+      startPos: { posX: obj.posX ?? 0, posY: obj.posY ?? 0, posZ: obj.posZ ?? 0 },
+    };
+    dragMovedRef.current = false;
+
+    // Select the object being dragged
+    setLocalSelectedId(id);
+    onSelectObject?.(id);
+  }, [dragMode, onUpdateObject, objects, onSelectObject]);
+
+  const handleDragMove = useCallback((point: THREE.Vector3) => {
+    const state = dragStateRef.current;
+    if (!state.isDragging || !state.objectId || !state.startPoint || !state.startPos || !onUpdateObject) return;
+
+    const dx = point.x - state.startPoint.x;
+    const dz = point.z - state.startPoint.z;
+
+    if (Math.abs(dx) > 0.02 || Math.abs(dz) > 0.02) {
+      dragMovedRef.current = true;
+    }
+
+    // Convert 3D delta back to mm: x maps to posX, z maps to posY
+    const newPosX = Math.round(state.startPos.posX + dx * INV_SCALE);
+    const newPosY = Math.round(state.startPos.posY + dz * INV_SCALE);
+
+    onUpdateObject(state.objectId, { posX: newPosX, posY: newPosY });
+  }, [onUpdateObject]);
+
+  const handleDragEnd = useCallback(() => {
+    dragStateRef.current = {
+      isDragging: false,
+      objectId: null,
+      startPoint: null,
+      startPos: null,
+    };
+  }, []);
+
+  const selectedObj = activeSelectedId
+    ? (activeSelectedId === '__product__' ? null : objects.find(o => o.id === activeSelectedId) || null)
+    : null;
 
   const mechanisms = objects.filter(o => o.type === 'mechanism');
   const cameras = objects.filter(o => o.type === 'camera');
@@ -261,7 +411,11 @@ export const Layout3DPreview = memo(function Layout3DPreview({
         camera={{ position: [7, 6, 7], fov: 50, near: 0.1, far: 100 }}
         gl={{ antialias: true, alpha: false }}
         onCreated={({ gl }) => { gl.setClearColor('#0f172a'); }}
-        onPointerMissed={() => handleSelect(null)}
+        onPointerMissed={() => {
+          if (!dragStateRef.current.isDragging) {
+            handleSelect(null);
+          }
+        }}
       >
         <Suspense fallback={null}>
           <ambientLight intensity={0.5} />
@@ -282,27 +436,92 @@ export const Layout3DPreview = memo(function Layout3DPreview({
 
           <axesHelper args={[3]} />
 
-          <ProductBox
-            dimensions={productDimensions}
-            selected={activeSelectedId === '__product__'}
-            onSelect={() => handleSelect('__product__')}
+          {/* Invisible drag plane */}
+          <DragPlane
+            dragStateRef={dragStateRef}
+            onDragMove={handleDragMove}
+            onDragEnd={handleDragEnd}
           />
 
+          {/* Product (not draggable, always at origin) */}
+          <group
+            position={[0, 0, 0]}
+            onClick={(e: ThreeEvent<MouseEvent>) => {
+              e.stopPropagation();
+              if (!dragStateRef.current.isDragging) handleSelect('__product__');
+            }}
+          >
+            <ProductBox
+              dimensions={productDimensions}
+              selected={activeSelectedId === '__product__'}
+            />
+          </group>
+
+          {/* Mechanisms */}
           {mechanisms.map(obj => (
-            <MechanismBox key={obj.id} obj={obj} selected={activeSelectedId === obj.id} onSelect={handleSelect} />
+            <DraggableGroup
+              key={obj.id}
+              objectId={obj.id}
+              position={[(obj.posX ?? 0) * SCALE, (obj.posZ ?? 0) * SCALE, (obj.posY ?? 0) * SCALE]}
+              dragState={dragStateRef}
+              onDragStart={handleDragStart}
+              onClick={(id) => { if (!dragMovedRef.current) handleSelect(id); }}
+            >
+              <MechanismBox obj={obj} selected={activeSelectedId === obj.id} />
+            </DraggableGroup>
           ))}
 
+          {/* Cameras */}
           {cameras.map(obj => (
-            <CameraObject key={obj.id} obj={obj} selected={activeSelectedId === obj.id} onSelect={handleSelect} />
+            <DraggableGroup
+              key={obj.id}
+              objectId={obj.id}
+              position={[(obj.posX ?? 0) * SCALE, (obj.posZ ?? 0) * SCALE, (obj.posY ?? 0) * SCALE]}
+              dragState={dragStateRef}
+              onDragStart={handleDragStart}
+              onClick={(id) => { if (!dragMovedRef.current) handleSelect(id); }}
+            >
+              <CameraObject obj={obj} selected={activeSelectedId === obj.id} />
+            </DraggableGroup>
           ))}
 
           <MountingLines objects={objects} />
-          <CameraController cameraRef={cameraActionRef} />
+          <CameraController cameraRef={cameraActionRef} dragMode={dragStateRef.current.isDragging} />
         </Suspense>
       </Canvas>
 
       {/* Selected object info */}
       <SelectedInfoPanel obj={selectedObj} onDeselect={handleDeselect} />
+
+      {/* Drag mode toggle */}
+      {onUpdateObject && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
+          <div className="flex bg-slate-800/90 backdrop-blur-sm rounded-lg border border-slate-600/50 overflow-hidden">
+            <button
+              onClick={() => setDragMode(false)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
+                !dragMode
+                  ? 'bg-blue-600 text-white'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <MousePointer className="h-3.5 w-3.5" />
+              旋转视角
+            </button>
+            <button
+              onClick={() => setDragMode(true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
+                dragMode
+                  ? 'bg-orange-600 text-white'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Move className="h-3.5 w-3.5" />
+              拖拽移动
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* View presets */}
       <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-10">
@@ -334,26 +553,18 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       <div className="absolute bottom-3 left-3 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-600/50 p-2.5 z-10">
         <div className="text-[10px] font-semibold text-slate-400 mb-1.5">图例</div>
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs text-slate-300">
-            <span className="w-3 h-3 rounded-sm bg-cyan-500/70" />产品
-          </div>
-          <div className="flex items-center gap-2 text-xs text-slate-300">
-            <span className="w-3 h-3 rounded-sm bg-orange-500/70" />机构
-          </div>
-          <div className="flex items-center gap-2 text-xs text-slate-300">
-            <span className="w-3 h-3 rounded-sm bg-blue-500/70" />相机
-          </div>
-          <div className="flex items-center gap-2 text-xs text-slate-300">
-            <span className="w-3 h-3 rounded-sm bg-green-500/70" />已挂载
-          </div>
-          <div className="flex items-center gap-2 text-xs text-slate-300">
-            <span className="w-3 h-3 rounded-sm bg-yellow-400/70" />选中
-          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-300"><span className="w-3 h-3 rounded-sm bg-cyan-500/70" />产品</div>
+          <div className="flex items-center gap-2 text-xs text-slate-300"><span className="w-3 h-3 rounded-sm bg-orange-500/70" />机构</div>
+          <div className="flex items-center gap-2 text-xs text-slate-300"><span className="w-3 h-3 rounded-sm bg-blue-500/70" />相机</div>
+          <div className="flex items-center gap-2 text-xs text-slate-300"><span className="w-3 h-3 rounded-sm bg-green-500/70" />已挂载</div>
+          <div className="flex items-center gap-2 text-xs text-slate-300"><span className="w-3 h-3 rounded-sm bg-yellow-400/70" />选中</div>
         </div>
       </div>
 
       <div className="absolute bottom-3 right-3 text-[10px] text-slate-500 bg-slate-800/60 backdrop-blur-sm rounded px-2 py-1 z-10">
-        🖱 左键旋转 · 右键平移 · 滚轮缩放 · 点击选中
+        {dragMode
+          ? '🖐 拖拽对象移动 · 点击切换到旋转模式'
+          : '🖱 左键旋转 · 右键平移 · 滚轮缩放 · 点击选中'}
       </div>
     </div>
   );
