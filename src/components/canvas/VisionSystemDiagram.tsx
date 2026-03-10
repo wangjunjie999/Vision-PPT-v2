@@ -601,9 +601,9 @@ export function VisionSystemDiagram({
                 disabled={!interactive || !onControllerSelect}
               >
                 <div className="relative w-full h-full cursor-pointer group">
-                  <svg width="140" height="80" viewBox="0 0 140 80" className="group-hover:drop-shadow-lg transition-all">
+                  <svg width="140" height="80" viewBox="0 0 140 80">
                     {/* IPC Body - compact version */}
-                    <rect x="0" y="5" width="140" height="70" rx="3" fill="hsl(220, 15%, 25%)" className="group-hover:brightness-110" />
+                    <rect x="0" y="5" width="140" height="70" rx="3" fill="hsl(220, 15%, 25%)" />
                     <rect x="4" y="9" width="132" height="62" rx="2" fill="hsl(220, 15%, 20%)" />
                     
                     {/* Front panel */}
