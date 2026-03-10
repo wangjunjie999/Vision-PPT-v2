@@ -65,16 +65,23 @@ function DraggableGroup({
   );
 }
 
-// Helper: standard material props for mechanisms
-function mechMat(color: string, selected: boolean) {
+// Helper: standard material props for mechanisms (metallic)
+function mechMat(color: string, selected: boolean, metalness = 0.6, roughness = 0.3) {
   const highlightColor = '#facc15';
   return {
     color: selected ? highlightColor : color,
     transparent: true,
-    opacity: selected ? 0.9 : 0.75,
+    opacity: selected ? 0.92 : 0.85,
     emissive: selected ? highlightColor : '#000000',
     emissiveIntensity: selected ? 0.3 : 0,
+    metalness,
+    roughness,
   } as const;
+}
+
+// Rubber/plastic material
+function rubberMat(color: string, selected: boolean) {
+  return mechMat(color, selected, 0.05, 0.8);
 }
 
 function RobotArmModel({ w, h, d, selected }: { w: number; h: number; d: number; selected: boolean }) {
@@ -84,43 +91,67 @@ function RobotArmModel({ w, h, d, selected }: { w: number; h: number; d: number;
   const arm1L = h * 0.38;
   const arm2L = h * 0.30;
   const waistH = h * 0.12;
+  const ribCount = 6;
 
   return (
     <group position={[0, 0, 0]}>
       {/* 底座 - 大扁圆柱 */}
       <Cylinder args={[baseR, baseR * 1.1, h * 0.08, 24]} position={[0, h * 0.04, 0]}>
-        <meshStandardMaterial {...mechMat('#3a3a3a', selected)} />
+        <meshStandardMaterial {...mechMat('#3a3a3a', selected, 0.7, 0.25)} />
       </Cylinder>
+      {/* 底座加强筋 */}
+      {Array.from({ length: ribCount }).map((_, i) => {
+        const angle = (i / ribCount) * Math.PI * 2;
+        return (
+          <Box key={`rib-${i}`} args={[baseR * 0.08, h * 0.06, baseR * 0.5]}
+            position={[Math.cos(angle) * baseR * 0.75, h * 0.05, Math.sin(angle) * baseR * 0.75]}
+            rotation={[0, -angle, 0]}>
+            <meshStandardMaterial {...mechMat('#2a2a2a', selected, 0.7, 0.3)} />
+          </Box>
+        );
+      })}
       {/* 腰部转台 */}
       <Cylinder args={[baseR * 0.6, baseR * 0.65, waistH, 20]} position={[0, h * 0.08 + waistH / 2, 0]}>
-        <meshStandardMaterial {...mechMat('#4a4a4a', selected)} />
+        <meshStandardMaterial {...mechMat('#4a4a4a', selected, 0.6, 0.35)} />
       </Cylinder>
       {/* 肩关节 (关节1) */}
       <Sphere args={[jointR, 16, 16]} position={[0, h * 0.08 + waistH, 0]}>
-        <meshStandardMaterial {...mechMat('#ea580c', selected)} />
+        <meshStandardMaterial {...mechMat('#ea580c', selected, 0.5, 0.4)} />
       </Sphere>
-      {/* 大臂 - 向后倾斜约30° */}
+      {/* 大臂 */}
       <group position={[0, h * 0.08 + waistH, 0]} rotation={[0, 0, 0.5]}>
         <Cylinder args={[armR, armR * 0.9, arm1L, 12]} position={[0, arm1L / 2, 0]}>
-          <meshStandardMaterial {...mechMat('#ea580c', selected)} />
+          <meshStandardMaterial {...mechMat('#ea580c', selected, 0.5, 0.4)} />
+        </Cylinder>
+        {/* 线缆管道沿大臂 */}
+        <Cylinder args={[armR * 0.15, armR * 0.15, arm1L * 0.85, 6]} position={[armR * 1.2, arm1L / 2, 0]}>
+          <meshStandardMaterial {...rubberMat('#1a1a1a', selected)} />
         </Cylinder>
         {/* 肘关节 (关节2) */}
         <Sphere args={[jointR * 0.85, 16, 16]} position={[0, arm1L, 0]}>
-          <meshStandardMaterial {...mechMat('#6b7280', selected)} />
+          <meshStandardMaterial {...mechMat('#6b7280', selected, 0.65, 0.25)} />
         </Sphere>
-        {/* 小臂 - 向前弯折 */}
+        {/* 小臂 */}
         <group position={[0, arm1L, 0]} rotation={[0, 0, -1.2]}>
           <Cylinder args={[armR * 0.85, armR * 0.75, arm2L, 12]} position={[0, arm2L / 2, 0]}>
-            <meshStandardMaterial {...mechMat('#f97316', selected)} />
+            <meshStandardMaterial {...mechMat('#f97316', selected, 0.5, 0.4)} />
+          </Cylinder>
+          {/* 线缆管道沿小臂 */}
+          <Cylinder args={[armR * 0.12, armR * 0.12, arm2L * 0.8, 6]} position={[armR * 1.0, arm2L / 2, 0]}>
+            <meshStandardMaterial {...rubberMat('#1a1a1a', selected)} />
           </Cylinder>
           {/* 腕关节 (关节3) */}
           <Sphere args={[jointR * 0.65, 14, 14]} position={[0, arm2L, 0]}>
-            <meshStandardMaterial {...mechMat('#6b7280', selected)} />
+            <meshStandardMaterial {...mechMat('#6b7280', selected, 0.65, 0.25)} />
           </Sphere>
-          {/* 末端执行器 - 法兰盘 */}
-          <Box args={[w * 0.12, h * 0.06, d * 0.12]} position={[0, arm2L + h * 0.04, 0]}>
-            <meshStandardMaterial {...mechMat('#facc15', selected)} />
-          </Box>
+          {/* 腕关节4 - 小旋转关节 */}
+          <Cylinder args={[jointR * 0.35, jointR * 0.35, h * 0.04, 10]} position={[0, arm2L + h * 0.03, 0]}>
+            <meshStandardMaterial {...mechMat('#4b5563', selected, 0.6, 0.3)} />
+          </Cylinder>
+          {/* 末端法兰盘 */}
+          <Cylinder args={[w * 0.08, w * 0.08, h * 0.03, 16]} position={[0, arm2L + h * 0.06, 0]}>
+            <meshStandardMaterial {...mechMat('#facc15', selected, 0.5, 0.35)} />
+          </Cylinder>
         </group>
       </group>
     </group>
@@ -129,32 +160,50 @@ function RobotArmModel({ w, h, d, selected }: { w: number; h: number; d: number;
 
 function ConveyorModel({ w, h, d, selected }: { w: number; h: number; d: number; selected: boolean }) {
   const rollerR = Math.min(h, d) * 0.25;
+  const rollerCount = 5;
   return (
     <group>
       {/* Belt surface */}
-      <Box args={[w, h * 0.3, d]} position={[0, h * 0.5, 0]}>
-        <meshStandardMaterial {...mechMat('#6b7280', selected)} />
+      <Box args={[w, h * 0.28, d]} position={[0, h * 0.5, 0]}>
+        <meshStandardMaterial {...rubberMat('#4b5563', selected)} />
       </Box>
-      {/* Left roller */}
-      <Cylinder args={[rollerR, rollerR, d * 0.9, 12]} rotation={[Math.PI / 2, 0, 0]} position={[-w * 0.42, h * 0.35, 0]}>
-        <meshStandardMaterial {...mechMat('#22c55e', selected)} />
-      </Cylinder>
-      {/* Right roller */}
-      <Cylinder args={[rollerR, rollerR, d * 0.9, 12]} rotation={[Math.PI / 2, 0, 0]} position={[w * 0.42, h * 0.35, 0]}>
-        <meshStandardMaterial {...mechMat('#22c55e', selected)} />
-      </Cylinder>
-      {/* Legs */}
-      <Box args={[w * 0.06, h * 0.35, d * 0.06]} position={[-w * 0.4, h * 0.175, -d * 0.4]}>
-        <meshStandardMaterial {...mechMat('#4a4a4a', selected)} />
+      {/* Belt texture stripes */}
+      {Array.from({ length: 8 }).map((_, i) => (
+        <Box key={`stripe-${i}`} args={[w * 0.01, h * 0.29, d * 0.98]}
+          position={[-w * 0.4 + (i / 7) * w * 0.8, h * 0.5, 0]}>
+          <meshStandardMaterial {...rubberMat('#374151', selected)} />
+        </Box>
+      ))}
+      {/* Rollers distributed evenly */}
+      {Array.from({ length: rollerCount }).map((_, i) => {
+        const xPos = -w * 0.42 + (i / (rollerCount - 1)) * w * 0.84;
+        return (
+          <Cylinder key={`roller-${i}`} args={[rollerR, rollerR, d * 0.92, 12]}
+            rotation={[Math.PI / 2, 0, 0]} position={[xPos, h * 0.35, 0]}>
+            <meshStandardMaterial {...mechMat('#22c55e', selected, 0.5, 0.35)} />
+          </Cylinder>
+        );
+      })}
+      {/* Side guard rails */}
+      <Box args={[w * 1.02, h * 0.15, d * 0.04]} position={[0, h * 0.58, -d * 0.52]}>
+        <meshStandardMaterial {...mechMat('#c0c0c0', selected, 0.6, 0.3)} />
       </Box>
-      <Box args={[w * 0.06, h * 0.35, d * 0.06]} position={[w * 0.4, h * 0.175, -d * 0.4]}>
-        <meshStandardMaterial {...mechMat('#4a4a4a', selected)} />
+      <Box args={[w * 1.02, h * 0.15, d * 0.04]} position={[0, h * 0.58, d * 0.52]}>
+        <meshStandardMaterial {...mechMat('#c0c0c0', selected, 0.6, 0.3)} />
       </Box>
-      <Box args={[w * 0.06, h * 0.35, d * 0.06]} position={[-w * 0.4, h * 0.175, d * 0.4]}>
-        <meshStandardMaterial {...mechMat('#4a4a4a', selected)} />
+      {/* 4 Legs */}
+      {[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sz], i) => (
+        <Box key={`leg-${i}`} args={[w * 0.06, h * 0.35, d * 0.06]}
+          position={[sx * w * 0.4, h * 0.175, sz * d * 0.4]}>
+          <meshStandardMaterial {...mechMat('#4a4a4a', selected, 0.6, 0.35)} />
+        </Box>
+      ))}
+      {/* Cross beams between legs */}
+      <Box args={[w * 0.86, h * 0.04, d * 0.04]} position={[0, h * 0.08, -d * 0.4]}>
+        <meshStandardMaterial {...mechMat('#4a4a4a', selected, 0.6, 0.35)} />
       </Box>
-      <Box args={[w * 0.06, h * 0.35, d * 0.06]} position={[w * 0.4, h * 0.175, d * 0.4]}>
-        <meshStandardMaterial {...mechMat('#4a4a4a', selected)} />
+      <Box args={[w * 0.86, h * 0.04, d * 0.04]} position={[0, h * 0.08, d * 0.4]}>
+        <meshStandardMaterial {...mechMat('#4a4a4a', selected, 0.6, 0.35)} />
       </Box>
     </group>
   );
@@ -164,12 +213,35 @@ function CylinderModel({ w, h, d, selected }: { w: number; h: number; d: number;
   const r = Math.min(w, d) * 0.35;
   return (
     <group>
-      <Cylinder args={[r, r, h, 16]} position={[0, h * 0.5, 0]}>
-        <meshStandardMaterial {...mechMat('#9ca3af', selected)} metalness={0.4} roughness={0.3} />
+      {/* Main cylinder body */}
+      <Cylinder args={[r, r, h, 20]} position={[0, h * 0.5, 0]}>
+        <meshStandardMaterial {...mechMat('#9ca3af', selected, 0.55, 0.3)} />
+      </Cylinder>
+      {/* End cap top */}
+      <Cylinder args={[r * 1.08, r * 1.08, h * 0.06, 20]} position={[0, h * 0.97, 0]}>
+        <meshStandardMaterial {...mechMat('#6b7280', selected, 0.65, 0.25)} />
+      </Cylinder>
+      {/* End cap bottom */}
+      <Cylinder args={[r * 1.08, r * 1.08, h * 0.06, 20]} position={[0, h * 0.03, 0]}>
+        <meshStandardMaterial {...mechMat('#6b7280', selected, 0.65, 0.25)} />
       </Cylinder>
       {/* Piston rod */}
-      <Cylinder args={[r * 0.25, r * 0.25, h * 0.4, 8]} position={[0, h * 0.9, 0]}>
-        <meshStandardMaterial {...mechMat('#d1d5db', selected)} metalness={0.6} roughness={0.2} />
+      <Cylinder args={[r * 0.22, r * 0.22, h * 0.4, 10]} position={[0, h * 0.9, 0]}>
+        <meshStandardMaterial {...mechMat('#e5e7eb', selected, 0.75, 0.15)} />
+      </Cylinder>
+      {/* Mounting ears (left & right) */}
+      <Cylinder args={[r * 0.2, r * 0.2, d * 0.15, 10]} rotation={[Math.PI / 2, 0, 0]} position={[-r * 0.05, h * 0.03, r * 1.2]}>
+        <meshStandardMaterial {...mechMat('#6b7280', selected, 0.6, 0.3)} />
+      </Cylinder>
+      <Cylinder args={[r * 0.2, r * 0.2, d * 0.15, 10]} rotation={[Math.PI / 2, 0, 0]} position={[-r * 0.05, h * 0.03, -r * 1.2]}>
+        <meshStandardMaterial {...mechMat('#6b7280', selected, 0.6, 0.3)} />
+      </Cylinder>
+      {/* Pneumatic port fittings */}
+      <Cylinder args={[r * 0.1, r * 0.08, h * 0.08, 8]} position={[r * 0.8, h * 0.8, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <meshStandardMaterial {...mechMat('#d4a017', selected, 0.7, 0.2)} />
+      </Cylinder>
+      <Cylinder args={[r * 0.1, r * 0.08, h * 0.08, 8]} position={[r * 0.8, h * 0.2, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <meshStandardMaterial {...mechMat('#d4a017', selected, 0.7, 0.2)} />
       </Cylinder>
     </group>
   );
@@ -179,18 +251,41 @@ function GripperModel({ w, h, d, selected }: { w: number; h: number; d: number; 
   const jawW = w * 0.15;
   return (
     <group>
+      {/* Mounting flange (top) */}
+      <Cylinder args={[w * 0.18, w * 0.18, h * 0.06, 16]} position={[0, h * 0.82, 0]}>
+        <meshStandardMaterial {...mechMat('#c0c0c0', selected, 0.6, 0.3)} />
+      </Cylinder>
       {/* Center body */}
       <Box args={[w * 0.4, h * 0.5, d * 0.6]} position={[0, h * 0.5, 0]}>
-        <meshStandardMaterial {...mechMat('#4b5563', selected)} />
+        <meshStandardMaterial {...mechMat('#4b5563', selected, 0.55, 0.35)} />
+      </Box>
+      {/* Guide rail slots */}
+      <Box args={[w * 0.75, h * 0.04, d * 0.08]} position={[0, h * 0.4, d * 0.2]}>
+        <meshStandardMaterial {...mechMat('#374151', selected, 0.6, 0.3)} />
+      </Box>
+      <Box args={[w * 0.75, h * 0.04, d * 0.08]} position={[0, h * 0.4, -d * 0.2]}>
+        <meshStandardMaterial {...mechMat('#374151', selected, 0.6, 0.3)} />
       </Box>
       {/* Left jaw */}
-      <Box args={[jawW, h * 0.7, d * 0.2]} position={[-w * 0.35, h * 0.35, 0]}>
-        <meshStandardMaterial {...mechMat('#6b7280', selected)} />
+      <Box args={[jawW, h * 0.65, d * 0.2]} position={[-w * 0.35, h * 0.35, 0]}>
+        <meshStandardMaterial {...mechMat('#6b7280', selected, 0.55, 0.35)} />
       </Box>
+      {/* Left jaw fingertip (cone) */}
+      <Cone args={[jawW * 0.5, h * 0.12, 8]} position={[-w * 0.35, h * 0.02, 0]} rotation={[0, 0, 0]}>
+        <meshStandardMaterial {...mechMat('#9ca3af', selected, 0.6, 0.25)} />
+      </Cone>
       {/* Right jaw */}
-      <Box args={[jawW, h * 0.7, d * 0.2]} position={[w * 0.35, h * 0.35, 0]}>
-        <meshStandardMaterial {...mechMat('#6b7280', selected)} />
+      <Box args={[jawW, h * 0.65, d * 0.2]} position={[w * 0.35, h * 0.35, 0]}>
+        <meshStandardMaterial {...mechMat('#6b7280', selected, 0.55, 0.35)} />
       </Box>
+      {/* Right jaw fingertip (cone) */}
+      <Cone args={[jawW * 0.5, h * 0.12, 8]} position={[w * 0.35, h * 0.02, 0]} rotation={[0, 0, 0]}>
+        <meshStandardMaterial {...mechMat('#9ca3af', selected, 0.6, 0.25)} />
+      </Cone>
+      {/* Pneumatic port */}
+      <Cylinder args={[w * 0.04, w * 0.03, h * 0.08, 6]} position={[w * 0.22, h * 0.72, d * 0.32]} rotation={[Math.PI / 2, 0, 0]}>
+        <meshStandardMaterial {...mechMat('#d4a017', selected, 0.7, 0.2)} />
+      </Cylinder>
     </group>
   );
 }
@@ -200,32 +295,90 @@ function TurntableModel({ w, h, d, selected }: { w: number; h: number; d: number
   return (
     <group>
       {/* Base */}
-      <Cylinder args={[r * 0.8, r, h * 0.4, 20]} position={[0, h * 0.2, 0]}>
-        <meshStandardMaterial {...mechMat('#1e3a5f', selected)} />
+      <Cylinder args={[r * 0.8, r, h * 0.4, 24]} position={[0, h * 0.2, 0]}>
+        <meshStandardMaterial {...mechMat('#1e3a5f', selected, 0.55, 0.35)} />
+      </Cylinder>
+      {/* Mounting holes on base (4) */}
+      {[0, 1, 2, 3].map(i => {
+        const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+        return (
+          <Cylinder key={`mount-${i}`} args={[r * 0.06, r * 0.06, h * 0.02, 8]}
+            position={[Math.cos(angle) * r * 0.88, h * 0.01, Math.sin(angle) * r * 0.88]}>
+            <meshStandardMaterial {...mechMat('#0f172a', selected, 0.3, 0.5)} />
+          </Cylinder>
+        );
+      })}
+      {/* Bearing ring */}
+      <Cylinder args={[r * 0.55, r * 0.55, h * 0.04, 24]} position={[0, h * 0.4, 0]}>
+        <meshStandardMaterial {...mechMat('#94a3b8', selected, 0.7, 0.2)} />
+      </Cylinder>
+      <Cylinder args={[r * 0.45, r * 0.45, h * 0.05, 24]} position={[0, h * 0.4, 0]}>
+        <meshStandardMaterial {...mechMat('#64748b', selected, 0.7, 0.2)} />
       </Cylinder>
       {/* Top disc */}
-      <Cylinder args={[r, r, h * 0.08, 20]} position={[0, h * 0.44, 0]}>
-        <meshStandardMaterial {...mechMat('#2563eb', selected)} />
+      <Cylinder args={[r, r, h * 0.08, 24]} position={[0, h * 0.46, 0]}>
+        <meshStandardMaterial {...mechMat('#2563eb', selected, 0.5, 0.35)} />
       </Cylinder>
+      {/* Positioning pins on top */}
+      {[0, 1, 2].map(i => {
+        const angle = (i / 3) * Math.PI * 2;
+        return (
+          <Cylinder key={`pin-${i}`} args={[r * 0.04, r * 0.04, h * 0.08, 8]}
+            position={[Math.cos(angle) * r * 0.75, h * 0.54, Math.sin(angle) * r * 0.75]}>
+            <meshStandardMaterial {...mechMat('#e5e7eb', selected, 0.7, 0.2)} />
+          </Cylinder>
+        );
+      })}
     </group>
   );
 }
 
 function LiftModel({ w, h, d, selected }: { w: number; h: number; d: number; selected: boolean }) {
-  const pillarW = w * 0.12;
+  const pillarW = w * 0.1;
   return (
     <group>
-      {/* Left pillar */}
-      <Box args={[pillarW, h, pillarW]} position={[-w * 0.35, h * 0.5, 0]}>
-        <meshStandardMaterial {...mechMat('#6b7280', selected)} />
+      {/* Base plate */}
+      <Box args={[w * 0.9, h * 0.04, d * 0.7]} position={[0, h * 0.02, 0]}>
+        <meshStandardMaterial {...mechMat('#4a4a4a', selected, 0.6, 0.3)} />
       </Box>
-      {/* Right pillar */}
+      {/* Left pillar with guide slot */}
+      <Box args={[pillarW, h, pillarW]} position={[-w * 0.35, h * 0.5, 0]}>
+        <meshStandardMaterial {...mechMat('#6b7280', selected, 0.6, 0.3)} />
+      </Box>
+      <Box args={[pillarW * 0.3, h * 0.9, pillarW * 0.3]} position={[-w * 0.35 + pillarW * 0.4, h * 0.5, 0]}>
+        <meshStandardMaterial {...mechMat('#4b5563', selected, 0.6, 0.3)} />
+      </Box>
+      {/* Right pillar with guide slot */}
       <Box args={[pillarW, h, pillarW]} position={[w * 0.35, h * 0.5, 0]}>
-        <meshStandardMaterial {...mechMat('#6b7280', selected)} />
+        <meshStandardMaterial {...mechMat('#6b7280', selected, 0.6, 0.3)} />
+      </Box>
+      <Box args={[pillarW * 0.3, h * 0.9, pillarW * 0.3]} position={[w * 0.35 - pillarW * 0.4, h * 0.5, 0]}>
+        <meshStandardMaterial {...mechMat('#4b5563', selected, 0.6, 0.3)} />
+      </Box>
+      {/* Scissor X arms */}
+      <Box args={[w * 0.55, h * 0.03, d * 0.06]} position={[0, h * 0.35, d * 0.15]}
+        rotation={[0, 0, 0.4]}>
+        <meshStandardMaterial {...mechMat('#9ca3af', selected, 0.6, 0.3)} />
+      </Box>
+      <Box args={[w * 0.55, h * 0.03, d * 0.06]} position={[0, h * 0.35, d * 0.15]}
+        rotation={[0, 0, -0.4]}>
+        <meshStandardMaterial {...mechMat('#9ca3af', selected, 0.6, 0.3)} />
+      </Box>
+      <Box args={[w * 0.55, h * 0.03, d * 0.06]} position={[0, h * 0.35, -d * 0.15]}
+        rotation={[0, 0, 0.4]}>
+        <meshStandardMaterial {...mechMat('#9ca3af', selected, 0.6, 0.3)} />
+      </Box>
+      <Box args={[w * 0.55, h * 0.03, d * 0.06]} position={[0, h * 0.35, -d * 0.15]}
+        rotation={[0, 0, -0.4]}>
+        <meshStandardMaterial {...mechMat('#9ca3af', selected, 0.6, 0.3)} />
       </Box>
       {/* Platform */}
-      <Box args={[w * 0.8, h * 0.08, d * 0.8]} position={[0, h * 0.6, 0]}>
-        <meshStandardMaterial {...mechMat('#9ca3af', selected)} />
+      <Box args={[w * 0.8, h * 0.06, d * 0.8]} position={[0, h * 0.6, 0]}>
+        <meshStandardMaterial {...mechMat('#c0c0c0', selected, 0.6, 0.3)} />
+      </Box>
+      {/* Platform surface texture */}
+      <Box args={[w * 0.78, h * 0.01, d * 0.78]} position={[0, h * 0.635, 0]}>
+        <meshStandardMaterial {...mechMat('#d4d4d8', selected, 0.5, 0.4)} />
       </Box>
     </group>
   );
@@ -236,11 +389,26 @@ function StopModel({ w, h, d, selected }: { w: number; h: number; d: number; sel
     <group>
       {/* Base block */}
       <Box args={[w * 0.5, h * 0.4, d * 0.5]} position={[0, h * 0.2, 0]}>
-        <meshStandardMaterial {...mechMat('#991b1b', selected)} />
+        <meshStandardMaterial {...mechMat('#991b1b', selected, 0.5, 0.4)} />
       </Box>
+      {/* Mounting bolts (4) */}
+      {[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sz], i) => (
+        <Cylinder key={`bolt-${i}`} args={[w * 0.025, w * 0.025, h * 0.06, 6]}
+          position={[sx * w * 0.2, h * 0.01, sz * d * 0.2]}>
+          <meshStandardMaterial {...mechMat('#c0c0c0', selected, 0.7, 0.2)} />
+        </Cylinder>
+      ))}
+      {/* Cylinder driving rod */}
+      <Cylinder args={[w * 0.04, w * 0.04, h * 0.35, 8]} position={[0, h * 0.4 + h * 0.175, -d * 0.1]}>
+        <meshStandardMaterial {...mechMat('#9ca3af', selected, 0.7, 0.2)} />
+      </Cylinder>
       {/* Stop plate */}
-      <Box args={[w * 0.8, h * 0.7, d * 0.1]} position={[0, h * 0.55, d * 0.25]}>
-        <meshStandardMaterial {...mechMat('#dc2626', selected)} />
+      <Box args={[w * 0.8, h * 0.7, d * 0.08]} position={[0, h * 0.55, d * 0.25]}>
+        <meshStandardMaterial {...mechMat('#dc2626', selected, 0.5, 0.35)} />
+      </Box>
+      {/* Rubber bumper pad */}
+      <Box args={[w * 0.7, h * 0.5, d * 0.04]} position={[0, h * 0.55, d * 0.31]}>
+        <meshStandardMaterial {...rubberMat('#1a1a1a', selected)} />
       </Box>
     </group>
   );
@@ -249,20 +417,37 @@ function StopModel({ w, h, d, selected }: { w: number; h: number; d: number; sel
 function CameraMountModel({ w, h, d, selected }: { w: number; h: number; d: number; selected: boolean }) {
   return (
     <group>
+      {/* Mounting base plate */}
+      <Box args={[w * 0.35, h * 0.04, d * 0.35]} position={[0, h * 0.02, -d * 0.3]}>
+        <meshStandardMaterial {...mechMat('#4a4a4a', selected, 0.6, 0.3)} />
+      </Box>
       {/* Vertical bar */}
-      <Box args={[w * 0.15, h, d * 0.15]} position={[0, h * 0.5, -d * 0.3]}>
-        <meshStandardMaterial {...mechMat('#64748b', selected)} />
+      <Box args={[w * 0.12, h, d * 0.12]} position={[0, h * 0.5, -d * 0.3]}>
+        <meshStandardMaterial {...mechMat('#64748b', selected, 0.6, 0.3)} />
       </Box>
       {/* Horizontal arm */}
-      <Box args={[w * 0.6, h * 0.1, d * 0.12]} position={[0, h * 0.9, 0]}>
-        <meshStandardMaterial {...mechMat('#94a3b8', selected)} />
+      <Box args={[w * 0.6, h * 0.08, d * 0.1]} position={[0, h * 0.9, 0]}>
+        <meshStandardMaterial {...mechMat('#94a3b8', selected, 0.6, 0.3)} />
       </Box>
+      {/* Diagonal brace */}
+      <Box args={[w * 0.04, h * 0.35, d * 0.04]}
+        position={[0, h * 0.72, -d * 0.12]}
+        rotation={[0.6, 0, 0]}>
+        <meshStandardMaterial {...mechMat('#64748b', selected, 0.6, 0.3)} />
+      </Box>
+      {/* Adjustment knob */}
+      <Sphere args={[w * 0.04, 10, 10]} position={[w * 0.08, h * 0.9, -d * 0.08]}>
+        <meshStandardMaterial {...mechMat('#1a1a1a', selected, 0.3, 0.6)} />
+      </Sphere>
+      {/* Cable channel */}
+      <Cylinder args={[w * 0.025, w * 0.025, h * 0.7, 6]} position={[w * 0.1, h * 0.55, -d * 0.3]}>
+        <meshStandardMaterial {...rubberMat('#1a1a1a', selected)} />
+      </Cylinder>
     </group>
   );
 }
 
 function DefaultMechanismModel({ w, h, d, selected }: { w: number; h: number; d: number; selected: boolean }) {
-  const isMounted = false;
   const baseColor = '#f97316';
   const highlightColor = '#facc15';
   return (
@@ -323,6 +508,26 @@ function ProductBox({ dimensions, selected }: { dimensions: { length: number; wi
   const h = dimensions.height * SCALE;
   const d = dimensions.width * SCALE;
   const highlightColor = '#facc15';
+  const edgeR = 0.008;
+
+  // 12 edges of a box
+  const edges: { pos: [number, number, number]; rot: [number, number, number]; len: number }[] = [
+    // bottom 4
+    { pos: [-w/2, 0, -d/2], rot: [0, 0, 0], len: h },
+    { pos: [w/2, 0, -d/2], rot: [0, 0, 0], len: h },
+    { pos: [-w/2, 0, d/2], rot: [0, 0, 0], len: h },
+    { pos: [w/2, 0, d/2], rot: [0, 0, 0], len: h },
+    // top horizontal (x-axis)
+    { pos: [0, h, -d/2], rot: [0, 0, Math.PI/2], len: w },
+    { pos: [0, h, d/2], rot: [0, 0, Math.PI/2], len: w },
+    { pos: [0, 0, -d/2], rot: [0, 0, Math.PI/2], len: w },
+    { pos: [0, 0, d/2], rot: [0, 0, Math.PI/2], len: w },
+    // depth (z-axis)
+    { pos: [-w/2, h, 0], rot: [Math.PI/2, 0, 0], len: d },
+    { pos: [w/2, h, 0], rot: [Math.PI/2, 0, 0], len: d },
+    { pos: [-w/2, 0, 0], rot: [Math.PI/2, 0, 0], len: d },
+    { pos: [w/2, 0, 0], rot: [Math.PI/2, 0, 0], len: d },
+  ];
 
   return (
     <>
@@ -330,13 +535,23 @@ function ProductBox({ dimensions, selected }: { dimensions: { length: number; wi
         <Box args={[w, h, d]}>
           <meshStandardMaterial
             color={selected ? highlightColor : '#06b6d4'}
-            transparent opacity={selected ? 0.8 : 0.5}
+            transparent opacity={selected ? 0.7 : 0.4}
             emissive={selected ? highlightColor : '#000000'}
             emissiveIntensity={selected ? 0.3 : 0}
+            metalness={0.1}
+            roughness={0.6}
           />
         </Box>
-        <Box args={[w, h, d]}>
-          <meshBasicMaterial color={selected ? highlightColor : '#06b6d4'} wireframe />
+        {/* Edge chamfer cylinders */}
+        {edges.map((edge, i) => (
+          <Cylinder key={`edge-${i}`} args={[edgeR, edgeR, edge.len, 4]}
+            position={edge.pos} rotation={edge.rot}>
+            <meshStandardMaterial color={selected ? highlightColor : '#22d3ee'} metalness={0.3} roughness={0.5} />
+          </Cylinder>
+        ))}
+        {/* Front face marker */}
+        <Box args={[w * 0.15, h * 0.15, d * 0.01]} position={[0, 0, d / 2 + 0.005]}>
+          <meshStandardMaterial color="#0891b2" metalness={0.2} roughness={0.5} />
         </Box>
         {selected && (
           <Box args={[w + 0.06, h + 0.06, d + 0.06]}>
@@ -365,22 +580,58 @@ function CameraObject({ obj, selected }: { obj: LayoutObject; selected: boolean 
 
   return (
     <>
+      {/* Main camera body */}
       <Box args={[0.3, 0.25, 0.4]}>
         <meshStandardMaterial
           color={selected ? highlightColor : baseColor}
           emissive={selected ? highlightColor : '#000000'}
           emissiveIntensity={selected ? 0.3 : 0}
+          metalness={0.5}
+          roughness={0.35}
         />
       </Box>
+      {/* Back panel / interface plate */}
+      <Box args={[0.28, 0.22, 0.02]} position={[0, 0, 0.21]}>
+        <meshStandardMaterial {...mechMat('#1a1a1a', selected, 0.3, 0.6)} />
+      </Box>
+      {/* Cooling fins on the back */}
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Box key={`fin-${i}`} args={[0.26, 0.03, 0.015]}
+          position={[0, -0.09 + i * 0.045, 0.2]}>
+          <meshStandardMaterial {...mechMat('#2a2a2a', selected, 0.5, 0.4)} />
+        </Box>
+      ))}
+      {/* Lens assembly */}
       <group position={[0, -0.25, 0]} rotation={[Math.PI, 0, 0]}>
-        <Cone args={[0.15, 0.3, 8]}>
+        {/* Lens ring */}
+        <Cylinder args={[0.16, 0.16, 0.04, 16]} position={[0, -0.02, 0]}>
+          <meshStandardMaterial {...mechMat('#374151', selected, 0.6, 0.25)} />
+        </Cylinder>
+        {/* Lens cone */}
+        <Cone args={[0.14, 0.28, 12]}>
           <meshStandardMaterial
             color={selected ? highlightColor : baseDark}
             emissive={selected ? highlightColor : '#000000'}
             emissiveIntensity={selected ? 0.2 : 0}
+            metalness={0.5}
+            roughness={0.3}
           />
         </Cone>
+        {/* Glass element at tip */}
+        <Cylinder args={[0.04, 0.04, 0.02, 12]} position={[0, 0.15, 0]}>
+          <meshStandardMaterial color="#94a3b8" metalness={0.8} roughness={0.1} transparent opacity={0.7} />
+        </Cylinder>
       </group>
+      {/* Status LED (green emissive) */}
+      <Sphere args={[0.02, 8, 8]} position={[0.12, 0.1, -0.2]}>
+        <meshStandardMaterial
+          color="#22c55e"
+          emissive="#22c55e"
+          emissiveIntensity={0.8}
+          metalness={0.1}
+          roughness={0.3}
+        />
+      </Sphere>
       {selected && (
         <Box args={[0.4, 0.35, 0.5]}>
           <meshBasicMaterial color={highlightColor} wireframe transparent opacity={0.5} />
@@ -653,9 +904,11 @@ export const Layout3DPreview = memo(function Layout3DPreview({
         }}
       >
         <Suspense fallback={null}>
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[5, 8, 5]} intensity={0.8} />
+          <ambientLight intensity={0.4} />
+          <hemisphereLight args={['#b0c4de', '#2d2d2d', 0.5]} />
+          <directionalLight position={[5, 8, 5]} intensity={0.8} castShadow />
           <directionalLight position={[-3, 5, -3]} intensity={0.3} />
+          <pointLight position={[8, 10, 8]} intensity={0.6} distance={30} decay={2} />
 
           <Grid
             args={[20, 20]}
