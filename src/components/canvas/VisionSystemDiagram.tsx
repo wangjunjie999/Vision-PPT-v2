@@ -210,7 +210,7 @@ export function VisionSystemDiagram({
         className="w-full h-full"
         preserveAspectRatio="xMidYMid meet"
         shapeRendering="geometricPrecision"
-        style={{ maxHeight: '100%', transform: 'translateZ(0)', aspectRatio: '800/750' }}
+        style={{ maxHeight: '100%', transform: 'translateZ(0)' }}
       >
         <defs>
           {/* Camera FOV gradient */}
