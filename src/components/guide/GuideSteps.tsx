@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { Check, FolderPlus, Layers, Box, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GuideStep, useGuide } from '@/contexts/GuideContext';
@@ -34,31 +33,21 @@ export function GuideSteps({ className }: { className?: string }) {
         return (
           <div key={step.key} className="flex items-center">
             {/* Step indicator */}
-            <motion.div
+            <div
               className={cn(
-                'relative flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300',
+                'relative flex items-center justify-center w-8 h-8 rounded-full',
                 isCompleted && 'bg-guide-success text-white',
-                isCurrent && 'bg-guide-primary text-white',
+                isCurrent && 'bg-guide-primary text-white animate-guide-pulse',
                 isPending && 'bg-muted text-muted-foreground'
               )}
-              animate={isCurrent ? {
-                boxShadow: [
-                  '0 0 0 0 rgba(255, 107, 53, 0.4)',
-                  '0 0 0 8px rgba(255, 107, 53, 0)',
-                ],
-              } : {}}
-              transition={{
-                duration: 1.5,
-                repeat: isCurrent ? Infinity : 0,
-                ease: 'easeOut',
-              }}
+              style={isCurrent ? { willChange: 'box-shadow', transform: 'translateZ(0)' } : undefined}
             >
               {isCompleted ? (
                 <Check className="w-4 h-4" />
               ) : (
                 <step.icon className="w-4 h-4" />
               )}
-            </motion.div>
+            </div>
 
             {/* Step label - only show on larger screens */}
             <span

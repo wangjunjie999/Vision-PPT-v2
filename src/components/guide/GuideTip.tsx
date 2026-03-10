@@ -79,6 +79,7 @@ export function GuideTip({
               repeat: Infinity,
               ease: 'easeInOut',
             }}
+            style={{ willChange: 'transform, opacity', transform: 'translateZ(0)' }}
           />
           
           {/* Main tip container */}
