@@ -47,7 +47,7 @@ export function GuideSteps({ className }: { className?: string }) {
               ) : (
                 <step.icon className="w-4 h-4" />
               )}
-            </motion.div>
+            </div>
 
             {/* Step label - only show on larger screens */}
             <span
