@@ -667,7 +667,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
               onDragStart={handleDragStart}
               onClick={(id) => { if (!dragMovedRef.current) handleSelect(id); }}
             >
-              <MechanismBox obj={obj} selected={activeSelectedId === obj.id} />
+              <Mechanism3DModel obj={obj} selected={activeSelectedId === obj.id} />
             </DraggableGroup>
           ))}
 
