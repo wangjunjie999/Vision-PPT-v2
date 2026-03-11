@@ -389,8 +389,6 @@ const MechanismDrawings: Record<string, Record<string, React.ReactNode>> = {
         {/* Opening arrows */}
         <path d="M -8 -10 L -12 -10" stroke="#22d3ee" strokeWidth={1.5} />
         <path d="M 8 -10 L 12 -10" stroke="#22d3ee" strokeWidth={1.5} />
-        {/* Camera mount above */}
-        <circle cx={0} cy={-28} r={4} fill="none" stroke="#f97316" strokeWidth={2} strokeDasharray="3 2" />
       </g>
     ),
     side: (
