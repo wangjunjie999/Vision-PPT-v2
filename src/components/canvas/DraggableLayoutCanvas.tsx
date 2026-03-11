@@ -953,7 +953,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                     )}
                     {layerType === 'camera' && (
                       <CameraRenderer
-                        objects={objects} selectedId={selectedId} secondSelectedId={secondSelectedId}
+                        objects={sortedObjects} selectedId={selectedId} secondSelectedId={secondSelectedId}
                         panMode={panMode} isIsometric={false}
                         onMouseDown={handleMouseDown} onResize={handleResize}
                         isoProject={isoProject}
