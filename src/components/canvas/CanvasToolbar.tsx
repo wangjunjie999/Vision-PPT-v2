@@ -83,6 +83,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
   showDistances, setShowDistances, showObjectList, setShowObjectList,
   layerOrder, draggedLayer, dragOverLayer, onLayerDragStart, onLayerDragOver, onLayerDrop, onLayerDragEnd, onSaveLayerOrder,
   objects, selectedId, selectedObj, mechanisms, enabledMechanisms, mechanismCounts,
+  objectOrder, onObjectReorder,
 }: CanvasToolbarProps) {
   return (
     <>
