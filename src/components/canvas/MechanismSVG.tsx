@@ -200,10 +200,6 @@ const MechanismDrawings: Record<string, Record<string, React.ReactNode>> = {
         {/* Index marks */}
         <line x1={-30} y1={0} x2={-25} y2={0} stroke="#22d3ee" strokeWidth={2} />
         <line x1={25} y1={0} x2={30} y2={0} stroke="#22d3ee" strokeWidth={2} />
-        {/* Camera mount points */}
-        <circle cx={0} cy={-20} r={4} fill="none" stroke="#f97316" strokeWidth={2} strokeDasharray="3 2" />
-        <circle cx={-20} cy={-8} r={3} fill="none" stroke="#f97316" strokeWidth={1.5} strokeDasharray="2 2" />
-        <circle cx={20} cy={-8} r={3} fill="none" stroke="#f97316" strokeWidth={1.5} strokeDasharray="2 2" />
       </g>
     ),
     side: (
