@@ -147,10 +147,10 @@ export const MechanismThumbnail = memo(function MechanismThumbnail({
 }: MechanismThumbnailProps) {
   const [hasError, setHasError] = useState(false);
   
-  // Priority: local assets first (most reliable), then database URL
+  // Priority: database URL first (user uploaded), local assets as fallback
   const localImageUrl = getMechanismImage(type, view);
-  const primarySrc = localImageUrl || databaseUrl;
-  const fallbackSrc = localImageUrl ? databaseUrl : null;
+  const primarySrc = databaseUrl || localImageUrl;
+  const fallbackSrc = databaseUrl ? localImageUrl : null;
 
   // Reset error state when type or view changes
   React.useEffect(() => {

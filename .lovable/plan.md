@@ -1,36 +1,44 @@
 
 
-# 修复"添加机构"下拉菜单中的缩略图优先级
+# FOV 输入改为两个独立数值框
 
 ## 问题
 
-`MechanismThumbnail` 组件（`src/components/common/ImageWithFallback.tsx` 第 152 行）的图片优先级仍然是 **本地资源优先**：
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-```typescript
-const primarySrc = localImageUrl || databaseUrl;  // 错误：本地优先
+## 修改方案
+
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
 ```
 
-这导致即使在数据库中上传了新图片，添加机构下拉菜单仍然显示旧的本地静态图片。
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-## 修复方案
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
 
-修改 `MechanismThumbnail` 组件的优先级为 **数据库 URL 优先 → 本地资源兜底**，与之前修复的 `MechanismResourceManager` 和 `DraggableLayoutCanvas` 保持一致。
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
 
-### 文件：`src/components/common/ImageWithFallback.tsx`
-
-```typescript
-// 改前 (第 150-153 行):
-// Priority: local assets first (most reliable), then database URL
-const localImageUrl = getMechanismImage(type, view);
-const primarySrc = localImageUrl || databaseUrl;
-const fallbackSrc = localImageUrl ? databaseUrl : null;
-
-// 改后:
-// Priority: database URL first (user uploaded), local assets as fallback
-const localImageUrl = getMechanismImage(type, view);
-const primarySrc = databaseUrl || localImageUrl;
-const fallbackSrc = databaseUrl ? localImageUrl : null;
+```
+[宽度输入] × [高度输入]
 ```
 
-同时修复 `onError` 处理逻辑，使其在数据库 URL 失败时正确回退到本地资源显示。
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
