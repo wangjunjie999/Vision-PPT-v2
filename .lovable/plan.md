@@ -1,44 +1,67 @@
 
 
-# FOV 输入改为两个独立数值框
+# 支持单个对象级别的层级排序
 
-## 问题
+## 现状
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+当前层级系统只支持 3 个**分类级别**的排序（相机、执行机构、产品），无法调整同一分类内各个对象的前后遮挡关系。例如两个不同的执行机构永远按数组顺序渲染，无法指定谁在前谁在后。
 
-## 修改方案
+## 方案
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+将层级系统从"分类级"升级为"对象级"——保留分类分组的 UI 结构，但在每个分组内支持拖拽调整单个对象的渲染顺序。
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
+### 数据结构变更
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+新增 `objectOrder` 状态，存储每个对象的渲染顺序：
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
-
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
-
-```
-[宽度输入] × [高度输入]
+```text
+layerOrder: ['mechanism', 'product', 'camera']     ← 保留，控制分类间顺序
+objectOrder: { [objectId]: number }                 ← 新增，控制分类内对象排序
 ```
 
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+持久化方式与 `layerOrder` 一致，存入 `localStorage`（key: `objectOrder_${workstationId}`）。
 
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+### 文件改动
 
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+**`src/components/canvas/DraggableLayoutCanvas.tsx`**
+- 新增 `objectOrder` state，从 localStorage 初始化
+- 新增 `handleObjectReorder(id, direction)` 和 `handleSaveObjectOrder` 回调
+- 在 `MechanismRenderer`、`CameraRenderer`、`ProductRenderer` 渲染前，按 `objectOrder` 对 objects 排序
 
-### 4. PPT 输出不变
+**`src/components/canvas/MechanismRenderer.tsx`**（及 CameraRenderer、ProductRenderer）
+- 无需改动，它们已经按 `objects` 数组顺序渲染
 
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+**`src/components/canvas/CanvasToolbar.tsx`**
+- 层级设置弹窗改为两级结构：分类可拖拽排序（现有），分类展开后显示该类下的具体对象列表，支持拖拽排序
+- 使用 Collapsible 组件展开/收起每个分类下的对象
 
-### 5. 自动计算兼容
+**`src/components/canvas/canvasTypes.ts`**
+- 导出 `ObjectOrderMap` 类型
 
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+### UI 设计
+
+```text
+┌─ 层级设置 ──────────────┐
+│ 渲染层级（上方 = 最前）    │
+│                          │
+│ ⋮ 📷 相机 ▸              │  ← 分类可拖拽，点击展开
+│   ⋮ 相机1                │  ← 展开后显示对象列表
+│   ⋮ 相机2                │
+│                          │
+│ ⋮ 🔧 执行机构 ▸          │
+│   ⋮ 传送带               │
+│   ⋮ 机械臂               │
+│   ⋮ 转盘                 │
+│                          │
+│ ⋮ 📦 产品 ▸              │
+│                          │
+│ [💾 保存层级设置]          │
+└──────────────────────────┘
+```
+
+### 涉及文件
+- `src/components/canvas/canvasTypes.ts` — 新增类型
+- `src/components/canvas/DraggableLayoutCanvas.tsx` — 对象排序状态与逻辑
+- `src/components/canvas/CanvasToolbar.tsx` — UI 支持对象级拖拽
+- `src/components/canvas/ObjectListPanel.tsx` — 同步排序（已有 reorder 按钮）
 
