@@ -449,7 +449,7 @@ export function MechanismSVG({
   
   // Get image URL - prioritize: LOCAL ASSETS FIRST > props imageUrl > fallback to SVG
   const localImageUrl = getMechanismImage(type, view);
-  const mechanismImageUrl = localImageUrl || imageUrl;
+  const mechanismImageUrl = imageUrl || localImageUrl;
   const shouldUseImage = useImage && mechanismImageUrl && !imageLoadError;
   
   // Reset error state when type or view changes
