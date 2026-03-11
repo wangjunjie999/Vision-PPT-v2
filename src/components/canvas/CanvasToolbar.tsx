@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,7 @@ import {
   Save, RotateCcw, Plus, Camera, Loader2, Check,
   ChevronDown, ChevronUp, Settings2, Zap, Layers, LayoutGrid, GripVertical,
 } from 'lucide-react';
-import type { ViewType, LayerType, StandardViewType } from './canvasTypes';
+import type { ViewType, LayerType, StandardViewType, ObjectOrderMap } from './canvasTypes';
 import type { LayoutObject } from './ObjectPropertyPanel';
 import type { QualityPreset } from '@/utils/imageCompression';
 import type { Mechanism } from '@/hooks/useMechanisms';
