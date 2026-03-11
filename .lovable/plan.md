@@ -1,39 +1,44 @@
 
 
-# 执行机构封面图同步 + 图片裁剪功能
+# FOV 输入改为两个独立数值框
 
-## 问题分析
+## 问题
 
-1. **封面图不更新**：`MechanismImageDisplay`（第28行）和 `getMechanismDisplayImage`（第65行）都优先使用本地静态资源 `getMechanismImage(type, 'front')`，导致即使数据库中已有新上传的正视图 URL，封面仍显示旧的本地默认图片。
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-2. **缺少图片裁剪**：当前上传逻辑直接将原图上传，没有尺寸校验或裁剪功能。
+## 修改方案
 
-## 修复方案
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-### 1. 修改图片优先级（MechanismResourceManager.tsx）
-
-将 `MechanismImageDisplay` 和 `getMechanismDisplayImage` 的优先级改为：**数据库 URL 优先 → 本地资源兜底**
-
+在 `ModuleFormState` 中添加：
 ```
-// 改前: localImage || databaseUrl
-// 改后: databaseUrl || localImage
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
 ```
 
-### 2. 添加图片裁剪组件（新建 ImageCropDialog.tsx）
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-创建 `src/components/admin/ImageCropDialog.tsx`：
-- 用户选择图片后，弹出裁剪对话框
-- 使用 Canvas API 实现裁剪（无需额外依赖）
-- 支持拖拽选择裁剪区域、预设比例（1:1、4:3、16:9）
-- 裁剪完成后再上传
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
 
-### 3. 修改上传流程（MechanismResourceManager.tsx）
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
 
-- `handleImageUpload` 改为先打开裁剪对话框
-- 裁剪确认后再执行上传逻辑
-- 推荐目标尺寸：正视图 400×400px，侧/俯视图 400×300px
+```
+[宽度输入] × [高度输入]
+```
 
-**涉及文件：**
-- `src/components/admin/MechanismResourceManager.tsx` — 修改图片优先级 + 集成裁剪
-- `src/components/admin/ImageCropDialog.tsx` — 新建裁剪组件
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 

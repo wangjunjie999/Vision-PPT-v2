@@ -11,6 +11,7 @@ import { useMechanisms, type MechanismInsert, type MechanismUpdate } from '@/hoo
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { getMechanismImage } from '@/utils/mechanismImageUrls';
+import { ImageCropDialog } from './ImageCropDialog';
 
 // Mechanism image display with error handling
 const MechanismImageDisplay = memo(function MechanismImageDisplay({ 
@@ -24,9 +25,9 @@ const MechanismImageDisplay = memo(function MechanismImageDisplay({
 }) {
   const [hasError, setHasError] = useState(false);
   
-  // Priority: local assets first
+  // Priority: database URL first (user uploaded), local assets as fallback
   const localImage = getMechanismImage(type, 'front');
-  const imageUrl = localImage || databaseUrl;
+  const imageUrl = databaseUrl || localImage;
   
   const handleError = useCallback(() => {
     setHasError(true);
@@ -59,13 +60,13 @@ const MECHANISM_TYPES = [
   { value: 'camera_mount', label: '视觉支架' },
 ];
 
-// Get the display image for a mechanism - LOCAL ASSETS FIRST, then database URL
+// Get the display image for a mechanism - DATABASE URL FIRST (user uploaded), then local assets
 function getMechanismDisplayImage(mech: { type: string; front_view_image_url: string | null }): string | null {
-  // Priority 1: Local bundled assets (most reliable)
+  // Priority 1: Database URL (user uploaded, most up-to-date)
+  if (mech.front_view_image_url) return mech.front_view_image_url;
+  // Priority 2: Local bundled assets (fallback)
   const localImage = getMechanismImage(mech.type, 'front');
   if (localImage) return localImage;
-  // Priority 2: Database URL
-  if (mech.front_view_image_url) return mech.front_view_image_url;
   return null;
 }
 
@@ -76,6 +77,9 @@ export function MechanismResourceManager() {
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [uploadingView, setUploadingView] = useState<'front' | 'side' | 'top' | null>(null);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [cropViewType, setCropViewType] = useState<'front' | 'side' | 'top'>('front');
 
   const [form, setForm] = useState({
     name: '',
@@ -126,13 +130,21 @@ export function MechanismResourceManager() {
     setDialogOpen(true);
   };
 
-  const handleImageUpload = async (file: File, viewType: 'front' | 'side' | 'top') => {
+  const openCropDialog = (file: File, viewType: 'front' | 'side' | 'top') => {
+    setCropFile(file);
+    setCropViewType(viewType);
+    setCropDialogOpen(true);
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    const viewType = cropViewType;
     setUploadingView(viewType);
     try {
-      const fileName = `mechanisms/${Date.now()}-${viewType}-${file.name}`;
+      const fileName = `mechanisms/${Date.now()}-${viewType}-cropped.png`;
+      const file = new File([croppedBlob], fileName.split('/').pop()!, { type: 'image/png' });
       const { error: uploadError } = await supabase.storage
         .from('product-models')
-        .upload(fileName, file, { contentType: file.type, upsert: true });
+        .upload(fileName, file, { contentType: 'image/png', upsert: true });
 
       if (uploadError) throw uploadError;
 
@@ -223,7 +235,7 @@ export function MechanismResourceManager() {
           className="absolute inset-0 opacity-0 cursor-pointer"
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) handleImageUpload(file, viewType);
+            if (file) openCropDialog(file, viewType);
           }}
           disabled={uploadingView === viewType}
         />
@@ -412,6 +424,15 @@ export function MechanismResourceManager() {
           </Card>
         ))}
       </div>
+
+      <ImageCropDialog
+        open={cropDialogOpen}
+        onOpenChange={setCropDialogOpen}
+        imageFile={cropFile}
+        onCropComplete={handleCropComplete}
+        recommendedSize={cropViewType === 'front' ? { width: 400, height: 400 } : { width: 400, height: 300 }}
+        title={`裁剪${cropViewType === 'front' ? '正' : cropViewType === 'side' ? '侧' : '俯'}视图`}
+      />
     </div>
   );
 }
