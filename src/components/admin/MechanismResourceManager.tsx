@@ -235,7 +235,7 @@ export function MechanismResourceManager() {
           className="absolute inset-0 opacity-0 cursor-pointer"
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) handleImageUpload(file, viewType);
+            if (file) openCropDialog(file, viewType);
           }}
           disabled={uploadingView === viewType}
         />
