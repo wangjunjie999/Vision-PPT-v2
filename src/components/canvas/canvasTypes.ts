@@ -1,6 +1,7 @@
 export type StandardViewType = 'front' | 'side' | 'top';
 export type ViewType = StandardViewType | 'isometric';
 export type LayerType = 'mechanism' | 'product' | 'camera';
+export type ObjectOrderMap = Record<string, number>;
 
 // Auto-arrangement configuration
 export const AUTO_ARRANGE_CONFIG = {
