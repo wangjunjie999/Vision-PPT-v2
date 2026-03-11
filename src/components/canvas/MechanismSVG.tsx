@@ -358,8 +358,6 @@ const MechanismDrawings: Record<string, Record<string, React.ReactNode>> = {
         {/* Port fittings */}
         <circle cx={-14} cy={10} r={3} fill="#374151" />
         <circle cx={14} cy={20} r={3} fill="#374151" />
-        {/* Mount point at rod end */}
-        <circle cx={0} cy={-32} r={4} fill="none" stroke="#f97316" strokeWidth={2} strokeDasharray="3 2" />
       </g>
     ),
     side: (
