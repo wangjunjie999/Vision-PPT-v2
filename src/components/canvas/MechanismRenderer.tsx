@@ -1,8 +1,8 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { Lock } from 'lucide-react';
 import type { LayoutObject } from './ObjectPropertyPanel';
 import { ResizeHandles } from './ResizeHandles';
-import { CAMERA_INTERACTION_TYPES, PRODUCT_INTERACTION_TYPES } from './MechanismSVG';
+import { CAMERA_INTERACTION_TYPES, PRODUCT_INTERACTION_TYPES, getMechanismMountPoints } from './MechanismSVG';
 
 interface MechanismRendererProps {
   objects: LayoutObject[];
@@ -14,6 +14,7 @@ interface MechanismRendererProps {
   onMouseDown: (e: React.MouseEvent, obj: LayoutObject) => void;
   onResize: (id: string, width: number, height: number, x: number, y: number) => void;
   getMechanismImageForObject: (obj: LayoutObject) => string | null;
+  currentView?: 'front' | 'side' | 'top';
 }
 
 export const MechanismRenderer = memo(function MechanismRenderer({
