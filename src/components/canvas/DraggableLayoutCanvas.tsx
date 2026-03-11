@@ -940,6 +940,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                         panMode={panMode} isDragging={isDragging} draggingObject={draggingObject}
                         onMouseDown={handleMouseDown} onResize={handleResize}
                         getMechanismImageForObject={getMechanismImageForObject}
+                        currentView={currentView as 'front' | 'side' | 'top'}
                       />
                     )}
                     {layerType === 'product' && (
