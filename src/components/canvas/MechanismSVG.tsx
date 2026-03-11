@@ -427,7 +427,7 @@ export function MechanismSVG({
   const scaleY = height / 80;
   const scale = Math.min(scaleX, scaleY);
   
-  // Get image URL - prioritize: LOCAL ASSETS FIRST > props imageUrl > fallback to SVG
+  // Get image URL - prioritize: database URL first (user uploaded) > local assets as fallback > SVG
   const localImageUrl = getMechanismImage(type, view);
   const mechanismImageUrl = imageUrl || localImageUrl;
   const shouldUseImage = useImage && mechanismImageUrl && !imageLoadError;

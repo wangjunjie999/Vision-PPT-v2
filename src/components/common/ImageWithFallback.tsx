@@ -145,21 +145,27 @@ export const MechanismThumbnail = memo(function MechanismThumbnail({
   className,
   size = 'md',
 }: MechanismThumbnailProps) {
-  const [hasError, setHasError] = useState(false);
-  
-  // Priority: database URL first (user uploaded), local assets as fallback
   const localImageUrl = getMechanismImage(type, view);
   const primarySrc = databaseUrl || localImageUrl;
   const fallbackSrc = databaseUrl ? localImageUrl : null;
+  
+  const [currentSrc, setCurrentSrc] = useState<string | null>(primarySrc);
+  const [showFallbackEmoji, setShowFallbackEmoji] = useState(false);
 
-  // Reset error state when type or view changes
+  // Reset when databaseUrl, type or view changes
   React.useEffect(() => {
-    setHasError(false);
-  }, [type, view]);
+    const newPrimary = databaseUrl || getMechanismImage(type, view);
+    setCurrentSrc(newPrimary);
+    setShowFallbackEmoji(false);
+  }, [databaseUrl, type, view]);
 
   const handleError = useCallback(() => {
-    setHasError(true);
-  }, []);
+    if (currentSrc === primarySrc && fallbackSrc && fallbackSrc !== currentSrc) {
+      setCurrentSrc(fallbackSrc);
+    } else {
+      setShowFallbackEmoji(true);
+    }
+  }, [currentSrc, primarySrc, fallbackSrc]);
 
   return (
     <div className={cn(
@@ -167,25 +173,12 @@ export const MechanismThumbnail = memo(function MechanismThumbnail({
       "rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-600/10 flex items-center justify-center overflow-hidden border border-orange-500/20",
       className
     )}>
-      {!hasError && primarySrc ? (
+      {!showFallbackEmoji && currentSrc ? (
         <img 
-          src={primarySrc} 
+          src={currentSrc} 
           alt="" 
           className="w-full h-full object-cover"
-          onError={() => {
-            // Try fallback if available
-            if (fallbackSrc && primarySrc !== fallbackSrc) {
-              const img = document.createElement('img');
-              img.onload = () => {
-                // Fallback loaded successfully - but we can't easily swap in React
-                // So we just show the emoji
-              };
-              img.onerror = handleError;
-              img.src = fallbackSrc;
-            } else {
-              handleError();
-            }
-          }}
+          onError={handleError}
         />
       ) : (
         <span className="text-lg">⚙️</span>
