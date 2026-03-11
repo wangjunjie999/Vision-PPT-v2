@@ -1,8 +1,8 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { Lock } from 'lucide-react';
 import type { LayoutObject } from './ObjectPropertyPanel';
 import { ResizeHandles } from './ResizeHandles';
-import { CAMERA_INTERACTION_TYPES, PRODUCT_INTERACTION_TYPES } from './MechanismSVG';
+import { CAMERA_INTERACTION_TYPES, PRODUCT_INTERACTION_TYPES, getMechanismMountPoints } from './MechanismSVG';
 
 interface MechanismRendererProps {
   objects: LayoutObject[];
@@ -14,14 +14,15 @@ interface MechanismRendererProps {
   onMouseDown: (e: React.MouseEvent, obj: LayoutObject) => void;
   onResize: (id: string, width: number, height: number, x: number, y: number) => void;
   getMechanismImageForObject: (obj: LayoutObject) => string | null;
+  currentView?: 'front' | 'side' | 'top';
 }
 
 export const MechanismRenderer = memo(function MechanismRenderer({
   objects, selectedId, secondSelectedId, panMode, isDragging, draggingObject,
-  onMouseDown, onResize, getMechanismImageForObject,
+  onMouseDown, onResize, getMechanismImageForObject, currentView = 'front',
 }: MechanismRendererProps) {
   const mechanisms = objects.filter(obj => obj.type === 'mechanism');
-
+  const cameras = objects.filter(obj => obj.type === 'camera');
   return (
     <>
       {mechanisms.map(obj => {
@@ -135,6 +136,32 @@ export const MechanismRenderer = memo(function MechanismRenderer({
                 <Lock x={-5} y={-5} width={10} height={10} className="text-amber-400" />
               </g>
             )}
+
+            {/* Robot arm end-effector flange marker */}
+            {obj.mechanismType === 'robot_arm' && (() => {
+              const mountPoints = getMechanismMountPoints('robot_arm', currentView);
+              const armEnd = mountPoints.find(mp => mp.id === 'arm_end');
+              if (!armEnd) return null;
+              const flangeX = armEnd.position.x * (obj.width / 2);
+              const flangeY = armEnd.position.y * (obj.height / 2);
+              const hasMountedCamera = cameras.some(c => c.mountedToMechanismId === obj.id);
+              return (
+                <g transform={`translate(${flangeX}, ${flangeY})`}>
+                  {/* Outer glow */}
+                  <circle r={14} fill="none" stroke="#f97316" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.5} />
+                  {/* Flange ring */}
+                  <circle r={9} fill={hasMountedCamera ? 'rgba(59,130,246,0.3)' : 'rgba(249,115,22,0.25)'} 
+                    stroke={hasMountedCamera ? '#3b82f6' : '#f97316'} strokeWidth={2.5} />
+                  {/* Center dot */}
+                  <circle r={3} fill={hasMountedCamera ? '#3b82f6' : '#f97316'} />
+                  {/* Label */}
+                  <text x={0} y={-18} textAnchor="middle" fill="#fdba74" fontSize="8" fontWeight="600"
+                    style={{ pointerEvents: 'none' }}>
+                    {hasMountedCamera ? '🔗' : '⊕'} 法兰
+                  </text>
+                </g>
+              );
+            })()}
 
             {isSelected && obj.rotation !== 0 && (
               <text x={obj.width / 2 + 8} y={0} fill="#94a3b8" fontSize="9">

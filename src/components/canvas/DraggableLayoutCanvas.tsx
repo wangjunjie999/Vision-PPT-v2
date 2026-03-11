@@ -926,7 +926,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               </g>
 
               {/* Connection lines */}
-              <ConnectionLines objects={objects} isIsometric={false} />
+              <ConnectionLines objects={objects} isIsometric={false} currentView={currentView as 'front' | 'side' | 'top'} />
 
               {/* Dynamic layer rendering with object-level ordering */}
               {layerOrder.map((layerType) => {
@@ -940,6 +940,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                         panMode={panMode} isDragging={isDragging} draggingObject={draggingObject}
                         onMouseDown={handleMouseDown} onResize={handleResize}
                         getMechanismImageForObject={getMechanismImageForObject}
+                        currentView={currentView as 'front' | 'side' | 'top'}
                       />
                     )}
                     {layerType === 'product' && (
