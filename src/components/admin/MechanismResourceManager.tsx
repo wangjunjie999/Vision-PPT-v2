@@ -25,9 +25,9 @@ const MechanismImageDisplay = memo(function MechanismImageDisplay({
 }) {
   const [hasError, setHasError] = useState(false);
   
-  // Priority: local assets first
+  // Priority: database URL first (user uploaded), local assets as fallback
   const localImage = getMechanismImage(type, 'front');
-  const imageUrl = localImage || databaseUrl;
+  const imageUrl = databaseUrl || localImage;
   
   const handleError = useCallback(() => {
     setHasError(true);
