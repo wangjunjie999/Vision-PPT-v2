@@ -206,7 +206,6 @@ const MechanismDrawings: Record<string, Record<string, React.ReactNode>> = {
       <g>
         <rect x={-15} y={10} width={30} height={20} fill="#4b5563" rx={3} />
         <rect x={-30} y={-5} width={60} height={15} fill="#6b7280" rx={2} />
-        <circle cx={0} cy={-20} r={4} fill="none" stroke="#f97316" strokeWidth={2} strokeDasharray="3 2" />
       </g>
     ),
     top: (
