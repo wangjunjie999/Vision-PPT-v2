@@ -77,6 +77,9 @@ export function MechanismResourceManager() {
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [uploadingView, setUploadingView] = useState<'front' | 'side' | 'top' | null>(null);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [cropViewType, setCropViewType] = useState<'front' | 'side' | 'top'>('front');
 
   const [form, setForm] = useState({
     name: '',
