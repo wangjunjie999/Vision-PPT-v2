@@ -269,7 +269,6 @@ const MechanismDrawings: Record<string, Record<string, React.ReactNode>> = {
         <rect x={-20} y={2} width={40} height={4} fill="#6b7280" />
         <rect x={-20} y={14} width={40} height={4} fill="#6b7280" />
         <path d="M -15 10 L 15 10" stroke="#22d3ee" strokeWidth={2} markerEnd="url(#arrow)" />
-        <circle cx={0} cy={-20} r={4} fill="none" stroke="#f97316" strokeWidth={2} strokeDasharray="3 2" />
       </g>
     ),
     top: (
