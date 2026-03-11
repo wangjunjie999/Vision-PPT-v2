@@ -11,6 +11,7 @@ import { useMechanisms, type MechanismInsert, type MechanismUpdate } from '@/hoo
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { getMechanismImage } from '@/utils/mechanismImageUrls';
+import { ImageCropDialog } from './ImageCropDialog';
 
 // Mechanism image display with error handling
 const MechanismImageDisplay = memo(function MechanismImageDisplay({ 
