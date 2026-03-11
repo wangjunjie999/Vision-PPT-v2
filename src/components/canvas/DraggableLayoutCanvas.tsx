@@ -23,7 +23,7 @@ import { compressImage, dataUrlToBlob, QUALITY_PRESETS, type QualityPreset } fro
 import { getImageSaveErrorMessage } from '@/utils/errorMessages';
 
 // Sub-components
-import type { ViewType, StandardViewType, LayerType } from './canvasTypes';
+import type { ViewType, StandardViewType, LayerType, ObjectOrderMap } from './canvasTypes';
 import { AUTO_ARRANGE_CONFIG } from './canvasTypes';
 import { CanvasToolbar } from './CanvasToolbar';
 import { CanvasSVGDefs } from './CanvasSVGDefs';
@@ -102,10 +102,53 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   const [draggedLayer, setDraggedLayer] = useState<LayerType | null>(null);
   const [dragOverLayer, setDragOverLayer] = useState<LayerType | null>(null);
 
+  // Object-level ordering within each layer category
+  const [objectOrder, setObjectOrder] = useState<ObjectOrderMap>(() => {
+    try {
+      const saved = localStorage.getItem(`objectOrder_${workstationId}`);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {};
+  });
+
   const handleSaveLayerOrder = useCallback(() => {
     localStorage.setItem(`layerOrder_${workstationId}`, JSON.stringify(layerOrder));
+    localStorage.setItem(`objectOrder_${workstationId}`, JSON.stringify(objectOrder));
     toast.success('层级设置已保存');
-  }, [workstationId, layerOrder]);
+  }, [workstationId, layerOrder, objectOrder]);
+
+  const handleObjectReorder = useCallback((objectId: string, direction: 'up' | 'down') => {
+    setObjectOrder(prev => {
+      const obj = objects.find(o => o.id === objectId);
+      if (!obj) return prev;
+      // Get all objects of same type, sorted by current order
+      const sameType = objects
+        .filter(o => o.type === obj.type)
+        .sort((a, b) => (prev[a.id] ?? 0) - (prev[b.id] ?? 0));
+      const idx = sameType.findIndex(o => o.id === objectId);
+      const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= sameType.length) return prev;
+      // Swap order values
+      const newOrder = { ...prev };
+      const currentVal = newOrder[objectId] ?? idx;
+      const targetVal = newOrder[sameType[targetIdx].id] ?? targetIdx;
+      newOrder[objectId] = targetVal;
+      newOrder[sameType[targetIdx].id] = currentVal;
+      return newOrder;
+    });
+  }, [objects]);
+
+  // Sort objects within each type by objectOrder for rendering
+  const sortedObjects = useMemo(() => {
+    return [...objects].sort((a, b) => {
+      // First sort by layer category order
+      const aLayerIdx = layerOrder.indexOf(a.type as LayerType);
+      const bLayerIdx = layerOrder.indexOf(b.type as LayerType);
+      if (aLayerIdx !== bLayerIdx) return aLayerIdx - bLayerIdx;
+      // Within same category, sort by objectOrder
+      return (objectOrder[a.id] ?? 0) - (objectOrder[b.id] ?? 0);
+    });
+  }, [objects, layerOrder, objectOrder]);
 
   const handleLayerDragStart = useCallback((type: LayerType) => setDraggedLayer(type), []);
   const handleLayerDragOver = useCallback((e: React.DragEvent, type: LayerType) => {
@@ -832,6 +875,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         onSaveLayerOrder={handleSaveLayerOrder}
         objects={objects} selectedId={selectedId} selectedObj={selectedObj}
         mechanisms={mechanisms} enabledMechanisms={enabledMechanisms} mechanismCounts={mechanismCounts}
+        objectOrder={objectOrder} onObjectReorder={handleObjectReorder}
       />
 
       {/* Canvas Container */}
@@ -884,37 +928,41 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               {/* Connection lines */}
               <ConnectionLines objects={objects} isIsometric={false} />
 
-              {/* Dynamic layer rendering */}
-              {layerOrder.map((layerType) => (
-                <g key={layerType}>
-                  {layerType === 'mechanism' && (
-                    <MechanismRenderer
-                      objects={objects} selectedId={selectedId} secondSelectedId={secondSelectedId}
-                      panMode={panMode} isDragging={isDragging} draggingObject={draggingObject}
-                      onMouseDown={handleMouseDown} onResize={handleResize}
-                      getMechanismImageForObject={getMechanismImageForObject}
-                    />
-                  )}
-                  {layerType === 'product' && (
-                    <ProductRenderer
-                      objects={objects} selectedId={selectedId} secondSelectedId={secondSelectedId}
-                      panMode={panMode} isIsometric={false}
-                      onMouseDown={handleMouseDown} onResize={handleResize}
-                      productDimensions={productDimensions}
-                      productW={productW} productH={productH} productD={productD}
-                      currentView={currentView} isoProject={isoProject}
-                    />
-                  )}
-                  {layerType === 'camera' && (
-                    <CameraRenderer
-                      objects={objects} selectedId={selectedId} secondSelectedId={secondSelectedId}
-                      panMode={panMode} isIsometric={false}
-                      onMouseDown={handleMouseDown} onResize={handleResize}
-                      isoProject={isoProject}
-                    />
-                  )}
-                </g>
-              ))}
+              {/* Dynamic layer rendering with object-level ordering */}
+              {layerOrder.map((layerType) => {
+                const layerObjects = sortedObjects.filter(o => o.type === layerType);
+                return (
+                  <g key={layerType}>
+                    {layerType === 'mechanism' && (
+                      <MechanismRenderer
+                        objects={sortedObjects}
+                        selectedId={selectedId} secondSelectedId={secondSelectedId}
+                        panMode={panMode} isDragging={isDragging} draggingObject={draggingObject}
+                        onMouseDown={handleMouseDown} onResize={handleResize}
+                        getMechanismImageForObject={getMechanismImageForObject}
+                      />
+                    )}
+                    {layerType === 'product' && (
+                      <ProductRenderer
+                        objects={sortedObjects} selectedId={selectedId} secondSelectedId={secondSelectedId}
+                        panMode={panMode} isIsometric={false}
+                        onMouseDown={handleMouseDown} onResize={handleResize}
+                        productDimensions={productDimensions}
+                        productW={productW} productH={productH} productD={productD}
+                        currentView={currentView} isoProject={isoProject}
+                      />
+                    )}
+                    {layerType === 'camera' && (
+                      <CameraRenderer
+                        objects={sortedObjects} selectedId={selectedId} secondSelectedId={secondSelectedId}
+                        panMode={panMode} isIsometric={false}
+                        onMouseDown={handleMouseDown} onResize={handleResize}
+                        isoProject={isoProject}
+                      />
+                    )}
+                  </g>
+                );
+              })}
 
               {/* Alignment guides */}
               {isDragging && draggingObject && smartSnapEnabled && (
