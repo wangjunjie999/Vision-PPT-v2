@@ -19,10 +19,10 @@ interface MechanismRendererProps {
 
 export const MechanismRenderer = memo(function MechanismRenderer({
   objects, selectedId, secondSelectedId, panMode, isDragging, draggingObject,
-  onMouseDown, onResize, getMechanismImageForObject,
+  onMouseDown, onResize, getMechanismImageForObject, currentView = 'front',
 }: MechanismRendererProps) {
   const mechanisms = objects.filter(obj => obj.type === 'mechanism');
-
+  const cameras = objects.filter(obj => obj.type === 'camera');
   return (
     <>
       {mechanisms.map(obj => {
