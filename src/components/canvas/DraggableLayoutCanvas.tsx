@@ -781,20 +781,25 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   const mechViewForImage: StandardViewType = currentView === 'isometric' ? 'front' : currentView as StandardViewType;
 
   const getMechanismImageForObject = useCallback((obj: LayoutObject) => {
-    if (obj.mechanismType) {
-      const localImage = getMechanismImage(obj.mechanismType, mechViewForImage);
+    // Check database URL first (user-uploaded images take priority)
+    const mech = mechanisms.find(m => m.id === obj.mechanismId);
+    if (mech) {
+      let dbUrl: string | null = null;
+      switch (mechViewForImage) {
+        case 'front': dbUrl = mech.front_view_image_url; break;
+        case 'side': dbUrl = mech.side_view_image_url; break;
+        case 'top': dbUrl = mech.top_view_image_url; break;
+        default: dbUrl = mech.front_view_image_url;
+      }
+      if (dbUrl) return dbUrl;
+    }
+    // Fallback to local static assets
+    const mechType = obj.mechanismType || mech?.type;
+    if (mechType) {
+      const localImage = getMechanismImage(mechType, mechViewForImage);
       if (localImage) return localImage;
     }
-    const mech = mechanisms.find(m => m.id === obj.mechanismId);
-    if (!mech) return null;
-    const localImage = getMechanismImage(mech.type, mechViewForImage);
-    if (localImage) return localImage;
-    switch (mechViewForImage) {
-      case 'front': return mech.front_view_image_url;
-      case 'side': return mech.side_view_image_url;
-      case 'top': return mech.top_view_image_url;
-      default: return mech.front_view_image_url;
-    }
+    return null;
   }, [mechanisms, mechViewForImage]);
 
   const isoProject = useCallback((px: number, py: number, pz: number) => {

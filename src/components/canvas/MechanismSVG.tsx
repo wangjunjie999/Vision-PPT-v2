@@ -40,14 +40,14 @@ export const getMechanismMountPoints = (type: string, view: 'front' | 'side' | '
   const configs: Record<string, Record<string, CameraMountPoint[]>> = {
     robot_arm: {
       front: [
-        { id: 'arm_end', type: 'arm_end', position: { x: 0.7, y: -0.4 }, rotation: -45, description: '末端法兰安装' },
+        { id: 'arm_end', type: 'arm_end', position: { x: 0.75, y: -0.55 }, rotation: -45, description: '末端法兰安装' },
         { id: 'wrist', type: 'side', position: { x: 0.5, y: -0.2 }, rotation: 0, description: '腕部侧装' },
       ],
       side: [
-        { id: 'arm_end', type: 'arm_end', position: { x: 0.8, y: -0.3 }, rotation: -30, description: '末端法兰安装' },
+        { id: 'arm_end', type: 'arm_end', position: { x: 0.85, y: -0.45 }, rotation: -30, description: '末端法兰安装' },
       ],
       top: [
-        { id: 'arm_end', type: 'arm_end', position: { x: 0.6, y: 0 }, rotation: 0, description: '末端法兰安装' },
+        { id: 'arm_end', type: 'arm_end', position: { x: 0.7, y: -0.1 }, rotation: 0, description: '末端法兰安装' },
       ],
     },
     camera_mount: {
@@ -200,17 +200,12 @@ const MechanismDrawings: Record<string, Record<string, React.ReactNode>> = {
         {/* Index marks */}
         <line x1={-30} y1={0} x2={-25} y2={0} stroke="#22d3ee" strokeWidth={2} />
         <line x1={25} y1={0} x2={30} y2={0} stroke="#22d3ee" strokeWidth={2} />
-        {/* Camera mount points */}
-        <circle cx={0} cy={-20} r={4} fill="none" stroke="#f97316" strokeWidth={2} strokeDasharray="3 2" />
-        <circle cx={-20} cy={-8} r={3} fill="none" stroke="#f97316" strokeWidth={1.5} strokeDasharray="2 2" />
-        <circle cx={20} cy={-8} r={3} fill="none" stroke="#f97316" strokeWidth={1.5} strokeDasharray="2 2" />
       </g>
     ),
     side: (
       <g>
         <rect x={-15} y={10} width={30} height={20} fill="#4b5563" rx={3} />
         <rect x={-30} y={-5} width={60} height={15} fill="#6b7280" rx={2} />
-        <circle cx={0} cy={-20} r={4} fill="none" stroke="#f97316" strokeWidth={2} strokeDasharray="3 2" />
       </g>
     ),
     top: (
@@ -241,16 +236,12 @@ const MechanismDrawings: Record<string, Record<string, React.ReactNode>> = {
         {/* Lift arrows */}
         <path d="M 0 -25 L 5 -18 L -5 -18 Z" fill="#22d3ee" />
         <path d="M 0 25 L 5 18 L -5 18 Z" fill="#22d3ee" />
-        {/* Camera mount bracket */}
-        <rect x={15} y={-20} width={15} height={4} fill="#374151" />
-        <circle cx={27} cy={-18} r={4} fill="none" stroke="#f97316" strokeWidth={2} strokeDasharray="3 2" />
       </g>
     ),
     side: (
       <g>
         <rect x={-10} y={-30} width={20} height={60} fill="#4b5563" rx={2} />
         <rect x={-15} y={-5} width={30} height={10} fill="#6b7280" rx={2} />
-        <circle cx={0} cy={-25} r={4} fill="none" stroke="#f97316" strokeWidth={2} strokeDasharray="3 2" />
       </g>
     ),
     top: (
@@ -266,15 +257,9 @@ const MechanismDrawings: Record<string, Record<string, React.ReactNode>> = {
         {/* Belt section */}
         <rect x={-35} y={5} width={70} height={12} fill="#4b5563" rx={2} />
         <line x1={-30} y1={11} x2={30} y2={11} stroke="#22d3ee" strokeWidth={1} strokeDasharray="5 3" />
-        {/* Gantry frame */}
-        <rect x={-30} y={-35} width={4} height={40} fill="#374151" />
-        <rect x={26} y={-35} width={4} height={40} fill="#374151" />
-        <rect x={-30} y={-38} width={60} height={6} fill="#374151" rx={2} />
-        {/* Camera mount points on gantry */}
-        <circle cx={0} cy={-45} r={5} fill="none" stroke="#f97316" strokeWidth={2} strokeDasharray="3 2" />
-        <circle cx={-18} cy={-30} r={4} fill="none" stroke="#f97316" strokeWidth={1.5} strokeDasharray="2 2" />
-        <circle cx={18} cy={-30} r={4} fill="none" stroke="#f97316" strokeWidth={1.5} strokeDasharray="2 2" />
-        <text x={0} y={-44} textAnchor="middle" fill="#f97316" fontSize={6}>📷</text>
+        {/* Side rails */}
+        <rect x={-30} y={17} width={4} height={8} fill="#374151" rx={1} />
+        <rect x={26} y={17} width={4} height={8} fill="#374151" rx={1} />
       </g>
     ),
     side: (
@@ -284,7 +269,6 @@ const MechanismDrawings: Record<string, Record<string, React.ReactNode>> = {
         <rect x={-20} y={2} width={40} height={4} fill="#6b7280" />
         <rect x={-20} y={14} width={40} height={4} fill="#6b7280" />
         <path d="M -15 10 L 15 10" stroke="#22d3ee" strokeWidth={2} markerEnd="url(#arrow)" />
-        <circle cx={0} cy={-20} r={4} fill="none" stroke="#f97316" strokeWidth={2} strokeDasharray="3 2" />
       </g>
     ),
     top: (
@@ -373,8 +357,6 @@ const MechanismDrawings: Record<string, Record<string, React.ReactNode>> = {
         {/* Port fittings */}
         <circle cx={-14} cy={10} r={3} fill="#374151" />
         <circle cx={14} cy={20} r={3} fill="#374151" />
-        {/* Mount point at rod end */}
-        <circle cx={0} cy={-32} r={4} fill="none" stroke="#f97316" strokeWidth={2} strokeDasharray="3 2" />
       </g>
     ),
     side: (
@@ -406,8 +388,6 @@ const MechanismDrawings: Record<string, Record<string, React.ReactNode>> = {
         {/* Opening arrows */}
         <path d="M -8 -10 L -12 -10" stroke="#22d3ee" strokeWidth={1.5} />
         <path d="M 8 -10 L 12 -10" stroke="#22d3ee" strokeWidth={1.5} />
-        {/* Camera mount above */}
-        <circle cx={0} cy={-28} r={4} fill="none" stroke="#f97316" strokeWidth={2} strokeDasharray="3 2" />
       </g>
     ),
     side: (
@@ -449,7 +429,7 @@ export function MechanismSVG({
   
   // Get image URL - prioritize: LOCAL ASSETS FIRST > props imageUrl > fallback to SVG
   const localImageUrl = getMechanismImage(type, view);
-  const mechanismImageUrl = localImageUrl || imageUrl;
+  const mechanismImageUrl = imageUrl || localImageUrl;
   const shouldUseImage = useImage && mechanismImageUrl && !imageLoadError;
   
   // Reset error state when type or view changes
