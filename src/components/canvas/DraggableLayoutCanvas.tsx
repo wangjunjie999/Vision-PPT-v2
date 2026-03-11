@@ -934,7 +934,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                   <g key={layerType}>
                     {layerType === 'mechanism' && (
                       <MechanismRenderer
-                        objects={layerObjects.length > 0 ? objects.map(o => o.type === 'mechanism' ? { ...o, _order: objectOrder[o.id] ?? 0 } : o).sort((a, b) => ((a as any)._order ?? 0) - ((b as any)._order ?? 0)) : objects}
+                        objects={sortedObjects}
                         selectedId={selectedId} secondSelectedId={secondSelectedId}
                         panMode={panMode} isDragging={isDragging} draggingObject={draggingObject}
                         onMouseDown={handleMouseDown} onResize={handleResize}
