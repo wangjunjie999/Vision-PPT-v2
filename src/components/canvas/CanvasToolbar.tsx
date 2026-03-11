@@ -69,6 +69,9 @@ interface CanvasToolbarProps {
   mechanisms: Mechanism[];
   enabledMechanisms: Mechanism[];
   mechanismCounts: Record<string, number>;
+  // Object-level ordering
+  objectOrder: ObjectOrderMap;
+  onObjectReorder: (id: string, direction: 'up' | 'down') => void;
 }
 
 export const CanvasToolbar = memo(function CanvasToolbar({
