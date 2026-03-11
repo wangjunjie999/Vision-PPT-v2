@@ -99,6 +99,21 @@ export function useMechanisms() {
     fetchMechanisms();
   }, [fetchMechanisms]);
 
+  // Realtime subscription for cross-component sync
+  useEffect(() => {
+    const channel = supabase
+      .channel('mechanisms-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'mechanisms' },
+        () => fetchMechanisms()
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchMechanisms]);
+
   const addMechanism = async (mechanism: MechanismInsert) => {
     // Transform the mechanism to DB-compatible format
     const dbMechanism = {
