@@ -875,6 +875,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         onSaveLayerOrder={handleSaveLayerOrder}
         objects={objects} selectedId={selectedId} selectedObj={selectedObj}
         mechanisms={mechanisms} enabledMechanisms={enabledMechanisms} mechanismCounts={mechanismCounts}
+        objectOrder={objectOrder} onObjectReorder={handleObjectReorder}
       />
 
       {/* Canvas Container */}
