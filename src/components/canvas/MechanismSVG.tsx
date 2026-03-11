@@ -47,7 +47,7 @@ export const getMechanismMountPoints = (type: string, view: 'front' | 'side' | '
         { id: 'arm_end', type: 'arm_end', position: { x: 0.85, y: -0.45 }, rotation: -30, description: '末端法兰安装' },
       ],
       top: [
-        { id: 'arm_end', type: 'arm_end', position: { x: 0.6, y: 0 }, rotation: 0, description: '末端法兰安装' },
+        { id: 'arm_end', type: 'arm_end', position: { x: 0.7, y: -0.1 }, rotation: 0, description: '末端法兰安装' },
       ],
     },
     camera_mount: {
