@@ -943,7 +943,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
                     )}
                     {layerType === 'product' && (
                       <ProductRenderer
-                        objects={objects} selectedId={selectedId} secondSelectedId={secondSelectedId}
+                        objects={sortedObjects} selectedId={selectedId} secondSelectedId={secondSelectedId}
                         panMode={panMode} isIsometric={false}
                         onMouseDown={handleMouseDown} onResize={handleResize}
                         productDimensions={productDimensions}
