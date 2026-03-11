@@ -85,9 +85,17 @@ export const CanvasToolbar = memo(function CanvasToolbar({
   objects, selectedId, selectedObj, mechanisms, enabledMechanisms, mechanismCounts,
   objectOrder, onObjectReorder,
 }: CanvasToolbarProps) {
+  const [expandedLayers, setExpandedLayers] = useState<Set<LayerType>>(new Set());
+  const toggleLayerExpand = (type: LayerType) => {
+    setExpandedLayers(prev => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type); else next.add(type);
+      return next;
+    });
+  };
+
   return (
     <>
-      {/* Main toolbar row */}
       <div className="flex items-center justify-between gap-3 px-4 py-2 bg-card border-b border-border">
         {/* View tabs */}
         <div className="flex gap-1">
