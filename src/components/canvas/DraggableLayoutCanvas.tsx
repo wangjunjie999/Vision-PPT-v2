@@ -927,37 +927,41 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               {/* Connection lines */}
               <ConnectionLines objects={objects} isIsometric={false} />
 
-              {/* Dynamic layer rendering */}
-              {layerOrder.map((layerType) => (
-                <g key={layerType}>
-                  {layerType === 'mechanism' && (
-                    <MechanismRenderer
-                      objects={objects} selectedId={selectedId} secondSelectedId={secondSelectedId}
-                      panMode={panMode} isDragging={isDragging} draggingObject={draggingObject}
-                      onMouseDown={handleMouseDown} onResize={handleResize}
-                      getMechanismImageForObject={getMechanismImageForObject}
-                    />
-                  )}
-                  {layerType === 'product' && (
-                    <ProductRenderer
-                      objects={objects} selectedId={selectedId} secondSelectedId={secondSelectedId}
-                      panMode={panMode} isIsometric={false}
-                      onMouseDown={handleMouseDown} onResize={handleResize}
-                      productDimensions={productDimensions}
-                      productW={productW} productH={productH} productD={productD}
-                      currentView={currentView} isoProject={isoProject}
-                    />
-                  )}
-                  {layerType === 'camera' && (
-                    <CameraRenderer
-                      objects={objects} selectedId={selectedId} secondSelectedId={secondSelectedId}
-                      panMode={panMode} isIsometric={false}
-                      onMouseDown={handleMouseDown} onResize={handleResize}
-                      isoProject={isoProject}
-                    />
-                  )}
-                </g>
-              ))}
+              {/* Dynamic layer rendering with object-level ordering */}
+              {layerOrder.map((layerType) => {
+                const layerObjects = sortedObjects.filter(o => o.type === layerType);
+                return (
+                  <g key={layerType}>
+                    {layerType === 'mechanism' && (
+                      <MechanismRenderer
+                        objects={layerObjects.length > 0 ? objects.map(o => o.type === 'mechanism' ? { ...o, _order: objectOrder[o.id] ?? 0 } : o).sort((a, b) => ((a as any)._order ?? 0) - ((b as any)._order ?? 0)) : objects}
+                        selectedId={selectedId} secondSelectedId={secondSelectedId}
+                        panMode={panMode} isDragging={isDragging} draggingObject={draggingObject}
+                        onMouseDown={handleMouseDown} onResize={handleResize}
+                        getMechanismImageForObject={getMechanismImageForObject}
+                      />
+                    )}
+                    {layerType === 'product' && (
+                      <ProductRenderer
+                        objects={objects} selectedId={selectedId} secondSelectedId={secondSelectedId}
+                        panMode={panMode} isIsometric={false}
+                        onMouseDown={handleMouseDown} onResize={handleResize}
+                        productDimensions={productDimensions}
+                        productW={productW} productH={productH} productD={productD}
+                        currentView={currentView} isoProject={isoProject}
+                      />
+                    )}
+                    {layerType === 'camera' && (
+                      <CameraRenderer
+                        objects={objects} selectedId={selectedId} secondSelectedId={secondSelectedId}
+                        panMode={panMode} isIsometric={false}
+                        onMouseDown={handleMouseDown} onResize={handleResize}
+                        isoProject={isoProject}
+                      />
+                    )}
+                  </g>
+                );
+              })}
 
               {/* Alignment guides */}
               {isDragging && draggingObject && smartSnapEnabled && (
