@@ -44,7 +44,7 @@ export const getMechanismMountPoints = (type: string, view: 'front' | 'side' | '
         { id: 'wrist', type: 'side', position: { x: 0.5, y: -0.2 }, rotation: 0, description: '腕部侧装' },
       ],
       side: [
-        { id: 'arm_end', type: 'arm_end', position: { x: 0.8, y: -0.3 }, rotation: -30, description: '末端法兰安装' },
+        { id: 'arm_end', type: 'arm_end', position: { x: 0.85, y: -0.45 }, rotation: -30, description: '末端法兰安装' },
       ],
       top: [
         { id: 'arm_end', type: 'arm_end', position: { x: 0.6, y: 0 }, rotation: 0, description: '末端法兰安装' },
