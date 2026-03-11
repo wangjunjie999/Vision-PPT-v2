@@ -236,9 +236,6 @@ const MechanismDrawings: Record<string, Record<string, React.ReactNode>> = {
         {/* Lift arrows */}
         <path d="M 0 -25 L 5 -18 L -5 -18 Z" fill="#22d3ee" />
         <path d="M 0 25 L 5 18 L -5 18 Z" fill="#22d3ee" />
-        {/* Camera mount bracket */}
-        <rect x={15} y={-20} width={15} height={4} fill="#374151" />
-        <circle cx={27} cy={-18} r={4} fill="none" stroke="#f97316" strokeWidth={2} strokeDasharray="3 2" />
       </g>
     ),
     side: (
