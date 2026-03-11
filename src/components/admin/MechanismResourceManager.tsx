@@ -130,13 +130,21 @@ export function MechanismResourceManager() {
     setDialogOpen(true);
   };
 
-  const handleImageUpload = async (file: File, viewType: 'front' | 'side' | 'top') => {
+  const openCropDialog = (file: File, viewType: 'front' | 'side' | 'top') => {
+    setCropFile(file);
+    setCropViewType(viewType);
+    setCropDialogOpen(true);
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    const viewType = cropViewType;
     setUploadingView(viewType);
     try {
-      const fileName = `mechanisms/${Date.now()}-${viewType}-${file.name}`;
+      const fileName = `mechanisms/${Date.now()}-${viewType}-cropped.png`;
+      const file = new File([croppedBlob], fileName.split('/').pop()!, { type: 'image/png' });
       const { error: uploadError } = await supabase.storage
         .from('product-models')
-        .upload(fileName, file, { contentType: file.type, upsert: true });
+        .upload(fileName, file, { contentType: 'image/png', upsert: true });
 
       if (uploadError) throw uploadError;
 
