@@ -312,7 +312,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
                     <Layers className="h-3 w-3" />层级设置
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-56 p-3" align="start">
+                <PopoverContent className="w-64 p-3" align="start">
                   <div className="space-y-2">
                     <div className="text-xs font-semibold text-muted-foreground mb-2">渲染层级（上方 = 最前）</div>
                     {[...layerOrder].reverse().map((type) => {
@@ -321,28 +321,72 @@ export const CanvasToolbar = memo(function CanvasToolbar({
                         product: { icon: '📦', label: '产品' },
                         camera: { icon: '📷', label: '相机' },
                       }[type];
+                      const layerObjects = objects
+                        .filter(o => o.type === type)
+                        .sort((a, b) => (objectOrder[a.id] ?? 0) - (objectOrder[b.id] ?? 0));
+                      const isExpanded = expandedLayers.has(type);
                       return (
-                        <div
-                          key={type}
-                          draggable
-                          onDragStart={() => onLayerDragStart(type)}
-                          onDragOver={(e) => onLayerDragOver(e, type)}
-                          onDrop={() => onLayerDrop(type)}
-                          onDragEnd={onLayerDragEnd}
-                          className={cn(
-                            "flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 border border-border/50 cursor-grab active:cursor-grabbing transition-all",
-                            draggedLayer === type && "opacity-40",
-                            dragOverLayer === type && draggedLayer !== type && "border-primary ring-1 ring-primary/30"
+                        <div key={type} className="space-y-1">
+                          <div
+                            draggable
+                            onDragStart={() => onLayerDragStart(type)}
+                            onDragOver={(e) => onLayerDragOver(e, type)}
+                            onDrop={() => onLayerDrop(type)}
+                            onDragEnd={onLayerDragEnd}
+                            className={cn(
+                              "flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 border border-border/50 cursor-grab active:cursor-grabbing transition-all",
+                              draggedLayer === type && "opacity-40",
+                              dragOverLayer === type && draggedLayer !== type && "border-primary ring-1 ring-primary/30"
+                            )}
+                          >
+                            <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                            <span className="text-xs font-medium flex items-center gap-1.5 flex-1">
+                              <span>{info.icon}</span>{info.label}
+                              <Badge variant="secondary" className="text-[9px] h-3.5 px-1 ml-auto">{layerObjects.length}</Badge>
+                            </span>
+                            {layerObjects.length > 1 && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); toggleLayerExpand(type); }}
+                                className="p-0.5 rounded hover:bg-muted"
+                              >
+                                {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                              </button>
+                            )}
+                          </div>
+                          {/* Object-level items within this category */}
+                          {isExpanded && layerObjects.length > 1 && (
+                            <div className="ml-5 space-y-0.5">
+                              {layerObjects.map((obj, idx) => (
+                                <div
+                                  key={obj.id}
+                                  className={cn(
+                                    "flex items-center gap-1.5 px-2 py-1 rounded text-xs bg-background/50 border border-border/30",
+                                    selectedId === obj.id && "border-primary/50 bg-primary/10"
+                                  )}
+                                >
+                                  <span className="flex-1 truncate text-muted-foreground">{obj.name}</span>
+                                  <button
+                                    onClick={() => onObjectReorder(obj.id, 'up')}
+                                    disabled={idx === 0}
+                                    className="p-0.5 rounded hover:bg-muted disabled:opacity-30"
+                                  >
+                                    <ChevronUp className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => onObjectReorder(obj.id, 'down')}
+                                    disabled={idx === layerObjects.length - 1}
+                                    className="p-0.5 rounded hover:bg-muted disabled:opacity-30"
+                                  >
+                                    <ChevronDown className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
                           )}
-                        >
-                          <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                          <span className="text-xs font-medium flex items-center gap-1.5">
-                            <span>{info.icon}</span>{info.label}
-                          </span>
                         </div>
                       );
                     })}
-                    <div className="text-[10px] text-muted-foreground mt-1">拖拽调整顺序，上方的对象显示在最前面</div>
+                    <div className="text-[10px] text-muted-foreground mt-1">拖拽调整分类顺序，展开调整对象顺序</div>
                     <Button size="sm" className="w-full mt-2 gap-1.5" onClick={onSaveLayerOrder}>
                       <Save className="h-3.5 w-3.5" />保存层级设置
                     </Button>
