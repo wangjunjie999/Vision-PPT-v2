@@ -1,44 +1,55 @@
 
 
-# FOV 输入改为两个独立数值框
+# 修复图片同步：数据库图片全局替换本地旧图
 
 ## 问题
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+1. **`MechanismThumbnail` 的 `onError` 回退逻辑有缺陷**（ImageWithFallback.tsx 第 175-188 行）：当数据库 URL 加载失败时，代码创建了一个临时 `img` 元素测试 fallback，但即使 fallback 加载成功也无法更新已渲染的 `<img>` 标签的 `src`，注释已承认这个问题（"we can't easily swap in React"）。结果是显示 emoji 而非回退到本地图片。
 
-## 修改方案
+2. **`MechanismSVG.tsx` 注释误导**（第 430 行）：注释写着 "LOCAL ASSETS FIRST" 但实际代码 `imageUrl || localImageUrl` 是正确的（DB 优先）。需要更正注释。
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+## 修复方案
 
-在 `ModuleFormState` 中添加：
+### 文件：`src/components/common/ImageWithFallback.tsx`
+
+重写 `MechanismThumbnail` 的图片加载逻辑，使用 state 管理当前显示的 src：
+- 初始显示 `primarySrc`（数据库 URL 优先）
+- `onError` 时自动切换到 `fallbackSrc`（本地资源）
+- fallback 也失败时才显示 emoji
+
+```tsx
+const MechanismThumbnail = memo(function MechanismThumbnail({ type, view, databaseUrl, ... }) {
+  const localImageUrl = getMechanismImage(type, view);
+  const primarySrc = databaseUrl || localImageUrl;
+  const fallbackSrc = databaseUrl ? localImageUrl : null;
+  const [currentSrc, setCurrentSrc] = useState(primarySrc);
+  const [showFallbackEmoji, setShowFallbackEmoji] = useState(false);
+
+  useEffect(() => {
+    // 当 databaseUrl 变化时重置
+    setCurrentSrc(databaseUrl || localImageUrl);
+    setShowFallbackEmoji(false);
+  }, [databaseUrl, type, view]);
+
+  const handleError = () => {
+    if (currentSrc === primarySrc && fallbackSrc) {
+      setCurrentSrc(fallbackSrc); // 切换到本地回退
+    } else {
+      setShowFallbackEmoji(true); // 全部失败，显示 emoji
+    }
+  };
+
+  return showFallbackEmoji || !currentSrc 
+    ? <span>⚙️</span> 
+    : <img src={currentSrc} onError={handleError} />;
+});
 ```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+### 文件：`src/components/canvas/MechanismSVG.tsx`
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+更正第 430 行注释为 "database URL first, local assets as fallback"。
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
-
-```
-[宽度输入] × [高度输入]
-```
-
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
-
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+### 涉及文件
+- `src/components/common/ImageWithFallback.tsx` — 重写回退逻辑
+- `src/components/canvas/MechanismSVG.tsx` — 更正注释
 
