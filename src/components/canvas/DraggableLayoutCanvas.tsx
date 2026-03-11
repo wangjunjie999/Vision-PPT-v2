@@ -23,7 +23,7 @@ import { compressImage, dataUrlToBlob, QUALITY_PRESETS, type QualityPreset } fro
 import { getImageSaveErrorMessage } from '@/utils/errorMessages';
 
 // Sub-components
-import type { ViewType, StandardViewType, LayerType } from './canvasTypes';
+import type { ViewType, StandardViewType, LayerType, ObjectOrderMap } from './canvasTypes';
 import { AUTO_ARRANGE_CONFIG } from './canvasTypes';
 import { CanvasToolbar } from './CanvasToolbar';
 import { CanvasSVGDefs } from './CanvasSVGDefs';
