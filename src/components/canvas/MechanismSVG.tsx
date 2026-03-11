@@ -266,15 +266,9 @@ const MechanismDrawings: Record<string, Record<string, React.ReactNode>> = {
         {/* Belt section */}
         <rect x={-35} y={5} width={70} height={12} fill="#4b5563" rx={2} />
         <line x1={-30} y1={11} x2={30} y2={11} stroke="#22d3ee" strokeWidth={1} strokeDasharray="5 3" />
-        {/* Gantry frame */}
-        <rect x={-30} y={-35} width={4} height={40} fill="#374151" />
-        <rect x={26} y={-35} width={4} height={40} fill="#374151" />
-        <rect x={-30} y={-38} width={60} height={6} fill="#374151" rx={2} />
-        {/* Camera mount points on gantry */}
-        <circle cx={0} cy={-45} r={5} fill="none" stroke="#f97316" strokeWidth={2} strokeDasharray="3 2" />
-        <circle cx={-18} cy={-30} r={4} fill="none" stroke="#f97316" strokeWidth={1.5} strokeDasharray="2 2" />
-        <circle cx={18} cy={-30} r={4} fill="none" stroke="#f97316" strokeWidth={1.5} strokeDasharray="2 2" />
-        <text x={0} y={-44} textAnchor="middle" fill="#f97316" fontSize={6}>📷</text>
+        {/* Side rails */}
+        <rect x={-30} y={17} width={4} height={8} fill="#374151" rx={1} />
+        <rect x={26} y={17} width={4} height={8} fill="#374151" rx={1} />
       </g>
     ),
     side: (
