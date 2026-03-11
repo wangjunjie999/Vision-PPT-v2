@@ -40,7 +40,7 @@ export const getMechanismMountPoints = (type: string, view: 'front' | 'side' | '
   const configs: Record<string, Record<string, CameraMountPoint[]>> = {
     robot_arm: {
       front: [
-        { id: 'arm_end', type: 'arm_end', position: { x: 0.7, y: -0.4 }, rotation: -45, description: '末端法兰安装' },
+        { id: 'arm_end', type: 'arm_end', position: { x: 0.75, y: -0.55 }, rotation: -45, description: '末端法兰安装' },
         { id: 'wrist', type: 'side', position: { x: 0.5, y: -0.2 }, rotation: 0, description: '腕部侧装' },
       ],
       side: [
