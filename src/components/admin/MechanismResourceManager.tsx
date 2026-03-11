@@ -424,6 +424,15 @@ export function MechanismResourceManager() {
           </Card>
         ))}
       </div>
+
+      <ImageCropDialog
+        open={cropDialogOpen}
+        onOpenChange={setCropDialogOpen}
+        imageFile={cropFile}
+        onCropComplete={handleCropComplete}
+        recommendedSize={cropViewType === 'front' ? { width: 400, height: 400 } : { width: 400, height: 300 }}
+        title={`裁剪${cropViewType === 'front' ? '正' : cropViewType === 'side' ? '侧' : '俯'}视图`}
+      />
     </div>
   );
 }
