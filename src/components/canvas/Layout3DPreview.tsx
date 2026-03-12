@@ -1518,7 +1518,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       <Canvas
         ref={canvasRef}
         camera={{ position: [7, 6, 7], fov: 50, near: 0.1, far: 100 }}
-        gl={{ antialias: true, alpha: false }}
+        gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
         onCreated={({ gl }) => { gl.setClearColor('#0f172a'); }}
         onPointerMissed={() => {
           if (!dragStateRef.current.isDragging) {
