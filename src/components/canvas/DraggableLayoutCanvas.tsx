@@ -910,6 +910,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
             onUpdateProductDimensions={(dims) => {
               updateWorkstation(workstationId, { product_dimensions: dims as any });
             }}
+            onScreenshotReady={(fn) => { isometricScreenshotFnRef.current = fn; }}
           />
         ) : (
         <ContextMenu>
