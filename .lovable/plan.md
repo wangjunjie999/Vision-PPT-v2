@@ -1,47 +1,44 @@
 
 
-# 机械臂3D模型改为三节臂 + 连接线从末端法兰出发
+# FOV 输入改为两个独立数值框
 
 ## 问题
 
-1. **3D 机械臂模型只有两节臂**（大臂 + 小臂），不够真实，应改为三节（大臂 + 小臂 + 腕部/末端段）
-2. **3D 连接线从机械臂底座中心出发**，而非从末端法兰盘位置出发，无法体现末端与相机的物理关系
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-## 方案
+## 修改方案
 
-### 1. 重构 `RobotArmModel`（Layout3DPreview.tsx 第 140-235 行）
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-将当前两节臂改为三节结构：
-
-```text
-底座 → 腰部转台 → 关节1(肩) → 大臂 → 关节2(肘) → 小臂 → 关节3(腕) → 末端段 → 法兰盘(黄色)
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
 ```
 
-- 大臂（arm1）：占高度 30%，向后倾斜 30°
-- 小臂（arm2）：占高度 25%，向前弯折
-- 末端段（arm3）：占高度 15%，再次弯折向下/前方
-- 每节之间有球形关节，末端保留黄色法兰盘
-- xray 模式同步更新
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-### 2. 修改 `RelationshipLines`（Layout3DPreview.tsx 第 896-1003 行）
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
 
-当父级机构类型为 `robot_arm` 时，连接线终点从底座中心偏移到法兰盘的世界坐标位置。根据机械臂的几何结构计算末端法兰盘在3D空间中的实际位置：
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
 
-```typescript
-// 根据臂段角度和长度计算法兰盘世界位置
-function getRobotArmFlangePosition(parent: LayoutObject): [number, number, number] {
-  // 沿各关节角度累加计算末端位置
-  const baseY = h * 0.08 + waistH;
-  // ... 经过 arm1 → arm2 → arm3 各段旋转/偏移后得到末端坐标
-}
+```
+[宽度输入] × [高度输入]
 ```
 
-连接线从法兰盘位置画到相机位置，使用实线 + 粗线宽表示物理连接。
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
 
-### 涉及文件
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
 
-- **`src/components/canvas/Layout3DPreview.tsx`**
-  - 重写 `RobotArmModel` 函数：三节臂 + 三个关节 + 法兰盘
-  - 重写其 xray 版本
-  - 修改 `RelationshipLines`：robot_arm 的连接线终点改为法兰盘位置
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
