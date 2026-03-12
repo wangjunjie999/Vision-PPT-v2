@@ -141,40 +141,65 @@ function RobotArmModel({ w, h, d, selected, xray }: { w: number; h: number; d: n
   const baseR = Math.min(w, d) * 0.5;
   const jointR = w * 0.12;
   const armR = w * 0.08;
-  const arm1L = h * 0.38;
-  const arm2L = h * 0.30;
+  const arm1L = h * 0.30;
+  const arm2L = h * 0.25;
+  const arm3L = h * 0.18;
   const waistH = h * 0.12;
   const ribCount = 6;
 
-  // High-contrast: orange body, bright orange joints, white base
   const bodyColor = '#f97316';
   const jointColor = '#ff6b00';
   const baseColor = '#e2e8f0';
   const darkAccent = '#1e293b';
+  const flangeColor = '#facc15';
 
   if (xray) {
     return (
       <group>
+        {/* Base */}
         <Cylinder args={[baseR, baseR * 1.1, h * 0.08, 24]} position={[0, h * 0.04, 0]}>
           <meshBasicMaterial {...xrayMat(baseColor)} />
         </Cylinder>
+        {/* Waist */}
         <Cylinder args={[baseR * 0.6, baseR * 0.65, waistH, 20]} position={[0, h * 0.08 + waistH / 2, 0]}>
           <meshBasicMaterial {...xrayMat(bodyColor)} />
         </Cylinder>
+        {/* Shoulder joint */}
         <Sphere args={[jointR, 16, 16]} position={[0, h * 0.08 + waistH, 0]}>
           <meshBasicMaterial {...xrayMat(jointColor)} />
         </Sphere>
+        {/* Arm1 (大臂) */}
         <group position={[0, h * 0.08 + waistH, 0]} rotation={[0, 0, 0.5]}>
           <Cylinder args={[armR, armR * 0.9, arm1L, 12]} position={[0, arm1L / 2, 0]}>
             <meshBasicMaterial {...xrayMat(bodyColor)} />
           </Cylinder>
+          {/* Elbow joint */}
           <Sphere args={[jointR * 0.85, 16, 16]} position={[0, arm1L, 0]}>
             <meshBasicMaterial {...xrayMat(jointColor)} />
           </Sphere>
+          {/* Arm2 (小臂) */}
           <group position={[0, arm1L, 0]} rotation={[0, 0, -1.2]}>
             <Cylinder args={[armR * 0.85, armR * 0.75, arm2L, 12]} position={[0, arm2L / 2, 0]}>
               <meshBasicMaterial {...xrayMat(bodyColor)} />
             </Cylinder>
+            {/* Wrist joint */}
+            <Sphere args={[jointR * 0.7, 14, 14]} position={[0, arm2L, 0]}>
+              <meshBasicMaterial {...xrayMat(jointColor)} />
+            </Sphere>
+            {/* Arm3 (腕部/末端段) */}
+            <group position={[0, arm2L, 0]} rotation={[0, 0, -0.6]}>
+              <Cylinder args={[armR * 0.7, armR * 0.6, arm3L, 10]} position={[0, arm3L / 2, 0]}>
+                <meshBasicMaterial {...xrayMat(bodyColor)} />
+              </Cylinder>
+              {/* End-effector joint */}
+              <Sphere args={[jointR * 0.5, 12, 12]} position={[0, arm3L, 0]}>
+                <meshBasicMaterial {...xrayMat(jointColor)} />
+              </Sphere>
+              {/* Flange */}
+              <Cylinder args={[w * 0.08, w * 0.08, h * 0.03, 16]} position={[0, arm3L + h * 0.025, 0]}>
+                <meshBasicMaterial {...xrayMat(flangeColor)} />
+              </Cylinder>
+            </group>
           </group>
         </group>
       </group>
@@ -183,9 +208,11 @@ function RobotArmModel({ w, h, d, selected, xray }: { w: number; h: number; d: n
 
   return (
     <group position={[0, 0, 0]}>
+      {/* Base plate */}
       <Cylinder args={[baseR, baseR * 1.1, h * 0.08, 24]} position={[0, h * 0.04, 0]}>
         <meshStandardMaterial {...mechMat(baseColor, selected, 0.7, 0.25)} />
       </Cylinder>
+      {/* Base ribs */}
       {Array.from({ length: ribCount }).map((_, i) => {
         const angle = (i / ribCount) * Math.PI * 2;
         return (
@@ -196,38 +223,58 @@ function RobotArmModel({ w, h, d, selected, xray }: { w: number; h: number; d: n
           </Box>
         );
       })}
+      {/* Waist turntable */}
       <Cylinder args={[baseR * 0.6, baseR * 0.65, waistH, 20]} position={[0, h * 0.08 + waistH / 2, 0]}>
         <meshStandardMaterial {...mechMat(darkAccent, selected, 0.6, 0.35)} />
       </Cylinder>
+      {/* Shoulder joint */}
       <Sphere args={[jointR, 16, 16]} position={[0, h * 0.08 + waistH, 0]}>
         <meshStandardMaterial {...mechMat(jointColor, selected, 0.5, 0.4)} />
       </Sphere>
+      {/* Arm1 (大臂) - tilted back 30° */}
       <group position={[0, h * 0.08 + waistH, 0]} rotation={[0, 0, 0.5]}>
         <Cylinder args={[armR, armR * 0.9, arm1L, 12]} position={[0, arm1L / 2, 0]}>
           <meshStandardMaterial {...mechMat(bodyColor, selected, 0.5, 0.4)} />
         </Cylinder>
+        {/* Cable harness on arm1 */}
         <Cylinder args={[armR * 0.15, armR * 0.15, arm1L * 0.85, 6]} position={[armR * 1.2, arm1L / 2, 0]}>
           <meshStandardMaterial {...rubberMat('#1a1a1a', selected)} />
         </Cylinder>
+        {/* Elbow joint */}
         <Sphere args={[jointR * 0.85, 16, 16]} position={[0, arm1L, 0]}>
           <meshStandardMaterial {...mechMat(jointColor, selected, 0.65, 0.25)} />
         </Sphere>
+        {/* Arm2 (小臂) - bend forward */}
         <group position={[0, arm1L, 0]} rotation={[0, 0, -1.2]}>
           <Cylinder args={[armR * 0.85, armR * 0.75, arm2L, 12]} position={[0, arm2L / 2, 0]}>
             <meshStandardMaterial {...mechMat(bodyColor, selected, 0.5, 0.4)} />
           </Cylinder>
+          {/* Cable harness on arm2 */}
           <Cylinder args={[armR * 0.12, armR * 0.12, arm2L * 0.8, 6]} position={[armR * 1.0, arm2L / 2, 0]}>
             <meshStandardMaterial {...rubberMat('#1a1a1a', selected)} />
           </Cylinder>
-          <Sphere args={[jointR * 0.65, 14, 14]} position={[0, arm2L, 0]}>
+          {/* Wrist joint */}
+          <Sphere args={[jointR * 0.7, 14, 14]} position={[0, arm2L, 0]}>
             <meshStandardMaterial {...mechMat(jointColor, selected, 0.65, 0.25)} />
           </Sphere>
-          <Cylinder args={[jointR * 0.35, jointR * 0.35, h * 0.04, 10]} position={[0, arm2L + h * 0.03, 0]}>
-            <meshStandardMaterial {...mechMat(darkAccent, selected, 0.6, 0.3)} />
-          </Cylinder>
-          <Cylinder args={[w * 0.08, w * 0.08, h * 0.03, 16]} position={[0, arm2L + h * 0.06, 0]}>
-            <meshStandardMaterial {...mechMat('#facc15', selected, 0.5, 0.35)} />
-          </Cylinder>
+          {/* Arm3 (腕部/末端段) - bend down/forward */}
+          <group position={[0, arm2L, 0]} rotation={[0, 0, -0.6]}>
+            <Cylinder args={[armR * 0.7, armR * 0.6, arm3L, 10]} position={[0, arm3L / 2, 0]}>
+              <meshStandardMaterial {...mechMat(bodyColor, selected, 0.5, 0.4)} />
+            </Cylinder>
+            {/* End-effector joint */}
+            <Sphere args={[jointR * 0.5, 12, 12]} position={[0, arm3L, 0]}>
+              <meshStandardMaterial {...mechMat(jointColor, selected, 0.65, 0.25)} />
+            </Sphere>
+            {/* Flange adapter */}
+            <Cylinder args={[jointR * 0.35, jointR * 0.35, h * 0.04, 10]} position={[0, arm3L + h * 0.03, 0]}>
+              <meshStandardMaterial {...mechMat(darkAccent, selected, 0.6, 0.3)} />
+            </Cylinder>
+            {/* Flange plate (yellow) */}
+            <Cylinder args={[w * 0.09, w * 0.09, h * 0.03, 16]} position={[0, arm3L + h * 0.06, 0]}>
+              <meshStandardMaterial {...mechMat(flangeColor, selected, 0.5, 0.35)} />
+            </Cylinder>
+          </group>
         </group>
       </group>
     </group>
