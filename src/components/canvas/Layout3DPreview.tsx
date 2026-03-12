@@ -15,6 +15,8 @@ interface Layout3DPreviewProps {
   onUpdateObject?: (id: string, updates: Partial<LayoutObject>) => void;
   onUpdateProductDimensions?: (dims: { length: number; width: number; height: number }) => void;
   onScreenshotReady?: (fn: () => string | null) => void;
+  productPosition?: { posX: number; posY: number; posZ: number };
+  onUpdateProductPosition?: (pos: { posX: number; posY: number; posZ: number }) => void;
 }
 
 function ScreenshotHelper({ onScreenshotReady }: { onScreenshotReady: (fn: () => string | null) => void }) {
@@ -991,7 +993,7 @@ function getRobotArmFlangePosition(parent: LayoutObject): [number, number, numbe
   return [parentX + flangeX, parentYWorld + flangeY, parentZ];
 }
 
-function RelationshipLines({ objects, xrayMode }: { objects: LayoutObject[]; xrayMode: boolean }) {
+function RelationshipLines({ objects, xrayMode, productPosition }: { objects: LayoutObject[]; xrayMode: boolean; productPosition?: { posX: number; posY: number; posZ: number } }) {
   const lines = useMemo(() => {
     const result: RelLine[] = [];
 
@@ -1052,7 +1054,11 @@ function RelationshipLines({ objects, xrayMode }: { objects: LayoutObject[]; xra
           (obj.posZ ?? 0) * SCALE,
           (obj.posY ?? 0) * SCALE,
         ];
-        const productPos: [number, number, number] = [0, 0, 0];
+        const productPos: [number, number, number] = [
+          (productPosition?.posX ?? 0) * SCALE,
+          (productPosition?.posZ ?? 0) * SCALE,
+          (productPosition?.posY ?? 0) * SCALE,
+        ];
         const mid: [number, number, number] = [
           mechPos[0] / 2,
           mechPos[1] / 2 + 0.15,
@@ -1192,11 +1198,11 @@ function DragPlane({
 }
 
 // --- Compact dimension input ---
-function DimInput({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+function DimInput({ label, value, onChange, allowNegative }: { label: string; value: number; onChange: (v: number) => void; allowNegative?: boolean }) {
   const [local, setLocal] = useState(String(value));
   useEffect(() => { setLocal(String(value)); }, [value]);
   const commit = () => {
-    const n = Math.max(10, Math.round(Number(local) || value));
+    const n = allowNegative ? Math.round(Number(local) || value) : Math.max(10, Math.round(Number(local) || value));
     setLocal(String(n));
     if (n !== value) onChange(n);
   };
@@ -1207,7 +1213,6 @@ function DimInput({ label, value, onChange }: { label: string; value: number; on
         type="number"
         className="w-[52px] h-5 text-[10px] text-slate-100 bg-slate-700/80 border border-slate-600 rounded px-1 text-center focus:outline-none focus:border-yellow-500/60"
         value={local}
-        min={10}
         onChange={e => setLocal(e.target.value)}
         onBlur={commit}
         onKeyDown={e => { if (e.key === 'Enter') commit(); }}
@@ -1218,13 +1223,15 @@ function DimInput({ label, value, onChange }: { label: string; value: number; on
 }
 
 // --- Enhanced info panel with mount info ---
-function SelectedInfoPanel({ obj, objects, onDeselect, onUpdateObject, productDimensions, onUpdateProductDimensions }: {
+function SelectedInfoPanel({ obj, objects, onDeselect, onUpdateObject, productDimensions, onUpdateProductDimensions, productPosition, onUpdateProductPosition }: {
   obj: LayoutObject | null;
   objects: LayoutObject[];
   onDeselect: () => void;
   onUpdateObject?: (id: string, updates: Partial<LayoutObject>) => void;
   productDimensions?: { length: number; width: number; height: number };
   onUpdateProductDimensions?: (dims: { length: number; width: number; height: number }) => void;
+  productPosition?: { posX: number; posY: number; posZ: number };
+  onUpdateProductPosition?: (pos: { posX: number; posY: number; posZ: number }) => void;
 }) {
   if (!obj) return null;
   const typeLabel = obj.type === 'camera' ? '相机' : obj.type === 'mechanism' ? '机构' : '产品';
@@ -1324,6 +1331,17 @@ function SelectedInfoPanel({ obj, objects, onDeselect, onUpdateObject, productDi
           </div>
         </div>
       )}
+      {/* Editable position for product */}
+      {obj.id === '__product__' && onUpdateProductPosition && productPosition && (
+        <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
+          <div className="text-[10px] text-slate-400 mb-1">产品位置 (mm)</div>
+          <div className="flex flex-col gap-1">
+            <DimInput label="X" value={productPosition.posX} onChange={v => onUpdateProductPosition({ ...productPosition, posX: v })} allowNegative />
+            <DimInput label="Y" value={productPosition.posY} onChange={v => onUpdateProductPosition({ ...productPosition, posY: v })} allowNegative />
+            <DimInput label="Z" value={productPosition.posZ} onChange={v => onUpdateProductPosition({ ...productPosition, posZ: v })} allowNegative />
+          </div>
+        </div>
+      )}
       {/* Fallback: read-only dimensions for cameras */}
       {obj.type === 'camera' && obj.width && obj.height && (
         <div className="text-[10px] text-slate-400">
@@ -1344,7 +1362,10 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   onUpdateObject,
   onUpdateProductDimensions,
   onScreenshotReady,
+  productPosition: productPositionProp,
+  onUpdateProductPosition,
 }: Layout3DPreviewProps) {
+  const productPosition = productPositionProp ?? { posX: 0, posY: 0, posZ: 0 };
   const cameraActionRef = useRef<{ position: [number, number, number]; target: [number, number, number] } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
@@ -1397,24 +1418,34 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   }, []);
 
   const handleDragStart = useCallback((id: string, point: THREE.Vector3) => {
-    if (!dragMode || !onUpdateObject) return;
-    const obj = objects.find(o => o.id === id);
-    if (!obj || obj.locked) return;
-
-    dragStateRef.current = {
-      isDragging: true,
-      objectId: id,
-      startPoint: point.clone(),
-      startPos: { posX: obj.posX ?? 0, posY: obj.posY ?? 0, posZ: obj.posZ ?? 0 },
-    };
+    if (!dragMode) return;
+    if (id === '__product__') {
+      if (!onUpdateProductPosition) return;
+      dragStateRef.current = {
+        isDragging: true,
+        objectId: id,
+        startPoint: point.clone(),
+        startPos: { posX: productPosition.posX, posY: productPosition.posY, posZ: productPosition.posZ },
+      };
+    } else {
+      if (!onUpdateObject) return;
+      const obj = objects.find(o => o.id === id);
+      if (!obj || obj.locked) return;
+      dragStateRef.current = {
+        isDragging: true,
+        objectId: id,
+        startPoint: point.clone(),
+        startPos: { posX: obj.posX ?? 0, posY: obj.posY ?? 0, posZ: obj.posZ ?? 0 },
+      };
+    }
     dragMovedRef.current = false;
     setLocalSelectedId(id);
     onSelectObject?.(id);
-  }, [dragMode, onUpdateObject, objects, onSelectObject]);
+  }, [dragMode, onUpdateObject, onUpdateProductPosition, objects, onSelectObject, productPosition]);
 
   const handleDragMove = useCallback((point: THREE.Vector3) => {
     const state = dragStateRef.current;
-    if (!state.isDragging || !state.objectId || !state.startPoint || !state.startPos || !onUpdateObject) return;
+    if (!state.isDragging || !state.objectId || !state.startPoint || !state.startPos) return;
 
     const dx = point.x - state.startPoint.x;
     const dz = point.z - state.startPoint.z;
@@ -1431,8 +1462,12 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       newPosY = Math.round(newPosY / SNAP_GRID) * SNAP_GRID;
     }
 
-    onUpdateObject(state.objectId, { posX: newPosX, posY: newPosY });
-  }, [onUpdateObject, snapEnabled, SNAP_GRID]);
+    if (state.objectId === '__product__') {
+      onUpdateProductPosition?.({ posX: newPosX, posY: newPosY, posZ: state.startPos.posZ });
+    } else {
+      onUpdateObject?.(state.objectId, { posX: newPosX, posY: newPosY });
+    }
+  }, [onUpdateObject, onUpdateProductPosition, snapEnabled, SNAP_GRID]);
 
   const handleDragEnd = useCallback(() => {
     dragStateRef.current = {
@@ -1452,7 +1487,35 @@ export const Layout3DPreview = memo(function Layout3DPreview({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const id = activeSelectedId;
-      if (!id || id === '__product__') return;
+      if (!id) return;
+
+      // Product position via keyboard
+      if (id === '__product__') {
+        if (!onUpdateProductPosition) return;
+        const step = snapEnabled ? SNAP_GRID : 5;
+        let dx = 0, dy = 0, dz = 0;
+        switch (e.key) {
+          case 'ArrowLeft': dx = -step; break;
+          case 'ArrowRight': dx = step; break;
+          case 'ArrowUp': if (e.shiftKey) { dz = step; } else { dy = -step; } break;
+          case 'ArrowDown': if (e.shiftKey) { dz = -step; } else { dy = step; } break;
+          default: return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        const np = {
+          posX: productPosition.posX + dx,
+          posY: productPosition.posY + dy,
+          posZ: productPosition.posZ + dz,
+        };
+        if (snapEnabled) {
+          np.posX = Math.round(np.posX / SNAP_GRID) * SNAP_GRID;
+          np.posY = Math.round(np.posY / SNAP_GRID) * SNAP_GRID;
+          np.posZ = Math.round(np.posZ / SNAP_GRID) * SNAP_GRID;
+        }
+        onUpdateProductPosition(np);
+        return;
+      }
 
       const obj = objects.find(o => o.id === id);
       if (!obj || obj.locked) return;
@@ -1504,10 +1567,12 @@ export const Layout3DPreview = memo(function Layout3DPreview({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [dragMode, activeSelectedId, objects, onUpdateObject, snapEnabled, SNAP_GRID]);
+  }, [dragMode, activeSelectedId, objects, onUpdateObject, onUpdateProductPosition, productPosition, snapEnabled, SNAP_GRID]);
 
   const selectedObj = activeSelectedId
-    ? (activeSelectedId === '__product__' ? null : objects.find(o => o.id === activeSelectedId) || null)
+    ? (activeSelectedId === '__product__'
+      ? { id: '__product__', type: 'mechanism' as const, name: '产品', posX: productPosition.posX, posY: productPosition.posY, posZ: productPosition.posZ } as LayoutObject
+      : objects.find(o => o.id === activeSelectedId) || null)
     : null;
 
   const mechanisms = objects.filter(o => o.type === 'mechanism');
@@ -1556,20 +1621,20 @@ export const Layout3DPreview = memo(function Layout3DPreview({
             onDeselect={() => handleSelect(null)}
           />
 
-          {/* Product — always opaque even in xray */}
-          <group
-            position={[0, 0, 0]}
-            onClick={(e: ThreeEvent<MouseEvent>) => {
-              e.stopPropagation();
-              if (!dragStateRef.current.isDragging) handleSelect('__product__');
-            }}
+          {/* Product — draggable */}
+          <DraggableGroup
+            objectId="__product__"
+            position={[productPosition.posX * SCALE, productPosition.posZ * SCALE, productPosition.posY * SCALE]}
+            dragState={dragStateRef}
+            onDragStart={handleDragStart}
+            onClick={(id) => { if (!dragMovedRef.current) handleSelect(id); }}
           >
             <ProductBox
               dimensions={productDimensions}
               selected={activeSelectedId === '__product__'}
               dimmed={hasFocus && !relatedIds.has('__product__') && activeSelectedId !== '__product__'}
             />
-          </group>
+          </DraggableGroup>
 
           {/* Mechanisms */}
           {mechanisms.map(obj => {
@@ -1614,7 +1679,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
             );
           })}
 
-          <RelationshipLines objects={objects} xrayMode={xrayMode} />
+          <RelationshipLines objects={objects} xrayMode={xrayMode} productPosition={productPosition} />
           <CameraController cameraRef={cameraActionRef} dragMode={dragStateRef.current.isDragging} />
           {onScreenshotReady && <ScreenshotHelper onScreenshotReady={onScreenshotReady} />}
         </Suspense>
@@ -1628,6 +1693,8 @@ export const Layout3DPreview = memo(function Layout3DPreview({
         onUpdateObject={onUpdateObject}
         productDimensions={productDimensions}
         onUpdateProductDimensions={onUpdateProductDimensions}
+        productPosition={productPosition}
+        onUpdateProductPosition={onUpdateProductPosition}
       />
 
       {/* Toolbar: mode toggle + xray + snap */}
@@ -1683,7 +1750,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 网格吸附 ({SNAP_GRID}mm)
               </button>
             )}
-            {dragMode && activeSelectedId && activeSelectedId !== '__product__' && (
+            {dragMode && activeSelectedId && (
               <div className="flex items-center px-2.5 py-1 text-[10px] text-slate-400 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-600/50">
                 ←→↑↓ 移动 · Shift+↑↓ 升降
               </div>
