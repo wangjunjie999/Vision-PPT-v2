@@ -17,6 +17,7 @@ interface Layout3DPreviewProps {
   onScreenshotReady?: (fn: () => string | null) => void;
   productPosition?: { posX: number; posY: number; posZ: number };
   onUpdateProductPosition?: (pos: { posX: number; posY: number; posZ: number }) => void;
+  onStageLayout?: () => void;
 }
 
 function ScreenshotHelper({ onScreenshotReady }: { onScreenshotReady: (fn: () => string | null) => void }) {
