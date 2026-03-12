@@ -1636,7 +1636,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       </div>
 
       {/* Legend */}
-      <div className="absolute bottom-3 left-3 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-600/50 p-2.5 z-10">
+      <div className="absolute bottom-3 right-3 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-600/50 p-2.5 z-10">
         <div className="text-[10px] font-semibold text-slate-400 mb-1.5">图例</div>
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-xs text-slate-300"><span className="w-3 h-3 rounded-sm bg-cyan-500/70" />产品</div>
