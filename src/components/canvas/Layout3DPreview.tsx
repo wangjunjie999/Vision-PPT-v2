@@ -940,6 +940,40 @@ interface RelLine {
   isIllegal: boolean;
 }
 
+function getRobotArmFlangePosition(parent: LayoutObject): [number, number, number] {
+  const w = (parent.width ?? 80) / 100;
+  const h = (parent.height ?? 120) / 100;
+  
+  const waistH = h * 0.12;
+  const baseTop = h * 0.08 + waistH;
+  const arm1L = h * 0.30;
+  const arm2L = h * 0.25;
+  const arm3L = h * 0.18;
+  const flangeLen = arm3L + h * 0.06;
+
+  // Accumulate rotation angles (around Z axis in local space)
+  const theta1 = 0.5;
+  const theta2 = theta1 + (-1.2); // -0.7
+  const theta3 = theta2 + (-0.6); // -1.3
+
+  // Trace through joints: each segment extends along rotated Y axis
+  // In XY plane: direction = [sin(theta), cos(theta)]
+  const elbowX = arm1L * Math.sin(theta1);
+  const elbowY = baseTop + arm1L * Math.cos(theta1);
+
+  const wristX = elbowX + arm2L * Math.sin(theta2);
+  const wristY = elbowY + arm2L * Math.cos(theta2);
+
+  const flangeX = wristX + flangeLen * Math.sin(theta3);
+  const flangeY = wristY + flangeLen * Math.cos(theta3);
+
+  const parentX = (parent.posX ?? 0) * SCALE;
+  const parentYWorld = (parent.posZ ?? 0) * SCALE;
+  const parentZ = (parent.posY ?? 0) * SCALE;
+
+  return [parentX + flangeX, parentYWorld + flangeY, parentZ];
+}
+
 function RelationshipLines({ objects, xrayMode }: { objects: LayoutObject[]; xrayMode: boolean }) {
   const lines = useMemo(() => {
     const result: RelLine[] = [];
@@ -954,11 +988,17 @@ function RelationshipLines({ objects, xrayMode }: { objects: LayoutObject[]; xra
         (obj.posZ ?? 0) * SCALE,
         (obj.posY ?? 0) * SCALE,
       ];
-      const end: [number, number, number] = [
-        (parent.posX ?? 0) * SCALE,
-        (parent.posZ ?? 0) * SCALE,
-        (parent.posY ?? 0) * SCALE,
-      ];
+
+      // For robot_arm, connect from flange position instead of base center
+      const isRobotArm = parent.mechanismType === 'robot_arm';
+      const end: [number, number, number] = isRobotArm
+        ? getRobotArmFlangePosition(parent)
+        : [
+            (parent.posX ?? 0) * SCALE,
+            (parent.posZ ?? 0) * SCALE,
+            (parent.posY ?? 0) * SCALE,
+          ];
+
       const mid: [number, number, number] = [
         (start[0] + end[0]) / 2,
         (start[1] + end[1]) / 2 + 0.2,
@@ -973,7 +1013,7 @@ function RelationshipLines({ objects, xrayMode }: { objects: LayoutObject[]; xra
           start, end, midpoint: mid,
           color: isLegal ? '#3b82f6' : '#ef4444',
           dashed: !isLegal,
-          label: isLegal ? '📷' : '⚠ 非法',
+          label: isLegal ? (isRobotArm ? '🔗 法兰' : '📷') : '⚠ 非法',
           isIllegal: !isLegal,
         });
       } else {
