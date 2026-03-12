@@ -1224,13 +1224,15 @@ function DimInput({ label, value, onChange }: { label: string; value: number; on
 }
 
 // --- Enhanced info panel with mount info ---
-function SelectedInfoPanel({ obj, objects, onDeselect, onUpdateObject, productDimensions, onUpdateProductDimensions }: {
+function SelectedInfoPanel({ obj, objects, onDeselect, onUpdateObject, productDimensions, onUpdateProductDimensions, productPosition, onUpdateProductPosition }: {
   obj: LayoutObject | null;
   objects: LayoutObject[];
   onDeselect: () => void;
   onUpdateObject?: (id: string, updates: Partial<LayoutObject>) => void;
   productDimensions?: { length: number; width: number; height: number };
   onUpdateProductDimensions?: (dims: { length: number; width: number; height: number }) => void;
+  productPosition?: { posX: number; posY: number; posZ: number };
+  onUpdateProductPosition?: (pos: { posX: number; posY: number; posZ: number }) => void;
 }) {
   if (!obj) return null;
   const typeLabel = obj.type === 'camera' ? '相机' : obj.type === 'mechanism' ? '机构' : '产品';
