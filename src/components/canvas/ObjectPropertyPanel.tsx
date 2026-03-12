@@ -553,6 +553,20 @@ export function ObjectPropertyPanel({
             </>
           )}
 
+          {/* 3D Model Override for Mechanism Objects */}
+          {object.type === 'mechanism' && (
+            <>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">3D 模型（GLB）</Label>
+                <GLBUploadField
+                  currentUrl={object.model3dUrl}
+                  onUpdate={(url) => onUpdate(object.id, { model3dUrl: url })}
+                />
+              </div>
+              <Separator className="my-3" />
+            </>
+          )}
+
           {/* Lock Toggle */}
           <div className="flex items-center justify-between py-1">
             <div className="flex items-center gap-2">
