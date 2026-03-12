@@ -14,6 +14,22 @@ interface Layout3DPreviewProps {
   selectedObjectId?: string | null;
   onUpdateObject?: (id: string, updates: Partial<LayoutObject>) => void;
   onUpdateProductDimensions?: (dims: { length: number; width: number; height: number }) => void;
+  onScreenshotReady?: (fn: () => string | null) => void;
+}
+
+function ScreenshotHelper({ onScreenshotReady }: { onScreenshotReady: (fn: () => string | null) => void }) {
+  const { gl } = useThree();
+  useEffect(() => {
+    onScreenshotReady(() => {
+      try {
+        gl.render(gl.domElement as any, gl.domElement as any);
+        return gl.domElement.toDataURL('image/png');
+      } catch {
+        return gl.domElement.toDataURL('image/png');
+      }
+    });
+  }, [gl, onScreenshotReady]);
+  return null;
 }
 
 const SCALE = 0.01;

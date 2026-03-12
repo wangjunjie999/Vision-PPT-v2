@@ -10,12 +10,13 @@ interface LayoutViewsPreviewProps {
   onOpenCanvas?: () => void;
 }
 
-type ViewType = 'front' | 'side' | 'top';
+type ViewType = 'front' | 'side' | 'top' | 'isometric';
 
 const VIEW_LABELS: Record<ViewType, string> = {
   front: '正视图',
   side: '侧视图',
   top: '俯视图',
+  isometric: '等轴测',
 };
 
 export function LayoutViewsPreview({ workstationId, className, onOpenCanvas }: LayoutViewsPreviewProps) {

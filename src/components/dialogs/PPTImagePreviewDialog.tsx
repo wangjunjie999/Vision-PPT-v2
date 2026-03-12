@@ -97,7 +97,7 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
       const wsAnnotations = annotations.get(ws.id) || [];
       const wsProductImages = productImages.get(ws.id) || [];
 
-      const VIEW_LABELS: Record<string, string> = { front: '正视图', side: '侧视图', top: '俯视图' };
+      const VIEW_LABELS: Record<string, string> = { front: '正视图', side: '侧视图', top: '俯视图', isometric: '等轴测' };
       const pv: string = (layout as any)?.primary_view || 'front';
       const av: string = (layout as any)?.auxiliary_view || 'side';
       const layoutImages = [
