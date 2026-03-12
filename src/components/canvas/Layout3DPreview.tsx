@@ -1429,7 +1429,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
 
   const handleDragMove = useCallback((point: THREE.Vector3) => {
     const state = dragStateRef.current;
-    if (!state.isDragging || !state.objectId || !state.startPoint || !state.startPos || !onUpdateObject) return;
+    if (!state.isDragging || !state.objectId || !state.startPoint || !state.startPos) return;
 
     const dx = point.x - state.startPoint.x;
     const dz = point.z - state.startPoint.z;
@@ -1446,8 +1446,12 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       newPosY = Math.round(newPosY / SNAP_GRID) * SNAP_GRID;
     }
 
-    onUpdateObject(state.objectId, { posX: newPosX, posY: newPosY });
-  }, [onUpdateObject, snapEnabled, SNAP_GRID]);
+    if (state.objectId === '__product__') {
+      onUpdateProductPosition?.({ posX: newPosX, posY: newPosY, posZ: state.startPos.posZ });
+    } else {
+      onUpdateObject?.(state.objectId, { posX: newPosX, posY: newPosY });
+    }
+  }, [onUpdateObject, onUpdateProductPosition, snapEnabled, SNAP_GRID]);
 
   const handleDragEnd = useCallback(() => {
     dragStateRef.current = {
