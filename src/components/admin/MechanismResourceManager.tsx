@@ -311,9 +311,9 @@ export function MechanismResourceManager() {
               <div>
                 <Label className="mb-2 block">三视图图片</Label>
                 <div className="grid grid-cols-3 gap-3">
-                  <ImageUploadArea viewType="front" label="正视图" url={form.front_view_image_url} mechanismType={form.type} />
-                  <ImageUploadArea viewType="side" label="侧视图" url={form.side_view_image_url} mechanismType={form.type} />
-                  <ImageUploadArea viewType="top" label="俯视图" url={form.top_view_image_url} mechanismType={form.type} />
+                  <ImageUploadArea viewType="front" label="正视图" url={form.front_view_image_url} />
+                  <ImageUploadArea viewType="side" label="侧视图" url={form.side_view_image_url} />
+                  <ImageUploadArea viewType="top" label="俯视图" url={form.top_view_image_url} />
                 </div>
               </div>
 
