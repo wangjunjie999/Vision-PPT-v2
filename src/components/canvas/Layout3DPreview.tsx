@@ -1365,6 +1365,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   onScreenshotReady,
   productPosition: productPositionProp,
   onUpdateProductPosition,
+  onStageLayout,
 }: Layout3DPreviewProps) {
   const productPosition = productPositionProp ?? { posX: 0, posY: 0, posZ: 0 };
   const cameraActionRef = useRef<{ position: [number, number, number]; target: [number, number, number] } | null>(null);
