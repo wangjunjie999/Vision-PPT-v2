@@ -187,6 +187,12 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
 
   const productDimensions = workstation?.product_dimensions as { length: number; width: number; height: number } || { length: 300, width: 200, height: 100 };
 
+  // Local product position state (only persisted on explicit save)
+  const [localProductPosition, setLocalProductPosition] = useState<{ posX: number; posY: number; posZ: number }>(() => {
+    const pp = (workstation as any)?.product_position as any;
+    return pp && typeof pp === 'object' ? { posX: pp.posX ?? 0, posY: pp.posY ?? 0, posZ: pp.posZ ?? 0 } : { posX: 0, posY: 0, posZ: 0 };
+  });
+
   // ========== Auto-scale ==========
   const autoScaleResult = useMemo(() => {
     const padding = 120;
@@ -748,6 +754,9 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         await updateLayout(layoutId, updateData as any);
         setViewSaveStatus({ front: true, side: true, top: true, isometric: true });
       }
+      // Persist product position
+      await updateWorkstation(workstationId, { product_position: localProductPosition as any });
+
       setSaveProgress(100);
       toast.success('布局和视图（含等轴测）已保存');
     } catch (error) {
@@ -911,14 +920,8 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               updateWorkstation(workstationId, { product_dimensions: dims as any });
             }}
             onScreenshotReady={(fn) => { isometricScreenshotFnRef.current = fn; }}
-            productPosition={(() => {
-              const ws = workstations.find(w => w.id === workstationId);
-              const pp = (ws as any)?.product_position as any;
-              return pp && typeof pp === 'object' ? { posX: pp.posX ?? 0, posY: pp.posY ?? 0, posZ: pp.posZ ?? 0 } : { posX: 0, posY: 0, posZ: 0 };
-            })()}
-            onUpdateProductPosition={(pos) => {
-              updateWorkstation(workstationId, { product_position: pos as any });
-            }}
+            productPosition={localProductPosition}
+            onUpdateProductPosition={setLocalProductPosition}
           />
         ) : (
         <ContextMenu>
