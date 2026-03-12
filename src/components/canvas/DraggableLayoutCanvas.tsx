@@ -683,6 +683,24 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     toast.success(`已添加 ${newMech.name}`);
   }, [objects, project3DTo2D, currentView, productDimensions.width]);
 
+  // ========== Stage (save data only, no screenshots) ==========
+  const handleStageLayout = useCallback(async () => {
+    try {
+      const updates = { layout_objects: objects, grid_enabled: gridEnabled, snap_enabled: snapEnabled, show_distances: showDistances };
+      let layoutId = layout?.id;
+      if (layoutId) { await updateLayout(layoutId, updates as any); }
+      else {
+        const newLayout = await addLayout({ workstation_id: workstationId, name: workstation?.name || 'Layout', ...updates } as any);
+        layoutId = (newLayout as any)?.id;
+      }
+      await updateWorkstation(workstationId, { product_position: localProductPosition as any });
+      toast.success('布局数据已暂存（未截图）');
+    } catch (err) {
+      toast.error('暂存失败');
+      console.error(err);
+    }
+  }, [objects, gridEnabled, snapEnabled, showDistances, layout, workstationId, workstation, localProductPosition, updateLayout, addLayout, updateWorkstation]);
+
   // ========== Save ==========
   const handleSaveAll = async () => {
     setIsSaving(true);

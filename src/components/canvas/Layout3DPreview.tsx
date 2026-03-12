@@ -1784,6 +1784,20 @@ export const Layout3DPreview = memo(function Layout3DPreview({
           <RotateCcw className="h-3 w-3" />
           重置
         </Button>
+        {onStageLayout && (
+          <>
+            <div className="h-px bg-slate-600/50 my-0.5" />
+            <Button
+              variant="secondary"
+              size="sm"
+              className="gap-1.5 h-7 text-xs bg-emerald-900/60 hover:bg-emerald-800/70 border border-emerald-600/50 backdrop-blur-sm text-emerald-300"
+              onClick={onStageLayout}
+            >
+              <Save className="h-3 w-3" />
+              暂存布局
+            </Button>
+          </>
+        )}
       </div>
 
       {/* Legend */}
