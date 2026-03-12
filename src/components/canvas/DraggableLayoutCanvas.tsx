@@ -33,7 +33,7 @@ import { ConnectionLines } from './ConnectionLines';
 import { MechanismRenderer } from './MechanismRenderer';
 import { ProductRenderer } from './ProductRenderer';
 import { CameraRenderer } from './CameraRenderer';
-import { CanvasHUD } from './CanvasHUD';
+
 import { ResizeHandles } from './ResizeHandles';
 
 interface DraggableLayoutCanvasProps {
