@@ -122,6 +122,7 @@ export function MechanismResourceManager() {
       default_depth: mechanism.default_depth?.toString() || '',
       notes: mechanism.notes || '',
       enabled: mechanism.enabled !== false,
+      model_3d_url: mechanism.model_3d_url || '',
     });
     setEditing(mechanism.id);
     setDialogOpen(true);
