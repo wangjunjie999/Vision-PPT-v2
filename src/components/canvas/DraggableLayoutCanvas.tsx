@@ -1025,8 +1025,6 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         </ContextMenu>
         )}
 
-        {/* HUD overlays */}
-        <CanvasHUD />
 
         {/* Object List Panel */}
         {showObjectList && (
