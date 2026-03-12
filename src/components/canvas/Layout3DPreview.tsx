@@ -2,7 +2,7 @@ import { memo, useRef, useCallback, useState, useMemo, useEffect, Suspense } fro
 import { Canvas, useThree, useFrame, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Box, Cone, Line, Text, Grid, Plane, Sphere, Cylinder } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, X, Move, MousePointer, Magnet, Eye, EyeOff } from 'lucide-react';
+import { RotateCcw, X, Move, MousePointer, Magnet, Eye, EyeOff, Save } from 'lucide-react';
 import type { LayoutObject } from './ObjectPropertyPanel';
 import { CAMERA_INTERACTION_TYPES, PRODUCT_INTERACTION_TYPES } from './MechanismSVG';
 import * as THREE from 'three';
@@ -17,6 +17,7 @@ interface Layout3DPreviewProps {
   onScreenshotReady?: (fn: () => string | null) => void;
   productPosition?: { posX: number; posY: number; posZ: number };
   onUpdateProductPosition?: (pos: { posX: number; posY: number; posZ: number }) => void;
+  onStageLayout?: () => void;
 }
 
 function ScreenshotHelper({ onScreenshotReady }: { onScreenshotReady: (fn: () => string | null) => void }) {
@@ -1364,6 +1365,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   onScreenshotReady,
   productPosition: productPositionProp,
   onUpdateProductPosition,
+  onStageLayout,
 }: Layout3DPreviewProps) {
   const productPosition = productPositionProp ?? { posX: 0, posY: 0, posZ: 0 };
   const cameraActionRef = useRef<{ position: [number, number, number]; target: [number, number, number] } | null>(null);
@@ -1783,6 +1785,20 @@ export const Layout3DPreview = memo(function Layout3DPreview({
           <RotateCcw className="h-3 w-3" />
           重置
         </Button>
+        {onStageLayout && (
+          <>
+            <div className="h-px bg-slate-600/50 my-0.5" />
+            <Button
+              variant="secondary"
+              size="sm"
+              className="gap-1.5 h-7 text-xs bg-emerald-900/60 hover:bg-emerald-800/70 border border-emerald-600/50 backdrop-blur-sm text-emerald-300"
+              onClick={onStageLayout}
+            >
+              <Save className="h-3 w-3" />
+              暂存布局
+            </Button>
+          </>
+        )}
       </div>
 
       {/* Legend */}
