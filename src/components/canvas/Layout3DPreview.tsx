@@ -993,7 +993,7 @@ function getRobotArmFlangePosition(parent: LayoutObject): [number, number, numbe
   return [parentX + flangeX, parentYWorld + flangeY, parentZ];
 }
 
-function RelationshipLines({ objects, xrayMode }: { objects: LayoutObject[]; xrayMode: boolean }) {
+function RelationshipLines({ objects, xrayMode, productPosition }: { objects: LayoutObject[]; xrayMode: boolean; productPosition?: { posX: number; posY: number; posZ: number } }) {
   const lines = useMemo(() => {
     const result: RelLine[] = [];
 
