@@ -1,44 +1,38 @@
 
 
-# FOV 输入改为两个独立数值框
+# 3D 预览中调整执行机构和产品尺寸
 
-## 问题
+## 改动概述
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+在 3D 预览的"已选中"信息面板中，增加长/宽/高的编辑输入框。选中机构时可调整机构尺寸（width/height/depth），选中产品时可调整产品尺寸（length/width/height）。
 
-## 修改方案
+## 详细改动
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+### 1. `src/components/canvas/Layout3DPreview.tsx`
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
+**Props 扩展**：新增 `onUpdateProductDimensions` 回调
 
-在 `getDefaultFormState` 中添加默认值 `''`。
-
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
-
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
-
-```
-[宽度输入] × [高度输入]
+```typescript
+interface Layout3DPreviewProps {
+  // ...existing
+  onUpdateProductDimensions?: (dims: { length: number; width: number; height: number }) => void;
+}
 ```
 
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+**SelectedInfoPanel 增强**：
+- 当选中对象为**机构**时，显示 3 个数字输入框（宽/高/深），修改后调用 `onUpdateObject(id, { width, height, depth })`
+- 当选中对象为**产品**（`__product__`）时，显示 3 个数字输入框（长/宽/高），修改后调用 `onUpdateProductDimensions`
+- 为产品选中新增一个独立的 `ProductInfoPanel` 组件，显示在左上角
 
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+### 2. `src/components/canvas/DraggableLayoutCanvas.tsx`
 
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+- 从 `useData()` 解构 `updateWorkstation`
+- 创建 `handleUpdateProductDimensions` 回调，调用 `updateWorkstation(workstationId, { product_dimensions: newDims })`
+- 将该回调传入 `<Layout3DPreview onUpdateProductDimensions={...} />`
 
-### 4. PPT 输出不变
+## 交互设计
 
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+- 输入框使用紧凑的行内样式，宽度 60px，带 mm 单位标注
+- 输入后失焦或按回车即生效，3D 模型实时更新
+- 最小值限制 10mm，防止无效尺寸
 
