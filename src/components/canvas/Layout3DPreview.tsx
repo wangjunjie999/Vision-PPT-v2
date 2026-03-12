@@ -13,6 +13,7 @@ interface Layout3DPreviewProps {
   onSelectObject?: (id: string | null) => void;
   selectedObjectId?: string | null;
   onUpdateObject?: (id: string, updates: Partial<LayoutObject>) => void;
+  onUpdateProductDimensions?: (dims: { length: number; width: number; height: number }) => void;
 }
 
 const SCALE = 0.01;
