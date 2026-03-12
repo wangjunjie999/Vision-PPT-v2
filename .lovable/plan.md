@@ -1,44 +1,24 @@
 
 
-# FOV 输入改为两个独立数值框
+# 新增机构不显示默认照片 & 验证上传功能
 
-## 问题
+## 问题分析
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+当前 `ImageUploadArea`（表单中）和 `MechanismImageDisplay`（卡片列表中）都会在用户未上传图片时回退显示本地默认资源图片（`getMechanismImage`）。需要移除这个回退逻辑，仅显示用户实际上传的图片。
 
-## 修改方案
+## 改动
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+### 文件：`src/components/admin/MechanismResourceManager.tsx`
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
+1. **`ImageUploadArea` 组件（第 218 行）**：移除 `getMechanismImage` 回退，`displayUrl` 直接使用 `url`，无上传时显示"未上传"占位。同时移除 `mechanismType` 参数及"(默认)"标注。
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+2. **`MechanismImageDisplay` 组件（第 29 行）**：移除 `getMechanismImage` 回退，`imageUrl` 直接使用 `databaseUrl`，无上传时显示图标占位。
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+3. **`getMechanismDisplayImage` 函数（第 64-71 行）**：移除本地资源回退，仅返回数据库 URL。
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+### 验证上传功能
 
-```
-[宽度输入] × [高度输入]
-```
-
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
-
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+上传流程检查要点：
+- 裁剪对话框 → `handleCropComplete` → 上传到 `product-models` 存储桶 → 获取 publicUrl → 写入 form state → 保存到数据库
+- 流程代码逻辑正确，无明显问题
 
