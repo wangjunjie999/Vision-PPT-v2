@@ -920,14 +920,8 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               updateWorkstation(workstationId, { product_dimensions: dims as any });
             }}
             onScreenshotReady={(fn) => { isometricScreenshotFnRef.current = fn; }}
-            productPosition={(() => {
-              const ws = workstations.find(w => w.id === workstationId);
-              const pp = (ws as any)?.product_position as any;
-              return pp && typeof pp === 'object' ? { posX: pp.posX ?? 0, posY: pp.posY ?? 0, posZ: pp.posZ ?? 0 } : { posX: 0, posY: 0, posZ: 0 };
-            })()}
-            onUpdateProductPosition={(pos) => {
-              updateWorkstation(workstationId, { product_position: pos as any });
-            }}
+            productPosition={localProductPosition}
+            onUpdateProductPosition={setLocalProductPosition}
           />
         ) : (
         <ContextMenu>
