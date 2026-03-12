@@ -1554,7 +1554,9 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   }, [dragMode, activeSelectedId, objects, onUpdateObject, onUpdateProductPosition, productPosition, snapEnabled, SNAP_GRID]);
 
   const selectedObj = activeSelectedId
-    ? (activeSelectedId === '__product__' ? null : objects.find(o => o.id === activeSelectedId) || null)
+    ? (activeSelectedId === '__product__'
+      ? { id: '__product__', type: 'mechanism' as const, name: '产品', posX: productPosition.posX, posY: productPosition.posY, posZ: productPosition.posZ } as LayoutObject
+      : objects.find(o => o.id === activeSelectedId) || null)
     : null;
 
   const mechanisms = objects.filter(o => o.type === 'mechanism');
