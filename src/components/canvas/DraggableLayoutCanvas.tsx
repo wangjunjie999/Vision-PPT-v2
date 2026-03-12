@@ -187,6 +187,12 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
 
   const productDimensions = workstation?.product_dimensions as { length: number; width: number; height: number } || { length: 300, width: 200, height: 100 };
 
+  // Local product position state (only persisted on explicit save)
+  const [localProductPosition, setLocalProductPosition] = useState<{ posX: number; posY: number; posZ: number }>(() => {
+    const pp = (workstation as any)?.product_position as any;
+    return pp && typeof pp === 'object' ? { posX: pp.posX ?? 0, posY: pp.posY ?? 0, posZ: pp.posZ ?? 0 } : { posX: 0, posY: 0, posZ: 0 };
+  });
+
   // ========== Auto-scale ==========
   const autoScaleResult = useMemo(() => {
     const padding = 120;
