@@ -922,6 +922,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
             onScreenshotReady={(fn) => { isometricScreenshotFnRef.current = fn; }}
             productPosition={localProductPosition}
             onUpdateProductPosition={setLocalProductPosition}
+            onStageLayout={handleStageLayout}
           />
         ) : (
         <ContextMenu>
