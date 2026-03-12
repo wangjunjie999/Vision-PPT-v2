@@ -1054,7 +1054,11 @@ function RelationshipLines({ objects, xrayMode }: { objects: LayoutObject[]; xra
           (obj.posZ ?? 0) * SCALE,
           (obj.posY ?? 0) * SCALE,
         ];
-        const productPos: [number, number, number] = [0, 0, 0];
+        const productPos: [number, number, number] = [
+          (productPosition?.posX ?? 0) * SCALE,
+          (productPosition?.posZ ?? 0) * SCALE,
+          (productPosition?.posY ?? 0) * SCALE,
+        ];
         const mid: [number, number, number] = [
           mechPos[0] / 2,
           mechPos[1] / 2 + 0.15,
