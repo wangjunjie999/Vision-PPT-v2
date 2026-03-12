@@ -1342,6 +1342,7 @@ function SelectedInfoPanel({ obj, objects, onDeselect, onUpdateObject, productDi
             <DimInput label="Z" value={productPosition.posZ} onChange={v => onUpdateProductPosition({ ...productPosition, posZ: v })} />
           </div>
         </div>
+      )}
       {/* Fallback: read-only dimensions for cameras */}
       {obj.type === 'camera' && obj.width && obj.height && (
         <div className="text-[10px] text-slate-400">
