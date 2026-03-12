@@ -181,7 +181,9 @@ export function MechanismResourceManager() {
         default_depth: form.default_depth ? parseFloat(form.default_depth) : null,
         notes: form.notes || null,
         enabled: form.enabled,
-      };
+      } as any;
+      // Add model_3d_url directly to the DB update object
+      (data as any).model_3d_url = form.model_3d_url || null;
 
       if (editing) {
         await updateMechanism(editing, data);
