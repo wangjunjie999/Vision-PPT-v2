@@ -714,21 +714,39 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
           const originalBlob = dataUrlToBlob(dataUrl);
           const compressedBlob = await compressImage(originalBlob, { quality: preset.quality, maxWidth: preset.maxWidth, maxHeight: preset.maxHeight, format: 'image/jpeg' });
           viewImages.push({ view, blob: compressedBlob });
-          setSaveProgress(10 + Math.round(((i + 1) / views.length) * 45));
+          setSaveProgress(10 + Math.round(((i + 1) / views.length) * 35));
         }
+
+        // Capture isometric (3D) screenshot
+        setCurrentView('isometric');
+        await new Promise(r => setTimeout(r, 600));
+        if (isometricScreenshotFnRef.current) {
+          try {
+            const isoDataUrl = isometricScreenshotFnRef.current();
+            if (isoDataUrl) {
+              const isoBlob = dataUrlToBlob(isoDataUrl);
+              const compressedIsoBlob = await compressImage(isoBlob, { quality: preset.quality, maxWidth: preset.maxWidth, maxHeight: preset.maxHeight, format: 'image/jpeg' });
+              viewImages.push({ view: 'isometric' as ViewType, blob: compressedIsoBlob });
+            }
+          } catch (e) {
+            console.warn('Isometric screenshot failed:', e);
+          }
+        }
+        setSaveProgress(50);
+
         const uploadPromises = viewImages.map(async ({ view, blob }, index) => {
           const fileName = `${workstationId}/${view}-${Date.now()}.jpg`;
           const { error: uploadError } = await supabase.storage.from('workstation-views').upload(fileName, blob, { upsert: true, contentType: 'image/jpeg' });
           if (uploadError) throw uploadError;
           const { data: urlData } = supabase.storage.from('workstation-views').getPublicUrl(fileName);
-          setSaveProgress(55 + Math.round(((index + 1) / views.length) * 45));
+          setSaveProgress(50 + Math.round(((index + 1) / viewImages.length) * 45));
           return { view, url: urlData.publicUrl };
         });
         const uploadResults = await Promise.all(uploadPromises);
         const updateData: Record<string, any> = {};
         uploadResults.forEach(({ view, url }) => { updateData[`${view}_view_image_url`] = url; updateData[`${view}_view_saved`] = true; });
         await updateLayout(layoutId, updateData as any);
-        setViewSaveStatus({ front: true, side: true, top: true });
+        setViewSaveStatus({ front: true, side: true, top: true, isometric: true });
       }
       setSaveProgress(100);
       toast.success('布局和三视图已保存');
