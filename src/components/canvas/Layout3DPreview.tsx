@@ -1603,7 +1603,14 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       </Canvas>
 
       {/* Selected object info */}
-      <SelectedInfoPanel obj={selectedObj} objects={objects} onDeselect={handleDeselect} />
+      <SelectedInfoPanel
+        obj={selectedObj}
+        objects={objects}
+        onDeselect={handleDeselect}
+        onUpdateObject={onUpdateObject}
+        productDimensions={productDimensions}
+        onUpdateProductDimensions={onUpdateProductDimensions}
+      />
 
       {/* Toolbar: mode toggle + xray + snap */}
       {onUpdateObject && (
