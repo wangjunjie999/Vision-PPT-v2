@@ -22,11 +22,10 @@ export interface LayoutObject {
   mechanismType?: string;
   name: string;
   // 3D coordinates in mm (relative to product center)
-  // These are the PRIMARY storage - canvas x,y are derived via projection
-  posX: number;  // Left/Right (正视图水平轴，俯视图水平轴)
-  posY: number;  // Front/Back depth (俯视图垂直轴，左视图水平轴)
-  posZ: number;  // Up/Down height (正视图垂直轴，左视图垂直轴)
-  // Canvas coordinates (derived from 3D based on view) - kept for compatibility
+  posX: number;
+  posY: number;
+  posZ: number;
+  // Canvas coordinates (derived from 3D based on view)
   x: number;
   y: number;
   width: number;
@@ -34,13 +33,14 @@ export interface LayoutObject {
   rotation: number;
   locked: boolean;
   cameraIndex?: number;
-  // Camera mounting to mechanism - binding relationship
+  // Camera mounting to mechanism
   mountedToMechanismId?: string;
   mountPointId?: string;
-  // Relative 3D offsets from mounted mechanism (for follow movement)
   mountOffsetX?: number;
   mountOffsetY?: number;
   mountOffsetZ?: number;
+  // Custom GLB 3D model URL
+  model3dUrl?: string;
 }
 
 interface ObjectPropertyPanelProps {
