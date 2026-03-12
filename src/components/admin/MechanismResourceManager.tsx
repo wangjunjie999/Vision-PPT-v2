@@ -207,15 +207,13 @@ export function MechanismResourceManager() {
     }
   };
 
-  const ImageUploadArea = ({ viewType, label, url, mechanismType }: { viewType: 'front' | 'side' | 'top'; label: string; url: string; mechanismType: string }) => {
-    const displayUrl = url || getMechanismImage(mechanismType, viewType) || null;
-    const isLocalFallback = !url && !!displayUrl;
+  const ImageUploadArea = ({ viewType, label, url }: { viewType: 'front' | 'side' | 'top'; label: string; url: string }) => {
     return (
     <div className="space-y-2">
-      <Label className="text-xs">{label}{isLocalFallback && <span className="text-muted-foreground ml-1">(默认)</span>}</Label>
+      <Label className="text-xs">{label}</Label>
       <div className="relative border-2 border-dashed border-border rounded-lg p-2 h-24 flex items-center justify-center bg-muted/30">
-        {displayUrl ? (
-          <img src={displayUrl} alt={label} className="max-h-full max-w-full object-contain" />
+        {url ? (
+          <img src={url} alt={label} className="max-h-full max-w-full object-contain" />
         ) : (
           <div className="text-center text-muted-foreground text-xs">
             <ImageIcon className="h-6 w-6 mx-auto mb-1" />
