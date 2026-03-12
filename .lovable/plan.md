@@ -1,44 +1,53 @@
 
 
-# FOV 输入改为两个独立数值框
+# 3D 产品位置调整功能
 
-## 问题
+## 概述
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+当前 3D 预览中的产品固定在原点 `[0,0,0]`，无法拖拽或用键盘移动。需要让产品像机构/相机一样支持拖拽移动和方向键调整。
 
-## 修改方案
+## 改动
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+### 文件：`src/components/canvas/Layout3DPreview.tsx`
 
-在 `ModuleFormState` 中添加：
+1. **新增 `productPosition` prop 和 `onUpdateProductPosition` 回调**：
+   - 接口增加 `productPosition?: { posX: number; posY: number; posZ: number }`
+   - 接口增加 `onUpdateProductPosition?: (pos: { posX: number; posY: number; posZ: number }) => void`
+
+2. **产品可拖拽**（约第 1559-1572 行）：
+   - 将产品的 `<group position={[0,0,0]}>` 替换为 `<DraggableGroup>`，使用 `productPosition` 计算位置
+   - 拖拽 ID 使用 `'__product__'`
+
+3. **修改拖拽处理逻辑**（`handleDragStart`/`handleDragMove`）：
+   - `handleDragStart`：当 ID 为 `__product__` 时，从 `productPosition` 读取起始位置
+   - `handleDragMove`：当 ID 为 `__product__` 时，调用 `onUpdateProductPosition` 而非 `onUpdateObject`
+
+4. **修改键盘移动**（约第 1453-1455 行）：
+   - 移除 `if (id === '__product__') return` 限制
+   - 当 ID 为 `__product__` 时，从 `productPosition` 读取当前位置，调用 `onUpdateProductPosition` 更新
+
+5. **SelectedInfoPanel**（约第 1509-1510 行）：
+   - 当 `activeSelectedId === '__product__'` 时，构建虚拟 obj 传入面板，显示位置信息
+   - 增加产品的 posX/posY/posZ 输入框
+
+6. **RelationshipLines**（约第 1055 行）：
+   - 产品连线的 `productPos` 从 `[0,0,0]` 改为基于 `productPosition` 计算
+
+7. **键盘提示**（约第 1686 行）：
+   - 移除 `activeSelectedId !== '__product__'` 条件，产品选中时也显示移动提示
+
+### 文件：`src/components/canvas/DraggableLayoutCanvas.tsx`（约第 904-914 行）
+
+- 传入 `productPosition` 和 `onUpdateProductPosition` 到 `Layout3DPreview`
+- 产品位置从 workstation 数据中的 `product_position` 字段读取（默认 `{posX:0, posY:0, posZ:0}`）
+- `onUpdateProductPosition` 调用 `updateWorkstation` 保存
+
+### 数据库迁移
+
+在 `workstations` 表添加 `product_position` 字段：
+
+```sql
+ALTER TABLE public.workstations
+ADD COLUMN product_position jsonb DEFAULT '{"posX": 0, "posY": 0, "posZ": 0}'::jsonb;
 ```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
-
-在 `getDefaultFormState` 中添加默认值 `''`。
-
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
-
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
-
-```
-[宽度输入] × [高度输入]
-```
-
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
-
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
