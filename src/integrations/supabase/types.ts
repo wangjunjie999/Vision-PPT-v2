@@ -891,6 +891,7 @@ export type Database = {
           observation_target: string | null
           process_stage: string | null
           product_dimensions: Json | null
+          product_position: Json | null
           project_id: string
           risk_notes: string | null
           shot_count: number | null
@@ -914,6 +915,7 @@ export type Database = {
           observation_target?: string | null
           process_stage?: string | null
           product_dimensions?: Json | null
+          product_position?: Json | null
           project_id: string
           risk_notes?: string | null
           shot_count?: number | null
@@ -937,6 +939,7 @@ export type Database = {
           observation_target?: string | null
           process_stage?: string | null
           product_dimensions?: Json | null
+          product_position?: Json | null
           project_id?: string
           risk_notes?: string | null
           shot_count?: number | null

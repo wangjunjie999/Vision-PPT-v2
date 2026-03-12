@@ -1,0 +1,1 @@
+ALTER TABLE public.workstations ADD COLUMN product_position jsonb DEFAULT '{"posX": 0, "posY": 0, "posZ": 0}'::jsonb;
