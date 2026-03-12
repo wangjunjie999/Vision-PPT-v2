@@ -729,17 +729,25 @@ function Mechanism3DModel({ obj, selected, dimmed, hasIllegalMount, objects, xra
   const isCamType = isCameraMountable(mechType);
   const isProdType = isProductInteraction(mechType);
 
-  let model: React.ReactNode;
-  switch (mechType) {
-    case 'robot_arm': model = <RobotArmModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
-    case 'conveyor': model = <ConveyorModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
-    case 'cylinder': model = <CylinderModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
-    case 'gripper': model = <GripperModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
-    case 'turntable': model = <TurntableModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
-    case 'lift': model = <LiftModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
-    case 'stop': model = <StopModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
-    case 'camera_mount': model = <CameraMountModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
-    default: model = <DefaultMechanismModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+  // Prioritize custom GLB model if available
+  if ((obj as any).model3dUrl) {
+    model = (
+      <Suspense fallback={<DefaultMechanismModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />}>
+        <GLBModelRenderer url={(obj as any).model3dUrl} w={w} h={h} d={d} />
+      </Suspense>
+    );
+  } else {
+    switch (mechType) {
+      case 'robot_arm': model = <RobotArmModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+      case 'conveyor': model = <ConveyorModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+      case 'cylinder': model = <CylinderModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+      case 'gripper': model = <GripperModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+      case 'turntable': model = <TurntableModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+      case 'lift': model = <LiftModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+      case 'stop': model = <StopModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+      case 'camera_mount': model = <CameraMountModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+      default: model = <DefaultMechanismModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+    }
   }
 
   const mountedCameras = objects.filter(o => o.type === 'camera' && o.mountedToMechanismId === obj.id);
