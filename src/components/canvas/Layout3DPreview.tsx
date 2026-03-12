@@ -1471,7 +1471,35 @@ export const Layout3DPreview = memo(function Layout3DPreview({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const id = activeSelectedId;
-      if (!id || id === '__product__') return;
+      if (!id) return;
+
+      // Product position via keyboard
+      if (id === '__product__') {
+        if (!onUpdateProductPosition) return;
+        const step = snapEnabled ? SNAP_GRID : 5;
+        let dx = 0, dy = 0, dz = 0;
+        switch (e.key) {
+          case 'ArrowLeft': dx = -step; break;
+          case 'ArrowRight': dx = step; break;
+          case 'ArrowUp': if (e.shiftKey) { dz = step; } else { dy = -step; } break;
+          case 'ArrowDown': if (e.shiftKey) { dz = -step; } else { dy = step; } break;
+          default: return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        const np = {
+          posX: productPosition.posX + dx,
+          posY: productPosition.posY + dy,
+          posZ: productPosition.posZ + dz,
+        };
+        if (snapEnabled) {
+          np.posX = Math.round(np.posX / SNAP_GRID) * SNAP_GRID;
+          np.posY = Math.round(np.posY / SNAP_GRID) * SNAP_GRID;
+          np.posZ = Math.round(np.posZ / SNAP_GRID) * SNAP_GRID;
+        }
+        onUpdateProductPosition(np);
+        return;
+      }
 
       const obj = objects.find(o => o.id === id);
       if (!obj || obj.locked) return;
