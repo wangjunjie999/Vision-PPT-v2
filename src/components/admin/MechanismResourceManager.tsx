@@ -104,6 +104,7 @@ export function MechanismResourceManager() {
       default_depth: '',
       notes: '',
       enabled: true,
+      model_3d_url: '',
     });
     setEditing(null);
   };
