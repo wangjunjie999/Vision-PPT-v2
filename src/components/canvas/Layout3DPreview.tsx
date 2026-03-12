@@ -958,13 +958,13 @@ function getRobotArmFlangePosition(parent: LayoutObject): [number, number, numbe
 
   // Trace through joints: each segment extends along rotated Y axis
   // In XY plane: direction = [sin(theta), cos(theta)]
-  const elbowX = arm1L * Math.sin(theta1);
+  const elbowX = -arm1L * Math.sin(theta1);
   const elbowY = baseTop + arm1L * Math.cos(theta1);
 
-  const wristX = elbowX + arm2L * Math.sin(theta2);
+  const wristX = elbowX + (-arm2L * Math.sin(theta2));
   const wristY = elbowY + arm2L * Math.cos(theta2);
 
-  const flangeX = wristX + flangeLen * Math.sin(theta3);
+  const flangeX = wristX + (-flangeLen * Math.sin(theta3));
   const flangeY = wristY + flangeLen * Math.cos(theta3);
 
   const parentX = (parent.posX ?? 0) * SCALE;

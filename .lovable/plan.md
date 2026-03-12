@@ -1,32 +1,44 @@
 
 
-# 修复连接线锚点：从机械臂末端法兰出发
+# FOV 输入改为两个独立数值框
 
 ## 问题
 
-`getRobotArmFlangePosition` 函数中 X 坐标符号错误，导致连接线锚定在底座附近而非法兰盘位置。
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-## 根因
+## 修改方案
 
-Three.js 绕 Z 轴旋转 θ 将 `[0, L, 0]` 变换为 `[-L*sin(θ), L*cos(θ), 0]`，但当前代码使用了 `+L*sin(θ)`，X 分量符号反了。
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-## 修复
-
-**文件：`src/components/canvas/Layout3DPreview.tsx`**（第 943-975 行）
-
-修改 `getRobotArmFlangePosition` 中的三段关节坐标计算，将正弦项取反以匹配 Three.js 旋转矩阵：
-
-```typescript
-// 修正前（错误）
-const elbowX = arm1L * Math.sin(theta1);
-const wristX = elbowX + arm2L * Math.sin(theta2);
-const flangeX = wristX + flangeLen * Math.sin(theta3);
-
-// 修正后（正确）
-const elbowX = -arm1L * Math.sin(theta1);
-const wristX = elbowX + (-arm2L * Math.sin(theta2));
-const flangeX = wristX + (-flangeLen * Math.sin(theta3));
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
 ```
 
-这样连接线终点将精确对准 3D 模型中黄色法兰盘的世界坐标位置。
+在 `getDefaultFormState` 中添加默认值 `''`。
+
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+
+```
+[宽度输入] × [高度输入]
+```
+
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
