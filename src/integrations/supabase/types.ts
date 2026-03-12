@@ -565,6 +565,7 @@ export type Database = {
           enabled: boolean | null
           front_view_image_url: string | null
           id: string
+          model_3d_url: string | null
           name: string
           notes: string | null
           side_view_image_url: string | null
@@ -584,6 +585,7 @@ export type Database = {
           enabled?: boolean | null
           front_view_image_url?: string | null
           id?: string
+          model_3d_url?: string | null
           name: string
           notes?: string | null
           side_view_image_url?: string | null
@@ -603,6 +605,7 @@ export type Database = {
           enabled?: boolean | null
           front_view_image_url?: string | null
           id?: string
+          model_3d_url?: string | null
           name?: string
           notes?: string | null
           side_view_image_url?: string | null

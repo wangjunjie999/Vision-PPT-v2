@@ -1,64 +1,44 @@
 
 
-# 为 3D 布局添加 GLB 模型上传功能
+# FOV 输入改为两个独立数值框
 
-## 概述
+## 问题
 
-允许用户为机构上传 `.glb` 3D 模型文件，替换默认的程序化几何体。支持两个层级：
-- **机构库级别**：在机构管理中为某类机构上传默认 GLB 模型，所有使用该机构的布局自动生效
-- **布局对象级别**：在 3D 预览的属性面板中为单个对象覆盖上传自定义模型
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-## 数据库迁移
+## 修改方案
 
-```sql
--- 机构表添加 3D 模型字段
-ALTER TABLE public.mechanisms ADD COLUMN model_3d_url text;
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
--- 创建 3D 模型存储桶
-INSERT INTO storage.buckets (id, name, public) VALUES ('3d-models', '3d-models', true);
-
--- 存储桶 RLS
-CREATE POLICY "Authenticated users can upload 3d models"
-ON storage.objects FOR INSERT TO authenticated
-WITH CHECK (bucket_id = '3d-models');
-
-CREATE POLICY "Anyone can view 3d models"
-ON storage.objects FOR SELECT TO public
-USING (bucket_id = '3d-models');
-
-CREATE POLICY "Authenticated users can delete own 3d models"
-ON storage.objects FOR DELETE TO authenticated
-USING (bucket_id = '3d-models' AND auth.uid()::text = (storage.foldername(name))[1]);
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
 ```
 
-## 文件改动
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-### 1. `src/components/canvas/ObjectPropertyPanel.tsx`
-- `LayoutObject` 接口新增 `model3dUrl?: string`
-- 当选中机构对象时，在属性面板底部添加"3D 模型"区域：上传 GLB 按钮 + 当前模型预览/移除
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
 
-### 2. `src/components/canvas/Layout3DPreview.tsx`
-- 新增 `GLBModel` 组件：使用 `useGLTF` 加载 GLB，自动缩放适配对象尺寸
-- 修改 `Mechanism3DModel`（约第 732 行 switch 之前）：
-  - 优先检查 `obj.model3dUrl`，有则渲染 `<GLBModel>`
-  - 否则走现有 switch-case 程序化模型
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
 
-### 3. `src/components/canvas/DraggableLayoutCanvas.tsx`
-- 在添加机构对象时，从 `mechanisms` 表读取 `model_3d_url`，写入 `LayoutObject.model3dUrl`
-- `onUpdateObject` 支持更新 `model3dUrl` 字段
+```
+[宽度输入] × [高度输入]
+```
 
-### 4. `src/components/admin/MechanismResourceManager.tsx`
-- 在机构编辑表单中添加"3D 模型（GLB）"上传区域
-- 上传到 `3d-models` 桶，保存 URL 到 `mechanisms.model_3d_url`
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
 
-### 5. 新增 `src/utils/glbUpload.ts`
-- 封装 GLB 文件上传逻辑：验证文件类型/大小 → 上传到存储桶 → 返回公开 URL
-- 复用已有的 `validate3DModelFile` 验证函数
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
 
-## 技术要点
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
 
-- 使用 `@react-three/drei` 的 `useGLTF` 加载模型（已安装）
-- GLB 模型自动按 `boundingBox` 缩放到对象的 `width/height/depth` 尺寸
-- `Suspense` 包裹 GLB 加载，显示 fallback 程序化模型
-- 文件大小限制 50MB，仅接受 `.glb` 格式
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 

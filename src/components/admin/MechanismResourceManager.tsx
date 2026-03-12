@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Pencil, Trash2, Upload, Loader2, Image as ImageIcon, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Upload, Loader2, Image as ImageIcon, Search, Box } from 'lucide-react';
 import { useMechanisms, type MechanismInsert, type MechanismUpdate } from '@/hooks/useMechanisms';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -74,6 +74,8 @@ export function MechanismResourceManager() {
   const [cropFile, setCropFile] = useState<File | null>(null);
   const [cropViewType, setCropViewType] = useState<'front' | 'side' | 'top'>('front');
 
+  const [uploadingGlb, setUploadingGlb] = useState(false);
+
   const [form, setForm] = useState({
     name: '',
     type: 'robot_arm',
@@ -86,6 +88,7 @@ export function MechanismResourceManager() {
     default_depth: '',
     notes: '',
     enabled: true,
+    model_3d_url: '',
   });
 
   const resetForm = () => {
@@ -101,6 +104,7 @@ export function MechanismResourceManager() {
       default_depth: '',
       notes: '',
       enabled: true,
+      model_3d_url: '',
     });
     setEditing(null);
   };
@@ -118,6 +122,7 @@ export function MechanismResourceManager() {
       default_depth: mechanism.default_depth?.toString() || '',
       notes: mechanism.notes || '',
       enabled: mechanism.enabled !== false,
+      model_3d_url: mechanism.model_3d_url || '',
     });
     setEditing(mechanism.id);
     setDialogOpen(true);
@@ -176,7 +181,9 @@ export function MechanismResourceManager() {
         default_depth: form.default_depth ? parseFloat(form.default_depth) : null,
         notes: form.notes || null,
         enabled: form.enabled,
-      };
+      } as any;
+      // Add model_3d_url directly to the DB update object
+      (data as any).model_3d_url = form.model_3d_url || null;
 
       if (editing) {
         await updateMechanism(editing, data);
@@ -315,6 +322,64 @@ export function MechanismResourceManager() {
                   <ImageUploadArea viewType="side" label="侧视图" url={form.side_view_image_url} />
                   <ImageUploadArea viewType="top" label="俯视图" url={form.top_view_image_url} />
                 </div>
+              </div>
+
+              {/* 3D Model (GLB) Upload */}
+              <div className="space-y-2">
+                <Label>3D 模型（GLB）</Label>
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1 border-2 border-dashed border-border rounded-lg p-3 flex items-center justify-center bg-muted/30 min-h-[48px]">
+                    {form.model_3d_url ? (
+                      <div className="flex items-center gap-2 w-full">
+                        <Box className="h-5 w-5 text-primary flex-shrink-0" />
+                        <span className="text-xs text-foreground truncate flex-1">{form.model_3d_url.split('/').pop()}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 flex-shrink-0"
+                          onClick={() => setForm(prev => ({ ...prev, model_3d_url: '' }))}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-center text-muted-foreground text-xs">
+                        <Box className="h-5 w-5 mx-auto mb-1" />
+                        未上传
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept=".glb"
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      disabled={uploadingGlb}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploadingGlb(true);
+                        try {
+                          const { uploadGLBFile } = await import('@/utils/glbUpload');
+                          const url = await uploadGLBFile(file, 'mechanisms');
+                          if (url) {
+                            setForm(prev => ({ ...prev, model_3d_url: url }));
+                            toast.success('3D 模型上传成功');
+                          }
+                        } catch (err) {
+                          toast.error('3D 模型上传失败');
+                        } finally {
+                          setUploadingGlb(false);
+                        }
+                      }}
+                    />
+                    {uploadingGlb && (
+                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">上传 .glb 格式3D模型，将替换默认程序化几何体</p>
               </div>
 
               <div className="grid grid-cols-3 gap-4">

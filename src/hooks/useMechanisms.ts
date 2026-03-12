@@ -24,10 +24,10 @@ export interface Mechanism {
   enabled: boolean | null;
   created_at: string;
   updated_at: string;
-  // New fields for camera mounting
   camera_mount_points: CameraMountPoint[] | null;
   compatible_camera_mounts: string[] | null;
   camera_work_distance_range: { min: number; max: number } | null;
+  model_3d_url: string | null;
 }
 
 export interface MechanismInsert {

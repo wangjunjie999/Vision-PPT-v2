@@ -1,6 +1,6 @@
 import { memo, useRef, useCallback, useState, useMemo, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame, ThreeEvent } from '@react-three/fiber';
-import { OrbitControls, Box, Cone, Line, Text, Grid, Plane, Sphere, Cylinder } from '@react-three/drei';
+import { OrbitControls, Box, Cone, Line, Text, Grid, Plane, Sphere, Cylinder, useGLTF } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
 import { RotateCcw, X, Move, MousePointer, Magnet, Eye, EyeOff, Save } from 'lucide-react';
 import type { LayoutObject } from './ObjectPropertyPanel';
@@ -712,6 +712,29 @@ function DefaultMechanismModel({ w, h, d, selected, xray }: { w: number; h: numb
   );
 }
 
+// --- GLB Model Renderer ---
+function GLBModelRenderer({ url, w, h, d }: { url: string; w: number; h: number; d: number }) {
+  const { scene } = useGLTF(url);
+  const cloned = useMemo(() => scene.clone(), [scene]);
+
+  // Auto-scale to fit target dimensions
+  useEffect(() => {
+    const box = new THREE.Box3().setFromObject(cloned);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+
+    const scaleX = size.x > 0 ? w / size.x : 1;
+    const scaleY = size.y > 0 ? h / size.y : 1;
+    const scaleZ = size.z > 0 ? d / size.z : 1;
+    const uniformScale = Math.min(scaleX, scaleY, scaleZ);
+
+    cloned.scale.setScalar(uniformScale);
+    cloned.position.set(-center.x * uniformScale, -center.y * uniformScale + h / 2, -center.z * uniformScale);
+  }, [cloned, w, h, d]);
+
+  return <primitive object={cloned} />;
+}
+
 // --- Mechanism model with interaction type badge ---
 function Mechanism3DModel({ obj, selected, dimmed, hasIllegalMount, objects, xrayMode }: {
   obj: LayoutObject;
@@ -730,16 +753,25 @@ function Mechanism3DModel({ obj, selected, dimmed, hasIllegalMount, objects, xra
   const isProdType = isProductInteraction(mechType);
 
   let model: React.ReactNode;
-  switch (mechType) {
-    case 'robot_arm': model = <RobotArmModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
-    case 'conveyor': model = <ConveyorModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
-    case 'cylinder': model = <CylinderModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
-    case 'gripper': model = <GripperModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
-    case 'turntable': model = <TurntableModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
-    case 'lift': model = <LiftModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
-    case 'stop': model = <StopModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
-    case 'camera_mount': model = <CameraMountModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
-    default: model = <DefaultMechanismModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+  // Prioritize custom GLB model if available
+  if ((obj as any).model3dUrl) {
+    model = (
+      <Suspense fallback={<DefaultMechanismModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />}>
+        <GLBModelRenderer url={(obj as any).model3dUrl} w={w} h={h} d={d} />
+      </Suspense>
+    );
+  } else {
+    switch (mechType) {
+      case 'robot_arm': model = <RobotArmModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+      case 'conveyor': model = <ConveyorModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+      case 'cylinder': model = <CylinderModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+      case 'gripper': model = <GripperModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+      case 'turntable': model = <TurntableModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+      case 'lift': model = <LiftModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+      case 'stop': model = <StopModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+      case 'camera_mount': model = <CameraMountModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+      default: model = <DefaultMechanismModel w={w} h={h} d={d} selected={selected} xray={xrayMode} />; break;
+    }
   }
 
   const mountedCameras = objects.filter(o => o.type === 'camera' && o.mountedToMechanismId === obj.id);

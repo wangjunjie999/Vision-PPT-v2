@@ -676,6 +676,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       mechanismType: mechanism.type, name: `${mechanism.name}#${sameMechCount + 1}`,
       posX: defaultPosX, posY: defaultPosY, posZ: defaultPosZ,
       x: canvasPos.x, y: canvasPos.y, width: 80, height: 60, rotation: 0, locked: false,
+      model3dUrl: (mechanism as any).model_3d_url || undefined,
     };
     setObjects(prev => [...prev, newMech]);
     setSelectedIds([newMech.id]);

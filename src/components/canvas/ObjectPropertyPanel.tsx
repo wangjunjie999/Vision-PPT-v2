@@ -9,9 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Trash2, Lock, Unlock, X, RotateCcw, Move, 
   Copy, ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
-  Maximize2, Minimize2
+  Maximize2, Minimize2, Box, Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 type ViewType = 'front' | 'side' | 'top';
 
@@ -22,11 +23,10 @@ export interface LayoutObject {
   mechanismType?: string;
   name: string;
   // 3D coordinates in mm (relative to product center)
-  // These are the PRIMARY storage - canvas x,y are derived via projection
-  posX: number;  // Left/Right (正视图水平轴，俯视图水平轴)
-  posY: number;  // Front/Back depth (俯视图垂直轴，左视图水平轴)
-  posZ: number;  // Up/Down height (正视图垂直轴，左视图垂直轴)
-  // Canvas coordinates (derived from 3D based on view) - kept for compatibility
+  posX: number;
+  posY: number;
+  posZ: number;
+  // Canvas coordinates (derived from 3D based on view)
   x: number;
   y: number;
   width: number;
@@ -34,13 +34,14 @@ export interface LayoutObject {
   rotation: number;
   locked: boolean;
   cameraIndex?: number;
-  // Camera mounting to mechanism - binding relationship
+  // Camera mounting to mechanism
   mountedToMechanismId?: string;
   mountPointId?: string;
-  // Relative 3D offsets from mounted mechanism (for follow movement)
   mountOffsetX?: number;
   mountOffsetY?: number;
   mountOffsetZ?: number;
+  // Custom GLB 3D model URL
+  model3dUrl?: string;
 }
 
 interface ObjectPropertyPanelProps {
@@ -52,6 +53,52 @@ interface ObjectPropertyPanelProps {
   canvasCenter: { x: number; y: number };
   currentView?: ViewType;
   allObjects?: LayoutObject[];
+}
+// Inline GLB upload field for property panel
+function GLBUploadField({ currentUrl, onUpdate }: { currentUrl?: string; onUpdate: (url: string | undefined) => void }) {
+  const [uploading, setUploading] = useState(false);
+
+  return (
+    <div className="relative border-2 border-dashed border-border rounded-lg p-2 min-h-[40px] flex items-center justify-center bg-muted/30">
+      {currentUrl ? (
+        <div className="flex items-center gap-2 w-full">
+          <Box className="h-4 w-4 text-primary flex-shrink-0" />
+          <span className="text-xs text-foreground truncate flex-1">{currentUrl.split('/').pop()}</span>
+          <Button type="button" variant="ghost" size="icon" className="h-5 w-5 flex-shrink-0" onClick={() => onUpdate(undefined)}>
+            <Trash2 className="h-3 w-3 text-destructive" />
+          </Button>
+        </div>
+      ) : (
+        <span className="text-xs text-muted-foreground">上传 .glb 替换默认模型</span>
+      )}
+      <input
+        type="file"
+        accept=".glb"
+        className="absolute inset-0 opacity-0 cursor-pointer"
+        disabled={uploading}
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          setUploading(true);
+          try {
+            const { uploadGLBFile } = await import('@/utils/glbUpload');
+            const url = await uploadGLBFile(file, 'layout-objects');
+            if (url) {
+              onUpdate(url);
+              toast.success('3D 模型已更新');
+            }
+          } finally {
+            setUploading(false);
+          }
+        }}
+      />
+      {uploading && (
+        <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
+          <Loader2 className="h-4 w-4 animate-spin" />
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function ObjectPropertyPanel({
@@ -548,6 +595,20 @@ export function ObjectPropertyPanel({
                     解除挂载
                   </Button>
                 </div>
+              </div>
+              <Separator className="my-3" />
+            </>
+          )}
+
+          {/* 3D Model Override for Mechanism Objects */}
+          {object.type === 'mechanism' && (
+            <>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">3D 模型（GLB）</Label>
+                <GLBUploadField
+                  currentUrl={object.model3dUrl}
+                  onUpdate={(url) => onUpdate(object.id, { model3dUrl: url })}
+                />
               </div>
               <Separator className="my-3" />
             </>
