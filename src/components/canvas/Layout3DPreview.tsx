@@ -1616,6 +1616,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
 
           <RelationshipLines objects={objects} xrayMode={xrayMode} />
           <CameraController cameraRef={cameraActionRef} dragMode={dragStateRef.current.isDragging} />
+          {onScreenshotReady && <ScreenshotHelper onScreenshotReady={onScreenshotReady} />}
         </Suspense>
       </Canvas>
 

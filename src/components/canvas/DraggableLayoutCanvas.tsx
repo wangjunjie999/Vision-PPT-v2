@@ -85,8 +85,8 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   const [isSavingView, setIsSavingView] = useState(false);
   const [isSavingAllViews, setIsSavingAllViews] = useState(false);
   const [saveProgress, setSaveProgress] = useState(0);
-  const [viewSaveStatus, setViewSaveStatus] = useState<Record<StandardViewType, boolean>>({
-    front: false, side: false, top: false,
+  const [viewSaveStatus, setViewSaveStatus] = useState<Record<string, boolean>>({
+    front: false, side: false, top: false, isometric: false,
   });
 
   // Layer order
