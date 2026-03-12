@@ -10,7 +10,7 @@ import { Plus, Pencil, Trash2, Upload, Loader2, Image as ImageIcon, Search } fro
 import { useMechanisms, type MechanismInsert, type MechanismUpdate } from '@/hooks/useMechanisms';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { getMechanismImage } from '@/utils/mechanismImageUrls';
+
 import { ImageCropDialog } from './ImageCropDialog';
 
 // Mechanism image display with error handling
@@ -25,9 +25,7 @@ const MechanismImageDisplay = memo(function MechanismImageDisplay({
 }) {
   const [hasError, setHasError] = useState(false);
   
-  // Priority: database URL first (user uploaded), local assets as fallback
-  const localImage = getMechanismImage(type, 'front');
-  const imageUrl = databaseUrl || localImage;
+  const imageUrl = databaseUrl;
   
   const handleError = useCallback(() => {
     setHasError(true);
@@ -60,14 +58,9 @@ const MECHANISM_TYPES = [
   { value: 'camera_mount', label: '视觉支架' },
 ];
 
-// Get the display image for a mechanism - DATABASE URL FIRST (user uploaded), then local assets
+// Get the display image for a mechanism - only database URL (user uploaded)
 function getMechanismDisplayImage(mech: { type: string; front_view_image_url: string | null }): string | null {
-  // Priority 1: Database URL (user uploaded, most up-to-date)
-  if (mech.front_view_image_url) return mech.front_view_image_url;
-  // Priority 2: Local bundled assets (fallback)
-  const localImage = getMechanismImage(mech.type, 'front');
-  if (localImage) return localImage;
-  return null;
+  return mech.front_view_image_url || null;
 }
 
 export function MechanismResourceManager() {
@@ -214,15 +207,13 @@ export function MechanismResourceManager() {
     }
   };
 
-  const ImageUploadArea = ({ viewType, label, url, mechanismType }: { viewType: 'front' | 'side' | 'top'; label: string; url: string; mechanismType: string }) => {
-    const displayUrl = url || getMechanismImage(mechanismType, viewType) || null;
-    const isLocalFallback = !url && !!displayUrl;
+  const ImageUploadArea = ({ viewType, label, url }: { viewType: 'front' | 'side' | 'top'; label: string; url: string }) => {
     return (
     <div className="space-y-2">
-      <Label className="text-xs">{label}{isLocalFallback && <span className="text-muted-foreground ml-1">(默认)</span>}</Label>
+      <Label className="text-xs">{label}</Label>
       <div className="relative border-2 border-dashed border-border rounded-lg p-2 h-24 flex items-center justify-center bg-muted/30">
-        {displayUrl ? (
-          <img src={displayUrl} alt={label} className="max-h-full max-w-full object-contain" />
+        {url ? (
+          <img src={url} alt={label} className="max-h-full max-w-full object-contain" />
         ) : (
           <div className="text-center text-muted-foreground text-xs">
             <ImageIcon className="h-6 w-6 mx-auto mb-1" />
@@ -320,9 +311,9 @@ export function MechanismResourceManager() {
               <div>
                 <Label className="mb-2 block">三视图图片</Label>
                 <div className="grid grid-cols-3 gap-3">
-                  <ImageUploadArea viewType="front" label="正视图" url={form.front_view_image_url} mechanismType={form.type} />
-                  <ImageUploadArea viewType="side" label="侧视图" url={form.side_view_image_url} mechanismType={form.type} />
-                  <ImageUploadArea viewType="top" label="俯视图" url={form.top_view_image_url} mechanismType={form.type} />
+                  <ImageUploadArea viewType="front" label="正视图" url={form.front_view_image_url} />
+                  <ImageUploadArea viewType="side" label="侧视图" url={form.side_view_image_url} />
+                  <ImageUploadArea viewType="top" label="俯视图" url={form.top_view_image_url} />
                 </div>
               </div>
 
