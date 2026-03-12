@@ -1,44 +1,26 @@
 
 
-# FOV 输入改为两个独立数值框
+# 在 3D 画布中添加"暂存"按钮
 
-## 问题
+## 概述
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+在 3D 预览右侧工具栏区域（视图预设按钮下方）添加一个"暂存"按钮，用户调整完硬件位置后点击暂存，将当前所有对象的位置数据缓存到本地 state，不触发数据库写入。最终点击顶部"保存布局"时才统一持久化。
 
-## 修改方案
+## 改动
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+### `src/components/canvas/Layout3DPreview.tsx`
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
+1. **新增 prop**：`onStageLayout?: () => void` — 暂存回调
+2. **在右侧视图预设按钮区域**（约第 1776 行分隔线之后）添加"暂存"按钮，样式与重置按钮一致，使用 `Save` 图标 + "暂存布局" 文字
+3. 仅在 `onStageLayout` 存在时渲染该按钮
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+### `src/components/canvas/DraggableLayoutCanvas.tsx`
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+1. **定义 `handleStageLayout` 回调**：将当前 `objects` 状态和 `localProductPosition` 标记为已暂存（可用 `stagedRef` 或 toast 提示用户"已暂存"）
+2. **传入 `onStageLayout={handleStageLayout}` 到 `Layout3DPreview`**
+3. 暂存逻辑：调用已有的 `updateLayout`（仅写本地/数据库布局数据）但不截图，或仅标记 dirty flag + toast 提示
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+考虑到"暂存"的核心诉求是保存坐标数据但不截图，最简方案是：暂存 = 仅调用 `updateLayout` 保存对象坐标 + 产品位置到数据库，跳过三视图截图流程。这样用户可以随时保存位置，最终再点"保存"做完整截图。
 
-```
-[宽度输入] × [高度输入]
-```
-
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
-
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+约 20 行变更，涉及 2 个文件。
 
