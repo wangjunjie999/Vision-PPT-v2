@@ -1736,7 +1736,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 网格吸附 ({SNAP_GRID}mm)
               </button>
             )}
-            {dragMode && activeSelectedId && activeSelectedId !== '__product__' && (
+            {dragMode && activeSelectedId && (
               <div className="flex items-center px-2.5 py-1 text-[10px] text-slate-400 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-600/50">
                 ←→↑↓ 移动 · Shift+↑↓ 升降
               </div>
