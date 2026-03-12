@@ -1609,20 +1609,20 @@ export const Layout3DPreview = memo(function Layout3DPreview({
             onDeselect={() => handleSelect(null)}
           />
 
-          {/* Product — always opaque even in xray */}
-          <group
-            position={[0, 0, 0]}
-            onClick={(e: ThreeEvent<MouseEvent>) => {
-              e.stopPropagation();
-              if (!dragStateRef.current.isDragging) handleSelect('__product__');
-            }}
+          {/* Product — draggable */}
+          <DraggableGroup
+            objectId="__product__"
+            position={[productPosition.posX * SCALE, productPosition.posZ * SCALE, productPosition.posY * SCALE]}
+            dragState={dragStateRef}
+            onDragStart={handleDragStart}
+            onClick={(id) => { if (!dragMovedRef.current) handleSelect(id); }}
           >
             <ProductBox
               dimensions={productDimensions}
               selected={activeSelectedId === '__product__'}
               dimmed={hasFocus && !relatedIds.has('__product__') && activeSelectedId !== '__product__'}
             />
-          </group>
+          </DraggableGroup>
 
           {/* Mechanisms */}
           {mechanisms.map(obj => {
