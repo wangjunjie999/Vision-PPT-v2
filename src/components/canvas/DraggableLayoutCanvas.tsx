@@ -1026,7 +1026,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         )}
 
         {/* HUD overlays */}
-        <CanvasHUD currentView={currentView} />
+        <CanvasHUD />
 
         {/* Object List Panel */}
         {showObjectList && (
