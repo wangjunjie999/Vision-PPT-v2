@@ -888,6 +888,9 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
             onUpdateObject={updateObjectWithFollowers}
             selectedObjectId={selectedId}
             onSelectObject={(id) => setSelectedIds(id ? [id] : [])}
+            onUpdateProductDimensions={(dims) => {
+              updateWorkstation(workstationId, { product_dimensions: dims as any });
+            }}
           />
         ) : (
         <ContextMenu>
