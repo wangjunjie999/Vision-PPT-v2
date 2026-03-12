@@ -13,6 +13,7 @@ interface Layout3DPreviewProps {
   onSelectObject?: (id: string | null) => void;
   selectedObjectId?: string | null;
   onUpdateObject?: (id: string, updates: Partial<LayoutObject>) => void;
+  onUpdateProductDimensions?: (dims: { length: number; width: number; height: number }) => void;
 }
 
 const SCALE = 0.01;
@@ -1174,8 +1175,41 @@ function DragPlane({
   );
 }
 
+// --- Compact dimension input ---
+function DimInput({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  const [local, setLocal] = useState(String(value));
+  useEffect(() => { setLocal(String(value)); }, [value]);
+  const commit = () => {
+    const n = Math.max(10, Math.round(Number(local) || value));
+    setLocal(String(n));
+    if (n !== value) onChange(n);
+  };
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-[10px] text-slate-400 w-3">{label}</span>
+      <input
+        type="number"
+        className="w-[52px] h-5 text-[10px] text-slate-100 bg-slate-700/80 border border-slate-600 rounded px-1 text-center focus:outline-none focus:border-yellow-500/60"
+        value={local}
+        min={10}
+        onChange={e => setLocal(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => { if (e.key === 'Enter') commit(); }}
+      />
+      <span className="text-[9px] text-slate-500">mm</span>
+    </div>
+  );
+}
+
 // --- Enhanced info panel with mount info ---
-function SelectedInfoPanel({ obj, objects, onDeselect }: { obj: LayoutObject | null; objects: LayoutObject[]; onDeselect: () => void }) {
+function SelectedInfoPanel({ obj, objects, onDeselect, onUpdateObject, productDimensions, onUpdateProductDimensions }: {
+  obj: LayoutObject | null;
+  objects: LayoutObject[];
+  onDeselect: () => void;
+  onUpdateObject?: (id: string, updates: Partial<LayoutObject>) => void;
+  productDimensions?: { length: number; width: number; height: number };
+  onUpdateProductDimensions?: (dims: { length: number; width: number; height: number }) => void;
+}) {
   if (!obj) return null;
   const typeLabel = obj.type === 'camera' ? '相机' : obj.type === 'mechanism' ? '机构' : '产品';
   const mechType = obj.mechanismType || '';
@@ -1252,9 +1286,32 @@ function SelectedInfoPanel({ obj, objects, onDeselect }: { obj: LayoutObject | n
       <div className="text-[10px] text-slate-400">
         位置: ({obj.posX ?? 0}, {obj.posY ?? 0}, {obj.posZ ?? 0})
       </div>
-      {obj.width && obj.height && (
+      {/* Editable dimensions for mechanisms */}
+      {obj.type === 'mechanism' && onUpdateObject && obj.width && obj.height && (
+        <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
+          <div className="text-[10px] text-slate-400 mb-1">尺寸 (mm)</div>
+          <div className="flex flex-col gap-1">
+            <DimInput label="W" value={obj.width} onChange={v => onUpdateObject(obj.id, { width: v })} />
+            <DimInput label="H" value={obj.height} onChange={v => onUpdateObject(obj.id, { height: v })} />
+            <DimInput label="D" value={(obj as any).depth || 200} onChange={v => onUpdateObject(obj.id, { depth: v } as any)} />
+          </div>
+        </div>
+      )}
+      {/* Editable dimensions for product */}
+      {obj.id === '__product__' && onUpdateProductDimensions && productDimensions && (
+        <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
+          <div className="text-[10px] text-slate-400 mb-1">产品尺寸 (mm)</div>
+          <div className="flex flex-col gap-1">
+            <DimInput label="L" value={productDimensions.length} onChange={v => onUpdateProductDimensions({ ...productDimensions, length: v })} />
+            <DimInput label="W" value={productDimensions.width} onChange={v => onUpdateProductDimensions({ ...productDimensions, width: v })} />
+            <DimInput label="H" value={productDimensions.height} onChange={v => onUpdateProductDimensions({ ...productDimensions, height: v })} />
+          </div>
+        </div>
+      )}
+      {/* Fallback: read-only dimensions for cameras */}
+      {obj.type === 'camera' && obj.width && obj.height && (
         <div className="text-[10px] text-slate-400">
-          尺寸: {obj.width}×{obj.height}{(obj as any).depth ? `×${(obj as any).depth}` : ''}
+          尺寸: {obj.width}×{obj.height}
         </div>
       )}
       {mountInfo}
@@ -1269,6 +1326,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   onSelectObject,
   selectedObjectId,
   onUpdateObject,
+  onUpdateProductDimensions,
 }: Layout3DPreviewProps) {
   const cameraActionRef = useRef<{ position: [number, number, number]; target: [number, number, number] } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1545,7 +1603,14 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       </Canvas>
 
       {/* Selected object info */}
-      <SelectedInfoPanel obj={selectedObj} objects={objects} onDeselect={handleDeselect} />
+      <SelectedInfoPanel
+        obj={selectedObj}
+        objects={objects}
+        onDeselect={handleDeselect}
+        onUpdateObject={onUpdateObject}
+        productDimensions={productDimensions}
+        onUpdateProductDimensions={onUpdateProductDimensions}
+      />
 
       {/* Toolbar: mode toggle + xray + snap */}
       {onUpdateObject && (
