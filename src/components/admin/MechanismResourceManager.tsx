@@ -58,14 +58,9 @@ const MECHANISM_TYPES = [
   { value: 'camera_mount', label: '视觉支架' },
 ];
 
-// Get the display image for a mechanism - DATABASE URL FIRST (user uploaded), then local assets
+// Get the display image for a mechanism - only database URL (user uploaded)
 function getMechanismDisplayImage(mech: { type: string; front_view_image_url: string | null }): string | null {
-  // Priority 1: Database URL (user uploaded, most up-to-date)
-  if (mech.front_view_image_url) return mech.front_view_image_url;
-  // Priority 2: Local bundled assets (fallback)
-  const localImage = getMechanismImage(mech.type, 'front');
-  if (localImage) return localImage;
-  return null;
+  return mech.front_view_image_url || null;
 }
 
 export function MechanismResourceManager() {
