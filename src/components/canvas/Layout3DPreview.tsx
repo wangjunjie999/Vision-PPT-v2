@@ -1332,6 +1332,16 @@ function SelectedInfoPanel({ obj, objects, onDeselect, onUpdateObject, productDi
           </div>
         </div>
       )}
+      {/* Editable position for product */}
+      {obj.id === '__product__' && onUpdateProductPosition && productPosition && (
+        <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
+          <div className="text-[10px] text-slate-400 mb-1">产品位置 (mm)</div>
+          <div className="flex flex-col gap-1">
+            <DimInput label="X" value={productPosition.posX} onChange={v => onUpdateProductPosition({ ...productPosition, posX: v })} />
+            <DimInput label="Y" value={productPosition.posY} onChange={v => onUpdateProductPosition({ ...productPosition, posY: v })} />
+            <DimInput label="Z" value={productPosition.posZ} onChange={v => onUpdateProductPosition({ ...productPosition, posZ: v })} />
+          </div>
+        </div>
       {/* Fallback: read-only dimensions for cameras */}
       {obj.type === 'camera' && obj.width && obj.height && (
         <div className="text-[10px] text-slate-400">
