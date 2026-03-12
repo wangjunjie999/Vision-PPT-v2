@@ -1343,6 +1343,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   selectedObjectId,
   onUpdateObject,
   onUpdateProductDimensions,
+  onScreenshotReady,
 }: Layout3DPreviewProps) {
   const cameraActionRef = useRef<{ position: [number, number, number]; target: [number, number, number] } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
