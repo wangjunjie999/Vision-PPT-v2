@@ -1402,20 +1402,30 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   }, []);
 
   const handleDragStart = useCallback((id: string, point: THREE.Vector3) => {
-    if (!dragMode || !onUpdateObject) return;
-    const obj = objects.find(o => o.id === id);
-    if (!obj || obj.locked) return;
-
-    dragStateRef.current = {
-      isDragging: true,
-      objectId: id,
-      startPoint: point.clone(),
-      startPos: { posX: obj.posX ?? 0, posY: obj.posY ?? 0, posZ: obj.posZ ?? 0 },
-    };
+    if (!dragMode) return;
+    if (id === '__product__') {
+      if (!onUpdateProductPosition) return;
+      dragStateRef.current = {
+        isDragging: true,
+        objectId: id,
+        startPoint: point.clone(),
+        startPos: { posX: productPosition.posX, posY: productPosition.posY, posZ: productPosition.posZ },
+      };
+    } else {
+      if (!onUpdateObject) return;
+      const obj = objects.find(o => o.id === id);
+      if (!obj || obj.locked) return;
+      dragStateRef.current = {
+        isDragging: true,
+        objectId: id,
+        startPoint: point.clone(),
+        startPos: { posX: obj.posX ?? 0, posY: obj.posY ?? 0, posZ: obj.posZ ?? 0 },
+      };
+    }
     dragMovedRef.current = false;
     setLocalSelectedId(id);
     onSelectObject?.(id);
-  }, [dragMode, onUpdateObject, objects, onSelectObject]);
+  }, [dragMode, onUpdateObject, onUpdateProductPosition, objects, onSelectObject, productPosition]);
 
   const handleDragMove = useCallback((point: THREE.Vector3) => {
     const state = dragStateRef.current;
