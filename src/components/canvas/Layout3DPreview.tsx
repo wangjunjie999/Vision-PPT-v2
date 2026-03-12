@@ -14,6 +14,22 @@ interface Layout3DPreviewProps {
   selectedObjectId?: string | null;
   onUpdateObject?: (id: string, updates: Partial<LayoutObject>) => void;
   onUpdateProductDimensions?: (dims: { length: number; width: number; height: number }) => void;
+  onScreenshotReady?: (fn: () => string | null) => void;
+}
+
+function ScreenshotHelper({ onScreenshotReady }: { onScreenshotReady: (fn: () => string | null) => void }) {
+  const { gl } = useThree();
+  useEffect(() => {
+    onScreenshotReady(() => {
+      try {
+        gl.render(gl.domElement as any, gl.domElement as any);
+        return gl.domElement.toDataURL('image/png');
+      } catch {
+        return gl.domElement.toDataURL('image/png');
+      }
+    });
+  }, [gl, onScreenshotReady]);
+  return null;
 }
 
 const SCALE = 0.01;
@@ -1327,6 +1343,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   selectedObjectId,
   onUpdateObject,
   onUpdateProductDimensions,
+  onScreenshotReady,
 }: Layout3DPreviewProps) {
   const cameraActionRef = useRef<{ position: [number, number, number]; target: [number, number, number] } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1501,7 +1518,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       <Canvas
         ref={canvasRef}
         camera={{ position: [7, 6, 7], fov: 50, near: 0.1, far: 100 }}
-        gl={{ antialias: true, alpha: false }}
+        gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
         onCreated={({ gl }) => { gl.setClearColor('#0f172a'); }}
         onPointerMissed={() => {
           if (!dragStateRef.current.isDragging) {
@@ -1599,6 +1616,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
 
           <RelationshipLines objects={objects} xrayMode={xrayMode} />
           <CameraController cameraRef={cameraActionRef} dragMode={dragStateRef.current.isDragging} />
+          {onScreenshotReady && <ScreenshotHelper onScreenshotReady={onScreenshotReady} />}
         </Suspense>
       </Canvas>
 

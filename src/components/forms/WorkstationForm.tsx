@@ -876,6 +876,7 @@ export function WorkstationForm() {
                 <SelectItem value="front">正视图</SelectItem>
                 <SelectItem value="side">侧视图</SelectItem>
                 <SelectItem value="top">俯视图</SelectItem>
+                <SelectItem value="isometric">等轴测</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -892,6 +893,7 @@ export function WorkstationForm() {
                 <SelectItem value="front">正视图</SelectItem>
                 <SelectItem value="side">侧视图</SelectItem>
                 <SelectItem value="top">俯视图</SelectItem>
+                <SelectItem value="isometric">等轴测</SelectItem>
               </SelectContent>
             </Select>
           </div>

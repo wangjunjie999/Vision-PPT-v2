@@ -444,6 +444,8 @@ export type Database = {
           grid_enabled: boolean | null
           height: number | null
           id: string
+          isometric_view_image_url: string | null
+          isometric_view_saved: boolean | null
           layout_description: string | null
           layout_objects: Json | null
           layout_type: string | null
@@ -479,6 +481,8 @@ export type Database = {
           grid_enabled?: boolean | null
           height?: number | null
           id?: string
+          isometric_view_image_url?: string | null
+          isometric_view_saved?: boolean | null
           layout_description?: string | null
           layout_objects?: Json | null
           layout_type?: string | null
@@ -514,6 +518,8 @@ export type Database = {
           grid_enabled?: boolean | null
           height?: number | null
           id?: string
+          isometric_view_image_url?: string | null
+          isometric_view_saved?: boolean | null
           layout_description?: string | null
           layout_objects?: Json | null
           layout_type?: string | null
