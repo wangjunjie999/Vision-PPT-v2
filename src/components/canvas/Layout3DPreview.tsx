@@ -729,6 +729,7 @@ function Mechanism3DModel({ obj, selected, dimmed, hasIllegalMount, objects, xra
   const isCamType = isCameraMountable(mechType);
   const isProdType = isProductInteraction(mechType);
 
+  let model: React.ReactNode;
   // Prioritize custom GLB model if available
   if ((obj as any).model3dUrl) {
     model = (
