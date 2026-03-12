@@ -1175,8 +1175,41 @@ function DragPlane({
   );
 }
 
+// --- Compact dimension input ---
+function DimInput({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  const [local, setLocal] = useState(String(value));
+  useEffect(() => { setLocal(String(value)); }, [value]);
+  const commit = () => {
+    const n = Math.max(10, Math.round(Number(local) || value));
+    setLocal(String(n));
+    if (n !== value) onChange(n);
+  };
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-[10px] text-slate-400 w-3">{label}</span>
+      <input
+        type="number"
+        className="w-[52px] h-5 text-[10px] text-slate-100 bg-slate-700/80 border border-slate-600 rounded px-1 text-center focus:outline-none focus:border-yellow-500/60"
+        value={local}
+        min={10}
+        onChange={e => setLocal(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => { if (e.key === 'Enter') commit(); }}
+      />
+      <span className="text-[9px] text-slate-500">mm</span>
+    </div>
+  );
+}
+
 // --- Enhanced info panel with mount info ---
-function SelectedInfoPanel({ obj, objects, onDeselect }: { obj: LayoutObject | null; objects: LayoutObject[]; onDeselect: () => void }) {
+function SelectedInfoPanel({ obj, objects, onDeselect, onUpdateObject, productDimensions, onUpdateProductDimensions }: {
+  obj: LayoutObject | null;
+  objects: LayoutObject[];
+  onDeselect: () => void;
+  onUpdateObject?: (id: string, updates: Partial<LayoutObject>) => void;
+  productDimensions?: { length: number; width: number; height: number };
+  onUpdateProductDimensions?: (dims: { length: number; width: number; height: number }) => void;
+}) {
   if (!obj) return null;
   const typeLabel = obj.type === 'camera' ? '相机' : obj.type === 'mechanism' ? '机构' : '产品';
   const mechType = obj.mechanismType || '';
