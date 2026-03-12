@@ -1198,11 +1198,11 @@ function DragPlane({
 }
 
 // --- Compact dimension input ---
-function DimInput({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+function DimInput({ label, value, onChange, allowNegative }: { label: string; value: number; onChange: (v: number) => void; allowNegative?: boolean }) {
   const [local, setLocal] = useState(String(value));
   useEffect(() => { setLocal(String(value)); }, [value]);
   const commit = () => {
-    const n = Math.max(10, Math.round(Number(local) || value));
+    const n = allowNegative ? Math.round(Number(local) || value) : Math.max(10, Math.round(Number(local) || value));
     setLocal(String(n));
     if (n !== value) onChange(n);
   };
@@ -1213,7 +1213,6 @@ function DimInput({ label, value, onChange }: { label: string; value: number; on
         type="number"
         className="w-[52px] h-5 text-[10px] text-slate-100 bg-slate-700/80 border border-slate-600 rounded px-1 text-center focus:outline-none focus:border-yellow-500/60"
         value={local}
-        min={10}
         onChange={e => setLocal(e.target.value)}
         onBlur={commit}
         onKeyDown={e => { if (e.key === 'Enter') commit(); }}
