@@ -88,6 +88,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   const [viewSaveStatus, setViewSaveStatus] = useState<Record<string, boolean>>({
     front: false, side: false, top: false, isometric: false,
   });
+  const isometricScreenshotFnRef = useRef<(() => string | null) | null>(null);
 
   // Layer order
   const [layerOrder, setLayerOrder] = useState<LayerType[]>(() => {
