@@ -1346,7 +1346,10 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   onUpdateObject,
   onUpdateProductDimensions,
   onScreenshotReady,
+  productPosition: productPositionProp,
+  onUpdateProductPosition,
 }: Layout3DPreviewProps) {
+  const productPosition = productPositionProp ?? { posX: 0, posY: 0, posZ: 0 };
   const cameraActionRef = useRef<{ position: [number, number, number]; target: [number, number, number] } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
