@@ -754,6 +754,9 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         await updateLayout(layoutId, updateData as any);
         setViewSaveStatus({ front: true, side: true, top: true, isometric: true });
       }
+      // Persist product position
+      await updateWorkstation(workstationId, { product_position: localProductPosition as any });
+
       setSaveProgress(100);
       toast.success('布局和视图（含等轴测）已保存');
     } catch (error) {
