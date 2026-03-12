@@ -324,6 +324,64 @@ export function MechanismResourceManager() {
                 </div>
               </div>
 
+              {/* 3D Model (GLB) Upload */}
+              <div className="space-y-2">
+                <Label>3D 模型（GLB）</Label>
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1 border-2 border-dashed border-border rounded-lg p-3 flex items-center justify-center bg-muted/30 min-h-[48px]">
+                    {form.model_3d_url ? (
+                      <div className="flex items-center gap-2 w-full">
+                        <Box className="h-5 w-5 text-primary flex-shrink-0" />
+                        <span className="text-xs text-foreground truncate flex-1">{form.model_3d_url.split('/').pop()}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 flex-shrink-0"
+                          onClick={() => setForm(prev => ({ ...prev, model_3d_url: '' }))}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-center text-muted-foreground text-xs">
+                        <Box className="h-5 w-5 mx-auto mb-1" />
+                        未上传
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept=".glb"
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      disabled={uploadingGlb}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploadingGlb(true);
+                        try {
+                          const { uploadGLBFile } = await import('@/utils/glbUpload');
+                          const url = await uploadGLBFile(file, 'mechanisms');
+                          if (url) {
+                            setForm(prev => ({ ...prev, model_3d_url: url }));
+                            toast.success('3D 模型上传成功');
+                          }
+                        } catch (err) {
+                          toast.error('3D 模型上传失败');
+                        } finally {
+                          setUploadingGlb(false);
+                        }
+                      }}
+                    />
+                    {uploadingGlb && (
+                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">上传 .glb 格式3D模型，将替换默认程序化几何体</p>
+              </div>
+
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label className="text-xs">默认宽度(mm)</Label>
