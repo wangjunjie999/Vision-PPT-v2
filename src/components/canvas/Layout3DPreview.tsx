@@ -1681,6 +1681,8 @@ export const Layout3DPreview = memo(function Layout3DPreview({
         onUpdateObject={onUpdateObject}
         productDimensions={productDimensions}
         onUpdateProductDimensions={onUpdateProductDimensions}
+        productPosition={productPosition}
+        onUpdateProductPosition={onUpdateProductPosition}
       />
 
       {/* Toolbar: mode toggle + xray + snap */}
