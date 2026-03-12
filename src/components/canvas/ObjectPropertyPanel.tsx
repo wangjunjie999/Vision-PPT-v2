@@ -53,6 +53,52 @@ interface ObjectPropertyPanelProps {
   currentView?: ViewType;
   allObjects?: LayoutObject[];
 }
+// Inline GLB upload field for property panel
+function GLBUploadField({ currentUrl, onUpdate }: { currentUrl?: string; onUpdate: (url: string | undefined) => void }) {
+  const [uploading, setUploading] = useState(false);
+
+  return (
+    <div className="relative border-2 border-dashed border-border rounded-lg p-2 min-h-[40px] flex items-center justify-center bg-muted/30">
+      {currentUrl ? (
+        <div className="flex items-center gap-2 w-full">
+          <Box className="h-4 w-4 text-primary flex-shrink-0" />
+          <span className="text-xs text-foreground truncate flex-1">{currentUrl.split('/').pop()}</span>
+          <Button type="button" variant="ghost" size="icon" className="h-5 w-5 flex-shrink-0" onClick={() => onUpdate(undefined)}>
+            <Trash2 className="h-3 w-3 text-destructive" />
+          </Button>
+        </div>
+      ) : (
+        <span className="text-xs text-muted-foreground">上传 .glb 替换默认模型</span>
+      )}
+      <input
+        type="file"
+        accept=".glb"
+        className="absolute inset-0 opacity-0 cursor-pointer"
+        disabled={uploading}
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          setUploading(true);
+          try {
+            const { uploadGLBFile } = await import('@/utils/glbUpload');
+            const url = await uploadGLBFile(file, 'layout-objects');
+            if (url) {
+              onUpdate(url);
+              toast.success('3D 模型已更新');
+            }
+          } finally {
+            setUploading(false);
+          }
+        }}
+      />
+      {uploading && (
+        <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
+          <Loader2 className="h-4 w-4 animate-spin" />
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function ObjectPropertyPanel({
   object,
