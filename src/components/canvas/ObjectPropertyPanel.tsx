@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Trash2, Lock, Unlock, X, RotateCcw, Move, 
   Copy, ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
-  Maximize2, Minimize2
+  Maximize2, Minimize2, Box, Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
