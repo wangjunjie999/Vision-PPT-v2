@@ -74,6 +74,8 @@ export function MechanismResourceManager() {
   const [cropFile, setCropFile] = useState<File | null>(null);
   const [cropViewType, setCropViewType] = useState<'front' | 'side' | 'top'>('front');
 
+  const [uploadingGlb, setUploadingGlb] = useState(false);
+
   const [form, setForm] = useState({
     name: '',
     type: 'robot_arm',
@@ -86,6 +88,7 @@ export function MechanismResourceManager() {
     default_depth: '',
     notes: '',
     enabled: true,
+    model_3d_url: '',
   });
 
   const resetForm = () => {
