@@ -1286,9 +1286,32 @@ function SelectedInfoPanel({ obj, objects, onDeselect, onUpdateObject, productDi
       <div className="text-[10px] text-slate-400">
         位置: ({obj.posX ?? 0}, {obj.posY ?? 0}, {obj.posZ ?? 0})
       </div>
-      {obj.width && obj.height && (
+      {/* Editable dimensions for mechanisms */}
+      {obj.type === 'mechanism' && onUpdateObject && obj.width && obj.height && (
+        <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
+          <div className="text-[10px] text-slate-400 mb-1">尺寸 (mm)</div>
+          <div className="flex flex-col gap-1">
+            <DimInput label="W" value={obj.width} onChange={v => onUpdateObject(obj.id, { width: v })} />
+            <DimInput label="H" value={obj.height} onChange={v => onUpdateObject(obj.id, { height: v })} />
+            <DimInput label="D" value={(obj as any).depth || 200} onChange={v => onUpdateObject(obj.id, { depth: v } as any)} />
+          </div>
+        </div>
+      )}
+      {/* Editable dimensions for product */}
+      {obj.id === '__product__' && onUpdateProductDimensions && productDimensions && (
+        <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
+          <div className="text-[10px] text-slate-400 mb-1">产品尺寸 (mm)</div>
+          <div className="flex flex-col gap-1">
+            <DimInput label="L" value={productDimensions.length} onChange={v => onUpdateProductDimensions({ ...productDimensions, length: v })} />
+            <DimInput label="W" value={productDimensions.width} onChange={v => onUpdateProductDimensions({ ...productDimensions, width: v })} />
+            <DimInput label="H" value={productDimensions.height} onChange={v => onUpdateProductDimensions({ ...productDimensions, height: v })} />
+          </div>
+        </div>
+      )}
+      {/* Fallback: read-only dimensions for cameras */}
+      {obj.type === 'camera' && obj.width && obj.height && (
         <div className="text-[10px] text-slate-400">
-          尺寸: {obj.width}×{obj.height}{(obj as any).depth ? `×${(obj as any).depth}` : ''}
+          尺寸: {obj.width}×{obj.height}
         </div>
       )}
       {mountInfo}
