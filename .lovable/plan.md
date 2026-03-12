@@ -1,33 +1,44 @@
 
 
-# 修复等轴测截图功能
+# FOV 输入改为两个独立数值框
 
-## 问题根因
+## 问题
 
-`ScreenshotHelper` 中的 `gl.render(gl.domElement, gl.domElement)` 调用错误——传入的是 DOM 元素而非 Three.js 的 `scene` 和 `camera` 对象，导致渲染帧未正确刷新，`toDataURL()` 返回空白或旧画面。
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-## 改动
+## 修改方案
 
-### 文件：`src/components/canvas/Layout3DPreview.tsx`（第 20-33 行）
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-修复 `ScreenshotHelper`，从 `useThree()` 获取 `scene` 和 `camera`，在截图前正确执行一次渲染：
-
-```typescript
-function ScreenshotHelper({ onScreenshotReady }: { onScreenshotReady: (fn: () => string | null) => void }) {
-  const { gl, scene, camera } = useThree();
-  useEffect(() => {
-    onScreenshotReady(() => {
-      try {
-        gl.render(scene, camera);
-        return gl.domElement.toDataURL('image/png');
-      } catch {
-        return null;
-      }
-    });
-  }, [gl, scene, camera, onScreenshotReady]);
-  return null;
-}
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
 ```
 
-单文件修改，约 5 行变更。
+在 `getDefaultFormState` 中添加默认值 `''`。
+
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+
+```
+[宽度输入] × [高度输入]
+```
+
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 

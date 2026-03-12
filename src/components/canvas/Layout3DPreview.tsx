@@ -18,17 +18,17 @@ interface Layout3DPreviewProps {
 }
 
 function ScreenshotHelper({ onScreenshotReady }: { onScreenshotReady: (fn: () => string | null) => void }) {
-  const { gl } = useThree();
+  const { gl, scene, camera } = useThree();
   useEffect(() => {
     onScreenshotReady(() => {
       try {
-        gl.render(gl.domElement as any, gl.domElement as any);
+        gl.render(scene, camera);
         return gl.domElement.toDataURL('image/png');
       } catch {
-        return gl.domElement.toDataURL('image/png');
+        return null;
       }
     });
-  }, [gl, onScreenshotReady]);
+  }, [gl, scene, camera, onScreenshotReady]);
   return null;
 }
 
