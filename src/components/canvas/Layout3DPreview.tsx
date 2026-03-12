@@ -1661,7 +1661,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
         </div>
       </div>
 
-      <div className="absolute bottom-3 right-3 text-[10px] text-slate-500 bg-slate-800/60 backdrop-blur-sm rounded px-2 py-1 z-10">
+      <div className="absolute bottom-3 left-3 text-[10px] text-slate-500 bg-slate-800/60 backdrop-blur-sm rounded px-2 py-1 z-10">
         {dragMode
           ? '🖐 拖拽/方向键移动 · Shift+↑↓升降高度 · 点击切换到旋转模式'
           : '🖱 左键旋转 · 右键平移 · 滚轮缩放 · 点击选中(聚焦模式)'}
