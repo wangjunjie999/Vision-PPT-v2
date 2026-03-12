@@ -749,7 +749,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         setViewSaveStatus({ front: true, side: true, top: true, isometric: true });
       }
       setSaveProgress(100);
-      toast.success('布局和三视图已保存');
+      toast.success('布局和视图（含等轴测）已保存');
     } catch (error) {
       console.error('Save all error:', error);
       toast.error('保存失败: ' + (error instanceof Error ? error.message : '未知错误'));
