@@ -43,6 +43,7 @@ interface DraggableLayoutCanvasProps {
 export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasProps) {
   const {
     workstations, layouts, getLayoutByWorkstation, updateLayout, addLayout,
+    updateWorkstation,
   } = useData();
   const { mechanisms, getEnabledMechanisms } = useMechanisms();
 
