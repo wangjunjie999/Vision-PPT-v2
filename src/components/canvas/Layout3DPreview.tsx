@@ -2,7 +2,7 @@ import { memo, useRef, useCallback, useState, useMemo, useEffect, Suspense } fro
 import { Canvas, useThree, useFrame, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Box, Cone, Line, Text, Grid, Plane, Sphere, Cylinder, useGLTF } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, X, Move, MousePointer, Magnet, Eye, EyeOff, Save } from 'lucide-react';
+import { RotateCcw, X, Magnet, Eye, EyeOff, Save } from 'lucide-react';
 import type { LayoutObject } from './ObjectPropertyPanel';
 import { CAMERA_INTERACTION_TYPES, PRODUCT_INTERACTION_TYPES } from './MechanismSVG';
 import * as THREE from 'three';
@@ -84,6 +84,7 @@ function DraggableGroup({
   dragState,
   onDragStart,
   onClick,
+  objectClickedRef,
 }: {
   children: React.ReactNode;
   objectId: string;
@@ -92,9 +93,11 @@ function DraggableGroup({
   dragState: React.MutableRefObject<DragState>;
   onDragStart: (id: string, point: THREE.Vector3) => void;
   onClick: (id: string) => void;
+  objectClickedRef: React.MutableRefObject<boolean>;
 }) {
   const groupRef = useRef<THREE.Group>(null);
-  const pointerDownPos = useRef<{ x: number; y: number } | null>(null);
+  const pointerDownPos = useRef<{ x: number; y: number; point: THREE.Vector3 } | null>(null);
+  const hasDragStarted = useRef(false);
 
   return (
     <group
@@ -102,23 +105,32 @@ function DraggableGroup({
       position={position}
       rotation={rotation}
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
+        if (e.button !== 0) return;
         e.stopPropagation();
-        if (e.button === 0) {
-          pointerDownPos.current = { x: e.clientX, y: e.clientY };
-          onDragStart(objectId, e.point);
+        objectClickedRef.current = true;
+        pointerDownPos.current = { x: e.clientX, y: e.clientY, point: e.point.clone() };
+        hasDragStarted.current = false;
+        // Select immediately on pointer down
+        onClick(objectId);
+        // Capture pointer so we get move/up even outside object
+        (e as any).target?.setPointerCapture?.((e as any).pointerId);
+      }}
+      onPointerMove={(e: ThreeEvent<PointerEvent>) => {
+        if (!pointerDownPos.current || hasDragStarted.current) return;
+        const dx = Math.abs(e.clientX - pointerDownPos.current.x);
+        const dy = Math.abs(e.clientY - pointerDownPos.current.y);
+        if (dx > 5 || dy > 5) {
+          hasDragStarted.current = true;
+          onDragStart(objectId, pointerDownPos.current.point);
         }
       }}
       onPointerUp={(e: ThreeEvent<PointerEvent>) => {
-        if (pointerDownPos.current) {
-          const dx = Math.abs(e.clientX - pointerDownPos.current.x);
-          const dy = Math.abs(e.clientY - pointerDownPos.current.y);
-          if (dx < 5 && dy < 5) {
-            // Click (no significant movement) — stop propagation to prevent ground Plane from deselecting
-            e.stopPropagation();
-            onClick(objectId);
-          }
-          pointerDownPos.current = null;
-        }
+        e.stopPropagation();
+        objectClickedRef.current = true;
+        pointerDownPos.current = null;
+        hasDragStarted.current = false;
+        setTimeout(() => { objectClickedRef.current = false; }, 0);
+        (e as any).target?.releasePointerCapture?.((e as any).pointerId);
       }}
     >
       {children}
@@ -1193,10 +1205,10 @@ const VIEW_PRESETS = [
 
 function CameraController({
   cameraRef,
-  dragMode,
+  isDragging,
 }: {
   cameraRef: React.MutableRefObject<{ position: [number, number, number]; target: [number, number, number] } | null>;
-  dragMode: boolean;
+  isDragging: boolean;
 }) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
@@ -1221,7 +1233,12 @@ function CameraController({
       dampingFactor={0.1}
       minDistance={2}
       maxDistance={30}
-      enabled={!dragMode}
+      enabled={!isDragging}
+      mouseButtons={{
+        LEFT: undefined as any,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.ROTATE,
+      }}
     />
   );
 }
@@ -1229,12 +1246,14 @@ function CameraController({
 function DragPlane({
   dragStateRef,
   dragMovedRef,
+  objectClickedRef,
   onDragMove,
   onDragEnd,
   onDeselect,
 }: {
   dragStateRef: React.MutableRefObject<DragState>;
   dragMovedRef: React.MutableRefObject<boolean>;
+  objectClickedRef: React.MutableRefObject<boolean>;
   onDragMove: (point: THREE.Vector3) => void;
   onDragEnd: () => void;
   onDeselect: () => void;
@@ -1258,7 +1277,7 @@ function DragPlane({
         }
       }}
       onClick={(e: ThreeEvent<MouseEvent>) => {
-        if (!dragStateRef.current.isDragging && !dragMovedRef.current && e.delta < 3) {
+        if (!dragStateRef.current.isDragging && !dragMovedRef.current && !objectClickedRef.current && e.delta < 3) {
           e.stopPropagation();
           onDeselect();
         }
@@ -1453,7 +1472,6 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   const cameraActionRef = useRef<{ position: [number, number, number]; target: [number, number, number] } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
-  const [dragMode, setDragMode] = useState(false);
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [xrayMode, setXrayMode] = useState(false);
   const SNAP_GRID = 10;
@@ -1464,6 +1482,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
     startPos: null,
   });
   const dragMovedRef = useRef(false);
+  const objectClickedRef = useRef(false);
 
   const activeSelectedId = selectedObjectId !== undefined ? selectedObjectId : localSelectedId;
 
@@ -1502,7 +1521,6 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   }, []);
 
   const handleDragStart = useCallback((id: string, point: THREE.Vector3) => {
-    if (!dragMode) return;
     if (id === '__product__') {
       if (!onUpdateProductPosition) return;
       dragStateRef.current = {
@@ -1523,9 +1541,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       };
     }
     dragMovedRef.current = false;
-    setLocalSelectedId(id);
-    onSelectObject?.(id);
-  }, [dragMode, onUpdateObject, onUpdateProductPosition, objects, onSelectObject, productPosition]);
+  }, [onUpdateObject, onUpdateProductPosition, objects, productPosition]);
 
   const handleDragMove = useCallback((point: THREE.Vector3) => {
     const state = dragStateRef.current;
@@ -1577,7 +1593,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   }, []);
 
   useEffect(() => {
-    if (!dragMode || !onUpdateObject) return;
+    if (!onUpdateObject) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'r' || e.key === 'R') {
@@ -1678,7 +1694,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [dragMode, activeSelectedId, objects, onUpdateObject, onUpdateProductPosition, productPosition, snapEnabled, SNAP_GRID]);
+  }, [activeSelectedId, objects, onUpdateObject, onUpdateProductPosition, productPosition, snapEnabled, SNAP_GRID]);
 
   const selectedObj = activeSelectedId
     ? (activeSelectedId === '__product__'
@@ -1697,7 +1713,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
         gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
         onCreated={({ gl }) => { gl.setClearColor('#0f172a'); }}
         onPointerMissed={() => {
-          if (!dragStateRef.current.isDragging) {
+          if (!dragStateRef.current.isDragging && !objectClickedRef.current) {
             dragMovedRef.current = false;
             handleSelect(null);
           }
@@ -1727,6 +1743,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
           <DragPlane
             dragStateRef={dragStateRef}
             dragMovedRef={dragMovedRef}
+            objectClickedRef={objectClickedRef}
             onDragMove={handleDragMove}
             onDragEnd={handleDragEnd}
             onDeselect={() => handleSelect(null)}
@@ -1739,6 +1756,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
             dragState={dragStateRef}
             onDragStart={handleDragStart}
             onClick={(id) => { handleSelect(id); }}
+            objectClickedRef={objectClickedRef}
           >
             <ProductBox
               dimensions={productDimensions}
@@ -1764,6 +1782,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 dragState={dragStateRef}
                 onDragStart={handleDragStart}
                 onClick={(id) => { handleSelect(id); }}
+                objectClickedRef={objectClickedRef}
               >
                 <Mechanism3DModel
                   obj={obj}
@@ -1794,6 +1813,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 dragState={dragStateRef}
                 onDragStart={handleDragStart}
                 onClick={(id) => { handleSelect(id); }}
+                objectClickedRef={objectClickedRef}
               >
                 <CameraObject obj={obj} selected={isSelected} dimmed={isDimmed} />
               </DraggableGroup>
@@ -1801,7 +1821,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
           })}
 
           <RelationshipLines objects={objects} xrayMode={xrayMode} productPosition={productPosition} />
-          <CameraController cameraRef={cameraActionRef} dragMode={dragStateRef.current.isDragging} />
+          <CameraController cameraRef={cameraActionRef} isDragging={dragStateRef.current.isDragging} />
           {onScreenshotReady && <ScreenshotHelper onScreenshotReady={onScreenshotReady} />}
         </Suspense>
       </Canvas>
@@ -1818,35 +1838,13 @@ export const Layout3DPreview = memo(function Layout3DPreview({
         onUpdateProductPosition={onUpdateProductPosition}
       />
 
-      {/* Toolbar: mode toggle + xray + snap */}
+      {/* Toolbar: xray + snap */}
       {onUpdateObject && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
           <div className="flex bg-slate-800/90 backdrop-blur-sm rounded-lg border border-slate-600/50 overflow-hidden">
             <button
-              onClick={() => setDragMode(false)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
-                !dragMode
-                  ? 'bg-blue-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <MousePointer className="h-3.5 w-3.5" />
-              旋转视角
-            </button>
-            <button
-              onClick={() => setDragMode(true)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
-                dragMode
-                  ? 'bg-orange-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Move className="h-3.5 w-3.5" />
-              拖拽移动
-            </button>
-            <button
               onClick={() => setXrayMode(!xrayMode)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors border-l border-slate-600/50 ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
                 xrayMode
                   ? 'bg-violet-600 text-white'
                   : 'text-slate-400 hover:text-slate-200'
@@ -1856,27 +1854,23 @@ export const Layout3DPreview = memo(function Layout3DPreview({
               {xrayMode ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
               透视
             </button>
+            <button
+              onClick={() => setSnapEnabled(!snapEnabled)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors border-l border-slate-600/50 ${
+                snapEnabled
+                  ? 'bg-emerald-600 text-white'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Magnet className="h-3.5 w-3.5" />
+              网格吸附 ({SNAP_GRID}mm)
+            </button>
           </div>
-          <div className="flex gap-1.5 mt-1.5">
-            {dragMode && (
-              <button
-                onClick={() => setSnapEnabled(!snapEnabled)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border backdrop-blur-sm transition-colors ${
-                  snapEnabled
-                    ? 'bg-emerald-600 text-white border-emerald-500/50'
-                    : 'bg-slate-800/90 text-slate-400 border-slate-600/50 hover:text-slate-200'
-                }`}
-              >
-                <Magnet className="h-3.5 w-3.5" />
-                网格吸附 ({SNAP_GRID}mm)
-              </button>
-            )}
-            {dragMode && activeSelectedId && (
-              <div className="flex items-center px-2.5 py-1 text-[10px] text-slate-400 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-600/50">
-                ←→↑↓ 移动 · Shift+↑↓ 升降 · R+方向键 旋转
-              </div>
-            )}
-          </div>
+          {activeSelectedId && (
+            <div className="flex items-center px-2.5 py-1 mt-1.5 text-[10px] text-slate-400 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-600/50">
+              ←→↑↓ 移动 · Shift+↑↓ 升降 · R+方向键 旋转
+            </div>
+          )}
         </div>
       )}
 
@@ -1947,9 +1941,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       </div>
 
       <div className="absolute bottom-3 left-3 text-[10px] text-slate-500 bg-slate-800/60 backdrop-blur-sm rounded px-2 py-1 z-10">
-        {dragMode
-          ? '🖐 拖拽/方向键移动 · Shift+↑↓升降高度 · 点击切换到旋转模式'
-          : '🖱 左键旋转 · 右键平移 · 滚轮缩放 · 点击选中(聚焦模式)'}
+        🖱 左键选中/拖拽 · 右键旋转视角 · 滚轮缩放 · 方向键移动 · Shift+↑↓升降
       </div>
     </div>
   );
