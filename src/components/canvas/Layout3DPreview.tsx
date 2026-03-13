@@ -1,6 +1,6 @@
 import { memo, useRef, useCallback, useState, useMemo, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame, ThreeEvent } from '@react-three/fiber';
-import { OrbitControls, Box, Cone, Line, Text, Grid, Plane, Sphere, Cylinder, useGLTF } from '@react-three/drei';
+import { OrbitControls, Box, Cone, Line, Text, Grid, Plane, Sphere, Cylinder, useGLTF, Billboard } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
 import { RotateCcw, X, Magnet, Eye, EyeOff, Save } from 'lucide-react';
 import type { LayoutObject } from './ObjectPropertyPanel';
