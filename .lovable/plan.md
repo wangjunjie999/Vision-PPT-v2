@@ -1,44 +1,39 @@
 
 
-# FOV 输入改为两个独立数值框
+# 优化主视图/辅视图保存工作流
 
-## 问题
+## 现状
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+当前流程已基本具备：
+1. WorkstationForm 中有主视图/辅视图下拉选择（正视图/侧视图/俯视图/等轴测）
+2. `LayoutViewsPreview` 在表单底部显示已保存的截图
+3. 画布中 `handleSaveAll` 会截取所有视图并上传
+4. PPT 生成直接从 `layout.primary_view` / `auxiliary_view` 读取对应的 `*_view_image_url`
 
-## 修改方案
+**问题**：LayoutViewsPreview 没有 `onOpenCanvas` 回调，用户看不到"打开画布去保存"的入口；且视图选择和截图预览分散在表单末尾，不够醒目。
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+## 方案
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
+### 1. `WorkstationForm.tsx` — 传入 `onOpenCanvas` 回调
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+给 `LayoutViewsPreview` 组件传入 `onOpenCanvas` 回调，点击后自动切换到画布视图（通过 `selectWorkstation` 触发右侧画布显示）。这样用户在预览区域可以直接跳转到画布去截图保存。
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+### 2. `LayoutViewsPreview.tsx` — 增强交互
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+- 添加「保存视图截图」按钮提示，引导用户到画布保存
+- 当视图已保存时，显示保存时间戳
+- 视图选择信息（主视图=正视图，辅视图=侧视图）直接显示在预览标题中
 
-```
-[宽度输入] × [高度输入]
-```
+### 3. 确认 PPT 生成不需要额外选择
 
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+当前 PPT 生成已直接使用 `layout.primary_view` / `auxiliary_view` 对应的截图 URL，无需在生成界面再选。确认 `PPTImagePreviewDialog` 和 `workstationSlides.ts` 都直接读取这些字段 — 已验证，无需改动。
 
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+### 涉及文件
 
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+| 文件 | 改动 |
+|------|------|
+| `WorkstationForm.tsx` | 给 LayoutViewsPreview 传入 onOpenCanvas 回调 |
+| `LayoutViewsPreview.tsx` | 增强状态显示，添加保存引导按钮 |
 
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+约 15 行改动。
 
