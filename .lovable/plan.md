@@ -1,44 +1,39 @@
 
 
-# FOV 输入改为两个独立数值框
+# 让相机在 3D 画布中显示 GLB 模型
 
-## 问题
+## 当前问题
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+代码已经实现了相机 GLB 渲染逻辑（`CameraObject` 组件会检查 `model3dUrl`），但数据流中有一个断点：
 
-## 修改方案
+`HardwareConfigPanel.tsx` 第 472 行的 `notifyParent` 函数在向父组件传递选中的相机数据时，只保留了 `id`、`brand`、`model`、`image_url` 四个字段，**丢弃了 `model_3d_url`**。
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
-
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
-
-在 `getDefaultFormState` 中添加默认值 `''`。
-
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
-
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
-
-```
-[宽度输入] × [高度输入]
+```text
+数据流:
+  DB cameras 表 (有 model_3d_url)
+    → HardwareSelectionDialog (select * 获取全部字段 ✅)
+      → handleSelect (用 ...item 保留了全部字段 ✅)
+        → notifyParent (❌ 只传 id/brand/model/image_url, model_3d_url 丢失)
+          → WorkstationForm → 写入 layout.selected_cameras (无 model_3d_url)
+            → DraggableLayoutCanvas.addCamera (读 model_3d_url → null)
+              → LayoutObject.model3dUrl = null → 3D 用程序化几何体
 ```
 
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+## 修复方案
 
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+### 1. `src/components/hardware/HardwareConfigPanel.tsx`
 
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+- `HardwareItemData` 接口添加 `model_3d_url?: string | null`
+- `notifyParent` 函数中为 cameras 的 map 添加 `model_3d_url: c.model_3d_url`，确保该字段透传到父组件
 
-### 4. PPT 输出不变
+### 2. 使用步骤
 
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+修复后，完整流程为：
 
-### 5. 自动计算兼容
+1. **管理中心** → 硬件资源管理 → 相机管理 → 编辑某个相机 → 上传 GLB 3D 模型文件
+2. **工位配置** → 硬件选配面板 → 选择已上传 GLB 的相机
+3. **布局画布** → 点击"添加相机"按钮，相机会带上 `model3dUrl`
+4. **切换到 3D 预览** → 可以看到自定义的 GLB 模型替代默认方块
 
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+改动量：约 3 行代码。
 
