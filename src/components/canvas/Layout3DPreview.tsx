@@ -1591,7 +1591,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   }, []);
 
   useEffect(() => {
-    if (!dragMode || !onUpdateObject) return;
+    if (!onUpdateObject) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'r' || e.key === 'R') {
@@ -1692,7 +1692,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [dragMode, activeSelectedId, objects, onUpdateObject, onUpdateProductPosition, productPosition, snapEnabled, SNAP_GRID]);
+  }, [activeSelectedId, objects, onUpdateObject, onUpdateProductPosition, productPosition, snapEnabled, SNAP_GRID]);
 
   const selectedObj = activeSelectedId
     ? (activeSelectedId === '__product__'
