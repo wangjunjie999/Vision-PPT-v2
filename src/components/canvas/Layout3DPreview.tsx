@@ -113,7 +113,8 @@ function DraggableGroup({
           const dx = Math.abs(e.clientX - pointerDownPos.current.x);
           const dy = Math.abs(e.clientY - pointerDownPos.current.y);
           if (dx < 5 && dy < 5) {
-            // Click (no significant movement)
+            // Click (no significant movement) — stop propagation to prevent ground Plane from deselecting
+            e.stopPropagation();
             onClick(objectId);
           }
           pointerDownPos.current = null;
