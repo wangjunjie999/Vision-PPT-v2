@@ -1,44 +1,25 @@
 
 
-# FOV 输入改为两个独立数值框
+# 修复上传 GLB 后选中对象自动变化的问题
 
-## 问题
+## 问题分析
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+经过代码排查，发现两个可能导致"选中对象自动变化"的原因：
 
-## 修改方案
+1. **2D 视图**：`ObjectPropertyPanel` 容器没有阻止 `mouseDown` 事件冒泡。当用户在属性面板内点击文件上传控件时，事件可能穿透到底层 SVG 画布的 `handleCanvasMouseDown` 处理器（第 611 行），该处理器会执行 `setSelectedIds([])`，导致取消选中。
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+2. **3D 视图**：GLB 模型通过 `Suspense` 异步加载时，Three.js 场景的几何体发生切换（从程序化模型 → GLB 模型），这可能导致不可见地面 `Plane`（第 1222 行）的 `onClick` 事件被触发，调用 `onDeselect()`。
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
+## 修复方案
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+### 1. `src/components/canvas/ObjectPropertyPanel.tsx`
+- 在属性面板容器 `<div>` 上添加 `onMouseDown={e => e.stopPropagation()}`，阻止点击事件向画布传播
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+### 2. `src/components/canvas/DraggableLayoutCanvas.tsx`
+- 在 `handleCanvasMouseDown` 中检查点击目标是否来自 SVG 本身（`e.target === e.currentTarget`），避免子元素冒泡触发取消选中
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+### 3. `src/components/canvas/Layout3DPreview.tsx`
+- 在地面 Plane 的 `onClick` 中添加时间戳保护：记录最后一次对象更新的时间，若距离更新不到 500ms 则忽略取消选中事件，防止 GLB 加载时的瞬间事件穿透
 
-```
-[宽度输入] × [高度输入]
-```
-
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
-
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+改动量：约 10 行代码，涉及 3 个文件。
 
