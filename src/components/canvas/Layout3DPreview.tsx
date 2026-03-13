@@ -80,6 +80,7 @@ function DraggableGroup({
   children,
   objectId,
   position,
+  rotation,
   dragState,
   onDragStart,
   onClick,
@@ -87,26 +88,35 @@ function DraggableGroup({
   children: React.ReactNode;
   objectId: string;
   position: [number, number, number];
+  rotation?: [number, number, number];
   dragState: React.MutableRefObject<DragState>;
   onDragStart: (id: string, point: THREE.Vector3) => void;
   onClick: (id: string) => void;
 }) {
   const groupRef = useRef<THREE.Group>(null);
+  const pointerDownPos = useRef<{ x: number; y: number } | null>(null);
 
   return (
     <group
       ref={groupRef}
       position={position}
+      rotation={rotation}
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
         if (e.button === 0) {
+          pointerDownPos.current = { x: e.clientX, y: e.clientY };
           onDragStart(objectId, e.point);
         }
       }}
-      onClick={(e: ThreeEvent<MouseEvent>) => {
-        e.stopPropagation();
-        if (!dragState.current.isDragging) {
-          onClick(objectId);
+      onPointerUp={(e: ThreeEvent<PointerEvent>) => {
+        if (pointerDownPos.current) {
+          const dx = Math.abs(e.clientX - pointerDownPos.current.x);
+          const dy = Math.abs(e.clientY - pointerDownPos.current.y);
+          if (dx < 5 && dy < 5) {
+            // Click (no significant movement)
+            onClick(objectId);
+          }
+          pointerDownPos.current = null;
         }
       }}
     >
