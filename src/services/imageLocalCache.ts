@@ -473,3 +473,33 @@ export function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
+
+// ================= GLB Model Cache Utilities =================
+
+const GLB_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+/**
+ * 下载 GLB 并缓存到 IndexedDB，返回 blob: URL
+ */
+export async function cacheGLBFromUrl(url: string): Promise<string> {
+  // Check cache first
+  const cached = await imageLocalCache.getByUrl(url);
+  if (cached) {
+    // Convert dataUri back to blob URL for three.js
+    const resp = await fetch(cached);
+    const blob = await resp.blob();
+    return URL.createObjectURL(blob);
+  }
+
+  // Fetch and cache
+  const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
+  if (!response.ok) throw new Error(`GLB fetch failed: ${response.status}`);
+  const blob = await response.blob();
+  const dataUri = await blobToDataUri(blob);
+
+  // Use URL as relatedId for GLB models
+  const safeKey = url.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 100);
+  await imageLocalCache.set('glb_model', safeKey, url, dataUri, GLB_TTL_MS);
+
+  return URL.createObjectURL(blob);
+}
