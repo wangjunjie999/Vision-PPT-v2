@@ -336,6 +336,7 @@ class ImageLocalCacheService {
             hardware: { count: 0, size: 0 },
             product: { count: 0, size: 0 },
             annotation: { count: 0, size: 0 },
+            glb_model: { count: 0, size: 0 },
           },
         };
 
