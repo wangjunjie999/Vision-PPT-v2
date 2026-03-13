@@ -1039,6 +1039,7 @@ interface RelLine {
   label: string;
   midpoint: [number, number, number];
   isIllegal: boolean;
+  lineType: 'camera' | 'product' | 'illegal';
 }
 
 function getRobotArmFlangePosition(parent: LayoutObject): [number, number, number] {
