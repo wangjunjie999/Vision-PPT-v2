@@ -1711,7 +1711,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
         gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
         onCreated={({ gl }) => { gl.setClearColor('#0f172a'); }}
         onPointerMissed={() => {
-          if (!dragStateRef.current.isDragging) {
+          if (!dragStateRef.current.isDragging && !objectClickedRef.current) {
             dragMovedRef.current = false;
             handleSelect(null);
           }
