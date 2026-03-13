@@ -626,7 +626,8 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent) => {
-    if (e.target !== e.currentTarget) return;
+    // If click hit an interactive object, stopPropagation already prevented reaching here
+    // So any event that arrives is a background/grid click → deselect
     if (panMode) {
       setIsPanning(true);
       setPanStart({ x: e.clientX, y: e.clientY });
