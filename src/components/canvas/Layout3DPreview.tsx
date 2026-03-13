@@ -1519,7 +1519,6 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   }, []);
 
   const handleDragStart = useCallback((id: string, point: THREE.Vector3) => {
-    if (!dragMode) return;
     if (id === '__product__') {
       if (!onUpdateProductPosition) return;
       dragStateRef.current = {
@@ -1540,9 +1539,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       };
     }
     dragMovedRef.current = false;
-    setLocalSelectedId(id);
-    onSelectObject?.(id);
-  }, [dragMode, onUpdateObject, onUpdateProductPosition, objects, onSelectObject, productPosition]);
+  }, [onUpdateObject, onUpdateProductPosition, objects, productPosition]);
 
   const handleDragMove = useCallback((point: THREE.Vector3) => {
     const state = dragStateRef.current;
