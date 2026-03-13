@@ -1205,10 +1205,10 @@ const VIEW_PRESETS = [
 
 function CameraController({
   cameraRef,
-  dragMode,
+  isDragging,
 }: {
   cameraRef: React.MutableRefObject<{ position: [number, number, number]; target: [number, number, number] } | null>;
-  dragMode: boolean;
+  isDragging: boolean;
 }) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
@@ -1233,7 +1233,12 @@ function CameraController({
       dampingFactor={0.1}
       minDistance={2}
       maxDistance={30}
-      enabled={!dragMode}
+      enabled={!isDragging}
+      mouseButtons={{
+        LEFT: undefined as any,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.ROTATE,
+      }}
     />
   );
 }
