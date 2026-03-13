@@ -928,15 +928,16 @@ function ProductBox({ dimensions, selected, dimmed }: { dimensions: { length: nu
           </Box>
         )}
       </group>
-      <Text
-        position={[0, h + 0.15, 0]}
-        fontSize={0.18}
-        color="#fafafa"
-        anchorX="center"
-        anchorY="bottom"
-      >
-        产品
-      </Text>
+      <Billboard position={[0, h + 0.15, 0]}>
+        <Text
+          fontSize={0.18}
+          color="#fafafa"
+          anchorX="center"
+          anchorY="bottom"
+        >
+          产品
+        </Text>
+      </Billboard>
     </>
   );
 }
