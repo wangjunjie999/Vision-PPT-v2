@@ -1628,6 +1628,10 @@ export const Layout3DPreview = memo(function Layout3DPreview({
           }
           break;
         default:
+          // R + arrow keys = rotate selected object
+          if (e.key === 'r' || e.key === 'R') {
+            // Handled below
+          }
           return;
       }
 
