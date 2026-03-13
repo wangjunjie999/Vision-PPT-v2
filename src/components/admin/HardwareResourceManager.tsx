@@ -28,6 +28,7 @@ import { HardwareDetailView } from './HardwareDetailView';
 import { useCameras, useLenses, useLights, useControllers, Camera as CameraType, Lens, Light, Controller } from '@/hooks/useHardware';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { uploadGLBFile, deleteGLBFile } from '@/utils/glbUpload';
 
 interface Props {
   type: 'cameras' | 'lenses' | 'lights' | 'controllers';

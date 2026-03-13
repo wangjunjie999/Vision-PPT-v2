@@ -646,11 +646,15 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     const defaultPosY = AUTO_ARRANGE_CONFIG.cameraDefaultY;
     const defaultPosZ = AUTO_ARRANGE_CONFIG.cameraDefaultZ;
     const canvasPos = project3DTo2D(defaultPosX, defaultPosY, defaultPosZ, currentView);
+    // Try to get model_3d_url from selected camera hardware data
+    const selectedCameraData = layout?.selected_cameras as any[];
+    const cameraModel3dUrl = selectedCameraData?.[cameraCount]?.model_3d_url || null;
     const newCamera: LayoutObject = {
       id: `camera-${Date.now()}`, type: 'camera', name: `CAM${cameraCount + 1}`,
       posX: defaultPosX, posY: defaultPosY, posZ: defaultPosZ,
       x: canvasPos.x, y: canvasPos.y, width: 50, height: 55, rotation: 0, locked: false,
       cameraIndex: cameraCount + 1,
+      ...(cameraModel3dUrl ? { model3dUrl: cameraModel3dUrl } : {}),
     };
     setObjects(prev => [...prev, newCamera]);
     setSelectedIds([newCamera.id]);

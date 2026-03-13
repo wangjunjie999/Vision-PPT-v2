@@ -600,8 +600,8 @@ export function ObjectPropertyPanel({
             </>
           )}
 
-          {/* 3D Model Override for Mechanism Objects */}
-          {object.type === 'mechanism' && (
+          {/* 3D Model Override for Mechanism/Camera Objects */}
+          {(object.type === 'mechanism' || object.type === 'camera') && (
             <>
               <div className="space-y-2">
                 <Label className="text-xs font-medium">3D 模型（GLB）</Label>

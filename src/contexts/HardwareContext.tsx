@@ -13,6 +13,7 @@ export interface Camera {
   sensor_size: string;
   tags: string[];
   image_url: string | null;
+  model_3d_url: string | null;
   enabled: boolean;
   created_at: string;
   updated_at: string;
