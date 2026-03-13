@@ -84,6 +84,7 @@ function DraggableGroup({
   dragState,
   onDragStart,
   onClick,
+  objectClickedRef,
 }: {
   children: React.ReactNode;
   objectId: string;
@@ -92,9 +93,11 @@ function DraggableGroup({
   dragState: React.MutableRefObject<DragState>;
   onDragStart: (id: string, point: THREE.Vector3) => void;
   onClick: (id: string) => void;
+  objectClickedRef: React.MutableRefObject<boolean>;
 }) {
   const groupRef = useRef<THREE.Group>(null);
-  const pointerDownPos = useRef<{ x: number; y: number } | null>(null);
+  const pointerDownPos = useRef<{ x: number; y: number; point: THREE.Vector3 } | null>(null);
+  const hasDragStarted = useRef(false);
 
   return (
     <group
@@ -102,23 +105,32 @@ function DraggableGroup({
       position={position}
       rotation={rotation}
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
+        if (e.button !== 0) return;
         e.stopPropagation();
-        if (e.button === 0) {
-          pointerDownPos.current = { x: e.clientX, y: e.clientY };
-          onDragStart(objectId, e.point);
+        objectClickedRef.current = true;
+        pointerDownPos.current = { x: e.clientX, y: e.clientY, point: e.point.clone() };
+        hasDragStarted.current = false;
+        // Select immediately on pointer down
+        onClick(objectId);
+        // Capture pointer so we get move/up even outside object
+        (e as any).target?.setPointerCapture?.((e as any).pointerId);
+      }}
+      onPointerMove={(e: ThreeEvent<PointerEvent>) => {
+        if (!pointerDownPos.current || hasDragStarted.current) return;
+        const dx = Math.abs(e.clientX - pointerDownPos.current.x);
+        const dy = Math.abs(e.clientY - pointerDownPos.current.y);
+        if (dx > 5 || dy > 5) {
+          hasDragStarted.current = true;
+          onDragStart(objectId, pointerDownPos.current.point);
         }
       }}
       onPointerUp={(e: ThreeEvent<PointerEvent>) => {
-        if (pointerDownPos.current) {
-          const dx = Math.abs(e.clientX - pointerDownPos.current.x);
-          const dy = Math.abs(e.clientY - pointerDownPos.current.y);
-          if (dx < 5 && dy < 5) {
-            // Click (no significant movement) — stop propagation to prevent ground Plane from deselecting
-            e.stopPropagation();
-            onClick(objectId);
-          }
-          pointerDownPos.current = null;
-        }
+        e.stopPropagation();
+        objectClickedRef.current = true;
+        pointerDownPos.current = null;
+        hasDragStarted.current = false;
+        setTimeout(() => { objectClickedRef.current = false; }, 0);
+        (e as any).target?.releasePointerCapture?.((e as any).pointerId);
       }}
     >
       {children}
