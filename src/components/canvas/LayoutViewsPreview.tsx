@@ -100,7 +100,7 @@ export function LayoutViewsPreview({ workstationId, className, onOpenCanvas }: L
         )}
       </div>
       
-      {/* Views: Primary (large) + Auxiliary (small) */}
+      {/* Views: Primary + Auxiliary */}
       <div className="grid grid-cols-2 gap-3">
         <div>
           {renderImage(primaryUrl, `主视图 - ${VIEW_LABELS[primaryView]}`)}
@@ -109,6 +109,13 @@ export function LayoutViewsPreview({ workstationId, className, onOpenCanvas }: L
           {renderImage(auxiliaryUrl, `辅视图 - ${VIEW_LABELS[auxiliaryView]}`)}
         </div>
       </div>
+
+      {/* Isometric 3D view */}
+      {isometricUrl && (
+        <div>
+          {renderImage(isometricUrl, '等轴测 3D 视图')}
+        </div>
+      )}
 
       {/* Layout Description */}
       {layoutDescription && (
