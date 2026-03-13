@@ -1743,6 +1743,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
           <DragPlane
             dragStateRef={dragStateRef}
             dragMovedRef={dragMovedRef}
+            objectClickedRef={objectClickedRef}
             onDragMove={handleDragMove}
             onDragEnd={handleDragEnd}
             onDeselect={() => handleSelect(null)}
