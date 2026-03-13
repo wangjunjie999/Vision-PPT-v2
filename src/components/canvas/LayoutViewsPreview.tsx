@@ -38,6 +38,7 @@ export function LayoutViewsPreview({ workstationId, className, onOpenCanvas }: L
   const auxiliaryUrl = viewUrl(auxiliaryView);
   const allSaved = !!primaryUrl && !!auxiliaryUrl;
   const noneSaved = !primaryUrl && !auxiliaryUrl && !isometricUrl;
+  const savedAt = layout?.updated_at ? new Date(layout.updated_at).toLocaleString('zh-CN') : null;
   
   const wsCode = (workstation as any)?.code || '';
   const wsName = workstation?.name || '';
