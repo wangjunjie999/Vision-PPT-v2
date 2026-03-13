@@ -32,6 +32,10 @@ export interface LayoutObject {
   width: number;
   height: number;
   rotation: number;
+  // 3D rotation angles in degrees
+  rotX?: number;
+  rotY?: number;
+  rotZ?: number;
   locked: boolean;
   cameraIndex?: number;
   // Camera mounting to mechanism
