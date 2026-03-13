@@ -1835,35 +1835,13 @@ export const Layout3DPreview = memo(function Layout3DPreview({
         onUpdateProductPosition={onUpdateProductPosition}
       />
 
-      {/* Toolbar: mode toggle + xray + snap */}
+      {/* Toolbar: xray + snap */}
       {onUpdateObject && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
           <div className="flex bg-slate-800/90 backdrop-blur-sm rounded-lg border border-slate-600/50 overflow-hidden">
             <button
-              onClick={() => setDragMode(false)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
-                !dragMode
-                  ? 'bg-blue-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <MousePointer className="h-3.5 w-3.5" />
-              旋转视角
-            </button>
-            <button
-              onClick={() => setDragMode(true)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
-                dragMode
-                  ? 'bg-orange-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Move className="h-3.5 w-3.5" />
-              拖拽移动
-            </button>
-            <button
               onClick={() => setXrayMode(!xrayMode)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors border-l border-slate-600/50 ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
                 xrayMode
                   ? 'bg-violet-600 text-white'
                   : 'text-slate-400 hover:text-slate-200'
@@ -1873,27 +1851,23 @@ export const Layout3DPreview = memo(function Layout3DPreview({
               {xrayMode ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
               透视
             </button>
+            <button
+              onClick={() => setSnapEnabled(!snapEnabled)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors border-l border-slate-600/50 ${
+                snapEnabled
+                  ? 'bg-emerald-600 text-white'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Magnet className="h-3.5 w-3.5" />
+              网格吸附 ({SNAP_GRID}mm)
+            </button>
           </div>
-          <div className="flex gap-1.5 mt-1.5">
-            {dragMode && (
-              <button
-                onClick={() => setSnapEnabled(!snapEnabled)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border backdrop-blur-sm transition-colors ${
-                  snapEnabled
-                    ? 'bg-emerald-600 text-white border-emerald-500/50'
-                    : 'bg-slate-800/90 text-slate-400 border-slate-600/50 hover:text-slate-200'
-                }`}
-              >
-                <Magnet className="h-3.5 w-3.5" />
-                网格吸附 ({SNAP_GRID}mm)
-              </button>
-            )}
-            {dragMode && activeSelectedId && (
-              <div className="flex items-center px-2.5 py-1 text-[10px] text-slate-400 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-600/50">
-                ←→↑↓ 移动 · Shift+↑↓ 升降 · R+方向键 旋转
-              </div>
-            )}
-          </div>
+          {activeSelectedId && (
+            <div className="flex items-center px-2.5 py-1 mt-1.5 text-[10px] text-slate-400 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-600/50">
+              ←→↑↓ 移动 · Shift+↑↓ 升降 · R+方向键 旋转
+            </div>
+          )}
         </div>
       )}
 
