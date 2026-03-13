@@ -672,7 +672,8 @@ export async function generateLayoutAndOpticalSlide(
     return (layout as any)?.[`${view}_view_image_url`] || null;
   };
 
-  const VIEW_LABELS: Record<string, string> = { front: '正视图', side: '侧视图', top: '俯视图' };
+  const VIEW_LABELS: Record<string, string> = { front: '正视图', side: '侧视图', top: '俯视图', isometric: '等轴测' };
+  const isometricUrl: string | null = (layout as any)?.isometric_view_image_url || null;
 
   // Left side: Primary view (large) - 60% width
   const primaryUrl = getViewUrl(primaryView);
