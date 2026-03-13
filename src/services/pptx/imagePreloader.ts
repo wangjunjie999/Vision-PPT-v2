@@ -250,8 +250,10 @@ export function collectAllImageUrls(
     const auxiliaryView = (layout as any).auxiliary_view || 'side';
     const primaryUrl = (layout as any)?.[`${primaryView}_view_image_url`];
     const auxiliaryUrl = (layout as any)?.[`${auxiliaryView}_view_image_url`];
+    const isometricUrl = (layout as any)?.isometric_view_image_url;
     if (primaryUrl) urls.push(primaryUrl);
     if (auxiliaryUrl) urls.push(auxiliaryUrl);
+    if (isometricUrl) urls.push(isometricUrl);
     
     // Selected hardware images from layout - with defensive array checks
     const selectedCameras = Array.isArray(layout.selected_cameras) ? layout.selected_cameras : [];

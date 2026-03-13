@@ -1,51 +1,44 @@
 
 
-# 等轴测视图集成到预览面板和 PPT
+# FOV 输入改为两个独立数值框
 
-## 现状分析
+## 问题
 
-等轴测截图已经在"保存布局"时捕获并存储到 `isometric_view_image_url`，但存在两个断点：
-1. **预览面板** (`LayoutViewsPreview.tsx`)：只显示主视图 + 辅视图（2列），不显示等轴测
-2. **PPT 生成** (`workstationSlides.ts`, `imagePreloader.ts`, `PPTImagePreviewDialog.tsx`)：只使用主视图 + 辅视图，忽略等轴测
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-## 方案
+## 修改方案
 
-### 1. `LayoutViewsPreview.tsx` — 添加等轴测视图显示
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-在主视图 + 辅视图下方添加第三行，显示等轴测视图（如果已保存）。使用全宽显示，保持 4:3 比例。
-
-```text
-┌──────────────┬──────────────┐
-│  主视图-正视图  │  辅视图-侧视图  │
-├──────────────┴──────────────┤
-│       等轴测 3D 视图          │
-└─────────────────────────────┘
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
 ```
 
-- 从 `layout.isometric_view_image_url` 读取 URL
-- 如果 URL 存在则渲染图片，否则不显示该行
-- 更新 `bothSaved` / `noneSaved` 逻辑考虑等轴测
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-### 2. `PPTImagePreviewDialog.tsx` — 添加等轴测到预览列表
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
 
-在 `layoutImages` 数组中追加等轴测图片项（第 103-106 行），当 `isometric_view_image_url` 存在时加入。
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
 
-### 3. `workstationSlides.ts` — PPT 布局页添加等轴测
+```
+[宽度输入] × [高度输入]
+```
 
-在 Slide 4（机械布局页）中，将 `VIEW_LABELS` 补充 `isometric: '等轴测'`。当等轴测 URL 存在时，将其作为第三个小图显示在布局说明下方区域（调整右侧区域布局）。
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
 
-### 4. `imagePreloader.ts` — 预加载等轴测图片
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
 
-在 `collectAllImageUrls` 中追加 `isometric_view_image_url` 到预加载列表。
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
 
-### 涉及文件
+### 4. PPT 输出不变
 
-| 文件 | 改动 |
-|------|------|
-| `src/components/canvas/LayoutViewsPreview.tsx` | 添加等轴测行显示 |
-| `src/components/dialogs/PPTImagePreviewDialog.tsx` | layoutImages 添加等轴测 |
-| `src/services/pptx/workstationSlides.ts` | 布局页添加等轴测图 + VIEW_LABELS |
-| `src/services/pptx/imagePreloader.ts` | 预加载等轴测 URL |
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
 
-约 40 行改动。
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 

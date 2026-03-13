@@ -33,10 +33,11 @@ export function LayoutViewsPreview({ workstationId, className, onOpenCanvas }: L
     return layout?.[`${view}_view_image_url`] || null;
   };
 
+  const isometricUrl: string | null = layout?.isometric_view_image_url || null;
   const primaryUrl = viewUrl(primaryView);
   const auxiliaryUrl = viewUrl(auxiliaryView);
-  const bothSaved = !!primaryUrl && !!auxiliaryUrl;
-  const noneSaved = !primaryUrl && !auxiliaryUrl;
+  const allSaved = !!primaryUrl && !!auxiliaryUrl;
+  const noneSaved = !primaryUrl && !auxiliaryUrl && !isometricUrl;
   
   const wsCode = (workstation as any)?.code || '';
   const wsName = workstation?.name || '';
@@ -99,7 +100,7 @@ export function LayoutViewsPreview({ workstationId, className, onOpenCanvas }: L
         )}
       </div>
       
-      {/* Views: Primary (large) + Auxiliary (small) */}
+      {/* Views: Primary + Auxiliary */}
       <div className="grid grid-cols-2 gap-3">
         <div>
           {renderImage(primaryUrl, `主视图 - ${VIEW_LABELS[primaryView]}`)}
@@ -108,6 +109,13 @@ export function LayoutViewsPreview({ workstationId, className, onOpenCanvas }: L
           {renderImage(auxiliaryUrl, `辅视图 - ${VIEW_LABELS[auxiliaryView]}`)}
         </div>
       </div>
+
+      {/* Isometric 3D view */}
+      {isometricUrl && (
+        <div>
+          {renderImage(isometricUrl, '等轴测 3D 视图')}
+        </div>
+      )}
 
       {/* Layout Description */}
       {layoutDescription && (
@@ -139,7 +147,7 @@ export function LayoutViewsPreview({ workstationId, className, onOpenCanvas }: L
         </div>
       )}
       
-      {!noneSaved && !bothSaved && (
+      {!noneSaved && !allSaved && (
         <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
           <Camera className="h-4 w-4 text-blue-500 flex-shrink-0" />
           <p className="text-xs text-blue-600 dark:text-blue-400">
