@@ -906,7 +906,7 @@ function ProductBox({ dimensions, selected, dimmed }: { dimensions: { length: nu
   );
 }
 
-function CameraObject({ obj, selected, dimmed }: { obj: LayoutObject; selected: boolean; dimmed: boolean }) {
+function CameraProceduralModel({ obj, selected, dimmed }: { obj: LayoutObject; selected: boolean; dimmed: boolean }) {
   const isMounted = !!obj.mountedToMechanismId;
   const baseColor = isMounted ? '#16a34a' : '#3b82f6';
   const baseDark = isMounted ? '#15803d' : '#1d4ed8';
@@ -967,6 +967,24 @@ function CameraObject({ obj, selected, dimmed }: { obj: LayoutObject; selected: 
         <Box args={[0.4, 0.35, 0.5]}>
           <meshBasicMaterial color={highlightColor} wireframe transparent opacity={0.5} />
         </Box>
+      )}
+    </group>
+  );
+}
+
+function CameraObject({ obj, selected, dimmed }: { obj: LayoutObject; selected: boolean; dimmed: boolean }) {
+  const w = (obj.width || 50) / 100;
+  const h = (obj.height || 55) / 100;
+  const d = w * 0.8; // approximate depth from width
+
+  return (
+    <group>
+      {obj.model3dUrl ? (
+        <Suspense fallback={<CameraProceduralModel obj={obj} selected={selected} dimmed={dimmed} />}>
+          <GLBModelRenderer url={obj.model3dUrl} w={w} h={h} d={d} />
+        </Suspense>
+      ) : (
+        <CameraProceduralModel obj={obj} selected={selected} dimmed={dimmed} />
       )}
       <Text
         position={[0, 0.25, 0]}

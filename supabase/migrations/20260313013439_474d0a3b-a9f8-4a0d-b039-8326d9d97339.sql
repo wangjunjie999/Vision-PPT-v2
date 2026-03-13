@@ -1,0 +1,1 @@
+ALTER TABLE public.cameras ADD COLUMN model_3d_url text;

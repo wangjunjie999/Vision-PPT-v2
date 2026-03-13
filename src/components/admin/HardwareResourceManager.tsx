@@ -28,6 +28,7 @@ import { HardwareDetailView } from './HardwareDetailView';
 import { useCameras, useLenses, useLights, useControllers, Camera as CameraType, Lens, Light, Controller } from '@/hooks/useHardware';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { uploadGLBFile, deleteGLBFile } from '@/utils/glbUpload';
 
 interface Props {
   type: 'cameras' | 'lenses' | 'lights' | 'controllers';
@@ -101,6 +102,8 @@ export function HardwareResourceManager({ type }: Props) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [glbUrl, setGlbUrl] = useState<string | null>(null);
+  const [glbUploading, setGlbUploading] = useState(false);
 
   const config = typeConfig[type];
   const Icon = config.icon;
@@ -139,6 +142,7 @@ export function HardwareResourceManager({ type }: Props) {
     setSelectedItem(null);
     setFormData({ enabled: true, tags: [] });
     setImageUrl(null);
+    setGlbUrl(null);
     setEditDialogOpen(true);
   };
 
@@ -146,6 +150,7 @@ export function HardwareResourceManager({ type }: Props) {
     setSelectedItem(item);
     setFormData({ ...item });
     setImageUrl(item.image_url);
+    setGlbUrl((item as any).model_3d_url || null);
     setEditDialogOpen(true);
   };
 
@@ -178,11 +183,15 @@ export function HardwareResourceManager({ type }: Props) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const data = {
+      const data: Record<string, any> = {
         ...formData,
         image_url: imageUrl,
         tags: formData.tags || [],
       };
+      // Add model_3d_url for cameras
+      if (type === 'cameras') {
+        data.model_3d_url = glbUrl;
+      }
 
       if (selectedItem) {
         // Update
@@ -413,7 +422,56 @@ export function HardwareResourceManager({ type }: Props) {
               />
             </div>
 
-            {/* Enabled Switch */}
+            {/* GLB 3D Model Upload - cameras only */}
+            {type === 'cameras' && (
+              <div className="space-y-2">
+                <Label>3D 模型（GLB）</Label>
+                <div className="flex items-center gap-2">
+                  {glbUrl ? (
+                    <>
+                      <span className="text-xs text-muted-foreground truncate flex-1">
+                        {glbUrl.split('/').pop()}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          if (glbUrl) await deleteGLBFile(glbUrl);
+                          setGlbUrl(null);
+                        }}
+                      >
+                        移除
+                      </Button>
+                    </>
+                  ) : (
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept=".glb"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setGlbUploading(true);
+                          try {
+                            const url = await uploadGLBFile(file, 'cameras');
+                            if (url) setGlbUrl(url);
+                          } finally {
+                            setGlbUploading(false);
+                          }
+                        }}
+                      />
+                      <Button variant="outline" size="sm" asChild disabled={glbUploading}>
+                        <span>{glbUploading ? '上传中...' : '上传 GLB 文件'}</span>
+                      </Button>
+                    </label>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  上传 .glb 格式3D模型，最大 50MB
+                </p>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <Label>启用</Label>
               <Switch
