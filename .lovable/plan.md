@@ -1,44 +1,42 @@
 
 
-# FOV 输入改为两个独立数值框
+# 改进 3D 连接线表达方式
 
-## 问题
+## 当前问题
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+1. **旋转偏移**：连接线端点始终连接到对象的几何中心 (`posX, posY, posZ`)，但对象旋转后视觉上的安装点位置已经变化，导致连接线看起来"穿过"或"偏离"对象
+2. **表达单一**：所有连接线都是简单直线 + 小球端点 + emoji 标签，在复杂场景中不够直观
 
-## 修改方案
+## 改进方案
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+### 1. 连接线端点考虑旋转偏移
 
-在 `ModuleFormState` 中添加：
+对于有 `mountPointId` 的挂载关系，根据父对象的旋转角度计算实际安装点的世界坐标，而非始终使用对象中心。
+
+具体做法：在 `RelationshipLines` 中，对每个挂载对象：
+- 取父机构的尺寸，根据安装点类型计算局部偏移（如传送带顶部、支架侧面）
+- 将局部偏移经过父机构的旋转矩阵 (`rotX, rotY, rotZ`) 变换后，加到父机构中心位置上
+- 子对象端同理处理
+
+### 2. 改进视觉表达
+
+- **相机连接**：使用渐变粗细的锥形线（粗端在机构，细端在相机），颜色保持蓝色
+- **产品连接**：使用青色虚线 + 在机构端显示一个小方块标记（代表工位点）
+- **非法连接**：保持红色虚线 + 端点改为 ✕ 标记
+- **标签改进**：去掉 emoji，用简洁的 3D 文字标签
+
+### 文件改动
+
+| 文件 | 改动 |
+|------|------|
+| `Layout3DPreview.tsx` — `RelationshipLines` | 端点计算加入旋转变换；改进线条视觉样式 |
+
+约 40 行改动。
+
+**核心改动**：在 `RelationshipLines` 的 `useMemo` 中，替换当前的 `(obj.posX ?? 0) * SCALE` 简单取值为一个辅助函数 `getConnectionPoint(obj, parent)`，该函数根据挂载点类型和父对象旋转角度计算实际的 3D 世界坐标。
+
+```text
+当前:  连接线 → 对象中心点 (不随旋转变化)
+改后:  连接线 → 安装点局部坐标 × 旋转矩阵 + 对象中心 (跟随旋转)
 ```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
-
-在 `getDefaultFormState` 中添加默认值 `''`。
-
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
-
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
-
-```
-[宽度输入] × [高度输入]
-```
-
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
-
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
