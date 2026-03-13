@@ -1,44 +1,36 @@
 
 
-# FOV 输入改为两个独立数值框
+# 为相机添加 GLB 3D 模型上传功能
 
-## 问题
+## 概述
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+将已有的机构 GLB 模型上传能力扩展到相机，允许用户在相机管理和布局属性面板中上传自定义 `.glb` 模型替换默认的程序化几何体。
 
-## 修改方案
+## 数据库迁移
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+为 `cameras` 表添加 `model_3d_url` 字段：
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
+```sql
+ALTER TABLE public.cameras ADD COLUMN model_3d_url text;
 ```
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+## 文件改动
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+### 1. `src/contexts/HardwareContext.tsx`
+- `Camera` 接口添加 `model_3d_url: string | null`
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+### 2. `src/components/canvas/ObjectPropertyPanel.tsx`
+- 将 GLB 上传区域的条件从 `object.type === 'mechanism'` 改为 `(object.type === 'mechanism' || object.type === 'camera')`，使相机对象也能在属性面板中上传/替换 GLB 模型
 
-```
-[宽度输入] × [高度输入]
-```
+### 3. `src/components/canvas/Layout3DPreview.tsx`
+- 修改 `CameraObject` 组件：优先检查 `obj.model3dUrl`，有则用 `GLBModelRenderer` 渲染（已存在），否则走现有程序化模型
+- 用 `Suspense` 包裹，fallback 为当前程序化相机模型
 
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+### 4. `src/components/canvas/DraggableLayoutCanvas.tsx`
+- 添加相机时，从 `selectedCameras` 或硬件数据中读取 `model_3d_url`，写入 `LayoutObject.model3dUrl`
 
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+### 5. 相机管理 UI（复用 HardwareResourceManager 或 HardwareDetailView）
+- 在相机编辑表单中添加 GLB 上传区域，与机构管理中的实现一致
 
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+约 30 行变更，涉及 5 个文件 + 1 条迁移。
 
