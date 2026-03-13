@@ -1563,14 +1563,54 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   }, []);
 
   // ============================================================
-  // ARROW KEY MOVEMENT
+  // ARROW KEY MOVEMENT + R-KEY ROTATION
   // ============================================================
+  const rKeyHeld = useRef(false);
+  
+  useEffect(() => {
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'r' || e.key === 'R') rKeyHeld.current = false;
+    };
+    window.addEventListener('keyup', handleKeyUp);
+    return () => window.removeEventListener('keyup', handleKeyUp);
+  }, []);
+
   useEffect(() => {
     if (!dragMode || !onUpdateObject) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'r' || e.key === 'R') {
+        if (!e.repeat) rKeyHeld.current = true;
+        return;
+      }
+
       const id = activeSelectedId;
       if (!id) return;
+
+      // R + arrows = rotate
+      if (rKeyHeld.current && (e.key.startsWith('Arrow'))) {
+        if (id === '__product__') return;
+        const obj = objects.find(o => o.id === id);
+        if (!obj || obj.locked) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const rotStep = 15;
+        const updates: Partial<LayoutObject> = {};
+        switch (e.key) {
+          case 'ArrowLeft': updates.rotY = ((obj.rotY ?? 0) - rotStep + 360) % 360; break;
+          case 'ArrowRight': updates.rotY = ((obj.rotY ?? 0) + rotStep) % 360; break;
+          case 'ArrowUp':
+            if (e.shiftKey) { updates.rotZ = ((obj.rotZ ?? 0) + rotStep) % 360; }
+            else { updates.rotX = ((obj.rotX ?? 0) - rotStep + 360) % 360; }
+            break;
+          case 'ArrowDown':
+            if (e.shiftKey) { updates.rotZ = ((obj.rotZ ?? 0) - rotStep + 360) % 360; }
+            else { updates.rotX = ((obj.rotX ?? 0) + rotStep) % 360; }
+            break;
+        }
+        onUpdateObject(id, updates);
+        return;
+      }
 
       // Product position via keyboard
       if (id === '__product__') {
@@ -1607,32 +1647,15 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       let dx = 0, dy = 0, dz = 0;
 
       switch (e.key) {
-        case 'ArrowLeft':
-          dx = -step;
-          break;
-        case 'ArrowRight':
-          dx = step;
-          break;
+        case 'ArrowLeft': dx = -step; break;
+        case 'ArrowRight': dx = step; break;
         case 'ArrowUp':
-          if (e.shiftKey) {
-            dz = step; // Shift+↑ = raise height (posZ)
-          } else {
-            dy = -step; // ↑ = move forward (posY)
-          }
+          if (e.shiftKey) { dz = step; } else { dy = -step; }
           break;
         case 'ArrowDown':
-          if (e.shiftKey) {
-            dz = -step; // Shift+↓ = lower height (posZ)
-          } else {
-            dy = step; // ↓ = move backward (posY)
-          }
+          if (e.shiftKey) { dz = -step; } else { dy = step; }
           break;
-        default:
-          // R + arrow keys = rotate selected object
-          if (e.key === 'r' || e.key === 'R') {
-            // Handled below
-          }
-          return;
+        default: return;
       }
 
       e.preventDefault();
