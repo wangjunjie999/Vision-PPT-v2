@@ -622,6 +622,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     setIsDragging(false);
     setIsPanning(false);
     setDraggingObject(null);
+    mouseDownPos.current = null;
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent) => {
