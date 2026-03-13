@@ -422,7 +422,56 @@ export function HardwareResourceManager({ type }: Props) {
               />
             </div>
 
-            {/* Enabled Switch */}
+            {/* GLB 3D Model Upload - cameras only */}
+            {type === 'cameras' && (
+              <div className="space-y-2">
+                <Label>3D 模型（GLB）</Label>
+                <div className="flex items-center gap-2">
+                  {glbUrl ? (
+                    <>
+                      <span className="text-xs text-muted-foreground truncate flex-1">
+                        {glbUrl.split('/').pop()}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          if (glbUrl) await deleteGLBFile(glbUrl);
+                          setGlbUrl(null);
+                        }}
+                      >
+                        移除
+                      </Button>
+                    </>
+                  ) : (
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept=".glb"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setGlbUploading(true);
+                          try {
+                            const url = await uploadGLBFile(file, 'cameras');
+                            if (url) setGlbUrl(url);
+                          } finally {
+                            setGlbUploading(false);
+                          }
+                        }}
+                      />
+                      <Button variant="outline" size="sm" asChild disabled={glbUploading}>
+                        <span>{glbUploading ? '上传中...' : '上传 GLB 文件'}</span>
+                      </Button>
+                    </label>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  上传 .glb 格式3D模型，最大 50MB
+                </p>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <Label>启用</Label>
               <Switch
