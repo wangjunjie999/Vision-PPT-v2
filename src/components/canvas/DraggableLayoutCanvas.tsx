@@ -493,8 +493,9 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     }
     setSelectedIds([obj.id]);
     setShowPropertyPanel(true);
-    setIsDragging(true);
+    // Record mouse down position; don't start dragging yet
     const pos = screenToSvg(e.clientX, e.clientY);
+    mouseDownPos.current = { x: e.clientX, y: e.clientY, objId: obj.id };
     setDragOffset({ x: pos.x - obj.x, y: pos.y - obj.y });
   }, [panMode, isIsometric, selectedId, screenToSvg]);
 
