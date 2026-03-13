@@ -90,12 +90,21 @@ export function LayoutViewsPreview({ workstationId, className, onOpenCanvas }: L
     <div className={cn("space-y-3", className)}>
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium text-foreground">
-          {wsCode && `${wsCode} `}{wsName} - 机械布局视图
-        </h4>
+        <div>
+          <h4 className="text-sm font-medium text-foreground">
+            {wsCode && `${wsCode} `}{wsName} - 布局视图
+          </h4>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            主视图: {VIEW_LABELS[primaryView]} · 辅视图: {VIEW_LABELS[auxiliaryView]}
+            {savedAt && !noneSaved && (
+              <span className="ml-2 text-muted-foreground/70">· 保存于 {savedAt}</span>
+            )}
+          </p>
+        </div>
         {onOpenCanvas && (
-          <Button variant="ghost" size="sm" onClick={onOpenCanvas} className="gap-1 text-xs">
-            打开画布
+          <Button variant="outline" size="sm" onClick={onOpenCanvas} className="gap-1 text-xs">
+            <Camera className="h-3 w-3" />
+            保存视图截图
             <ArrowRight className="h-3 w-3" />
           </Button>
         )}
