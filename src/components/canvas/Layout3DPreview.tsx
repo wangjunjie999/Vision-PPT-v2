@@ -1699,7 +1699,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
             position={[productPosition.posX * SCALE, productPosition.posZ * SCALE, productPosition.posY * SCALE]}
             dragState={dragStateRef}
             onDragStart={handleDragStart}
-            onClick={(id) => { if (!dragMovedRef.current) handleSelect(id); }}
+            onClick={(id) => { handleSelect(id); }}
           >
             <ProductBox
               dimensions={productDimensions}
