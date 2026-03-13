@@ -1470,7 +1470,6 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   const cameraActionRef = useRef<{ position: [number, number, number]; target: [number, number, number] } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
-  const [dragMode, setDragMode] = useState(false);
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [xrayMode, setXrayMode] = useState(false);
   const SNAP_GRID = 10;
@@ -1481,6 +1480,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
     startPos: null,
   });
   const dragMovedRef = useRef(false);
+  const objectClickedRef = useRef(false);
 
   const activeSelectedId = selectedObjectId !== undefined ? selectedObjectId : localSelectedId;
 
