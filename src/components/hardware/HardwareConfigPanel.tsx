@@ -469,7 +469,7 @@ export function HardwareConfigPanel({
   const notifyParent = useCallback(() => {
     if (onHardwareChange && isUserAction.current) {
       onHardwareChange({
-        cameras: cameras.map(c => c ? { id: c.id, brand: c.brand, model: c.model, image_url: c.image_url } : null),
+        cameras: cameras.map(c => c ? { id: c.id, brand: c.brand, model: c.model, image_url: c.image_url, model_3d_url: c.model_3d_url } : null),
         lenses: lenses.map(l => l ? { id: l.id, brand: l.brand, model: l.model, image_url: l.image_url } : null),
         lights: lights.map(l => l ? { id: l.id, brand: l.brand, model: l.model, image_url: l.image_url } : null),
         controller: controller ? { id: controller.id, brand: controller.brand, model: controller.model, image_url: controller.image_url } : null,
