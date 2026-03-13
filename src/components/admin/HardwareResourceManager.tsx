@@ -102,6 +102,8 @@ export function HardwareResourceManager({ type }: Props) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [glbUrl, setGlbUrl] = useState<string | null>(null);
+  const [glbUploading, setGlbUploading] = useState(false);
 
   const config = typeConfig[type];
   const Icon = config.icon;
