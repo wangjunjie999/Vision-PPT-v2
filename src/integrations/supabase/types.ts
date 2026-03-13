@@ -102,6 +102,7 @@ export type Database = {
           image_url: string | null
           interface: string
           model: string
+          model_3d_url: string | null
           resolution: string
           sensor_size: string
           tags: string[] | null
@@ -116,6 +117,7 @@ export type Database = {
           image_url?: string | null
           interface: string
           model: string
+          model_3d_url?: string | null
           resolution: string
           sensor_size: string
           tags?: string[] | null
@@ -130,6 +132,7 @@ export type Database = {
           image_url?: string | null
           interface?: string
           model?: string
+          model_3d_url?: string | null
           resolution?: string
           sensor_size?: string
           tags?: string[] | null
