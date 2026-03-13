@@ -1,6 +1,6 @@
 import { memo, useRef, useCallback, useState, useMemo, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame, ThreeEvent } from '@react-three/fiber';
-import { OrbitControls, Box, Cone, Line, Text, Grid, Plane, Sphere, Cylinder, useGLTF } from '@react-three/drei';
+import { OrbitControls, Box, Cone, Line, Text, Grid, Plane, Sphere, Cylinder, useGLTF, Billboard } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
 import { RotateCcw, X, Magnet, Eye, EyeOff, Save } from 'lucide-react';
 import type { LayoutObject } from './ObjectPropertyPanel';
@@ -825,45 +825,49 @@ function Mechanism3DModel({ obj, selected, dimmed, hasIllegalMount, objects, xra
           <meshBasicMaterial color="#ef4444" wireframe transparent opacity={0.6} />
         </Box>
       )}
-      <Text
-        position={[0, h + 0.15, 0]}
-        fontSize={0.16}
-        color="#fafafa"
-        anchorX="center"
-        anchorY="bottom"
-      >
-        {obj.name || '机构'}
-      </Text>
-      <Text
-        position={[0, h + 0.32, 0]}
-        fontSize={0.12}
-        color={isCamType ? '#60a5fa' : isProdType ? '#34d399' : '#94a3b8'}
-        anchorX="center"
-        anchorY="bottom"
-      >
-        {isCamType ? '📷 相机交互' : isProdType ? '📦 产品交互' : ''}
-      </Text>
-      {mountedCameras.length > 0 && isCamType && (
+      <Billboard position={[0, h + 0.15, 0]}>
         <Text
-          position={[0, h + 0.46, 0]}
-          fontSize={0.10}
-          color="#60a5fa"
+          fontSize={0.16}
+          color="#fafafa"
           anchorX="center"
           anchorY="bottom"
         >
-          {`已挂载 ${mountedCameras.length} 台相机`}
+          {obj.name || '机构'}
         </Text>
+      </Billboard>
+      <Billboard position={[0, h + 0.32, 0]}>
+        <Text
+          fontSize={0.12}
+          color={isCamType ? '#60a5fa' : isProdType ? '#34d399' : '#94a3b8'}
+          anchorX="center"
+          anchorY="bottom"
+        >
+          {isCamType ? '📷 相机交互' : isProdType ? '📦 产品交互' : ''}
+        </Text>
+      </Billboard>
+      {mountedCameras.length > 0 && isCamType && (
+        <Billboard position={[0, h + 0.46, 0]}>
+          <Text
+            fontSize={0.10}
+            color="#60a5fa"
+            anchorX="center"
+            anchorY="bottom"
+          >
+            {`已挂载 ${mountedCameras.length} 台相机`}
+          </Text>
+        </Billboard>
       )}
       {hasIllegalMount && (
-        <Text
-          position={[0, h + 0.46, 0]}
-          fontSize={0.11}
-          color="#ef4444"
-          anchorX="center"
-          anchorY="bottom"
-        >
-          ⚠ 非法相机挂载!
-        </Text>
+        <Billboard position={[0, h + 0.46, 0]}>
+          <Text
+            fontSize={0.11}
+            color="#ef4444"
+            anchorX="center"
+            anchorY="bottom"
+          >
+            ⚠ 非法相机挂载!
+          </Text>
+        </Billboard>
       )}
     </group>
   );
@@ -924,15 +928,16 @@ function ProductBox({ dimensions, selected, dimmed }: { dimensions: { length: nu
           </Box>
         )}
       </group>
-      <Text
-        position={[0, h + 0.15, 0]}
-        fontSize={0.18}
-        color="#fafafa"
-        anchorX="center"
-        anchorY="bottom"
-      >
-        产品
-      </Text>
+      <Billboard position={[0, h + 0.15, 0]}>
+        <Text
+          fontSize={0.18}
+          color="#fafafa"
+          anchorX="center"
+          anchorY="bottom"
+        >
+          产品
+        </Text>
+      </Billboard>
     </>
   );
 }
@@ -1017,15 +1022,16 @@ function CameraObject({ obj, selected, dimmed }: { obj: LayoutObject; selected: 
       ) : (
         <CameraProceduralModel obj={obj} selected={selected} dimmed={dimmed} />
       )}
-      <Text
-        position={[0, 0.25, 0]}
-        fontSize={0.16}
-        color="#fafafa"
-        anchorX="center"
-        anchorY="bottom"
-      >
-        {obj.name || 'CAM'}
-      </Text>
+      <Billboard position={[0, 0.25, 0]}>
+        <Text
+          fontSize={0.16}
+          color="#fafafa"
+          anchorX="center"
+          anchorY="bottom"
+        >
+          {obj.name || 'CAM'}
+        </Text>
+      </Billboard>
     </group>
   );
 }
@@ -1221,17 +1227,18 @@ function RelationshipLines({ objects, xrayMode, productPosition }: { objects: La
               <meshBasicMaterial color={line.color} />
             </Sphere>
           )}
-          <Text
-            position={line.midpoint}
-            fontSize={0.08}
-            color={line.color}
-            anchorX="center"
-            anchorY="bottom"
-            outlineWidth={0.005}
-            outlineColor="#000000"
-          >
-            {line.label}
-          </Text>
+          <Billboard position={line.midpoint}>
+            <Text
+              fontSize={0.08}
+              color={line.color}
+              anchorX="center"
+              anchorY="bottom"
+              outlineWidth={0.005}
+              outlineColor="#000000"
+            >
+              {line.label}
+            </Text>
+          </Billboard>
         </group>
       ))}
     </>
