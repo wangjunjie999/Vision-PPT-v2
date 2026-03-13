@@ -9,6 +9,9 @@ import {
   ContextMenuSeparator, ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { Camera, Trash2, Lock, Unlock, Copy, Crosshair } from 'lucide-react';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { ObjectPropertyPanel, type LayoutObject } from './ObjectPropertyPanel';
 import { ObjectListPanel } from './ObjectListPanel';
@@ -89,6 +92,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     front: false, side: false, top: false, isometric: false,
   });
   const isometricScreenshotFnRef = useRef<(() => string | null) | null>(null);
+  const [cameraPickerOpen, setCameraPickerOpen] = useState(false);
 
   // Layer order
   const [layerOrder, setLayerOrder] = useState<LayerType[]>(() => {
@@ -630,7 +634,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   }, []);
 
   // ========== Add objects ==========
-  const addCamera = useCallback(() => {
+  const doAddCamera = useCallback((selectedCam?: any) => {
     const existingCameras = objects.filter(o => o.type === 'camera');
     const cameraCount = existingCameras.length;
     let defaultPosX: number;
@@ -647,11 +651,10 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     const defaultPosY = AUTO_ARRANGE_CONFIG.cameraDefaultY;
     const defaultPosZ = AUTO_ARRANGE_CONFIG.cameraDefaultZ;
     const canvasPos = project3DTo2D(defaultPosX, defaultPosY, defaultPosZ, currentView);
-    // Try to get model_3d_url from selected camera hardware data
-    const selectedCameraData = layout?.selected_cameras as any[];
-    const cameraModel3dUrl = selectedCameraData?.[cameraCount]?.model_3d_url || null;
+    const cameraModel3dUrl = selectedCam?.model_3d_url || null;
+    const camName = selectedCam ? `${selectedCam.brand || ''} ${selectedCam.model || ''}`.trim() : `CAM${cameraCount + 1}`;
     const newCamera: LayoutObject = {
-      id: `camera-${Date.now()}`, type: 'camera', name: `CAM${cameraCount + 1}`,
+      id: `camera-${Date.now()}`, type: 'camera', name: camName || `CAM${cameraCount + 1}`,
       posX: defaultPosX, posY: defaultPosY, posZ: defaultPosZ,
       x: canvasPos.x, y: canvasPos.y, width: 50, height: 55, rotation: 0, locked: false,
       cameraIndex: cameraCount + 1,
@@ -662,6 +665,20 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     setShowPropertyPanel(true);
     toast.success(`已添加 ${newCamera.name}`);
   }, [objects, project3DTo2D, currentView]);
+
+  const addCamera = useCallback(() => {
+    const selectedCameraData = layout?.selected_cameras as any[];
+    if (!selectedCameraData || selectedCameraData.length === 0) {
+      // No cameras configured, add generic
+      doAddCamera();
+    } else if (selectedCameraData.length === 1) {
+      // Only one camera, auto-select
+      doAddCamera(selectedCameraData[0]);
+    } else {
+      // Multiple cameras, show picker
+      setCameraPickerOpen(true);
+    }
+  }, [layout, doAddCamera]);
 
   const addMechanism = useCallback((mechanism: Mechanism) => {
     const existingMechs = objects.filter(o => o.type === 'mechanism');
@@ -1113,6 +1130,33 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         {/* Zoom Controls */}
         <CanvasControls zoom={zoom} onZoomChange={setZoom} onFitToScreen={fitToScreen} onResetView={resetView} panMode={panMode} onPanModeChange={setPanMode} />
       </div>
+
+      {/* Camera Picker Dialog */}
+      <Dialog open={cameraPickerOpen} onOpenChange={setCameraPickerOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>选择相机型号</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-2 max-h-60 overflow-y-auto">
+            {(layout?.selected_cameras as any[] || []).map((cam: any, idx: number) => (
+              <button
+                key={idx}
+                className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-accent text-left transition-colors"
+                onClick={() => {
+                  setCameraPickerOpen(false);
+                  doAddCamera(cam);
+                }}
+              >
+                <Camera className="h-5 w-5 text-muted-foreground shrink-0" />
+                <div>
+                  <div className="font-medium text-sm">{cam.brand} {cam.model}</div>
+                  {cam.resolution && <div className="text-xs text-muted-foreground">{cam.resolution}</div>}
+                </div>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

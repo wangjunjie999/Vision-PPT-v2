@@ -712,13 +712,21 @@ function DefaultMechanismModel({ w, h, d, selected, xray }: { w: number; h: numb
   );
 }
 
-// --- GLB Model Renderer ---
+// --- GLB Model Renderer (isolated instances via useRef) ---
 function GLBModelRenderer({ url, w, h, d }: { url: string; w: number; h: number; d: number }) {
   const { scene } = useGLTF(url);
-  const cloned = useMemo(() => scene.clone(), [scene]);
+  const groupRef = useRef<THREE.Group>(null);
 
-  // Auto-scale to fit target dimensions
+  // Clone scene into a dedicated group each time scene/dimensions change
   useEffect(() => {
+    if (!groupRef.current) return;
+    // Clear old children
+    while (groupRef.current.children.length) {
+      groupRef.current.remove(groupRef.current.children[0]);
+    }
+    const cloned = scene.clone(true);
+
+    // Auto-scale to fit target dimensions
     const box = new THREE.Box3().setFromObject(cloned);
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
@@ -730,9 +738,11 @@ function GLBModelRenderer({ url, w, h, d }: { url: string; w: number; h: number;
 
     cloned.scale.setScalar(uniformScale);
     cloned.position.set(-center.x * uniformScale, -center.y * uniformScale + h / 2, -center.z * uniformScale);
-  }, [cloned, w, h, d]);
 
-  return <primitive object={cloned} />;
+    groupRef.current.add(cloned);
+  }, [scene, w, h, d]);
+
+  return <group ref={groupRef} />;
 }
 
 // --- Mechanism model with interaction type badge ---
