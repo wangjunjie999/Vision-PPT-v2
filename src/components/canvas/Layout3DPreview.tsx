@@ -1227,17 +1227,18 @@ function RelationshipLines({ objects, xrayMode, productPosition }: { objects: La
               <meshBasicMaterial color={line.color} />
             </Sphere>
           )}
-          <Text
-            position={line.midpoint}
-            fontSize={0.08}
-            color={line.color}
-            anchorX="center"
-            anchorY="bottom"
-            outlineWidth={0.005}
-            outlineColor="#000000"
-          >
-            {line.label}
-          </Text>
+          <Billboard position={line.midpoint}>
+            <Text
+              fontSize={0.08}
+              color={line.color}
+              anchorX="center"
+              anchorY="bottom"
+              outlineWidth={0.005}
+              outlineColor="#000000"
+            >
+              {line.label}
+            </Text>
+          </Billboard>
         </group>
       ))}
     </>
