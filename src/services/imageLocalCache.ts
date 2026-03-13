@@ -18,7 +18,8 @@ export type ImageCacheType =
   | 'module_schematic'
   | 'hardware'
   | 'product'
-  | 'annotation';
+  | 'annotation'
+  | 'glb_model';
 
 export interface ImageCacheEntry {
   key: string; // 格式: {type}:{id} 如 "layout_front_view:ws-123"
