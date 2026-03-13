@@ -1076,6 +1076,42 @@ function getRobotArmFlangePosition(parent: LayoutObject): [number, number, numbe
   return [parentX + flangeX, parentYWorld + flangeY, parentZ];
 }
 
+// Helper: get connection endpoint with rotation-aware mount offset
+function getConnectionEndpoint(
+  obj: LayoutObject,
+  mountType: 'top' | 'side' | 'bottom' | 'center',
+): [number, number, number] {
+  const cx = (obj.posX ?? 0) * SCALE;
+  const cy = (obj.posZ ?? 0) * SCALE;
+  const cz = (obj.posY ?? 0) * SCALE;
+
+  const h = (obj.height ?? 100) / 100;
+  const w = (obj.width ?? 100) / 100;
+  const localOffset = new THREE.Vector3(0, 0, 0);
+  switch (mountType) {
+    case 'top': localOffset.set(0, h * 0.5, 0); break;
+    case 'side': localOffset.set(w * 0.5, 0, 0); break;
+    case 'bottom': localOffset.set(0, -h * 0.5, 0); break;
+    case 'center': break;
+  }
+
+  const rx = ((obj.rotX ?? 0) * Math.PI) / 180;
+  const ry = ((obj.rotY ?? 0) * Math.PI) / 180;
+  const rz = ((obj.rotZ ?? 0) * Math.PI) / 180;
+  localOffset.applyEuler(new THREE.Euler(rx, ry, rz));
+
+  return [cx + localOffset.x, cy + localOffset.y, cz + localOffset.z];
+}
+
+function getMechMountType(mechType: string): 'top' | 'side' | 'bottom' | 'center' {
+  switch (mechType) {
+    case 'conveyor': case 'turntable': case 'lift': return 'top';
+    case 'stop': case 'cylinder': return 'side';
+    case 'gripper': return 'bottom';
+    default: return 'center';
+  }
+}
+
 function RelationshipLines({ objects, xrayMode, productPosition }: { objects: LayoutObject[]; xrayMode: boolean; productPosition?: { posX: number; posY: number; posZ: number } }) {
   const lines = useMemo(() => {
     const result: RelLine[] = [];
@@ -1085,29 +1121,19 @@ function RelationshipLines({ objects, xrayMode, productPosition }: { objects: La
       const parent = objects.find(o => o.id === obj.mountedToMechanismId);
       if (!parent) return;
 
-      const start: [number, number, number] = [
-        (obj.posX ?? 0) * SCALE,
-        (obj.posZ ?? 0) * SCALE,
-        (obj.posY ?? 0) * SCALE,
-      ];
+      const parentMechType = parent.mechanismType || '';
+      const isRobotArm = parentMechType === 'robot_arm';
 
-      // For robot_arm, connect from flange position instead of base center
-      const isRobotArm = parent.mechanismType === 'robot_arm';
+      const start = getConnectionEndpoint(obj, 'center');
       const end: [number, number, number] = isRobotArm
         ? getRobotArmFlangePosition(parent)
-        : [
-            (parent.posX ?? 0) * SCALE,
-            (parent.posZ ?? 0) * SCALE,
-            (parent.posY ?? 0) * SCALE,
-          ];
+        : getConnectionEndpoint(parent, getMechMountType(parentMechType));
 
       const mid: [number, number, number] = [
         (start[0] + end[0]) / 2,
-        (start[1] + end[1]) / 2 + 0.2,
+        (start[1] + end[1]) / 2 + 0.15,
         (start[2] + end[2]) / 2,
       ];
-
-      const parentMechType = parent.mechanismType || '';
 
       if (obj.type === 'camera') {
         const isLegal = isCameraMountable(parentMechType);
@@ -1115,8 +1141,9 @@ function RelationshipLines({ objects, xrayMode, productPosition }: { objects: La
           start, end, midpoint: mid,
           color: isLegal ? '#3b82f6' : '#ef4444',
           dashed: !isLegal,
-          label: isLegal ? (isRobotArm ? '🔗 法兰' : '📷') : '⚠ 非法',
+          label: isLegal ? (isRobotArm ? '法兰挂载' : '相机挂载') : '非法挂载',
           isIllegal: !isLegal,
+          lineType: isLegal ? 'camera' : 'illegal',
         });
       } else {
         const isProductMech = isProductInteraction(parentMechType);
@@ -1124,43 +1151,41 @@ function RelationshipLines({ objects, xrayMode, productPosition }: { objects: La
           start, end, midpoint: mid,
           color: isProductMech ? '#22d3ee' : '#f97316',
           dashed: false,
-          label: '📦',
+          label: '产品定位',
           isIllegal: false,
+          lineType: 'product',
         });
       }
     });
 
     objects.forEach(obj => {
       if (obj.type === 'mechanism' && isProductInteraction(obj.mechanismType || '')) {
-        const mechPos: [number, number, number] = [
-          (obj.posX ?? 0) * SCALE,
-          (obj.posZ ?? 0) * SCALE,
-          (obj.posY ?? 0) * SCALE,
-        ];
+        const mechEnd = getConnectionEndpoint(obj, getMechMountType(obj.mechanismType || ''));
         const productPos: [number, number, number] = [
           (productPosition?.posX ?? 0) * SCALE,
           (productPosition?.posZ ?? 0) * SCALE,
           (productPosition?.posY ?? 0) * SCALE,
         ];
         const mid: [number, number, number] = [
-          mechPos[0] / 2,
-          mechPos[1] / 2 + 0.15,
-          mechPos[2] / 2,
+          (productPos[0] + mechEnd[0]) / 2,
+          (productPos[1] + mechEnd[1]) / 2 + 0.12,
+          (productPos[2] + mechEnd[2]) / 2,
         ];
         result.push({
-          start: productPos, end: mechPos, midpoint: mid,
+          start: productPos, end: mechEnd, midpoint: mid,
           color: '#22d3ee',
           dashed: true,
-          label: '📦',
+          label: '产品交互',
           isIllegal: false,
+          lineType: 'product',
         });
       }
     });
 
     return result;
-  }, [objects]);
+  }, [objects, productPosition]);
 
-  const lineWidth = xrayMode ? 3.5 : 2.5;
+  const baseWidth = xrayMode ? 3.5 : 2.5;
 
   return (
     <>
@@ -1169,23 +1194,41 @@ function RelationshipLines({ objects, xrayMode, productPosition }: { objects: La
           <Line
             points={[line.start, line.end]}
             color={line.color}
-            lineWidth={lineWidth}
+            lineWidth={line.lineType === 'camera' ? baseWidth + 1 : baseWidth}
             dashed={line.dashed}
             dashSize={line.dashed ? 0.12 : undefined}
             gapSize={line.dashed ? 0.08 : undefined}
           />
-          <Sphere args={[0.04, 6, 6]} position={line.start}>
-            <meshBasicMaterial color={line.color} />
-          </Sphere>
-          <Sphere args={[0.04, 6, 6]} position={line.end}>
-            <meshBasicMaterial color={line.color} />
-          </Sphere>
+          {line.lineType === 'illegal' ? (
+            <Box args={[0.06, 0.06, 0.06]} position={line.start}>
+              <meshBasicMaterial color="#ef4444" />
+            </Box>
+          ) : line.lineType === 'product' ? (
+            <Box args={[0.07, 0.07, 0.07]} position={line.start}>
+              <meshBasicMaterial color="#22d3ee" transparent opacity={0.8} />
+            </Box>
+          ) : (
+            <Sphere args={[0.04, 8, 8]} position={line.start}>
+              <meshBasicMaterial color={line.color} />
+            </Sphere>
+          )}
+          {line.lineType === 'camera' ? (
+            <Sphere args={[0.06, 8, 8]} position={line.end}>
+              <meshBasicMaterial color="#f97316" transparent opacity={0.7} />
+            </Sphere>
+          ) : (
+            <Sphere args={[0.04, 8, 8]} position={line.end}>
+              <meshBasicMaterial color={line.color} />
+            </Sphere>
+          )}
           <Text
             position={line.midpoint}
-            fontSize={0.12}
+            fontSize={0.08}
             color={line.color}
             anchorX="center"
             anchorY="bottom"
+            outlineWidth={0.005}
+            outlineColor="#000000"
           >
             {line.label}
           </Text>
