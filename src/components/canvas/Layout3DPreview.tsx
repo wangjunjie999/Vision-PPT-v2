@@ -1237,7 +1237,7 @@ function DragPlane({
         }
       }}
       onClick={(e: ThreeEvent<MouseEvent>) => {
-        if (!dragStateRef.current.isDragging && !dragMovedRef.current) {
+        if (!dragStateRef.current.isDragging && !dragMovedRef.current && e.delta < 3) {
           e.stopPropagation();
           onDeselect();
         }

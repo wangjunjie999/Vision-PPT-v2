@@ -297,6 +297,7 @@ export function ObjectPropertyPanel({
   return (
     <div 
       ref={panelRef}
+      onMouseDown={e => e.stopPropagation()}
       style={{ top: `${panelY}px` }}
       className={cn(
         "absolute right-4 bg-card/95 backdrop-blur-sm border border-border rounded-xl shadow-2xl overflow-hidden z-10 transition-shadow duration-200",

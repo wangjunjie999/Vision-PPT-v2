@@ -609,6 +609,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent) => {
+    if (e.target !== e.currentTarget) return;
     if (panMode) {
       setIsPanning(true);
       setPanStart({ x: e.clientX, y: e.clientY });
