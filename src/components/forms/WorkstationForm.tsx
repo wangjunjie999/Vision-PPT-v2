@@ -915,18 +915,7 @@ export function WorkstationForm() {
       {/* Layout Views Preview */}
       {selectedWorkstationId && (
         <div className="mt-3">
-          <LayoutViewsPreview 
-            workstationId={selectedWorkstationId} 
-            onOpenCanvas={() => {
-              // Canvas is already visible on the right when workstation is selected
-              // Scroll to ensure it's in view and flash a hint
-              const canvasEl = document.querySelector('[data-canvas-area]');
-              if (canvasEl) {
-                canvasEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-              }
-              toast.info('请在右侧画布中点击「保存布局」来保存视图截图');
-            }}
-          />
+          <LayoutViewsPreview workstationId={selectedWorkstationId} />
         </div>
       )}
     </div>

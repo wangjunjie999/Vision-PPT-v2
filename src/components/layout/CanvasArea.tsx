@@ -62,14 +62,12 @@ export function CanvasArea() {
   
   if (selectedWorkstationId) {
     return (
-      <div data-canvas-area>
-        <ErrorBoundary
-          fallbackTitle="工位布局画布加载失败"
-          context={{ workstationId: selectedWorkstationId }}
-        >
-          <WorkstationCanvas />
-        </ErrorBoundary>
-      </div>
+      <ErrorBoundary
+        fallbackTitle="工位布局画布加载失败"
+        context={{ workstationId: selectedWorkstationId }}
+      >
+        <WorkstationCanvas />
+      </ErrorBoundary>
     );
   }
   
