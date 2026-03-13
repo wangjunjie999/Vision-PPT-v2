@@ -150,6 +150,7 @@ export function HardwareResourceManager({ type }: Props) {
     setSelectedItem(item);
     setFormData({ ...item });
     setImageUrl(item.image_url);
+    setGlbUrl((item as any).model_3d_url || null);
     setEditDialogOpen(true);
   };
 
