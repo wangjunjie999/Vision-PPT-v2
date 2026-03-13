@@ -127,8 +127,8 @@ function DraggableGroup({
         objectClickedRef.current = true;
         pointerDownPos.current = null;
         hasDragStarted.current = false;
+        handleDragEnd();
         setTimeout(() => { objectClickedRef.current = false; }, 0);
-        (e as any).target?.releasePointerCapture?.((e as any).pointerId);
       }}
     >
       {children}
