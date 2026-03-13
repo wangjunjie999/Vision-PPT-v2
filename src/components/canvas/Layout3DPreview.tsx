@@ -80,6 +80,7 @@ function DraggableGroup({
   children,
   objectId,
   position,
+  rotation,
   dragState,
   onDragStart,
   onClick,
@@ -87,26 +88,35 @@ function DraggableGroup({
   children: React.ReactNode;
   objectId: string;
   position: [number, number, number];
+  rotation?: [number, number, number];
   dragState: React.MutableRefObject<DragState>;
   onDragStart: (id: string, point: THREE.Vector3) => void;
   onClick: (id: string) => void;
 }) {
   const groupRef = useRef<THREE.Group>(null);
+  const pointerDownPos = useRef<{ x: number; y: number } | null>(null);
 
   return (
     <group
       ref={groupRef}
       position={position}
+      rotation={rotation}
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
         if (e.button === 0) {
+          pointerDownPos.current = { x: e.clientX, y: e.clientY };
           onDragStart(objectId, e.point);
         }
       }}
-      onClick={(e: ThreeEvent<MouseEvent>) => {
-        e.stopPropagation();
-        if (!dragState.current.isDragging) {
-          onClick(objectId);
+      onPointerUp={(e: ThreeEvent<PointerEvent>) => {
+        if (pointerDownPos.current) {
+          const dx = Math.abs(e.clientX - pointerDownPos.current.x);
+          const dy = Math.abs(e.clientY - pointerDownPos.current.y);
+          if (dx < 5 && dy < 5) {
+            // Click (no significant movement)
+            onClick(objectId);
+          }
+          pointerDownPos.current = null;
         }
       }}
     >
@@ -1381,6 +1391,17 @@ function SelectedInfoPanel({ obj, objects, onDeselect, onUpdateObject, productDi
           </div>
         </div>
       )}
+      {/* 3D Rotation for mechanism/camera */}
+      {(obj.type === 'mechanism' || obj.type === 'camera') && onUpdateObject && (
+        <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
+          <div className="text-[10px] text-slate-400 mb-1">3D 旋转 (°)</div>
+          <div className="flex flex-col gap-1">
+            <DimInput label="Rx" value={obj.rotX ?? 0} onChange={v => onUpdateObject(obj.id, { rotX: v })} allowNegative />
+            <DimInput label="Ry" value={obj.rotY ?? 0} onChange={v => onUpdateObject(obj.id, { rotY: v })} allowNegative />
+            <DimInput label="Rz" value={obj.rotZ ?? 0} onChange={v => onUpdateObject(obj.id, { rotZ: v })} allowNegative />
+          </div>
+        </div>
+      )}
       {/* Editable dimensions for product */}
       {obj.id === '__product__' && onUpdateProductDimensions && productDimensions && (
         <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
@@ -1542,14 +1563,54 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   }, []);
 
   // ============================================================
-  // ARROW KEY MOVEMENT
+  // ARROW KEY MOVEMENT + R-KEY ROTATION
   // ============================================================
+  const rKeyHeld = useRef(false);
+  
+  useEffect(() => {
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'r' || e.key === 'R') rKeyHeld.current = false;
+    };
+    window.addEventListener('keyup', handleKeyUp);
+    return () => window.removeEventListener('keyup', handleKeyUp);
+  }, []);
+
   useEffect(() => {
     if (!dragMode || !onUpdateObject) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'r' || e.key === 'R') {
+        if (!e.repeat) rKeyHeld.current = true;
+        return;
+      }
+
       const id = activeSelectedId;
       if (!id) return;
+
+      // R + arrows = rotate
+      if (rKeyHeld.current && (e.key.startsWith('Arrow'))) {
+        if (id === '__product__') return;
+        const obj = objects.find(o => o.id === id);
+        if (!obj || obj.locked) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const rotStep = 15;
+        const updates: Partial<LayoutObject> = {};
+        switch (e.key) {
+          case 'ArrowLeft': updates.rotY = ((obj.rotY ?? 0) - rotStep + 360) % 360; break;
+          case 'ArrowRight': updates.rotY = ((obj.rotY ?? 0) + rotStep) % 360; break;
+          case 'ArrowUp':
+            if (e.shiftKey) { updates.rotZ = ((obj.rotZ ?? 0) + rotStep) % 360; }
+            else { updates.rotX = ((obj.rotX ?? 0) - rotStep + 360) % 360; }
+            break;
+          case 'ArrowDown':
+            if (e.shiftKey) { updates.rotZ = ((obj.rotZ ?? 0) - rotStep + 360) % 360; }
+            else { updates.rotX = ((obj.rotX ?? 0) + rotStep) % 360; }
+            break;
+        }
+        onUpdateObject(id, updates);
+        return;
+      }
 
       // Product position via keyboard
       if (id === '__product__') {
@@ -1586,28 +1647,15 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       let dx = 0, dy = 0, dz = 0;
 
       switch (e.key) {
-        case 'ArrowLeft':
-          dx = -step;
-          break;
-        case 'ArrowRight':
-          dx = step;
-          break;
+        case 'ArrowLeft': dx = -step; break;
+        case 'ArrowRight': dx = step; break;
         case 'ArrowUp':
-          if (e.shiftKey) {
-            dz = step; // Shift+↑ = raise height (posZ)
-          } else {
-            dy = -step; // ↑ = move forward (posY)
-          }
+          if (e.shiftKey) { dz = step; } else { dy = -step; }
           break;
         case 'ArrowDown':
-          if (e.shiftKey) {
-            dz = -step; // Shift+↓ = lower height (posZ)
-          } else {
-            dy = step; // ↓ = move backward (posY)
-          }
+          if (e.shiftKey) { dz = -step; } else { dy = step; }
           break;
-        default:
-          return;
+        default: return;
       }
 
       e.preventDefault();
@@ -1689,7 +1737,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
             position={[productPosition.posX * SCALE, productPosition.posZ * SCALE, productPosition.posY * SCALE]}
             dragState={dragStateRef}
             onDragStart={handleDragStart}
-            onClick={(id) => { if (!dragMovedRef.current) handleSelect(id); }}
+            onClick={(id) => { handleSelect(id); }}
           >
             <ProductBox
               dimensions={productDimensions}
@@ -1707,9 +1755,14 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 key={obj.id}
                 objectId={obj.id}
                 position={[(obj.posX ?? 0) * SCALE, (obj.posZ ?? 0) * SCALE, (obj.posY ?? 0) * SCALE]}
+                rotation={[
+                  ((obj.rotX ?? 0) * Math.PI) / 180,
+                  ((obj.rotY ?? 0) * Math.PI) / 180,
+                  ((obj.rotZ ?? 0) * Math.PI) / 180,
+                ]}
                 dragState={dragStateRef}
                 onDragStart={handleDragStart}
-                onClick={(id) => { if (!dragMovedRef.current) handleSelect(id); }}
+                onClick={(id) => { handleSelect(id); }}
               >
                 <Mechanism3DModel
                   obj={obj}
@@ -1732,9 +1785,14 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 key={obj.id}
                 objectId={obj.id}
                 position={[(obj.posX ?? 0) * SCALE, (obj.posZ ?? 0) * SCALE, (obj.posY ?? 0) * SCALE]}
+                rotation={[
+                  ((obj.rotX ?? 0) * Math.PI) / 180,
+                  ((obj.rotY ?? 0) * Math.PI) / 180,
+                  ((obj.rotZ ?? 0) * Math.PI) / 180,
+                ]}
                 dragState={dragStateRef}
                 onDragStart={handleDragStart}
-                onClick={(id) => { if (!dragMovedRef.current) handleSelect(id); }}
+                onClick={(id) => { handleSelect(id); }}
               >
                 <CameraObject obj={obj} selected={isSelected} dimmed={isDimmed} />
               </DraggableGroup>
@@ -1814,7 +1872,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
             )}
             {dragMode && activeSelectedId && (
               <div className="flex items-center px-2.5 py-1 text-[10px] text-slate-400 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-600/50">
-                ←→↑↓ 移动 · Shift+↑↓ 升降
+                ←→↑↓ 移动 · Shift+↑↓ 升降 · R+方向键 旋转
               </div>
             )}
           </div>

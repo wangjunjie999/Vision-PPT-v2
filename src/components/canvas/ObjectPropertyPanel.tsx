@@ -32,6 +32,10 @@ export interface LayoutObject {
   width: number;
   height: number;
   rotation: number;
+  // 3D rotation angles in degrees
+  rotX?: number;
+  rotY?: number;
+  rotZ?: number;
   locked: boolean;
   cameraIndex?: number;
   // Camera mounting to mechanism
@@ -487,10 +491,10 @@ export function ObjectPropertyPanel({
 
           <Separator className="my-3" />
 
-          {/* Rotation */}
+          {/* 2D Rotation */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-xs text-muted-foreground">旋转角度</Label>
+              <Label className="text-xs text-muted-foreground">2D 旋转角度</Label>
               <div className="flex items-center gap-1">
                 <span className="text-xs font-mono font-medium px-1.5 py-0.5 rounded bg-muted">{localValues.rotation}°</span>
                 <Button 
@@ -516,7 +520,6 @@ export function ObjectPropertyPanel({
               className="py-2"
             />
             
-            {/* Quick rotation buttons */}
             <div className="flex gap-1">
               {[0, 45, 90, 135, 180, 270].map(deg => (
                 <Button
@@ -534,6 +537,49 @@ export function ObjectPropertyPanel({
                 </Button>
               ))}
             </div>
+          </div>
+
+          <Separator className="my-3" />
+
+          {/* 3D Rotation (X/Y/Z) */}
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">3D 旋转 (X/Y/Z)</Label>
+            {(['rotX', 'rotY', 'rotZ'] as const).map((axis) => {
+              const label = axis === 'rotX' ? 'X轴' : axis === 'rotY' ? 'Y轴' : 'Z轴';
+              const color = axis === 'rotX' ? 'text-red-400' : axis === 'rotY' ? 'text-green-400' : 'text-blue-400';
+              const val = object[axis] ?? 0;
+              return (
+                <div key={axis} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Label className={`text-[10px] font-semibold ${color}`}>{label}</Label>
+                    <span className="text-[10px] font-mono text-muted-foreground">{val}°</span>
+                  </div>
+                  <Slider
+                    value={[val]}
+                    onValueChange={(v) => onUpdate(object.id, { [axis]: v[0] })}
+                    min={0}
+                    max={360}
+                    step={5}
+                    disabled={object.locked}
+                    className="py-1"
+                  />
+                  <div className="flex gap-0.5">
+                    {[0, 90, 180, 270].map(deg => (
+                      <Button
+                        key={deg}
+                        variant={val === deg ? "secondary" : "ghost"}
+                        size="sm"
+                        className="flex-1 h-6 text-[10px] px-0"
+                        onClick={() => onUpdate(object.id, { [axis]: deg })}
+                        disabled={object.locked}
+                      >
+                        {deg}°
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           <Separator className="my-3" />

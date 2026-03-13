@@ -70,6 +70,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   const [showDistances, setShowDistances] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const mouseDownPos = useRef<{ x: number; y: number; objId: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [mechanismCounts, setMechanismCounts] = useState<Record<string, number>>({});
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
@@ -492,8 +493,9 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     }
     setSelectedIds([obj.id]);
     setShowPropertyPanel(true);
-    setIsDragging(true);
+    // Record mouse down position; don't start dragging yet
     const pos = screenToSvg(e.clientX, e.clientY);
+    mouseDownPos.current = { x: e.clientX, y: e.clientY, objId: obj.id };
     setDragOffset({ x: pos.x - obj.x, y: pos.y - obj.y });
   }, [panMode, isIsometric, selectedId, screenToSvg]);
 
@@ -504,6 +506,16 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       setPan({ x: pan.x + dx, y: pan.y + dy });
       setPanStart({ x: e.clientX, y: e.clientY });
       return;
+    }
+    // Check drag threshold before starting drag
+    if (!isDragging && mouseDownPos.current) {
+      const dx = Math.abs(e.clientX - mouseDownPos.current.x);
+      const dy = Math.abs(e.clientY - mouseDownPos.current.y);
+      if (dx > 5 || dy > 5) {
+        setIsDragging(true);
+      } else {
+        return; // Haven't moved enough yet
+      }
     }
     if (!isDragging || !selectedId) return;
 
@@ -610,6 +622,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     setIsDragging(false);
     setIsPanning(false);
     setDraggingObject(null);
+    mouseDownPos.current = null;
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent) => {
