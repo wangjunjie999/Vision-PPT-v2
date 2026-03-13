@@ -2,7 +2,7 @@ import { memo, useRef, useCallback, useState, useMemo, useEffect, Suspense } fro
 import { Canvas, useThree, useFrame, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Box, Cone, Line, Text, Grid, Plane, Sphere, Cylinder, useGLTF } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, X, Move, MousePointer, Magnet, Eye, EyeOff, Save } from 'lucide-react';
+import { RotateCcw, X, Magnet, Eye, EyeOff, Save } from 'lucide-react';
 import type { LayoutObject } from './ObjectPropertyPanel';
 import { CAMERA_INTERACTION_TYPES, PRODUCT_INTERACTION_TYPES } from './MechanismSVG';
 import * as THREE from 'three';
