@@ -70,6 +70,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   const [showDistances, setShowDistances] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const mouseDownPos = useRef<{ x: number; y: number; objId: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [mechanismCounts, setMechanismCounts] = useState<Record<string, number>>({});
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
