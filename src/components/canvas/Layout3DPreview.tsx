@@ -1246,12 +1246,14 @@ function CameraController({
 function DragPlane({
   dragStateRef,
   dragMovedRef,
+  objectClickedRef,
   onDragMove,
   onDragEnd,
   onDeselect,
 }: {
   dragStateRef: React.MutableRefObject<DragState>;
   dragMovedRef: React.MutableRefObject<boolean>;
+  objectClickedRef: React.MutableRefObject<boolean>;
   onDragMove: (point: THREE.Vector3) => void;
   onDragEnd: () => void;
   onDeselect: () => void;
@@ -1275,7 +1277,7 @@ function DragPlane({
         }
       }}
       onClick={(e: ThreeEvent<MouseEvent>) => {
-        if (!dragStateRef.current.isDragging && !dragMovedRef.current && e.delta < 3) {
+        if (!dragStateRef.current.isDragging && !dragMovedRef.current && !objectClickedRef.current && e.delta < 3) {
           e.stopPropagation();
           onDeselect();
         }
