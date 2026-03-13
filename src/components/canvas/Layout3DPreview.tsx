@@ -1022,15 +1022,16 @@ function CameraObject({ obj, selected, dimmed }: { obj: LayoutObject; selected: 
       ) : (
         <CameraProceduralModel obj={obj} selected={selected} dimmed={dimmed} />
       )}
-      <Text
-        position={[0, 0.25, 0]}
-        fontSize={0.16}
-        color="#fafafa"
-        anchorX="center"
-        anchorY="bottom"
-      >
-        {obj.name || 'CAM'}
-      </Text>
+      <Billboard position={[0, 0.25, 0]}>
+        <Text
+          fontSize={0.16}
+          color="#fafafa"
+          anchorX="center"
+          anchorY="bottom"
+        >
+          {obj.name || 'CAM'}
+        </Text>
+      </Billboard>
     </group>
   );
 }
