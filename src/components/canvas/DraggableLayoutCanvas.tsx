@@ -507,6 +507,16 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       setPanStart({ x: e.clientX, y: e.clientY });
       return;
     }
+    // Check drag threshold before starting drag
+    if (!isDragging && mouseDownPos.current) {
+      const dx = Math.abs(e.clientX - mouseDownPos.current.x);
+      const dy = Math.abs(e.clientY - mouseDownPos.current.y);
+      if (dx > 5 || dy > 5) {
+        setIsDragging(true);
+      } else {
+        return; // Haven't moved enough yet
+      }
+    }
     if (!isDragging || !selectedId) return;
 
     const pos = screenToSvg(e.clientX, e.clientY);
