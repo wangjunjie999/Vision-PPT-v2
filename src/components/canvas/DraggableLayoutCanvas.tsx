@@ -634,7 +634,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   }, []);
 
   // ========== Add objects ==========
-  const addCamera = useCallback(() => {
+  const doAddCamera = useCallback((selectedCam?: any) => {
     const existingCameras = objects.filter(o => o.type === 'camera');
     const cameraCount = existingCameras.length;
     let defaultPosX: number;
@@ -651,11 +651,10 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     const defaultPosY = AUTO_ARRANGE_CONFIG.cameraDefaultY;
     const defaultPosZ = AUTO_ARRANGE_CONFIG.cameraDefaultZ;
     const canvasPos = project3DTo2D(defaultPosX, defaultPosY, defaultPosZ, currentView);
-    // Try to get model_3d_url from selected camera hardware data
-    const selectedCameraData = layout?.selected_cameras as any[];
-    const cameraModel3dUrl = selectedCameraData?.[cameraCount]?.model_3d_url || null;
+    const cameraModel3dUrl = selectedCam?.model_3d_url || null;
+    const camName = selectedCam ? `${selectedCam.brand || ''} ${selectedCam.model || ''}`.trim() : `CAM${cameraCount + 1}`;
     const newCamera: LayoutObject = {
-      id: `camera-${Date.now()}`, type: 'camera', name: `CAM${cameraCount + 1}`,
+      id: `camera-${Date.now()}`, type: 'camera', name: camName || `CAM${cameraCount + 1}`,
       posX: defaultPosX, posY: defaultPosY, posZ: defaultPosZ,
       x: canvasPos.x, y: canvasPos.y, width: 50, height: 55, rotation: 0, locked: false,
       cameraIndex: cameraCount + 1,
@@ -666,6 +665,20 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     setShowPropertyPanel(true);
     toast.success(`已添加 ${newCamera.name}`);
   }, [objects, project3DTo2D, currentView]);
+
+  const addCamera = useCallback(() => {
+    const selectedCameraData = layout?.selected_cameras as any[];
+    if (!selectedCameraData || selectedCameraData.length === 0) {
+      // No cameras configured, add generic
+      doAddCamera();
+    } else if (selectedCameraData.length === 1) {
+      // Only one camera, auto-select
+      doAddCamera(selectedCameraData[0]);
+    } else {
+      // Multiple cameras, show picker
+      setCameraPickerOpen(true);
+    }
+  }, [layout, doAddCamera]);
 
   const addMechanism = useCallback((mechanism: Mechanism) => {
     const existingMechs = objects.filter(o => o.type === 'mechanism');
