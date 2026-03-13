@@ -825,45 +825,49 @@ function Mechanism3DModel({ obj, selected, dimmed, hasIllegalMount, objects, xra
           <meshBasicMaterial color="#ef4444" wireframe transparent opacity={0.6} />
         </Box>
       )}
-      <Text
-        position={[0, h + 0.15, 0]}
-        fontSize={0.16}
-        color="#fafafa"
-        anchorX="center"
-        anchorY="bottom"
-      >
-        {obj.name || '机构'}
-      </Text>
-      <Text
-        position={[0, h + 0.32, 0]}
-        fontSize={0.12}
-        color={isCamType ? '#60a5fa' : isProdType ? '#34d399' : '#94a3b8'}
-        anchorX="center"
-        anchorY="bottom"
-      >
-        {isCamType ? '📷 相机交互' : isProdType ? '📦 产品交互' : ''}
-      </Text>
-      {mountedCameras.length > 0 && isCamType && (
+      <Billboard position={[0, h + 0.15, 0]}>
         <Text
-          position={[0, h + 0.46, 0]}
-          fontSize={0.10}
-          color="#60a5fa"
+          fontSize={0.16}
+          color="#fafafa"
           anchorX="center"
           anchorY="bottom"
         >
-          {`已挂载 ${mountedCameras.length} 台相机`}
+          {obj.name || '机构'}
         </Text>
+      </Billboard>
+      <Billboard position={[0, h + 0.32, 0]}>
+        <Text
+          fontSize={0.12}
+          color={isCamType ? '#60a5fa' : isProdType ? '#34d399' : '#94a3b8'}
+          anchorX="center"
+          anchorY="bottom"
+        >
+          {isCamType ? '📷 相机交互' : isProdType ? '📦 产品交互' : ''}
+        </Text>
+      </Billboard>
+      {mountedCameras.length > 0 && isCamType && (
+        <Billboard position={[0, h + 0.46, 0]}>
+          <Text
+            fontSize={0.10}
+            color="#60a5fa"
+            anchorX="center"
+            anchorY="bottom"
+          >
+            {`已挂载 ${mountedCameras.length} 台相机`}
+          </Text>
+        </Billboard>
       )}
       {hasIllegalMount && (
-        <Text
-          position={[0, h + 0.46, 0]}
-          fontSize={0.11}
-          color="#ef4444"
-          anchorX="center"
-          anchorY="bottom"
-        >
-          ⚠ 非法相机挂载!
-        </Text>
+        <Billboard position={[0, h + 0.46, 0]}>
+          <Text
+            fontSize={0.11}
+            color="#ef4444"
+            anchorX="center"
+            anchorY="bottom"
+          >
+            ⚠ 非法相机挂载!
+          </Text>
+        </Billboard>
       )}
     </group>
   );
