@@ -112,8 +112,6 @@ function DraggableGroup({
         hasDragStarted.current = false;
         // Select immediately on pointer down
         onClick(objectId);
-        // Capture pointer so we get move/up even outside object
-        (e as any).target?.setPointerCapture?.((e as any).pointerId);
       }}
       onPointerMove={(e: ThreeEvent<PointerEvent>) => {
         if (!pointerDownPos.current || hasDragStarted.current) return;
@@ -129,8 +127,8 @@ function DraggableGroup({
         objectClickedRef.current = true;
         pointerDownPos.current = null;
         hasDragStarted.current = false;
+        dragState.current = { isDragging: false, objectId: null, startPoint: null, startPos: null };
         setTimeout(() => { objectClickedRef.current = false; }, 0);
-        (e as any).target?.releasePointerCapture?.((e as any).pointerId);
       }}
     >
       {children}

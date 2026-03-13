@@ -1,17 +1,44 @@
 
 
-# 修复 3D 画布脱选后硬件仍跟随鼠标
+# FOV 输入改为两个独立数值框
 
-## 问题根因
+## 问题
 
-`DraggableGroup` 在 `onPointerDown` 中调用了 `setPointerCapture`，这会将所有后续指针事件（包括点击背景的事件）都路由到该对象。当用户点击背景取消选中后，被捕获的指针仍在对象上，导致后续鼠标移动继续触发 `onPointerMove`，超过 5px 阈值后又进入拖拽状态，对象"粘"在鼠标上。
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-## 修复方案
+## 修改方案
 
-**`Layout3DPreview.tsx` — `DraggableGroup` 组件**：
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-1. **移除 `setPointerCapture` / `releasePointerCapture`**：三维场景中不需要指针捕获，`DragPlane`（一个大的不可见平面）已经负责接收拖拽过程中的 `onPointerMove` 和 `onPointerUp` 事件
-2. **在 `onPointerUp` 中额外调用 `handleDragEnd`** 作为安全清理，确保即使 `DragPlane` 的 `onPointerUp` 未触发，拖拽状态也能被正确重置
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
+```
 
-改动约 4 行，仅在 `DraggableGroup` 的事件处理中删除 `setPointerCapture` 和 `releasePointerCapture` 调用。
+在 `getDefaultFormState` 中添加默认值 `''`。
+
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+
+```
+[宽度输入] × [高度输入]
+```
+
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
