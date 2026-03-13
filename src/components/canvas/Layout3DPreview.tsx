@@ -1747,9 +1747,14 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 key={obj.id}
                 objectId={obj.id}
                 position={[(obj.posX ?? 0) * SCALE, (obj.posZ ?? 0) * SCALE, (obj.posY ?? 0) * SCALE]}
+                rotation={[
+                  ((obj.rotX ?? 0) * Math.PI) / 180,
+                  ((obj.rotY ?? 0) * Math.PI) / 180,
+                  ((obj.rotZ ?? 0) * Math.PI) / 180,
+                ]}
                 dragState={dragStateRef}
                 onDragStart={handleDragStart}
-                onClick={(id) => { if (!dragMovedRef.current) handleSelect(id); }}
+                onClick={(id) => { handleSelect(id); }}
               >
                 <CameraObject obj={obj} selected={isSelected} dimmed={isDimmed} />
               </DraggableGroup>
