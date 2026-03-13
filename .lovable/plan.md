@@ -1,44 +1,33 @@
 
 
-# FOV 输入改为两个独立数值框
+# 3D 文字始终面向相机（Billboard）
 
 ## 问题
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+当前所有 `<Text>` 组件（机构名称、产品标签、相机名称、连接线标签）都是固定朝向，旋转视角后文字会侧面或背面显示，难以阅读。
 
-## 修改方案
+## 方案
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+从 `@react-three/drei` 导入 `Billboard` 组件，将所有 `<Text>` 包裹在 `<Billboard>` 中。`Billboard` 会自动让其子元素始终面向相机。
 
-在 `ModuleFormState` 中添加：
+需要修改的位置（`Layout3DPreview.tsx`）：
+
+1. **导入** `Billboard`
+2. **机构标签**（约 L828-866）：3-4 个 `<Text>` → 用 `<Billboard>` 包裹
+3. **产品标签**（约 L927-935）：`<Text>` → 用 `<Billboard>` 包裹
+4. **相机标签**（约 L1020-1028）：`<Text>` → 用 `<Billboard>` 包裹
+5. **连接线标签**（约 L1224-1234）：`<Text>` → 用 `<Billboard>` 包裹
+
+改动模式统一：
+```tsx
+// 改前
+<Text position={[0, h, 0]} ...>标签</Text>
+
+// 改后
+<Billboard position={[0, h, 0]}>
+  <Text fontSize={0.16} ...>标签</Text>
+</Billboard>
 ```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
 
-在 `getDefaultFormState` 中添加默认值 `''`。
-
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
-
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
-
-```
-[宽度输入] × [高度输入]
-```
-
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
-
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+约 20 行改动，1 个文件。
 
