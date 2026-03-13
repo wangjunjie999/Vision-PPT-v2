@@ -1130,6 +1130,33 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         {/* Zoom Controls */}
         <CanvasControls zoom={zoom} onZoomChange={setZoom} onFitToScreen={fitToScreen} onResetView={resetView} panMode={panMode} onPanModeChange={setPanMode} />
       </div>
+
+      {/* Camera Picker Dialog */}
+      <Dialog open={cameraPickerOpen} onOpenChange={setCameraPickerOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>选择相机型号</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-2 max-h-60 overflow-y-auto">
+            {(layout?.selected_cameras as any[] || []).map((cam: any, idx: number) => (
+              <button
+                key={idx}
+                className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-accent text-left transition-colors"
+                onClick={() => {
+                  setCameraPickerOpen(false);
+                  doAddCamera(cam);
+                }}
+              >
+                <Camera className="h-5 w-5 text-muted-foreground shrink-0" />
+                <div>
+                  <div className="font-medium text-sm">{cam.brand} {cam.model}</div>
+                  {cam.resolution && <div className="text-xs text-muted-foreground">{cam.resolution}</div>}
+                </div>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
