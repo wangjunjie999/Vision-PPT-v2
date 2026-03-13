@@ -733,21 +733,41 @@ export async function generateLayoutAndOpticalSlide(
     fontSize: 8, fontFace: FONTS.body, color: COLORS.secondary, align: 'center',
   });
 
-  // Right: Layout description text area
-  slide.addShape('rect', {
-    x: 5.9, y: 3.9, w: 3.6, h: 1.2,
-    fill: { color: 'F8F9FA' },
-    line: { color: COLORS.border, width: 0.5 },
-  });
-  slide.addText(ctx.isZh ? '布局说明' : 'Layout Description', {
-    x: 6.0, y: 3.95, w: 3.4, h: 0.25,
-    fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
-  });
-  slide.addText(layoutDescription || (ctx.isZh ? '（未填写布局说明）' : '(No description)'), {
-    x: 6.0, y: 4.2, w: 3.4, h: 0.85,
-    fontSize: 9, fontFace: FONTS.body, color: layoutDescription ? COLORS.dark : COLORS.secondary,
-    valign: 'top',
-  });
+  // Right middle: Isometric 3D view (if available)
+  if (isometricUrl) {
+    try {
+      const dataUri = await fetchImageAsDataUri(isometricUrl);
+      if (dataUri) {
+        const dims = await getImageDimensions(dataUri).catch(() => ({ width: 900, height: 500 }));
+        const fit = calculateContainFit(dims.width, dims.height, {
+          x: 5.9, y: 3.9, width: 3.6, height: 1.5
+        });
+        slide.addImage({ data: dataUri, x: fit.x, y: fit.y, w: fit.width, h: fit.height });
+      }
+    } catch (e) {
+      console.warn('[PPT] Failed to load isometric view:', e);
+    }
+    slide.addText(ctx.isZh ? '等轴测 3D 视图' : 'Isometric 3D View', {
+      x: 5.9, y: 5.42, w: 3.6, h: 0.2,
+      fontSize: 8, fontFace: FONTS.body, color: COLORS.secondary, align: 'center',
+    });
+  } else {
+    // Right: Layout description text area (when no isometric)
+    slide.addShape('rect', {
+      x: 5.9, y: 3.9, w: 3.6, h: 1.2,
+      fill: { color: 'F8F9FA' },
+      line: { color: COLORS.border, width: 0.5 },
+    });
+    slide.addText(ctx.isZh ? '布局说明' : 'Layout Description', {
+      x: 6.0, y: 3.95, w: 3.4, h: 0.25,
+      fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
+    });
+    slide.addText(layoutDescription || (ctx.isZh ? '（未填写布局说明）' : '(No description)'), {
+      x: 6.0, y: 4.2, w: 3.4, h: 0.85,
+      fontSize: 9, fontFace: FONTS.body, color: layoutDescription ? COLORS.dark : COLORS.secondary,
+      valign: 'top',
+    });
+  }
 
   // Layout dimensions at bottom
   if (layout?.width || layout?.height || layout?.depth) {

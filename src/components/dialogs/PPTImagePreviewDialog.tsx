@@ -100,9 +100,11 @@ export function PPTImagePreviewDialog({ open, onOpenChange }: PPTImagePreviewDia
       const VIEW_LABELS: Record<string, string> = { front: '正视图', side: '侧视图', top: '俯视图', isometric: '等轴测' };
       const pv: string = (layout as any)?.primary_view || 'front';
       const av: string = (layout as any)?.auxiliary_view || 'side';
+      const isoUrl = (layout as any)?.isometric_view_image_url || null;
       const layoutImages = [
         { label: `主视图 - ${VIEW_LABELS[pv] || pv}`, url: layout?.[`${pv}_view_image_url` as keyof typeof layout] as string || null },
         { label: `辅视图 - ${VIEW_LABELS[av] || av}`, url: layout?.[`${av}_view_image_url` as keyof typeof layout] as string || null },
+        ...(isoUrl ? [{ label: '等轴测 3D 视图', url: isoUrl as string }] : []),
       ];
 
       const moduleImages = modules.map(mod => ({

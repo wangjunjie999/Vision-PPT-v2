@@ -147,7 +147,7 @@ export function LayoutViewsPreview({ workstationId, className, onOpenCanvas }: L
         </div>
       )}
       
-      {!noneSaved && !bothSaved && (
+      {!noneSaved && !allSaved && (
         <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
           <Camera className="h-4 w-4 text-blue-500 flex-shrink-0" />
           <p className="text-xs text-blue-600 dark:text-blue-400">
