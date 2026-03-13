@@ -975,13 +975,13 @@ function CameraProceduralModel({ obj, selected, dimmed }: { obj: LayoutObject; s
 function CameraObject({ obj, selected, dimmed }: { obj: LayoutObject; selected: boolean; dimmed: boolean }) {
   const w = (obj.width || 50) / 100;
   const h = (obj.height || 55) / 100;
-  const d = (obj.depth || 40) / 100;
+  const d = w * 0.8; // approximate depth from width
 
   return (
     <group>
       {obj.model3dUrl ? (
         <Suspense fallback={<CameraProceduralModel obj={obj} selected={selected} dimmed={dimmed} />}>
-          <GLBModelRenderer url={obj.model3dUrl} width={w} height={h} depth={d} selected={selected} />
+          <GLBModelRenderer url={obj.model3dUrl} w={w} h={h} d={d} selected={selected} />
         </Suspense>
       ) : (
         <CameraProceduralModel obj={obj} selected={selected} dimmed={dimmed} />
