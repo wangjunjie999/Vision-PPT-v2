@@ -981,7 +981,7 @@ function CameraObject({ obj, selected, dimmed }: { obj: LayoutObject; selected: 
     <group>
       {obj.model3dUrl ? (
         <Suspense fallback={<CameraProceduralModel obj={obj} selected={selected} dimmed={dimmed} />}>
-          <GLBModelRenderer url={obj.model3dUrl} w={w} h={h} d={d} selected={selected} />
+          <GLBModelRenderer url={obj.model3dUrl} w={w} h={h} d={d} />
         </Suspense>
       ) : (
         <CameraProceduralModel obj={obj} selected={selected} dimmed={dimmed} />
