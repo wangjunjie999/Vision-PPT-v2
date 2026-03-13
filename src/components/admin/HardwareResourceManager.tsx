@@ -183,11 +183,15 @@ export function HardwareResourceManager({ type }: Props) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const data = {
+      const data: Record<string, any> = {
         ...formData,
         image_url: imageUrl,
         tags: formData.tags || [],
       };
+      // Add model_3d_url for cameras
+      if (type === 'cameras') {
+        data.model_3d_url = glbUrl;
+      }
 
       if (selectedItem) {
         // Update
