@@ -956,7 +956,10 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
             productDimensions={productDimensions}
             onUpdateObject={updateObjectWithFollowers}
             selectedObjectId={selectedId}
-            onSelectObject={(id) => setSelectedIds(id ? [id] : [])}
+            onSelectObject={(id) => {
+              setSelectedIds(id ? [id] : []);
+              setShowPropertyPanel(!!id);
+            }}
             onUpdateProductDimensions={(dims) => {
               updateWorkstation(workstationId, { product_dimensions: dims as any });
             }}
