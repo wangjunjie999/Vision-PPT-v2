@@ -142,6 +142,7 @@ export function HardwareResourceManager({ type }: Props) {
     setSelectedItem(null);
     setFormData({ enabled: true, tags: [] });
     setImageUrl(null);
+    setGlbUrl(null);
     setEditDialogOpen(true);
   };
 
