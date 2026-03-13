@@ -1,34 +1,44 @@
 
 
-# 修复 3D 视图单击选中相机后立即取消选中
+# FOV 输入改为两个独立数值框
 
-## 原因
+## 问题
 
-Three.js 的射线检测同时命中了相机对象和背后的不可见地面 `Plane`。事件序列：
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-1. `DraggableGroup.onPointerDown` → `e.stopPropagation()` ✓
-2. `DraggableGroup.onPointerUp` → 检测到 click（位移 < 5px）→ 调用 `onClick(objectId)` **选中** → 但没有 `e.stopPropagation()`
-3. `Plane.onClick` → 条件满足（`!isDragging && !dragMovedRef && delta < 3`）→ 调用 `onDeselect()` **取消选中**
+## 修改方案
 
-## 修复
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-### `src/components/canvas/Layout3DPreview.tsx` — `DraggableGroup.onPointerUp`
-
-在检测到 click 时添加 `e.stopPropagation()`，阻止事件传播到地面 Plane：
-
-```typescript
-onPointerUp={(e: ThreeEvent<PointerEvent>) => {
-  if (pointerDownPos.current) {
-    const dx = Math.abs(e.clientX - pointerDownPos.current.x);
-    const dy = Math.abs(e.clientY - pointerDownPos.current.y);
-    if (dx < 5 && dy < 5) {
-      e.stopPropagation(); // ← 新增：阻止地面 Plane 接收事件
-      onClick(objectId);
-    }
-    pointerDownPos.current = null;
-  }
-}}
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
 ```
 
-改动量：1 行。
+在 `getDefaultFormState` 中添加默认值 `''`。
+
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+
+```
+[宽度输入] × [高度输入]
+```
+
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
