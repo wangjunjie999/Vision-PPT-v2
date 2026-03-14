@@ -1625,6 +1625,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       startPoint: null,
       startPos: null,
     };
+    objectClickedRef.current = false;
     setTimeout(() => { dragMovedRef.current = false; }, 0);
   }, []);
 
