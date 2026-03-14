@@ -308,11 +308,11 @@ export function VisionSystemDiagram({
 
         {/* Background grid - subtle */}
         <g opacity="0.06">
-          {Array.from({ length: 14 }).map((_, i) => (
-            <line key={`h${i}`} x1="60" y1={15 + i * 40} x2="490" y2={15 + i * 40} stroke="#ffffff" strokeWidth="0.5" />
+          {Array.from({ length: 13 }).map((_, i) => (
+            <line key={`h${i}`} x1="60" y1={20 + i * 40} x2="490" y2={20 + i * 40} stroke="#ffffff" strokeWidth="0.5" />
           ))}
           {Array.from({ length: 12 }).map((_, i) => (
-            <line key={`v${i}`} x1={60 + i * 40} y1="15" x2={60 + i * 40} y2="545" stroke="#ffffff" strokeWidth="0.5" />
+            <line key={`v${i}`} x1={60 + i * 40} y1="20" x2={60 + i * 40} y2="510" stroke="#ffffff" strokeWidth="0.5" />
           ))}
         </g>
 
