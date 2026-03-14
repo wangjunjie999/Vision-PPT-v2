@@ -494,7 +494,7 @@ export function VisionSystemDiagram({
 
         {/* ===== Interactive Light Element - gray bar with red LED strips ===== */}
         <foreignObject x="195" y="215" width="160" height="32">
-           <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: '100%', height: '100%', backgroundColor: 'transparent', transform: 'translateZ(0)' }}>
+           <div style={{ width: '100%', height: '100%', backgroundColor: 'transparent', transform: 'translateZ(0)' }}>
             <HardwareSelectPopover
               type="light"
               items={lights}
