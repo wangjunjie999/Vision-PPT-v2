@@ -427,7 +427,7 @@ export function VisionSystemDiagram({
               onSelect={onCameraSelect || (() => {})}
               disabled={!interactive || !onCameraSelect}
             >
-              <div className={cn("relative w-full h-full cursor-pointer group")}>
+              <button className={cn("relative w-full h-full cursor-pointer group bg-transparent border-0 p-0")}>
                 <svg width="90" height="85" viewBox="0 0 90 85">
                   {/* Camera body - purple */}
                   <rect x="0" y="0" width="90" height="72" rx="6" fill="url(#cameraBody)" />
