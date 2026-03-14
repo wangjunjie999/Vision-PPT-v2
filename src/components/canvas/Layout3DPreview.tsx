@@ -124,11 +124,9 @@ function DraggableGroup({
       }}
       onPointerUp={(e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
-        objectClickedRef.current = true;
         pointerDownPos.current = null;
         hasDragStarted.current = false;
         dragState.current = { isDragging: false, objectId: null, startPoint: null, startPos: null };
-        setTimeout(() => { objectClickedRef.current = false; }, 0);
       }}
     >
       {children}
