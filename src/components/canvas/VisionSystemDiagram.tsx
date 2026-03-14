@@ -487,7 +487,7 @@ export function VisionSystemDiagram({
                     <span className="text-xs text-muted-foreground">点击选择</span>
                   </div>
                 )}
-              </div>
+              </button>
             </HardwareSelectPopover>
           </div>
         </foreignObject>
@@ -502,7 +502,7 @@ export function VisionSystemDiagram({
               onSelect={onLightSelect || (() => {})}
               disabled={!interactive || !onLightSelect}
             >
-              <div className={cn("relative w-full h-full cursor-pointer group")}>
+              <button className={cn("relative w-full h-full cursor-pointer group bg-transparent border-0 p-0")}>
                 <svg width="160" height="32" viewBox="0 0 160 32">
                   {/* Light bar body - gray */}
                   <rect x="0" y="0" width="160" height="32" rx="4" fill="hsl(0, 0%, 45%)" />
