@@ -38,6 +38,21 @@ function ScreenshotHelper({ onScreenshotReady }: { onScreenshotReady: (fn: () =>
 const SCALE = 0.01;
 const INV_SCALE = 100; // 1 / SCALE
 
+// Returns the surface Z-offset (mm) where a product should rest on a mechanism
+export function getMechanismSurfaceHeight(mechType: string, mechHeight: number): number {
+  switch (mechType) {
+    case 'conveyor': return mechHeight * 0.64;   // belt top
+    case 'turntable': return mechHeight * 0.50;  // disc surface
+    case 'lift': return mechHeight * 0.63;       // platform surface
+    case 'stop': return mechHeight * 0.40;       // stopper top
+    case 'cylinder': return mechHeight * 1.10;   // piston rod end
+    case 'gripper': return mechHeight * 0.35;    // grip center
+    case 'camera_mount': return mechHeight * 0.90;
+    case 'robot_arm': return mechHeight * 0.80;
+    default: return mechHeight;                   // top of mechanism
+  }
+}
+
 // Shared drag state across components
 interface DragState {
   isDragging: boolean;
