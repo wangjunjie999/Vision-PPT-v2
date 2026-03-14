@@ -100,7 +100,7 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
   const [productAssets, setProductAssets] = useState<any[]>([]);
 
   const [stage, setStage] = useState<'config' | 'generating' | 'complete' | 'error'>('config');
-  const [mode, setMode] = useState<GenerationMode>('draft');
+  const [mode, setMode] = useState<GenerationMode>('final');
   const [scope, setScope] = useState<GenerationScope>('full');
   const [selectedWorkstations, setSelectedWorkstations] = useState<string[]>([]);
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
