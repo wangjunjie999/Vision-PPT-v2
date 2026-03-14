@@ -342,12 +342,12 @@ export function VisionSystemDiagram({
         {/* ===== Camera Mounting Bracket - gray cross shape ===== */}
         <g>
           {/* Horizontal bar */}
-          <rect x="195" y="250" width="160" height="10" rx="2" fill="hsl(0, 0%, 50%)" />
+          <rect x="195" y="265" width="160" height="10" rx="2" fill="hsl(0, 0%, 50%)" />
           {/* Vertical bar */}
-          <rect x="265" y="240" width="20" height="30" rx="2" fill="hsl(0, 0%, 50%)" />
+          <rect x="265" y="258" width="20" height="24" rx="2" fill="hsl(0, 0%, 50%)" />
           {/* Mounting holes */}
-          <circle cx="215" cy="255" r="3" fill="hsl(0, 0%, 35%)" />
-          <circle cx="335" cy="255" r="3" fill="hsl(0, 0%, 35%)" />
+          <circle cx="215" cy="270" r="3" fill="hsl(0, 0%, 35%)" />
+          <circle cx="335" cy="270" r="3" fill="hsl(0, 0%, 35%)" />
         </g>
 
         {/* ===== Detection point on product surface ===== */}
@@ -412,9 +412,9 @@ export function VisionSystemDiagram({
 
         {/* Connection lines to annotation panel */}
         <g stroke="hsl(220, 80%, 50%)" strokeWidth="1" strokeDasharray="4,2" opacity="0.5">
-          <line x1="320" y1="70" x2="495" y2="55" />
-          <line x1="323" y1="170" x2="495" y2="140" />
-          <line x1="360" y1="235" x2="495" y2="210" />
+          <line x1="320" y1="77" x2="495" y2="55" />
+          <line x1="323" y1="151" x2="495" y2="140" />
+          <line x1="360" y1="231" x2="495" y2="210" />
         </g>
 
         {/* ===== Interactive Camera Element ===== */}
@@ -427,7 +427,7 @@ export function VisionSystemDiagram({
               onSelect={onCameraSelect || (() => {})}
               disabled={!interactive || !onCameraSelect}
             >
-              <div className={cn("relative w-full h-full cursor-pointer group")}>
+              <button className={cn("relative w-full h-full cursor-pointer group bg-transparent border-0 p-0")}>
                 <svg width="90" height="85" viewBox="0 0 90 85">
                   {/* Camera body - purple */}
                   <rect x="0" y="0" width="90" height="72" rx="6" fill="url(#cameraBody)" />
@@ -450,7 +450,7 @@ export function VisionSystemDiagram({
                     <span className="text-xs text-muted-foreground">点击选择</span>
                   </div>
                 )}
-              </div>
+              </button>
             </HardwareSelectPopover>
           </div>
         </foreignObject>
@@ -465,7 +465,7 @@ export function VisionSystemDiagram({
               onSelect={onLensSelect || (() => {})}
               disabled={!interactive || !onLensSelect}
             >
-              <div className={cn("relative w-full h-full cursor-pointer group")}>
+              <button className={cn("relative w-full h-full cursor-pointer group bg-transparent border-0 p-0")}>
                 <svg width="96" height="62" viewBox="0 0 96 62">
                   {/* Lens body - dark brown */}
                   <rect x="8" y="0" width="80" height="48" rx="3" fill="url(#lensBody)" />
@@ -487,7 +487,7 @@ export function VisionSystemDiagram({
                     <span className="text-xs text-muted-foreground">点击选择</span>
                   </div>
                 )}
-              </div>
+              </button>
             </HardwareSelectPopover>
           </div>
         </foreignObject>
@@ -502,7 +502,7 @@ export function VisionSystemDiagram({
               onSelect={onLightSelect || (() => {})}
               disabled={!interactive || !onLightSelect}
             >
-              <div className={cn("relative w-full h-full cursor-pointer group")}>
+              <button className={cn("relative w-full h-full cursor-pointer group bg-transparent border-0 p-0")}>
                 <svg width="160" height="32" viewBox="0 0 160 32">
                   {/* Light bar body - gray */}
                   <rect x="0" y="0" width="160" height="32" rx="4" fill="hsl(0, 0%, 45%)" />
@@ -524,7 +524,7 @@ export function VisionSystemDiagram({
                     <span className="text-xs text-muted-foreground">点击选择</span>
                   </div>
                 )}
-              </div>
+              </button>
             </HardwareSelectPopover>
           </div>
         </foreignObject>
