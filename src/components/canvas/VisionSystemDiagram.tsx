@@ -301,7 +301,7 @@ export function VisionSystemDiagram({
 
         {/* Blue dashed outer border */}
         <rect 
-          x="60" y="15" width="430" height="530" rx="8"
+          x="60" y="20" width="430" height="490" rx="8"
           fill="none" stroke="hsl(220, 80%, 55%)" strokeWidth="1.5" strokeDasharray="8,4"
           opacity="0.5"
         />
