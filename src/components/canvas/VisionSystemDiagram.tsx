@@ -532,7 +532,7 @@ export function VisionSystemDiagram({
         {/* Interactive Controller Element - positioned at bottom right, only show if controller is selected */}
         {hasController && (
           <foreignObject x="370" y="385" width="140" height="80">
-             <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: '100%', height: '100%', backgroundColor: 'transparent', transform: 'translateZ(0)' }}>
+             <div style={{ width: '100%', height: '100%', backgroundColor: 'transparent', transform: 'translateZ(0)' }}>
               <HardwareSelectPopover
                 type="controller"
                 items={controllers}
