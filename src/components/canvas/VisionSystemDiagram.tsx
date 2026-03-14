@@ -457,7 +457,7 @@ export function VisionSystemDiagram({
 
         {/* ===== Interactive Lens Element ===== */}
         <foreignObject x="227" y="120" width="96" height="62">
-          <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
+           <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: '100%', height: '100%', backgroundColor: 'transparent', transform: 'translateZ(0)' }}>
             <HardwareSelectPopover
               type="lens"
               items={lenses}
@@ -465,7 +465,7 @@ export function VisionSystemDiagram({
               onSelect={onLensSelect || (() => {})}
               disabled={!interactive || !onLensSelect}
             >
-              <button className={cn("relative w-full h-full cursor-pointer group bg-transparent border-0 p-0")}>
+              <button style={{ position: 'relative', width: '100%', height: '100%', cursor: 'pointer', backgroundColor: 'transparent', border: 'none', padding: 0 }} className="group">
                 <svg width="96" height="62" viewBox="0 0 96 62">
                   {/* Lens body - dark brown */}
                   <rect x="8" y="0" width="80" height="48" rx="3" fill="url(#lensBody)" />
@@ -478,13 +478,13 @@ export function VisionSystemDiagram({
                   <rect x="13" y="26" width="70" height="2.5" fill="hsl(30, 15%, 45%)" rx="1" />
                 </svg>
                 {interactive && onLensSelect && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    <span className="text-primary-foreground text-xs">✎</span>
+                  <div style={{ position: 'absolute', top: -1, right: -1, width: 20, height: 20, backgroundColor: 'hsl(270, 60%, 50%)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, zIndex: 10 }} className="group-hover:opacity-100 transition-opacity">
+                    <span style={{ color: '#ffffff', fontSize: '12px' }}>✎</span>
                   </div>
                 )}
                 {!hasLens && interactive && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded">
-                    <span className="text-xs text-muted-foreground">点击选择</span>
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(30, 41, 59, 0.5)', borderRadius: '4px' }}>
+                    <span style={{ fontSize: '12px', color: 'hsl(220, 15%, 60%)' }}>点击选择</span>
                   </div>
                 )}
               </button>
