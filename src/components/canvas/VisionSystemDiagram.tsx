@@ -316,26 +316,26 @@ export function VisionSystemDiagram({
           ))}
         </g>
 
-        {/* ===== FOV Cone - saturated purple, from below bracket to product ===== */}
+        {/* ===== FOV Cone - saturated purple, from lens bottom through light & bracket to product ===== */}
         <polygon 
-          points={`275,280 ${275 - fovOffsetX},420 ${275 + fovOffsetX},420`}
+          points={`275,175 ${275 - fovOffsetX},420 ${275 + fovOffsetX},420`}
           fill="hsl(270, 60%, 50%)"
           opacity="0.18"
         />
         <line 
-          x1="275" y1="280" x2={275 - fovOffsetX} y2="420" 
+          x1="275" y1="175" x2={275 - fovOffsetX} y2="420" 
           stroke="hsl(270, 50%, 60%)" strokeWidth="1.5" strokeDasharray="6,3" opacity="0.6"
         />
         <line 
-          x1="275" y1="280" x2={275 + fovOffsetX} y2="420" 
+          x1="275" y1="175" x2={275 + fovOffsetX} y2="420" 
           stroke="hsl(270, 50%, 60%)" strokeWidth="1.5" strokeDasharray="6,3" opacity="0.6"
         />
         {/* FOV angle arc */}
         <path 
-          d={`M ${275 - 20} 295 A 25 25 0 0 1 ${275 + 20} 295`}
+          d={`M ${275 - 15} 190 A 20 20 0 0 1 ${275 + 15} 190`}
           fill="none" stroke="hsl(270, 50%, 60%)" strokeWidth="1.5"
         />
-        <text x="310" y="292" textAnchor="start" fill="#ffffff" style={{ fontSize: '11px', fontWeight: 500 }}>
+        <text x="300" y="187" textAnchor="start" fill="#ffffff" style={{ fontSize: '11px', fontWeight: 500 }}>
           {fovAngle}°
         </text>
 
@@ -376,13 +376,13 @@ export function VisionSystemDiagram({
 
         {/* ===== Dimension line - vertical (working distance) ===== */}
         <g>
-          {/* Top tick at FOV origin level */}
-          <line x1="120" y1="280" x2="150" y2="280" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
+          {/* Top tick at lens bottom level */}
+          <line x1="120" y1="175" x2="150" y2="175" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
           {/* Bottom tick at product top */}
           <line x1="120" y1="420" x2="150" y2="420" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
           {/* Vertical line with arrows */}
           <line 
-            x1="135" y1="290" x2="135" y2="410" 
+            x1="135" y1="185" x2="135" y2="410" 
             stroke="hsl(220, 80%, 55%)" strokeWidth="1.5"
             markerStart="url(#arrowUp)" markerEnd="url(#arrowDown)"
           />

@@ -1,22 +1,44 @@
 
 
-# FOV 锥体起点修正 — 从镜头底部开始，穿过光源和支架
+# FOV 输入改为两个独立数值框
 
 ## 问题
 
-当前 FOV 锥体起点在 y=280（支架下方），但实际光学原理中 FOV 应从镜头底部发出，向下穿过光源和安装支架到达产品。
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
 ## 修改方案
 
-### 文件：`src/components/canvas/VisionSystemDiagram.tsx`
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-将 FOV 锥体及相关元素的起点从 y=280 上移到 y=175（镜头底部附近）：
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
+```
 
-1. **FOV 填充三角形**：`275,280` → `275,175`
-2. **FOV 虚线边**（两条）：y1=280 → y1=175
-3. **FOV 角度弧线**：y=295 区域 → y=190 区域，调整弧线半径
-4. **角度标注文字**：y=292 → y=187
-5. **工作距离标注线**上端 tick 和竖线起点：y=280/290 → y=175/185
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-FOV 锥体将以半透明紫色填充穿过光源条和安装支架，符合真实光学路径。约 10 行坐标修改，1 个文件。
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+
+```
+[宽度输入] × [高度输入]
+```
+
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
