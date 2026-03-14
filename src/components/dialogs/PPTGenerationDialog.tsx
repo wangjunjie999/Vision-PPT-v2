@@ -132,7 +132,7 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
     fileUrl: '' as string,
   });
   const generatedBlobRef = useRef<Blob | null>(null);
-  const [checkPanelOpen, setCheckPanelOpen] = useState(true);
+  const [checkPanelOpen, setCheckPanelOpen] = useState(false);
   const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
   // 默认使用"从零生成"，因为模板生成需要Edge Function支持
   const [generationMethod, setGenerationMethod] = useState<GenerationMethod>('scratch');
