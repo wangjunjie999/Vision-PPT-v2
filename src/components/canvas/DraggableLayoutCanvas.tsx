@@ -31,7 +31,7 @@ import { AUTO_ARRANGE_CONFIG } from './canvasTypes';
 import { CanvasToolbar } from './CanvasToolbar';
 import { CanvasSVGDefs } from './CanvasSVGDefs';
 import { IsometricGrid } from './IsometricGrid';
-import { Layout3DPreview } from './Layout3DPreview';
+import { Layout3DPreview, getMechanismSurfaceHeight } from './Layout3DPreview';
 import { ConnectionLines } from './ConnectionLines';
 import { MechanismRenderer } from './MechanismRenderer';
 import { ProductRenderer } from './ProductRenderer';
