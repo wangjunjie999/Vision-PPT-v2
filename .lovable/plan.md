@@ -1,34 +1,44 @@
 
 
-# 修复光学方案图元素遮挡问题
+# FOV 输入改为两个独立数值框
 
-## 问题分析
+## 问题
 
-根据截图红框标注，存在两处遮挡：
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-1. **光源区域**：安装支架（y=258-282）紧贴光源 foreignObject（y=215, h=32 → 结束于 y=247），视觉上过于拥挤，且支架被 FOV 锥体覆盖不够清晰
-2. **产品/工控机区域**：产品矩形（x=200-350, y=470-510）与 IPC 工控机（x=340-480, y=430-510）在 x=340-350、y=470-510 区域有重叠
+## 修改方案
 
-## 修复方案
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-### 文件：`src/components/canvas/VisionSystemDiagram.tsx`
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
+```
 
-1. **IPC 工控机右移避让产品**
-   - x: 340 → 370，与产品右边界（x=350）保持 20px 间距
-   - 同时将连接引线的终点也对应调整
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-2. **安装支架下移 + 增强可见度**
-   - 水平杆 y: 265 → 275
-   - 垂直杆 y: 258 → 268
-   - 安装孔 cy: 270 → 280
-   - 确保与光源 foreignObject 底部（y=247）有 28px 间距
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
 
-3. **FOV 锥体起点下移至支架之下**
-   - FOV 起点从 y=210 改为 y=290（支架底部之下），避免锥体遮挡支架
-   - FOV 虚线边也同步调整
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
 
-4. **调整标注线起点**
-   - 工作距离标注线上端从 y=235 改为 y=290（与 FOV 起点一致）
+```
+[宽度输入] × [高度输入]
+```
 
-共约 20 行坐标调整，1 个文件。
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 

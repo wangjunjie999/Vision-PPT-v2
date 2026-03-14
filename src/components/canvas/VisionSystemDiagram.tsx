@@ -316,38 +316,38 @@ export function VisionSystemDiagram({
           ))}
         </g>
 
-        {/* ===== FOV Cone - saturated purple, from lens bottom to product ===== */}
+        {/* ===== FOV Cone - saturated purple, from below bracket to product ===== */}
         <polygon 
-          points={`275,210 ${275 - fovOffsetX},470 ${275 + fovOffsetX},470`}
+          points={`275,290 ${275 - fovOffsetX},470 ${275 + fovOffsetX},470`}
           fill="hsl(270, 60%, 50%)"
           opacity="0.18"
         />
         <line 
-          x1="275" y1="210" x2={275 - fovOffsetX} y2="470" 
+          x1="275" y1="290" x2={275 - fovOffsetX} y2="470" 
           stroke="hsl(270, 50%, 60%)" strokeWidth="1.5" strokeDasharray="6,3" opacity="0.6"
         />
         <line 
-          x1="275" y1="210" x2={275 + fovOffsetX} y2="470" 
+          x1="275" y1="290" x2={275 + fovOffsetX} y2="470" 
           stroke="hsl(270, 50%, 60%)" strokeWidth="1.5" strokeDasharray="6,3" opacity="0.6"
         />
         {/* FOV angle arc */}
         <path 
-          d={`M ${275 - 20} 225 A 25 25 0 0 1 ${275 + 20} 225`}
+          d={`M ${275 - 20} 305 A 25 25 0 0 1 ${275 + 20} 305`}
           fill="none" stroke="hsl(270, 50%, 60%)" strokeWidth="1.5"
         />
-        <text x="310" y="222" textAnchor="start" fill="#ffffff" style={{ fontSize: '11px', fontWeight: 500 }}>
+        <text x="310" y="302" textAnchor="start" fill="#ffffff" style={{ fontSize: '11px', fontWeight: 500 }}>
           {fovAngle}°
         </text>
 
         {/* ===== Camera Mounting Bracket - gray cross shape ===== */}
         <g>
           {/* Horizontal bar */}
-          <rect x="195" y="265" width="160" height="10" rx="2" fill="hsl(0, 0%, 50%)" />
+          <rect x="195" y="275" width="160" height="10" rx="2" fill="hsl(0, 0%, 50%)" />
           {/* Vertical bar */}
-          <rect x="265" y="258" width="20" height="24" rx="2" fill="hsl(0, 0%, 50%)" />
+          <rect x="265" y="268" width="20" height="24" rx="2" fill="hsl(0, 0%, 50%)" />
           {/* Mounting holes */}
-          <circle cx="215" cy="270" r="3" fill="hsl(0, 0%, 35%)" />
-          <circle cx="335" cy="270" r="3" fill="hsl(0, 0%, 35%)" />
+          <circle cx="215" cy="280" r="3" fill="hsl(0, 0%, 35%)" />
+          <circle cx="335" cy="280" r="3" fill="hsl(0, 0%, 35%)" />
         </g>
 
         {/* ===== Detection point on product surface ===== */}
@@ -376,13 +376,13 @@ export function VisionSystemDiagram({
 
         {/* ===== Dimension line - vertical (working distance) ===== */}
         <g>
-          {/* Top tick at light level */}
-          <line x1="120" y1="235" x2="150" y2="235" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
+          {/* Top tick at FOV origin level */}
+          <line x1="120" y1="290" x2="150" y2="290" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
           {/* Bottom tick at product top */}
           <line x1="120" y1="470" x2="150" y2="470" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
           {/* Vertical line with arrows */}
           <line 
-            x1="135" y1="245" x2="135" y2="460" 
+            x1="135" y1="300" x2="135" y2="460" 
             stroke="hsl(220, 80%, 55%)" strokeWidth="1.5"
             markerStart="url(#arrowUp)" markerEnd="url(#arrowDown)"
           />
@@ -531,7 +531,7 @@ export function VisionSystemDiagram({
 
         {/* Interactive Controller Element - positioned at bottom right, only show if controller is selected */}
         {hasController && (
-          <foreignObject x="340" y="430" width="140" height="80">
+          <foreignObject x="370" y="430" width="140" height="80">
             <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
               <HardwareSelectPopover
                 type="controller"
