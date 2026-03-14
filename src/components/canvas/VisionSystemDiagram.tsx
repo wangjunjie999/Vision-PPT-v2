@@ -376,8 +376,8 @@ export function VisionSystemDiagram({
 
         {/* ===== Dimension line - vertical (working distance) ===== */}
         <g>
-          {/* Top tick at light level */}
-          <line x1="120" y1="235" x2="150" y2="235" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
+          {/* Top tick at FOV origin level */}
+          <line x1="120" y1="290" x2="150" y2="290" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
           {/* Bottom tick at product top */}
           <line x1="120" y1="470" x2="150" y2="470" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
           {/* Vertical line with arrows */}
