@@ -124,11 +124,9 @@ function DraggableGroup({
       }}
       onPointerUp={(e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
-        objectClickedRef.current = true;
         pointerDownPos.current = null;
         hasDragStarted.current = false;
         dragState.current = { isDragging: false, objectId: null, startPoint: null, startPos: null };
-        setTimeout(() => { objectClickedRef.current = false; }, 0);
       }}
     >
       {children}
@@ -1327,7 +1325,7 @@ function DragPlane({
         objectClickedRef.current = false;
       }}
       onClick={(e: ThreeEvent<MouseEvent>) => {
-        if (!dragStateRef.current.isDragging && !dragMovedRef.current && !objectClickedRef.current && e.delta < 3) {
+        if (!dragStateRef.current.isDragging && !dragMovedRef.current && e.delta < 3) {
           e.stopPropagation();
           onDeselect();
         }
@@ -1533,6 +1531,13 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   });
   const dragMovedRef = useRef(false);
   const objectClickedRef = useRef(false);
+
+  // Global pointerup guard reset - ensures objectClickedRef never stays stuck
+  useEffect(() => {
+    const resetGuard = () => { objectClickedRef.current = false; };
+    window.addEventListener('pointerup', resetGuard);
+    return () => window.removeEventListener('pointerup', resetGuard);
+  }, []);
 
   const activeSelectedId = selectedObjectId !== undefined ? selectedObjectId : localSelectedId;
 
