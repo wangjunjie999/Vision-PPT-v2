@@ -377,20 +377,20 @@ export function VisionSystemDiagram({
         {/* ===== Dimension line - vertical (working distance) ===== */}
         <g>
           {/* Top tick at FOV origin level */}
-          <line x1="120" y1="290" x2="150" y2="290" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
+          <line x1="120" y1="280" x2="150" y2="280" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
           {/* Bottom tick at product top */}
-          <line x1="120" y1="470" x2="150" y2="470" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
+          <line x1="120" y1="420" x2="150" y2="420" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
           {/* Vertical line with arrows */}
           <line 
-            x1="135" y1="300" x2="135" y2="460" 
+            x1="135" y1="290" x2="135" y2="410" 
             stroke="hsl(220, 80%, 55%)" strokeWidth="1.5"
             markerStart="url(#arrowUp)" markerEnd="url(#arrowDown)"
           />
           {/* Distance label */}
           <text 
-            x="118" y="355" textAnchor="middle" fill="#ffffff"
+            x="118" y="350" textAnchor="middle" fill="#ffffff"
             style={{ fontSize: '11px', fontWeight: 500 }}
-            transform="rotate(-90, 118, 355)"
+            transform="rotate(-90, 118, 350)"
           >
             {lightDistance}±20mm
           </text>
