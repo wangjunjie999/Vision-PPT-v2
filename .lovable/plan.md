@@ -1,44 +1,41 @@
 
 
-# FOV 输入改为两个独立数值框
+# 光学方案图显示验证与修复
 
-## 问题
+## 发现的问题
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+### 1. 控制台 ref 警告
+`HardwareSelectPopover` 中 `PopoverTrigger asChild` 尝试向子元素传递 ref，但子 `div` 嵌套在函数组件结构中导致 React 发出 "Function components cannot be given refs" 警告。需要确保 PopoverTrigger 的直接子元素能正确接收 ref。
 
-## 修改方案
+### 2. 光源条与安装支架重叠
+- 光源 foreignObject: y=215, h=32 → 结束于 y=247
+- 安装支架: y=240-270
+- 两者有 7px 重叠，支架被光源的 foreignObject 遮挡
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+### 3. 连接引线指向偏移
+L414-418 的三条虚线连接线指向的 y 坐标与重构后的元素位置不完全匹配（相机中心约 y=77，镜头中心约 y=151，光源中心约 y=231）。
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
+## 修复方案
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+### 文件: `src/components/canvas/VisionSystemDiagram.tsx`
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+1. **修复 ref 传递** — 将 `HardwareSelectPopover` 内部的触发 `div` 改用 `React.forwardRef` 包装，或在 `PopoverTrigger` 内直接使用 `button` 元素（原生 HTML 元素天然接受 ref）。
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+2. **调整安装支架位置** — 将支架 y 坐标从 240/250 下移至 260/265，避免与光源 foreignObject 重叠：
+   ```
+   // 水平杆: y=250→265
+   // 垂直杆: y=240→258
+   // 安装孔: cy=255→270
+   ```
 
-```
-[宽度输入] × [高度输入]
-```
+3. **修正连接引线坐标** — 更新三条虚线的起点 y 坐标，使其准确指向相机、镜头、光源的中心位置：
+   ```
+   相机线: y1=70 → y1=77
+   镜头线: y1=170 → y1=151
+   光源线: y1=235 → y1=231
+   ```
 
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+## 改动范围
 
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+- `src/components/canvas/VisionSystemDiagram.tsx`：约 15 行调整（支架坐标、引线坐标、ref 修复）
 
