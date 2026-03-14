@@ -301,75 +301,75 @@ export function VisionSystemDiagram({
 
         {/* Blue dashed outer border */}
         <rect 
-          x="60" y="15" width="430" height="530" rx="8"
+          x="60" y="20" width="430" height="490" rx="8"
           fill="none" stroke="hsl(220, 80%, 55%)" strokeWidth="1.5" strokeDasharray="8,4"
           opacity="0.5"
         />
 
         {/* Background grid - subtle */}
         <g opacity="0.06">
-          {Array.from({ length: 14 }).map((_, i) => (
-            <line key={`h${i}`} x1="60" y1={15 + i * 40} x2="490" y2={15 + i * 40} stroke="#ffffff" strokeWidth="0.5" />
+          {Array.from({ length: 13 }).map((_, i) => (
+            <line key={`h${i}`} x1="60" y1={20 + i * 40} x2="490" y2={20 + i * 40} stroke="#ffffff" strokeWidth="0.5" />
           ))}
           {Array.from({ length: 12 }).map((_, i) => (
-            <line key={`v${i}`} x1={60 + i * 40} y1="15" x2={60 + i * 40} y2="545" stroke="#ffffff" strokeWidth="0.5" />
+            <line key={`v${i}`} x1={60 + i * 40} y1="20" x2={60 + i * 40} y2="510" stroke="#ffffff" strokeWidth="0.5" />
           ))}
         </g>
 
         {/* ===== FOV Cone - saturated purple, from below bracket to product ===== */}
         <polygon 
-          points={`275,290 ${275 - fovOffsetX},470 ${275 + fovOffsetX},470`}
+          points={`275,280 ${275 - fovOffsetX},420 ${275 + fovOffsetX},420`}
           fill="hsl(270, 60%, 50%)"
           opacity="0.18"
         />
         <line 
-          x1="275" y1="290" x2={275 - fovOffsetX} y2="470" 
+          x1="275" y1="280" x2={275 - fovOffsetX} y2="420" 
           stroke="hsl(270, 50%, 60%)" strokeWidth="1.5" strokeDasharray="6,3" opacity="0.6"
         />
         <line 
-          x1="275" y1="290" x2={275 + fovOffsetX} y2="470" 
+          x1="275" y1="280" x2={275 + fovOffsetX} y2="420" 
           stroke="hsl(270, 50%, 60%)" strokeWidth="1.5" strokeDasharray="6,3" opacity="0.6"
         />
         {/* FOV angle arc */}
         <path 
-          d={`M ${275 - 20} 305 A 25 25 0 0 1 ${275 + 20} 305`}
+          d={`M ${275 - 20} 295 A 25 25 0 0 1 ${275 + 20} 295`}
           fill="none" stroke="hsl(270, 50%, 60%)" strokeWidth="1.5"
         />
-        <text x="310" y="302" textAnchor="start" fill="#ffffff" style={{ fontSize: '11px', fontWeight: 500 }}>
+        <text x="310" y="292" textAnchor="start" fill="#ffffff" style={{ fontSize: '11px', fontWeight: 500 }}>
           {fovAngle}°
         </text>
 
         {/* ===== Camera Mounting Bracket - gray cross shape ===== */}
         <g>
           {/* Horizontal bar */}
-          <rect x="195" y="275" width="160" height="10" rx="2" fill="hsl(0, 0%, 50%)" />
+          <rect x="195" y="260" width="160" height="10" rx="2" fill="hsl(0, 0%, 50%)" />
           {/* Vertical bar */}
-          <rect x="265" y="268" width="20" height="24" rx="2" fill="hsl(0, 0%, 50%)" />
+          <rect x="265" y="253" width="20" height="24" rx="2" fill="hsl(0, 0%, 50%)" />
           {/* Mounting holes */}
-          <circle cx="215" cy="280" r="3" fill="hsl(0, 0%, 35%)" />
-          <circle cx="335" cy="280" r="3" fill="hsl(0, 0%, 35%)" />
+          <circle cx="215" cy="265" r="3" fill="hsl(0, 0%, 35%)" />
+          <circle cx="335" cy="265" r="3" fill="hsl(0, 0%, 35%)" />
         </g>
 
         {/* ===== Detection point on product surface ===== */}
         <g>
-          <circle cx="275" cy="485" r="5" fill="hsl(220, 80%, 55%)" />
-          <circle cx="275" cy="485" r="8" fill="none" stroke="hsl(220, 80%, 55%)" strokeWidth="1" opacity="0.5" />
+          <circle cx="275" cy="435" r="5" fill="hsl(220, 80%, 55%)" />
+          <circle cx="275" cy="435" r="8" fill="none" stroke="hsl(220, 80%, 55%)" strokeWidth="1" opacity="0.5" />
           {/* Leader line */}
-          <line x1="283" y1="485" x2="340" y2="485" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
-          <text x="345" y="488" fill="hsl(220, 80%, 70%)" style={{ fontSize: '10px' }}>检测点</text>
+          <line x1="283" y1="435" x2="340" y2="435" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
+          <text x="345" y="438" fill="hsl(220, 80%, 70%)" style={{ fontSize: '10px' }}>检测点</text>
         </g>
 
         {/* ===== Product - gray rectangle ===== */}
         <g>
-          <rect x="200" y="470" width="150" height="40" rx="3" fill="hsl(0, 0%, 40%)" />
-          <rect x="200" y="470" width="150" height="40" rx="3" fill="none" stroke="hsl(0, 0%, 50%)" strokeWidth="1" />
+          <rect x="200" y="420" width="150" height="40" rx="3" fill="hsl(0, 0%, 40%)" />
+          <rect x="200" y="420" width="150" height="40" rx="3" fill="none" stroke="hsl(0, 0%, 50%)" strokeWidth="1" />
           {/* ROI indicator */}
           <rect 
-            x={roiStrategy === 'full' ? 205 : 225} y="474" 
+            x={roiStrategy === 'full' ? 205 : 225} y="424" 
             width={roiStrategy === 'full' ? 140 : 100} height="32" rx="2"
             fill="none" stroke="hsl(120, 70%, 50%)" strokeWidth="1.5" strokeDasharray="4,2" opacity="0.7"
           />
-          <text x="275" y="493" textAnchor="middle" fill="#ffffff" style={{ fontSize: '10px', fontWeight: 500 }}>
+          <text x="275" y="443" textAnchor="middle" fill="#ffffff" style={{ fontSize: '10px', fontWeight: 500 }}>
             产品
           </text>
         </g>
@@ -377,20 +377,20 @@ export function VisionSystemDiagram({
         {/* ===== Dimension line - vertical (working distance) ===== */}
         <g>
           {/* Top tick at FOV origin level */}
-          <line x1="120" y1="290" x2="150" y2="290" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
+          <line x1="120" y1="280" x2="150" y2="280" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
           {/* Bottom tick at product top */}
-          <line x1="120" y1="470" x2="150" y2="470" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
+          <line x1="120" y1="420" x2="150" y2="420" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
           {/* Vertical line with arrows */}
           <line 
-            x1="135" y1="300" x2="135" y2="460" 
+            x1="135" y1="290" x2="135" y2="410" 
             stroke="hsl(220, 80%, 55%)" strokeWidth="1.5"
             markerStart="url(#arrowUp)" markerEnd="url(#arrowDown)"
           />
           {/* Distance label */}
           <text 
-            x="118" y="355" textAnchor="middle" fill="#ffffff"
+            x="118" y="350" textAnchor="middle" fill="#ffffff"
             style={{ fontSize: '11px', fontWeight: 500 }}
-            transform="rotate(-90, 118, 355)"
+            transform="rotate(-90, 118, 350)"
           >
             {lightDistance}±20mm
           </text>
@@ -398,14 +398,14 @@ export function VisionSystemDiagram({
 
         {/* ===== FOV width dimension ===== */}
         <g>
-          <line x1={275 - fovOffsetX} y1="515" x2={275 - fovOffsetX} y2="528" stroke="hsl(220, 80%, 55%)" strokeWidth="1" />
-          <line x1={275 + fovOffsetX} y1="515" x2={275 + fovOffsetX} y2="528" stroke="hsl(220, 80%, 55%)" strokeWidth="1" />
+          <line x1={275 - fovOffsetX} y1="465" x2={275 - fovOffsetX} y2="478" stroke="hsl(220, 80%, 55%)" strokeWidth="1" />
+          <line x1={275 + fovOffsetX} y1="465" x2={275 + fovOffsetX} y2="478" stroke="hsl(220, 80%, 55%)" strokeWidth="1" />
           <line 
-            x1={275 - fovOffsetX + 8} y1="523" x2={275 + fovOffsetX - 8} y2="523"
+            x1={275 - fovOffsetX + 8} y1="473" x2={275 + fovOffsetX - 8} y2="473"
             stroke="hsl(220, 80%, 55%)" strokeWidth="1.5"
             markerStart="url(#arrowLeft)" markerEnd="url(#arrowRight)"
           />
-          <text x="275" y="540" textAnchor="middle" fill="#ffffff" style={{ fontSize: '10px' }}>
+          <text x="275" y="492" textAnchor="middle" fill="#ffffff" style={{ fontSize: '10px' }}>
             视野宽度 ~{Math.round(fovOffsetX * 2)}mm
           </text>
         </g>
@@ -531,7 +531,7 @@ export function VisionSystemDiagram({
 
         {/* Interactive Controller Element - positioned at bottom right, only show if controller is selected */}
         {hasController && (
-          <foreignObject x="370" y="430" width="140" height="80">
+          <foreignObject x="370" y="385" width="140" height="80">
             <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
               <HardwareSelectPopover
                 type="controller"
@@ -590,7 +590,7 @@ export function VisionSystemDiagram({
         )}
 
         {/* Annotations in SVG - moved further right */}
-        <foreignObject x="500" y="20" width="290" height="720">
+        <foreignObject x="500" y="20" width="290" height="680">
           <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px', transform: 'translateZ(0)' }}>
             {/* Camera specs */}
             <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 28%)' }}>
