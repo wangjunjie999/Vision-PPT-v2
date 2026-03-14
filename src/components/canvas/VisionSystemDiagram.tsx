@@ -457,7 +457,7 @@ export function VisionSystemDiagram({
 
         {/* ===== Interactive Lens Element ===== */}
         <foreignObject x="227" y="120" width="96" height="62">
-           <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: '100%', height: '100%', backgroundColor: 'transparent', transform: 'translateZ(0)' }}>
+           <div style={{ width: '100%', height: '100%', backgroundColor: 'transparent', transform: 'translateZ(0)' }}>
             <HardwareSelectPopover
               type="lens"
               items={lenses}
