@@ -1534,6 +1534,13 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   const dragMovedRef = useRef(false);
   const objectClickedRef = useRef(false);
 
+  // Global pointerup guard reset - ensures objectClickedRef never stays stuck
+  useEffect(() => {
+    const resetGuard = () => { objectClickedRef.current = false; };
+    window.addEventListener('pointerup', resetGuard);
+    return () => window.removeEventListener('pointerup', resetGuard);
+  }, []);
+
   const activeSelectedId = selectedObjectId !== undefined ? selectedObjectId : localSelectedId;
 
   const relatedIds = useMemo(() => getRelatedIds(activeSelectedId, objects), [activeSelectedId, objects]);
