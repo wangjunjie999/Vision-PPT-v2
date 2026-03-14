@@ -382,7 +382,7 @@ export function VisionSystemDiagram({
           <line x1="120" y1="470" x2="150" y2="470" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
           {/* Vertical line with arrows */}
           <line 
-            x1="135" y1="245" x2="135" y2="460" 
+            x1="135" y1="300" x2="135" y2="460" 
             stroke="hsl(220, 80%, 55%)" strokeWidth="1.5"
             markerStart="url(#arrowUp)" markerEnd="url(#arrowDown)"
           />
