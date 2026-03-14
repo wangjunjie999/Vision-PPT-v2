@@ -352,24 +352,24 @@ export function VisionSystemDiagram({
 
         {/* ===== Detection point on product surface ===== */}
         <g>
-          <circle cx="275" cy="485" r="5" fill="hsl(220, 80%, 55%)" />
-          <circle cx="275" cy="485" r="8" fill="none" stroke="hsl(220, 80%, 55%)" strokeWidth="1" opacity="0.5" />
+          <circle cx="275" cy="435" r="5" fill="hsl(220, 80%, 55%)" />
+          <circle cx="275" cy="435" r="8" fill="none" stroke="hsl(220, 80%, 55%)" strokeWidth="1" opacity="0.5" />
           {/* Leader line */}
-          <line x1="283" y1="485" x2="340" y2="485" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
-          <text x="345" y="488" fill="hsl(220, 80%, 70%)" style={{ fontSize: '10px' }}>检测点</text>
+          <line x1="283" y1="435" x2="340" y2="435" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
+          <text x="345" y="438" fill="hsl(220, 80%, 70%)" style={{ fontSize: '10px' }}>检测点</text>
         </g>
 
         {/* ===== Product - gray rectangle ===== */}
         <g>
-          <rect x="200" y="470" width="150" height="40" rx="3" fill="hsl(0, 0%, 40%)" />
-          <rect x="200" y="470" width="150" height="40" rx="3" fill="none" stroke="hsl(0, 0%, 50%)" strokeWidth="1" />
+          <rect x="200" y="420" width="150" height="40" rx="3" fill="hsl(0, 0%, 40%)" />
+          <rect x="200" y="420" width="150" height="40" rx="3" fill="none" stroke="hsl(0, 0%, 50%)" strokeWidth="1" />
           {/* ROI indicator */}
           <rect 
-            x={roiStrategy === 'full' ? 205 : 225} y="474" 
+            x={roiStrategy === 'full' ? 205 : 225} y="424" 
             width={roiStrategy === 'full' ? 140 : 100} height="32" rx="2"
             fill="none" stroke="hsl(120, 70%, 50%)" strokeWidth="1.5" strokeDasharray="4,2" opacity="0.7"
           />
-          <text x="275" y="493" textAnchor="middle" fill="#ffffff" style={{ fontSize: '10px', fontWeight: 500 }}>
+          <text x="275" y="443" textAnchor="middle" fill="#ffffff" style={{ fontSize: '10px', fontWeight: 500 }}>
             产品
           </text>
         </g>
