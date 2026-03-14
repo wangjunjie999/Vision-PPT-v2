@@ -53,6 +53,31 @@ export function getMechanismSurfaceHeight(mechType: string, mechHeight: number):
   }
 }
 
+// Returns precise 3D offset (mm) for camera mounting on a mechanism
+export function getCameraMountPosition(
+  mechType: string,
+  mountPointId: string,
+  mechDims: { width: number; height: number; depth: number }
+): { offsetX: number; offsetY: number; offsetZ: number } {
+  switch (mechType) {
+    case 'camera_mount':
+      return { offsetX: 0, offsetY: 0, offsetZ: mechDims.height * 0.90 }; // top plate
+    case 'robot_arm':
+      if (mountPointId === 'arm_end') {
+        return { offsetX: mechDims.width * 0.35, offsetY: 0, offsetZ: mechDims.height * 0.80 }; // flange end
+      }
+      return { offsetX: mechDims.width * 0.25, offsetY: 0, offsetZ: mechDims.height * 0.60 }; // wrist
+    case 'conveyor':
+      return { offsetX: 0, offsetY: 0, offsetZ: mechDims.height * 0.75 }; // above belt
+    case 'turntable':
+      return { offsetX: 0, offsetY: 0, offsetZ: mechDims.height * 0.65 }; // above disc
+    case 'lift':
+      return { offsetX: 0, offsetY: 0, offsetZ: mechDims.height * 0.75 }; // above platform
+    default:
+      return { offsetX: 0, offsetY: 0, offsetZ: mechDims.height }; // top
+  }
+}
+
 // Shared drag state across components
 interface DragState {
   isDragging: boolean;
