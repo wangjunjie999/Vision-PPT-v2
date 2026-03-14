@@ -1324,6 +1324,7 @@ function DragPlane({
           e.stopPropagation();
           onDragEnd();
         }
+        objectClickedRef.current = false;
       }}
       onClick={(e: ThreeEvent<MouseEvent>) => {
         if (!dragStateRef.current.isDragging && !dragMovedRef.current && !objectClickedRef.current && e.delta < 3) {
@@ -1625,6 +1626,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       startPoint: null,
       startPos: null,
     };
+    objectClickedRef.current = false;
     setTimeout(() => { dragMovedRef.current = false; }, 0);
   }, []);
 
