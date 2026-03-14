@@ -342,12 +342,12 @@ export function VisionSystemDiagram({
         {/* ===== Camera Mounting Bracket - gray cross shape ===== */}
         <g>
           {/* Horizontal bar */}
-          <rect x="195" y="275" width="160" height="10" rx="2" fill="hsl(0, 0%, 50%)" />
+          <rect x="195" y="260" width="160" height="10" rx="2" fill="hsl(0, 0%, 50%)" />
           {/* Vertical bar */}
-          <rect x="265" y="268" width="20" height="24" rx="2" fill="hsl(0, 0%, 50%)" />
+          <rect x="265" y="253" width="20" height="24" rx="2" fill="hsl(0, 0%, 50%)" />
           {/* Mounting holes */}
-          <circle cx="215" cy="280" r="3" fill="hsl(0, 0%, 35%)" />
-          <circle cx="335" cy="280" r="3" fill="hsl(0, 0%, 35%)" />
+          <circle cx="215" cy="265" r="3" fill="hsl(0, 0%, 35%)" />
+          <circle cx="335" cy="265" r="3" fill="hsl(0, 0%, 35%)" />
         </g>
 
         {/* ===== Detection point on product surface ===== */}
