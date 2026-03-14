@@ -524,7 +524,7 @@ export function VisionSystemDiagram({
                     <span className="text-xs text-muted-foreground">点击选择</span>
                   </div>
                 )}
-              </div>
+              </button>
             </HardwareSelectPopover>
           </div>
         </foreignObject>
