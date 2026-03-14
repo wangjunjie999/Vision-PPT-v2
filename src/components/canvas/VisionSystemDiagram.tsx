@@ -398,14 +398,14 @@ export function VisionSystemDiagram({
 
         {/* ===== FOV width dimension ===== */}
         <g>
-          <line x1={275 - fovOffsetX} y1="515" x2={275 - fovOffsetX} y2="528" stroke="hsl(220, 80%, 55%)" strokeWidth="1" />
-          <line x1={275 + fovOffsetX} y1="515" x2={275 + fovOffsetX} y2="528" stroke="hsl(220, 80%, 55%)" strokeWidth="1" />
+          <line x1={275 - fovOffsetX} y1="465" x2={275 - fovOffsetX} y2="478" stroke="hsl(220, 80%, 55%)" strokeWidth="1" />
+          <line x1={275 + fovOffsetX} y1="465" x2={275 + fovOffsetX} y2="478" stroke="hsl(220, 80%, 55%)" strokeWidth="1" />
           <line 
-            x1={275 - fovOffsetX + 8} y1="523" x2={275 + fovOffsetX - 8} y2="523"
+            x1={275 - fovOffsetX + 8} y1="473" x2={275 + fovOffsetX - 8} y2="473"
             stroke="hsl(220, 80%, 55%)" strokeWidth="1.5"
             markerStart="url(#arrowLeft)" markerEnd="url(#arrowRight)"
           />
-          <text x="275" y="540" textAnchor="middle" fill="#ffffff" style={{ fontSize: '10px' }}>
+          <text x="275" y="492" textAnchor="middle" fill="#ffffff" style={{ fontSize: '10px' }}>
             视野宽度 ~{Math.round(fovOffsetX * 2)}mm
           </text>
         </g>
