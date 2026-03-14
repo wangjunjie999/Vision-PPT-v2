@@ -299,192 +299,126 @@ export function VisionSystemDiagram({
           </marker>
         </defs>
 
-        {/* Background grid */}
-        <g opacity="0.1">
-          {Array.from({ length: 15 }).map((_, i) => (
-            <line key={`h${i}`} x1="0" y1={i * 40} x2="700" y2={i * 40} stroke="currentColor" strokeWidth="0.5" />
-          ))}
-          {Array.from({ length: 18 }).map((_, i) => (
-            <line key={`v${i}`} x1={i * 40} y1="0" x2={i * 40} y2="550" stroke="currentColor" strokeWidth="0.5" />
-          ))}
-        </g>
-
-        {/* Camera FOV (Field of View) visualization */}
-        <g>
-          <polygon 
-            points={`220,130 ${220 - fovOffsetX},${130 + fovLength} ${220 + fovOffsetX},${130 + fovLength}`}
-            fill="url(#fovGradient)"
-          />
-          <line 
-            x1="220" y1="130" 
-            x2={220 - fovOffsetX} y2={130 + fovLength} 
-            stroke="hsl(220, 80%, 60%)" 
-            strokeWidth="1.5" 
-            strokeDasharray="8,4"
-            opacity="0.7"
-          />
-          <line 
-            x1="220" y1="130" 
-            x2={220 + fovOffsetX} y2={130 + fovLength} 
-            stroke="hsl(220, 80%, 60%)" 
-            strokeWidth="1.5" 
-            strokeDasharray="8,4"
-            opacity="0.7"
-          />
-          {/* FOV angle arc - moved up to avoid overlap */}
-          <path 
-            d={`M ${220 - 25} 145 A 30 30 0 0 1 ${220 + 25} 145`}
-            fill="none"
-            stroke="hsl(220, 80%, 60%)"
-            strokeWidth="1.5"
-          />
-          {/* FOV angle label - positioned outside the arc, above the lens */}
-          <text x="280" y="130" textAnchor="start" fill="#ffffff" style={{ fontSize: '11px', fontWeight: 500 }}>
-            {fovAngle}°
-          </text>
-          {/* Connector line from arc to label */}
-          <line x1="245" y1="140" x2="275" y2="132" stroke="hsl(220, 80%, 60%)" strokeWidth="1" strokeDasharray="2,2" opacity="0.6" />
-        </g>
-
-        {/* Light illumination zone on product */}
-        <ellipse 
-          cx="220" 
-          cy="475" 
-          rx="100" 
-          ry="25" 
-          fill="url(#lightZone)"
-          opacity="0.8"
+        {/* Blue dashed outer border */}
+        <rect 
+          x="60" y="15" width="430" height="530" rx="8"
+          fill="none" stroke="hsl(220, 80%, 55%)" strokeWidth="1.5" strokeDasharray="8,4"
+          opacity="0.5"
         />
 
-        {/* Light cone / rays */}
+        {/* Background grid - subtle */}
+        <g opacity="0.06">
+          {Array.from({ length: 14 }).map((_, i) => (
+            <line key={`h${i}`} x1="60" y1={15 + i * 40} x2="490" y2={15 + i * 40} stroke="#ffffff" strokeWidth="0.5" />
+          ))}
+          {Array.from({ length: 12 }).map((_, i) => (
+            <line key={`v${i}`} x1={60 + i * 40} y1="15" x2={60 + i * 40} y2="545" stroke="#ffffff" strokeWidth="0.5" />
+          ))}
+        </g>
+
+        {/* ===== FOV Cone - saturated purple, from lens bottom to product ===== */}
         <polygon 
-          points="220,235 120,460 320,460" 
-          fill="url(#lightCone)"
+          points={`275,210 ${275 - fovOffsetX},470 ${275 + fovOffsetX},470`}
+          fill="hsl(270, 60%, 50%)"
+          opacity="0.18"
         />
-        
-        {/* Light ray lines */}
-        <g stroke="hsl(270, 50%, 70%)" strokeWidth="0.5" opacity="0.4">
-          <line x1="220" y1="235" x2="140" y2="460" />
-          <line x1="220" y1="235" x2="170" y2="460" />
-          <line x1="220" y1="235" x2="200" y2="460" />
-          <line x1="220" y1="235" x2="240" y2="460" />
-          <line x1="220" y1="235" x2="270" y2="460" />
-          <line x1="220" y1="235" x2="300" y2="460" />
+        <line 
+          x1="275" y1="210" x2={275 - fovOffsetX} y2="470" 
+          stroke="hsl(270, 50%, 60%)" strokeWidth="1.5" strokeDasharray="6,3" opacity="0.6"
+        />
+        <line 
+          x1="275" y1="210" x2={275 + fovOffsetX} y2="470" 
+          stroke="hsl(270, 50%, 60%)" strokeWidth="1.5" strokeDasharray="6,3" opacity="0.6"
+        />
+        {/* FOV angle arc */}
+        <path 
+          d={`M ${275 - 20} 225 A 25 25 0 0 1 ${275 + 20} 225`}
+          fill="none" stroke="hsl(270, 50%, 60%)" strokeWidth="1.5"
+        />
+        <text x="310" y="222" textAnchor="start" fill="#ffffff" style={{ fontSize: '11px', fontWeight: 500 }}>
+          {fovAngle}°
+        </text>
+
+        {/* ===== Camera Mounting Bracket - gray cross shape ===== */}
+        <g>
+          {/* Horizontal bar */}
+          <rect x="195" y="250" width="160" height="10" rx="2" fill="hsl(0, 0%, 50%)" />
+          {/* Vertical bar */}
+          <rect x="265" y="240" width="20" height="30" rx="2" fill="hsl(0, 0%, 50%)" />
+          {/* Mounting holes */}
+          <circle cx="215" cy="255" r="3" fill="hsl(0, 0%, 35%)" />
+          <circle cx="335" cy="255" r="3" fill="hsl(0, 0%, 35%)" />
         </g>
 
-        {/* Focus point indicator */}
-        <g transform="translate(220, 340)">
-          <circle r="8" fill="hsl(220, 80%, 50%)" opacity="0.2" />
-          <circle r="4" fill="hsl(220, 80%, 50%)" />
-          <line x1="-12" y1="0" x2="-6" y2="0" stroke="hsl(220, 80%, 50%)" strokeWidth="1.5" />
-          <line x1="6" y1="0" x2="12" y2="0" stroke="hsl(220, 80%, 50%)" strokeWidth="1.5" />
-          <line x1="0" y1="-12" x2="0" y2="-6" stroke="hsl(220, 80%, 50%)" strokeWidth="1.5" />
-          <line x1="0" y1="6" x2="0" y2="12" stroke="hsl(220, 80%, 50%)" strokeWidth="1.5" />
+        {/* ===== Detection point on product surface ===== */}
+        <g>
+          <circle cx="275" cy="485" r="5" fill="hsl(220, 80%, 55%)" />
+          <circle cx="275" cy="485" r="8" fill="none" stroke="hsl(220, 80%, 55%)" strokeWidth="1" opacity="0.5" />
+          {/* Leader line */}
+          <line x1="283" y1="485" x2="340" y2="485" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
+          <text x="345" y="488" fill="hsl(220, 80%, 70%)" style={{ fontSize: '10px' }}>检测点</text>
         </g>
 
-        {/* Product with ROI indicator */}
-        <g transform="translate(155, 460)">
+        {/* ===== Product - gray rectangle ===== */}
+        <g>
+          <rect x="200" y="470" width="150" height="40" rx="3" fill="hsl(0, 0%, 40%)" />
+          <rect x="200" y="470" width="150" height="40" rx="3" fill="none" stroke="hsl(0, 0%, 50%)" strokeWidth="1" />
+          {/* ROI indicator */}
           <rect 
-            x="0" 
-            y="0" 
-            width="130" 
-            height="45" 
-            rx="3"
-            fill="url(#productBody)"
+            x={roiStrategy === 'full' ? 205 : 225} y="474" 
+            width={roiStrategy === 'full' ? 140 : 100} height="32" rx="2"
+            fill="none" stroke="hsl(120, 70%, 50%)" strokeWidth="1.5" strokeDasharray="4,2" opacity="0.7"
           />
-          {/* ROI indicator on product surface */}
-          <rect 
-            x={roiStrategy === 'full' ? 5 : 25} 
-            y="5" 
-            width={roiStrategy === 'full' ? 120 : 80} 
-            height="35" 
-            rx="2"
-            fill="none"
-            stroke="hsl(120, 70%, 50%)"
-            strokeWidth="1.5"
-            strokeDasharray="4,2"
-            opacity="0.8"
-          />
-          {/* ROI corner markers */}
-          <g stroke="hsl(120, 70%, 50%)" strokeWidth="2" opacity="0.9">
-            {/* Top-left corner */}
-            <path d={`M ${roiStrategy === 'full' ? 5 : 25} 12 L ${roiStrategy === 'full' ? 5 : 25} 5 L ${roiStrategy === 'full' ? 12 : 32} 5`} fill="none" />
-            {/* Top-right corner */}
-            <path d={`M ${roiStrategy === 'full' ? 118 : 98} 5 L ${roiStrategy === 'full' ? 125 : 105} 5 L ${roiStrategy === 'full' ? 125 : 105} 12`} fill="none" />
-            {/* Bottom-left corner */}
-            <path d={`M ${roiStrategy === 'full' ? 5 : 25} 33 L ${roiStrategy === 'full' ? 5 : 25} 40 L ${roiStrategy === 'full' ? 12 : 32} 40`} fill="none" />
-            {/* Bottom-right corner */}
-            <path d={`M ${roiStrategy === 'full' ? 118 : 98} 40 L ${roiStrategy === 'full' ? 125 : 105} 40 L ${roiStrategy === 'full' ? 125 : 105} 33`} fill="none" />
-          </g>
-          {/* ROI label */}
-          <text 
-            x="65" 
-            y="26" 
-            textAnchor="middle" 
-            fill="#ffffff" 
-            style={{ fontSize: '9px', fontWeight: 500 }}
-          >
-            ROI
-          </text>
-          <text x="65" y="55" textAnchor="middle" fill="#ffffff" style={{ fontSize: '9px' }}>
-            待检测产品
+          <text x="275" y="493" textAnchor="middle" fill="#ffffff" style={{ fontSize: '10px', fontWeight: 500 }}>
+            产品
           </text>
         </g>
 
-        {/* Dimension line - vertical */}
-        <g transform="translate(70, 0)">
-          <line x1="0" y1="215" x2="35" y2="215" stroke="hsl(220, 80%, 50%)" strokeWidth="1" />
-          <line x1="0" y1="480" x2="35" y2="480" stroke="hsl(220, 80%, 50%)" strokeWidth="1" />
+        {/* ===== Dimension line - vertical (working distance) ===== */}
+        <g>
+          {/* Top tick at light level */}
+          <line x1="120" y1="235" x2="150" y2="235" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
+          {/* Bottom tick at product top */}
+          <line x1="120" y1="470" x2="150" y2="470" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
+          {/* Vertical line with arrows */}
           <line 
-            x1="18" 
-            y1="225" 
-            x2="18" 
-            y2="470" 
-            stroke="hsl(220, 80%, 50%)" 
-            strokeWidth="1.5"
-            markerStart="url(#arrowUp)"
-            markerEnd="url(#arrowDown)"
+            x1="135" y1="245" x2="135" y2="460" 
+            stroke="hsl(220, 80%, 55%)" strokeWidth="1.5"
+            markerStart="url(#arrowUp)" markerEnd="url(#arrowDown)"
           />
+          {/* Distance label */}
           <text 
-            x="0" 
-            y="350" 
-            textAnchor="middle" 
-            fill="#ffffff"
-            style={{ fontSize: '12px', fontWeight: 500 }}
-            transform="rotate(-90, 0, 350)"
+            x="118" y="355" textAnchor="middle" fill="#ffffff"
+            style={{ fontSize: '11px', fontWeight: 500 }}
+            transform="rotate(-90, 118, 355)"
           >
             {lightDistance}±20mm
           </text>
         </g>
 
-        {/* FOV width dimension */}
-        <g transform="translate(0, 515)">
-          <line x1={220 - fovOffsetX} y1="-10" x2={220 - fovOffsetX} y2="5" stroke="hsl(220, 80%, 50%)" strokeWidth="1" />
-          <line x1={220 + fovOffsetX} y1="-10" x2={220 + fovOffsetX} y2="5" stroke="hsl(220, 80%, 50%)" strokeWidth="1" />
+        {/* ===== FOV width dimension ===== */}
+        <g>
+          <line x1={275 - fovOffsetX} y1="515" x2={275 - fovOffsetX} y2="528" stroke="hsl(220, 80%, 55%)" strokeWidth="1" />
+          <line x1={275 + fovOffsetX} y1="515" x2={275 + fovOffsetX} y2="528" stroke="hsl(220, 80%, 55%)" strokeWidth="1" />
           <line 
-            x1={220 - fovOffsetX + 10} 
-            y1="0" 
-            x2={220 + fovOffsetX - 10} 
-            y2="0" 
-            stroke="hsl(220, 80%, 50%)" 
-            strokeWidth="1.5"
-            markerStart="url(#arrowLeft)"
-            markerEnd="url(#arrowRight)"
+            x1={275 - fovOffsetX + 8} y1="523" x2={275 + fovOffsetX - 8} y2="523"
+            stroke="hsl(220, 80%, 55%)" strokeWidth="1.5"
+            markerStart="url(#arrowLeft)" markerEnd="url(#arrowRight)"
           />
-          <text x="220" y="20" textAnchor="middle" fill="#ffffff" style={{ fontSize: '11px' }}>
+          <text x="275" y="540" textAnchor="middle" fill="#ffffff" style={{ fontSize: '10px' }}>
             视野宽度 ~{Math.round(fovOffsetX * 2)}mm
           </text>
         </g>
 
-        {/* Connection lines to annotations */}
-        <g stroke="hsl(220, 80%, 50%)" strokeWidth="1" strokeDasharray="4,2" opacity="0.6">
-          <line x1="265" y1="65" x2="395" y2="55" />
-          <line x1="268" y1="140" x2="395" y2="130" />
-          <line x1="290" y1="215" x2="395" y2="200" />
+        {/* Connection lines to annotation panel */}
+        <g stroke="hsl(220, 80%, 50%)" strokeWidth="1" strokeDasharray="4,2" opacity="0.5">
+          <line x1="320" y1="70" x2="495" y2="55" />
+          <line x1="323" y1="170" x2="495" y2="140" />
+          <line x1="360" y1="235" x2="495" y2="210" />
         </g>
 
-        {/* Interactive Camera Element - embedded in SVG */}
-        <foreignObject x="175" y="30" width="90" height="85">
+        {/* ===== Interactive Camera Element ===== */}
+        <foreignObject x="230" y="35" width="90" height="85">
           <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
             <HardwareSelectPopover
               type="camera"
@@ -493,15 +427,18 @@ export function VisionSystemDiagram({
               onSelect={onCameraSelect || (() => {})}
               disabled={!interactive || !onCameraSelect}
             >
-              <div className={cn(
-                "relative w-full h-full cursor-pointer group"
-              )}>
+              <div className={cn("relative w-full h-full cursor-pointer group")}>
                 <svg width="90" height="85" viewBox="0 0 90 85">
-                  <rect x="0" y="0" width="90" height="75" rx="6" fill="url(#cameraBody)" />
-                  <rect x="10" y="5" width="25" height="8" rx="2" fill="hsl(270, 30%, 60%)" opacity="0.5" />
-                  <circle cx="75" cy="12" r="4" fill="hsl(120, 70%, 50%)" />
-                  <text x="45" y="50" textAnchor="middle" fill="white" style={{ fontSize: '14px', fontWeight: 600 }}>Cam1</text>
-                  <rect x="30" y="75" width="30" height="10" fill="hsl(0, 0%, 25%)" />
+                  {/* Camera body - purple */}
+                  <rect x="0" y="0" width="90" height="72" rx="6" fill="url(#cameraBody)" />
+                  {/* Top label strip */}
+                  <rect x="8" y="5" width="28" height="8" rx="2" fill="hsl(270, 30%, 60%)" opacity="0.5" />
+                  {/* Green status LED */}
+                  <circle cx="76" cy="11" r="4" fill="hsl(120, 70%, 50%)" />
+                  {/* Cam1 label */}
+                  <text x="45" y="48" textAnchor="middle" fill="white" style={{ fontSize: '14px', fontWeight: 600 }}>Cam1</text>
+                  {/* Lens mount connector */}
+                  <rect x="32" y="72" width="26" height="13" fill="hsl(0, 0%, 22%)" />
                 </svg>
                 {interactive && onCameraSelect && (
                   <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -518,8 +455,8 @@ export function VisionSystemDiagram({
           </div>
         </foreignObject>
 
-        {/* Interactive Lens Element - embedded in SVG */}
-        <foreignObject x="172" y="115" width="96" height="62">
+        {/* ===== Interactive Lens Element ===== */}
+        <foreignObject x="227" y="120" width="96" height="62">
           <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
             <HardwareSelectPopover
               type="lens"
@@ -528,15 +465,17 @@ export function VisionSystemDiagram({
               onSelect={onLensSelect || (() => {})}
               disabled={!interactive || !onLensSelect}
             >
-              <div className={cn(
-                "relative w-full h-full cursor-pointer group"
-              )}>
+              <div className={cn("relative w-full h-full cursor-pointer group")}>
                 <svg width="96" height="62" viewBox="0 0 96 62">
-                  <rect x="8" y="0" width="80" height="50" rx="3" fill="url(#lensBody)" />
-                  <ellipse cx="48" cy="40" rx="25" ry="8" fill="url(#lensGlass)" />
-                  <rect x="0" y="45" width="96" height="12" rx="2" fill="hsl(0, 0%, 20%)" />
-                  <rect x="13" y="12" width="70" height="3" fill="hsl(30, 15%, 45%)" rx="1" />
-                  <rect x="13" y="28" width="70" height="3" fill="hsl(30, 15%, 45%)" rx="1" />
+                  {/* Lens body - dark brown */}
+                  <rect x="8" y="0" width="80" height="48" rx="3" fill="url(#lensBody)" />
+                  {/* Lens glass reflection */}
+                  <ellipse cx="48" cy="38" rx="22" ry="7" fill="url(#lensGlass)" />
+                  {/* Bottom ring - dark */}
+                  <rect x="0" y="44" width="96" height="12" rx="2" fill="hsl(0, 0%, 18%)" />
+                  {/* Grip rings */}
+                  <rect x="13" y="12" width="70" height="2.5" fill="hsl(30, 15%, 45%)" rx="1" />
+                  <rect x="13" y="26" width="70" height="2.5" fill="hsl(30, 15%, 45%)" rx="1" />
                 </svg>
                 {interactive && onLensSelect && (
                   <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -553,8 +492,8 @@ export function VisionSystemDiagram({
           </div>
         </foreignObject>
 
-        {/* Interactive Light Element - embedded in SVG */}
-        <foreignObject x="150" y="195" width="140" height="40">
+        {/* ===== Interactive Light Element - gray bar with red LED strips ===== */}
+        <foreignObject x="195" y="215" width="160" height="32">
           <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
             <HardwareSelectPopover
               type="light"
@@ -563,15 +502,17 @@ export function VisionSystemDiagram({
               onSelect={onLightSelect || (() => {})}
               disabled={!interactive || !onLightSelect}
             >
-              <div className={cn(
-                "relative w-full h-full cursor-pointer group"
-              )}>
-                <svg width="140" height="40" viewBox="0 0 140 40">
-                  <rect x="0" y="0" width="140" height="40" rx="6" fill="hsl(0, 0%, 45%)" />
-                  <rect x="5" y="5" width="130" height="30" rx="4" fill="hsl(0, 0%, 35%)" />
-                  <rect x="40" y="8" width="60" height="24" rx="3" fill="hsl(0, 0%, 15%)" />
-                  <rect x="10" y="12" width="25" height="16" fill="hsl(0, 75%, 50%)" rx="2" />
-                  <rect x="105" y="12" width="25" height="16" fill="hsl(0, 75%, 50%)" rx="2" />
+              <div className={cn("relative w-full h-full cursor-pointer group")}>
+                <svg width="160" height="32" viewBox="0 0 160 32">
+                  {/* Light bar body - gray */}
+                  <rect x="0" y="0" width="160" height="32" rx="4" fill="hsl(0, 0%, 45%)" />
+                  <rect x="3" y="3" width="154" height="26" rx="3" fill="hsl(0, 0%, 35%)" />
+                  {/* Center dark aperture */}
+                  <rect x="45" y="6" width="70" height="20" rx="3" fill="hsl(0, 0%, 12%)" />
+                  {/* Left red LED strip */}
+                  <rect x="8" y="8" width="32" height="16" rx="2" fill="hsl(0, 80%, 50%)" />
+                  {/* Right red LED strip */}
+                  <rect x="120" y="8" width="32" height="16" rx="2" fill="hsl(0, 80%, 50%)" />
                 </svg>
                 {interactive && onLightSelect && (
                   <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
