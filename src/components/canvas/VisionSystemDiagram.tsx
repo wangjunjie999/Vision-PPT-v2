@@ -412,9 +412,9 @@ export function VisionSystemDiagram({
 
         {/* Connection lines to annotation panel */}
         <g stroke="hsl(220, 80%, 50%)" strokeWidth="1" strokeDasharray="4,2" opacity="0.5">
-          <line x1="320" y1="70" x2="495" y2="55" />
-          <line x1="323" y1="170" x2="495" y2="140" />
-          <line x1="360" y1="235" x2="495" y2="210" />
+          <line x1="320" y1="77" x2="495" y2="55" />
+          <line x1="323" y1="151" x2="495" y2="140" />
+          <line x1="360" y1="231" x2="495" y2="210" />
         </g>
 
         {/* ===== Interactive Camera Element ===== */}
