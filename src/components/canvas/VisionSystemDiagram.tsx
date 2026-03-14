@@ -419,7 +419,7 @@ export function VisionSystemDiagram({
 
         {/* ===== Interactive Camera Element ===== */}
         <foreignObject x="230" y="35" width="90" height="85">
-          <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
+           <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: '100%', height: '100%', backgroundColor: 'transparent', transform: 'translateZ(0)' }}>
             <HardwareSelectPopover
               type="camera"
               items={cameras}
@@ -427,7 +427,7 @@ export function VisionSystemDiagram({
               onSelect={onCameraSelect || (() => {})}
               disabled={!interactive || !onCameraSelect}
             >
-              <button className={cn("relative w-full h-full cursor-pointer group bg-transparent border-0 p-0")}>
+              <button style={{ position: 'relative', width: '100%', height: '100%', cursor: 'pointer', backgroundColor: 'transparent', border: 'none', padding: 0 }} className="group">
                 <svg width="90" height="85" viewBox="0 0 90 85">
                   {/* Camera body - purple */}
                   <rect x="0" y="0" width="90" height="72" rx="6" fill="url(#cameraBody)" />
@@ -441,13 +441,13 @@ export function VisionSystemDiagram({
                   <rect x="32" y="72" width="26" height="13" fill="hsl(0, 0%, 22%)" />
                 </svg>
                 {interactive && onCameraSelect && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    <span className="text-primary-foreground text-xs">✎</span>
+                  <div style={{ position: 'absolute', top: -1, right: -1, width: 20, height: 20, backgroundColor: 'hsl(270, 60%, 50%)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, zIndex: 10 }} className="group-hover:opacity-100 transition-opacity">
+                    <span style={{ color: '#ffffff', fontSize: '12px' }}>✎</span>
                   </div>
                 )}
                 {!hasCamera && interactive && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded">
-                    <span className="text-xs text-muted-foreground">点击选择</span>
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(30, 41, 59, 0.5)', borderRadius: '4px' }}>
+                    <span style={{ fontSize: '12px', color: 'hsl(220, 15%, 60%)' }}>点击选择</span>
                   </div>
                 )}
               </button>
