@@ -590,7 +590,7 @@ export function VisionSystemDiagram({
         )}
 
         {/* Annotations in SVG - moved further right */}
-        <foreignObject x="500" y="20" width="290" height="720">
+        <foreignObject x="500" y="20" width="290" height="680">
           <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px', transform: 'translateZ(0)' }}>
             {/* Camera specs */}
             <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 28%)' }}>
