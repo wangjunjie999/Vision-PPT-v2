@@ -316,26 +316,26 @@ export function VisionSystemDiagram({
           ))}
         </g>
 
-        {/* ===== FOV Cone - saturated purple, from below bracket to product ===== */}
+        {/* ===== FOV Cone - saturated purple, from lens bottom through light & bracket to product ===== */}
         <polygon 
-          points={`275,280 ${275 - fovOffsetX},420 ${275 + fovOffsetX},420`}
+          points={`275,175 ${275 - fovOffsetX},420 ${275 + fovOffsetX},420`}
           fill="hsl(270, 60%, 50%)"
           opacity="0.18"
         />
         <line 
-          x1="275" y1="280" x2={275 - fovOffsetX} y2="420" 
+          x1="275" y1="175" x2={275 - fovOffsetX} y2="420" 
           stroke="hsl(270, 50%, 60%)" strokeWidth="1.5" strokeDasharray="6,3" opacity="0.6"
         />
         <line 
-          x1="275" y1="280" x2={275 + fovOffsetX} y2="420" 
+          x1="275" y1="175" x2={275 + fovOffsetX} y2="420" 
           stroke="hsl(270, 50%, 60%)" strokeWidth="1.5" strokeDasharray="6,3" opacity="0.6"
         />
         {/* FOV angle arc */}
         <path 
-          d={`M ${275 - 20} 295 A 25 25 0 0 1 ${275 + 20} 295`}
+          d={`M ${275 - 15} 190 A 20 20 0 0 1 ${275 + 15} 190`}
           fill="none" stroke="hsl(270, 50%, 60%)" strokeWidth="1.5"
         />
-        <text x="310" y="292" textAnchor="start" fill="#ffffff" style={{ fontSize: '11px', fontWeight: 500 }}>
+        <text x="300" y="187" textAnchor="start" fill="#ffffff" style={{ fontSize: '11px', fontWeight: 500 }}>
           {fovAngle}°
         </text>
 
