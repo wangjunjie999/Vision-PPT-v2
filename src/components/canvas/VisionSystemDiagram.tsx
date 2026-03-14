@@ -532,7 +532,7 @@ export function VisionSystemDiagram({
         {/* Interactive Controller Element - positioned at bottom right, only show if controller is selected */}
         {hasController && (
           <foreignObject x="370" y="385" width="140" height="80">
-            <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
+             <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: '100%', height: '100%', backgroundColor: 'transparent', transform: 'translateZ(0)' }}>
               <HardwareSelectPopover
                 type="controller"
                 items={controllers}
@@ -540,7 +540,7 @@ export function VisionSystemDiagram({
                 onSelect={onControllerSelect || (() => {})}
                 disabled={!interactive || !onControllerSelect}
               >
-                <div className="relative w-full h-full cursor-pointer group">
+                <div style={{ position: 'relative', width: '100%', height: '100%', cursor: 'pointer', backgroundColor: 'transparent' }} className="group">
                   <svg width="140" height="80" viewBox="0 0 140 80">
                     {/* IPC Body - compact version */}
                     <rect x="0" y="5" width="140" height="70" rx="3" fill="hsl(220, 15%, 25%)" />
@@ -579,8 +579,8 @@ export function VisionSystemDiagram({
                     <text x="100" y="58" textAnchor="middle" fill="#ffffff" style={{ fontSize: '9px', fontWeight: 500 }}>IPC</text>
                   </svg>
                   {interactive && onControllerSelect && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                      <span className="text-primary-foreground text-[10px]">✎</span>
+                    <div style={{ position: 'absolute', top: -1, right: -1, width: 16, height: 16, backgroundColor: 'hsl(270, 60%, 50%)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, zIndex: 10 }} className="group-hover:opacity-100 transition-opacity">
+                      <span style={{ color: '#ffffff', fontSize: '10px' }}>✎</span>
                     </div>
                   )}
                 </div>
