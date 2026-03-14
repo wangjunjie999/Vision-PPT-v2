@@ -31,7 +31,7 @@ import { AUTO_ARRANGE_CONFIG } from './canvasTypes';
 import { CanvasToolbar } from './CanvasToolbar';
 import { CanvasSVGDefs } from './CanvasSVGDefs';
 import { IsometricGrid } from './IsometricGrid';
-import { Layout3DPreview } from './Layout3DPreview';
+import { Layout3DPreview, getMechanismSurfaceHeight } from './Layout3DPreview';
 import { ConnectionLines } from './ConnectionLines';
 import { MechanismRenderer } from './MechanismRenderer';
 import { ProductRenderer } from './ProductRenderer';
@@ -597,18 +597,35 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         const nearestProductMount = findNearestProductMountPoint(currentObj.x, currentObj.y, objects, currentView as StandardViewType, 80);
         if (nearestProductMount) {
           const mountPos = getProductMountPointWorldPosition(nearestProductMount.mechanism, nearestProductMount.mountPoint.id, currentView as StandardViewType);
-          const mechPosX = nearestProductMount.mechanism.posX ?? 0;
-          const mechPosY = nearestProductMount.mechanism.posY ?? 0;
-          const mechPosZ = nearestProductMount.mechanism.posZ ?? 0;
+          const mech = nearestProductMount.mechanism;
+          const mechPosX = mech.posX ?? 0;
+          const mechPosY = mech.posY ?? 0;
+          const mechPosZ = mech.posZ ?? 0;
+          const mechHeight = mech.height ?? 100;
+          const mechType = mech.mechanismType || '';
+
+          // Calculate surface Z so product sits flush on mechanism
+          const surfaceZ = getMechanismSurfaceHeight(mechType, mechHeight);
+          const correctPosZ = mechPosZ + surfaceZ;
+
           updateObject(selectedId, {
-            mountedToMechanismId: nearestProductMount.mechanism.id,
+            mountedToMechanismId: mech.id,
             mountPointId: nearestProductMount.mountPoint.id,
-            mountOffsetX: (currentObj.posX ?? 0) - mechPosX,
-            mountOffsetY: (currentObj.posY ?? 0) - mechPosY,
-            mountOffsetZ: (currentObj.posZ ?? 0) - mechPosZ,
+            mountOffsetX: 0,
+            mountOffsetY: 0,
+            mountOffsetZ: surfaceZ,
+            posZ: correctPosZ,
             ...(mountPos ? { x: mountPos.x, y: mountPos.y } : {}),
           });
-          toast.success(`产品已吸附到 ${nearestProductMount.mechanism.name}`);
+
+          // Sync 3D product position
+          setLocalProductPosition({
+            posX: mechPosX,
+            posY: mechPosY,
+            posZ: correctPosZ,
+          });
+
+          toast.success(`产品已吸附到 ${mech.name}`);
         } else if (currentObj.mountedToMechanismId) {
           const mechObj = objects.find(o => o.id === currentObj.mountedToMechanismId);
           updateObject(selectedId, {
