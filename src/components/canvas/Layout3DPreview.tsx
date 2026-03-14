@@ -1324,6 +1324,7 @@ function DragPlane({
           e.stopPropagation();
           onDragEnd();
         }
+        objectClickedRef.current = false;
       }}
       onClick={(e: ThreeEvent<MouseEvent>) => {
         if (!dragStateRef.current.isDragging && !dragMovedRef.current && !objectClickedRef.current && e.delta < 3) {
