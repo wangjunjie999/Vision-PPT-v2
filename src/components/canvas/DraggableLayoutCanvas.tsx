@@ -31,7 +31,7 @@ import { AUTO_ARRANGE_CONFIG } from './canvasTypes';
 import { CanvasToolbar } from './CanvasToolbar';
 import { CanvasSVGDefs } from './CanvasSVGDefs';
 import { IsometricGrid } from './IsometricGrid';
-import { Layout3DPreview, getMechanismSurfaceHeight } from './Layout3DPreview';
+import { Layout3DPreview, getMechanismSurfaceHeight, getCameraMountPosition } from './Layout3DPreview';
 import { ConnectionLines } from './ConnectionLines';
 import { MechanismRenderer } from './MechanismRenderer';
 import { ProductRenderer } from './ProductRenderer';
@@ -573,12 +573,22 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
           const mechPosX = nearestMount.mechanism.posX ?? 0;
           const mechPosY = nearestMount.mechanism.posY ?? 0;
           const mechPosZ = nearestMount.mechanism.posZ ?? 0;
+          const mechDims = {
+            width: nearestMount.mechanism.width ?? 100,
+            height: nearestMount.mechanism.height ?? 100,
+            depth: (nearestMount.mechanism as any).depth ?? 100,
+          };
+          const mechType = nearestMount.mechanism.mechanismType || 'camera_mount';
+          const mountOffset = getCameraMountPosition(mechType, nearestMount.mountPoint.id, mechDims);
           updateObject(selectedId, {
             mountedToMechanismId: nearestMount.mechanism.id,
             mountPointId: nearestMount.mountPoint.id,
-            mountOffsetX: (currentObj.posX ?? 0) - mechPosX,
-            mountOffsetY: (currentObj.posY ?? 0) - mechPosY,
-            mountOffsetZ: (currentObj.posZ ?? 0) - mechPosZ,
+            mountOffsetX: mountOffset.offsetX,
+            mountOffsetY: mountOffset.offsetY,
+            mountOffsetZ: mountOffset.offsetZ,
+            posX: mechPosX + mountOffset.offsetX,
+            posY: mechPosY + mountOffset.offsetY,
+            posZ: mechPosZ + mountOffset.offsetZ,
             ...(mountPos ? { x: mountPos.x, y: mountPos.y } : {}),
           });
           toast.success(`${currentObj.name} 已挂载到 ${nearestMount.mechanism.name}`);
