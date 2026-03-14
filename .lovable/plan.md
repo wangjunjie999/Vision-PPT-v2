@@ -1,44 +1,70 @@
 
 
-# FOV 输入改为两个独立数值框
+# 相机吸附后 3D 位置精确贴合机构安装点
 
 ## 问题
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+当前相机在 2D 三视图吸附到机构后，3D 中位置不准确（穿模或有缝隙）。根因：相机吸附时（L576-583），`mountOffsetX/Y/Z` 直接取相机当前 3D 坐标减去机构坐标，没有根据安装点类型计算物理正确的挂载位置。
 
-## 修改方案
+与产品吸附已修复的逻辑类似——产品用 `getMechanismSurfaceHeight` 计算表面高度，相机也需要类似的安装点位置计算。
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+## 方案
 
-在 `ModuleFormState` 中添加：
+### 1. 新增 `getCameraMountPosition` 函数（`Layout3DPreview.tsx`）
+
+根据机构类型和安装点 ID，返回相机相对机构中心的精确 3D 偏移（mm）：
+
+```typescript
+export function getCameraMountPosition(
+  mechType: string, 
+  mountPointId: string, 
+  mechDims: { width: number; height: number; depth: number }
+): { offsetX: number; offsetY: number; offsetZ: number } {
+  switch (mechType) {
+    case 'camera_mount':
+      return { offsetX: 0, offsetY: 0, offsetZ: mechDims.height * 0.90 }; // 安装板顶部
+    case 'robot_arm':
+      if (mountPointId === 'arm_end') {
+        return { offsetX: mechDims.width * 0.35, offsetY: 0, offsetZ: mechDims.height * 0.80 }; // 法兰末端
+      }
+      return { offsetX: mechDims.width * 0.25, offsetY: 0, offsetZ: mechDims.height * 0.60 }; // 腕部
+    default:
+      return { offsetX: 0, offsetY: 0, offsetZ: mechDims.height };
+  }
+}
 ```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
+
+### 2. 修改相机吸附逻辑（`DraggableLayoutCanvas.tsx` L568-593）
+
+吸附时调用新函数计算精确偏移，并同步更新相机的 `posX/Y/Z`：
+
+```typescript
+if (nearestMount) {
+  const mechDims = { 
+    width: mech.width ?? 100, 
+    height: mech.height ?? 100, 
+    depth: mech.depth ?? 100 
+  };
+  const mountOffset = getCameraMountPosition(mechType, nearestMount.mountPoint.id, mechDims);
+  
+  updateObject(selectedId, {
+    mountedToMechanismId: mech.id,
+    mountPointId: nearestMount.mountPoint.id,
+    mountOffsetX: mountOffset.offsetX,
+    mountOffsetY: mountOffset.offsetY,
+    mountOffsetZ: mountOffset.offsetZ,
+    posX: mechPosX + mountOffset.offsetX,
+    posY: mechPosY + mountOffset.offsetY,
+    posZ: mechPosZ + mountOffset.offsetZ,
+    ...(mountPos ? { x: mountPos.x, y: mountPos.y } : {}),
+  });
+}
 ```
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+## 改动范围
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+- `src/components/canvas/Layout3DPreview.tsx`：新增并导出 `getCameraMountPosition` 函数
+- `src/components/canvas/DraggableLayoutCanvas.tsx`：相机吸附逻辑中调用新函数计算精确 3D 偏移并同步位置
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
-
-```
-[宽度输入] × [高度输入]
-```
-
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
-
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+预计约 30 行改动，2 个文件。
 
