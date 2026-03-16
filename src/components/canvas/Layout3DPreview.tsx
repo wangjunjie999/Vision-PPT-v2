@@ -1708,6 +1708,9 @@ export const Layout3DPreview = memo(function Layout3DPreview({
         return;
       }
 
+      // Block movement/rotation in preview mode
+      if (!editMode) return;
+
       const id = activeSelectedId;
       if (!id) return;
 
