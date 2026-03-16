@@ -660,7 +660,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     mouseDownPos.current = null;
   };
 
-  const handleCanvasMouseDown = (e: React.MouseEvent) => {
+  const handleCanvasMouseDown = (e: React.PointerEvent) => {
     // If click hit an interactive object, stopPropagation already prevented reaching here
     // So any event that arrives is a background/grid click → deselect
     if (panMode) {
