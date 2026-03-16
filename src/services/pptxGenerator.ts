@@ -884,61 +884,7 @@ export async function generatePPTX(
     ...createAutoPageTableOptions(0.85),
   });
 
-  // ========== SLIDE 4: Camera Installation Direction Guide ==========
-  progress = 12;
-  onProgress(progress, isZh ? '生成相机安装说明页...' : 'Generating camera mount guide...', isZh ? '相机安装方向说明' : 'Camera Mount Guide');
-  
-  const mountGuideSlide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
-  
-  mountGuideSlide.addText(isZh ? '相机安装方向说明' : 'Camera Installation Direction Guide', {
-    x: 0.4, y: 0.05, w: 7.5, h: 0.38,
-    fontSize: 18, fontFace: FONTS.heading, color: COLORS.primary, bold: true,
-    shadow: HEADING_SHADOW,
-  });
-
-  // 说明文字（参考图中"如何区分芯片的长短边?"）
-  mountGuideSlide.addText(isZh ? '如何区分芯片的长短边?' : 'How to identify the long/short side of the sensor?', {
-    x: 0.4, y: 1.0, w: 9, h: 0.3,
-    fontSize: 14, fontFace: FONTS.heading, color: '333333', bold: true,
-    shadow: HEADING_SHADOW,
-  });
-
-  // 加载两张相机实物照片
-  const [frontPhoto, backPhoto] = await Promise.all([
-    fetchImageAsDataUri(`${window.location.origin}/ppt-covers/camera-front-photo.png`),
-    fetchImageAsDataUri(`${window.location.origin}/ppt-covers/camera-back-photo.png`),
-  ]);
-
-  // 按参考图布局：左右并排放置，居中偏上，留出底部空间
-  if (frontPhoto) {
-    mountGuideSlide.addImage({
-      data: frontPhoto,
-      x: 1.0, y: 1.5,
-      w: 3.5, h: 3.5,
-      sizing: { type: 'contain', w: 3.5, h: 3.5 },
-    });
-  }
-  if (backPhoto) {
-    mountGuideSlide.addImage({
-      data: backPhoto,
-      x: 5.5, y: 1.5,
-      w: 3.5, h: 3.5,
-      sizing: { type: 'contain', w: 3.5, h: 3.5 },
-    });
-  }
-
-  // 左图标注"长边"
-  mountGuideSlide.addText(isZh ? '长边' : 'Long side', {
-    x: 0.3, y: 3.2, w: 1.0, h: 0.25,
-    fontSize: 11, fontFace: FONTS.body, color: '333333',
-  });
-  // 右图标注"长边"
-  mountGuideSlide.addText(isZh ? '长边' : 'Long side', {
-    x: 8.7, y: 3.2, w: 1.0, h: 0.25,
-    fontSize: 11, fontFace: FONTS.body, color: '333333',
-  });
-
-  // (Old slides 4.5+5+6 removed - content merged into slide 2 above)
+  // (Camera installation guide slide removed)
 
   // ========== WORKSTATION SLIDES (Dynamic pages per workstation) ==========
   // Order: a.基本信息+检测要求 → b.产品截图标注 → c.机械三视图 → d.光学方案×N → e.BOM
