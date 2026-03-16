@@ -2,7 +2,7 @@ import { memo, useRef, useCallback, useState, useMemo, useEffect, Suspense } fro
 import { Canvas, useThree, useFrame, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Box, Cone, Line, Text, Grid, Plane, Sphere, Cylinder, useGLTF, Billboard } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, X, Magnet, Eye, EyeOff, Save } from 'lucide-react';
+import { RotateCcw, X, Magnet, Eye, EyeOff, Save, Lock, Unlock } from 'lucide-react';
 import type { LayoutObject } from './ObjectPropertyPanel';
 import { CAMERA_INTERACTION_TYPES, PRODUCT_INTERACTION_TYPES } from './MechanismSVG';
 import * as THREE from 'three';
@@ -125,6 +125,8 @@ function DraggableGroup({
   onDragStart,
   onClick,
   objectClickedRef,
+  selectedObjectId,
+  editMode,
 }: {
   children: React.ReactNode;
   objectId: string;
@@ -134,6 +136,8 @@ function DraggableGroup({
   onDragStart: (id: string, point: THREE.Vector3) => void;
   onClick: (id: string) => void;
   objectClickedRef: React.MutableRefObject<boolean>;
+  selectedObjectId?: string | null;
+  editMode?: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const pointerDownPos = useRef<{ x: number; y: number; point: THREE.Vector3 } | null>(null);
@@ -155,6 +159,9 @@ function DraggableGroup({
       }}
       onPointerMove={(e: ThreeEvent<PointerEvent>) => {
         if (!pointerDownPos.current || hasDragStarted.current) return;
+        // Only allow drag if in edit mode AND object is already selected
+        if (!editMode) return;
+        if (objectId !== selectedObjectId) return;
         const dx = Math.abs(e.clientX - pointerDownPos.current.x);
         const dy = Math.abs(e.clientY - pointerDownPos.current.y);
         if (dx > 5 || dy > 5) {
@@ -1562,6 +1569,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [xrayMode, setXrayMode] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const SNAP_GRID = 10;
   const dragStateRef = useRef<DragState>({
     isDragging: false,
@@ -1616,6 +1624,9 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   }, []);
 
   const handleDragStart = useCallback((id: string, point: THREE.Vector3) => {
+    // Guard: only allow drag in edit mode and for already-selected objects
+    if (!editMode) return;
+    if (id !== activeSelectedId) return;
     if (id === '__product__') {
       if (!onUpdateProductPosition) return;
       dragStateRef.current = {
@@ -1636,7 +1647,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       };
     }
     dragMovedRef.current = false;
-  }, [onUpdateObject, onUpdateProductPosition, objects, productPosition]);
+  }, [editMode, activeSelectedId, onUpdateObject, onUpdateProductPosition, objects, productPosition]);
 
   const handleDragMove = useCallback((point: THREE.Vector3) => {
     const state = dragStateRef.current;
@@ -1696,6 +1707,9 @@ export const Layout3DPreview = memo(function Layout3DPreview({
         if (!e.repeat) rKeyHeld.current = true;
         return;
       }
+
+      // Block movement/rotation in preview mode
+      if (!editMode) return;
 
       const id = activeSelectedId;
       if (!id) return;
@@ -1790,7 +1804,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeSelectedId, objects, onUpdateObject, onUpdateProductPosition, productPosition, snapEnabled, SNAP_GRID]);
+  }, [editMode, activeSelectedId, objects, onUpdateObject, onUpdateProductPosition, productPosition, snapEnabled, SNAP_GRID]);
 
   const selectedObj = activeSelectedId
     ? (activeSelectedId === '__product__'
@@ -1853,6 +1867,8 @@ export const Layout3DPreview = memo(function Layout3DPreview({
             onDragStart={handleDragStart}
             onClick={(id) => { handleSelect(id); }}
             objectClickedRef={objectClickedRef}
+            selectedObjectId={activeSelectedId}
+            editMode={editMode}
           >
             <ProductBox
               dimensions={productDimensions}
@@ -1879,6 +1895,8 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 onDragStart={handleDragStart}
                 onClick={(id) => { handleSelect(id); }}
                 objectClickedRef={objectClickedRef}
+                selectedObjectId={activeSelectedId}
+                editMode={editMode}
               >
                 <Mechanism3DModel
                   obj={obj}
@@ -1910,6 +1928,8 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 onDragStart={handleDragStart}
                 onClick={(id) => { handleSelect(id); }}
                 objectClickedRef={objectClickedRef}
+                selectedObjectId={activeSelectedId}
+                editMode={editMode}
               >
                 <CameraObject obj={obj} selected={isSelected} dimmed={isDimmed} />
               </DraggableGroup>
@@ -1939,6 +1959,18 @@ export const Layout3DPreview = memo(function Layout3DPreview({
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
           <div className="flex bg-slate-800/90 backdrop-blur-sm rounded-lg border border-slate-600/50 overflow-hidden">
             <button
+              onClick={() => setEditMode(!editMode)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
+                editMode
+                  ? 'bg-amber-600 text-white'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title={editMode ? '编辑模式：可拖拽和键盘移动硬件' : '预览模式：仅查看，不可移动硬件'}
+            >
+              {editMode ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+              {editMode ? '编辑' : '预览'}
+            </button>
+            <button
               onClick={() => setXrayMode(!xrayMode)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
                 xrayMode
@@ -1962,7 +1994,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
               网格吸附 ({SNAP_GRID}mm)
             </button>
           </div>
-          {activeSelectedId && (
+          {activeSelectedId && editMode && (
             <div className="flex items-center px-2.5 py-1 mt-1.5 text-[10px] text-slate-400 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-600/50">
               ←→↑↓ 移动 · Shift+↑↓ 升降 · R+方向键 旋转
             </div>
@@ -2037,7 +2069,10 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       </div>
 
       <div className="absolute bottom-3 left-3 text-[10px] text-slate-500 bg-slate-800/60 backdrop-blur-sm rounded px-2 py-1 z-10">
-        🖱 左键选中/拖拽 · 右键旋转视角 · 滚轮缩放 · 方向键移动 · Shift+↑↓升降
+        {editMode
+          ? '🖱 左键选中/拖拽 · 右键旋转视角 · 滚轮缩放 · 方向键移动 · Shift+↑↓升降'
+          : '🔒 预览模式 · 左键选中 · 右键旋转视角 · 滚轮缩放'
+        }
       </div>
     </div>
   );
