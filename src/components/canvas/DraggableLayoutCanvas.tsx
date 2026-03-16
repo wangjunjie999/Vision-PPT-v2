@@ -491,9 +491,17 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       setSelectedIds(prev => prev.includes(obj.id) ? prev : [...prev, obj.id]);
       return;
     }
-    setSelectedIds([obj.id]);
-    setShowPropertyPanel(true);
-    // Record mouse down position; don't start dragging yet
+
+    const alreadySelected = selectedId === obj.id;
+
+    if (!alreadySelected) {
+      // 首次点击：仅选中，不启动拖拽
+      setSelectedIds([obj.id]);
+      setShowPropertyPanel(true);
+      return;
+    }
+
+    // 已选中状态下再次按下：准备拖拽
     const pos = screenToSvg(e.clientX, e.clientY);
     mouseDownPos.current = { x: e.clientX, y: e.clientY, objId: obj.id };
     setDragOffset({ x: pos.x - obj.x, y: pos.y - obj.y });
