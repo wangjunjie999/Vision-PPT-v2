@@ -1,44 +1,26 @@
 
 
-# FOV 输入改为两个独立数值框
+# 删除"相机安装方向说明"页面
 
-## 问题
+## 改动
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+### 文件：`src/services/pptxGenerator.ts`
 
-## 修改方案
+删除第 887-941 行（整个 SLIDE 4 代码块），包括：
+- 幻灯片创建、标题、说明文字
+- `camera-front-photo.png` 和 `camera-back-photo.png` 的加载与插入
+- "长边"标注文字
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+### 文件：删除静态图片资源
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
+- `public/ppt-covers/camera-front-photo.png`
+- `public/ppt-covers/camera-back-photo.png`
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+这两张图片仅被此页面使用，删除后无影响。
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+### 进度条调整
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+删除该页后，原来的 `progress = 12` 进度步骤一并移除，后续工位幻灯片的进度起始值不受影响（已从更高值开始）。
 
-```
-[宽度输入] × [高度输入]
-```
-
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
-
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+共涉及 ~55 行代码删除 + 2 个图片文件删除。
 
