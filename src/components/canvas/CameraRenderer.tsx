@@ -9,7 +9,7 @@ interface CameraRendererProps {
   secondSelectedId: string | null;
   panMode: boolean;
   isIsometric: boolean;
-  onMouseDown: (e: React.MouseEvent, obj: LayoutObject) => void;
+  onMouseDown: (e: React.PointerEvent, obj: LayoutObject) => void;
   onResize: (id: string, width: number, height: number, x: number, y: number) => void;
   isoProject: (px: number, py: number, pz: number) => { x: number; y: number };
 }
