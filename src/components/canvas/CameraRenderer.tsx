@@ -9,7 +9,7 @@ interface CameraRendererProps {
   secondSelectedId: string | null;
   panMode: boolean;
   isIsometric: boolean;
-  onMouseDown: (e: React.MouseEvent, obj: LayoutObject) => void;
+  onMouseDown: (e: React.PointerEvent, obj: LayoutObject) => void;
   onResize: (id: string, width: number, height: number, x: number, y: number) => void;
   isoProject: (px: number, py: number, pz: number) => { x: number; y: number };
 }
@@ -110,7 +110,8 @@ export const CameraRenderer = memo(function CameraRenderer({
           <g
             key={obj.id}
             transform={`translate(${obj.x}, ${obj.y}) rotate(${obj.rotation})`}
-            onMouseDown={(e) => onMouseDown(e, obj)}
+            onPointerDown={(e) => { e.stopPropagation(); onMouseDown(e, obj); }}
+            onPointerUp={(e) => e.stopPropagation()}
             style={{ cursor: obj.locked ? 'not-allowed' : panMode ? 'inherit' : 'move' }}
             filter={isSelected ? "url(#glow)" : "url(#drop-shadow)"}
             opacity={isMounted ? 0.7 : 1}

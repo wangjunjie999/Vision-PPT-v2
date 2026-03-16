@@ -484,7 +484,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
 
   const isIsometric = currentView === 'isometric';
 
-  const handleMouseDown = useCallback((e: React.MouseEvent, obj: LayoutObject) => {
+  const handleMouseDown = useCallback((e: React.PointerEvent, obj: LayoutObject) => {
     if (obj.locked || panMode || isIsometric) return;
     e.stopPropagation();
     if (e.shiftKey && selectedId && selectedId !== obj.id) {
@@ -660,7 +660,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     mouseDownPos.current = null;
   };
 
-  const handleCanvasMouseDown = (e: React.MouseEvent) => {
+  const handleCanvasMouseDown = (e: React.PointerEvent) => {
     // If click hit an interactive object, stopPropagation already prevented reaching here
     // So any event that arrives is a background/grid click → deselect
     if (panMode) {
@@ -1024,10 +1024,10 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               ref={canvasRef}
               viewBox={`${-pan.x / zoom} ${-pan.y / zoom} ${canvasWidth / zoom} ${canvasHeight / zoom}`}
               className={cn("w-full h-full", panMode ? "cursor-grab" : "cursor-default", isPanning && "cursor-grabbing")}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-              onMouseDown={handleCanvasMouseDown}
+              onPointerMove={handleMouseMove as any}
+              onPointerUp={handleMouseUp}
+              onPointerLeave={handleMouseUp}
+              onPointerDown={handleCanvasMouseDown}
               onWheel={handleWheel}
             >
               <CanvasSVGDefs gridSize={gridSize} />

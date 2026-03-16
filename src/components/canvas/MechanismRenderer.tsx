@@ -11,7 +11,7 @@ interface MechanismRendererProps {
   panMode: boolean;
   isDragging: boolean;
   draggingObject: LayoutObject | null;
-  onMouseDown: (e: React.MouseEvent, obj: LayoutObject) => void;
+  onMouseDown: (e: React.PointerEvent, obj: LayoutObject) => void;
   onResize: (id: string, width: number, height: number, x: number, y: number) => void;
   getMechanismImageForObject: (obj: LayoutObject) => string | null;
   currentView?: 'front' | 'side' | 'top';
@@ -34,7 +34,8 @@ export const MechanismRenderer = memo(function MechanismRenderer({
           <g
             key={obj.id}
             transform={`translate(${obj.x}, ${obj.y}) rotate(${obj.rotation})`}
-            onMouseDown={(e) => onMouseDown(e, obj)}
+            onPointerDown={(e) => { e.stopPropagation(); onMouseDown(e, obj); }}
+            onPointerUp={(e) => e.stopPropagation()}
             style={{ cursor: obj.locked ? 'not-allowed' : panMode ? 'inherit' : 'move' }}
             filter={isSelected ? "url(#glow)" : "url(#drop-shadow)"}
           >

@@ -1,37 +1,44 @@
 
 
-# 修复硬件选中后鼠标松开即脱选的问题
+# FOV 输入改为两个独立数值框
 
-## 问题分析
+## 问题
 
-当前 `handleMouseDown` 在 `<g>` 元素上调用 `e.stopPropagation()` 阻止了 `mouseDown` 事件冒泡，但 Radix UI 的 `ContextMenuTrigger`（包裹 SVG）监听的是 **`pointerDown`** 事件，这是独立于 `mouseDown` 的事件类型。`pointerDown` 没有被阻止，会冒泡到 `ContextMenuTrigger`，可能触发内部状态变化导致重渲染/脱选。此外，对象的 `<g>` 元素没有阻止 `pointerUp`/`mouseUp` 冒泡。
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
 ## 修改方案
 
-### 1. `DraggableLayoutCanvas.tsx` — `handleMouseDown` 添加 pointer 事件阻止
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-在 `handleMouseDown` 回调中，除了 `e.stopPropagation()` 外，还需阻止底层 pointer 事件传播。改用 `onPointerDown` 替代 `onMouseDown` 传递给子渲染器，因为 `pointerDown` 先于 `mouseDown` 触发，阻止 `pointerDown` 冒泡即可同时阻止两者到达 SVG。
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
+```
 
-将 `handleMouseDown` 的事件类型从 `React.MouseEvent` 改为 `React.PointerEvent`，并同时将 SVG 的 `onMouseDown` 改为 `onPointerDown`（`handleCanvasMouseDown` 同理）。
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-### 2. CameraRenderer / ProductRenderer / MechanismRenderer — 使用 `onPointerDown`
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
 
-将三个渲染器中 `<g>` 元素的 `onMouseDown` 改为 `onPointerDown`，确保 pointer 事件被正确拦截，不会冒泡到 ContextMenuTrigger。
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
 
-同时在 `<g>` 元素上添加 `onPointerUp={(e) => e.stopPropagation()}`，防止 pointerUp 冒泡触发 ContextMenu 相关逻辑。
+```
+[宽度输入] × [高度输入]
+```
 
-### 3. SVG 元素事件绑定调整
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
 
-将 SVG 上的 `onMouseDown`、`onMouseMove`、`onMouseUp`、`onMouseLeave` 全部改为对应的 pointer 事件版本（`onPointerDown`、`onPointerMove`、`onPointerUp`、`onPointerLeave`），统一事件模型。
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
 
-### 涉及文件（4个）
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
 
-| 文件 | 修改内容 |
-|------|----------|
-| `DraggableLayoutCanvas.tsx` | 事件处理器改用 PointerEvent；SVG 绑定改为 onPointer* |
-| `CameraRenderer.tsx` | `onMouseDown` → `onPointerDown`，添加 `onPointerUp` stopPropagation |
-| `ProductRenderer.tsx` | 同上 |
-| `MechanismRenderer.tsx` | 同上 |
+### 4. PPT 输出不变
 
-约 20 行修改，4 个文件。
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
