@@ -15,6 +15,7 @@ interface Layout3DPreviewProps {
   onUpdateObject?: (id: string, updates: Partial<LayoutObject>) => void;
   onUpdateProductDimensions?: (dims: { length: number; width: number; height: number }) => void;
   onScreenshotReady?: (fn: () => string | null) => void;
+  onFitAllReady?: (fn: () => void) => void;
   productPosition?: { posX: number; posY: number; posZ: number };
   onUpdateProductPosition?: (pos: { posX: number; posY: number; posZ: number }) => void;
   onStageLayout?: () => void;
