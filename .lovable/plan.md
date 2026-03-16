@@ -1,35 +1,44 @@
 
 
-# 修复：拖拽后点击背景无法取消选中
+# FOV 输入改为两个独立数值框
 
-## 根因
+## 问题
 
-`DraggableGroup` 的 `onPointerUp`（第175行）用 `e.stopPropagation()` 阻止了事件冒泡到 `DragPlane`，并且直接重置了 `dragState`，但**没有调用 `handleDragEnd`**。
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-导致 `dragMovedRef.current` 一直为 `true`，之后点击背景时 `DragPlane` 的 `onClick` 检查 `!dragMovedRef.current` 失败，无法执行取消选中。
+## 修改方案
 
-```text
-拖拽流程：
-DraggableGroup.onPointerDown → dragMovedRef = false
-DragPlane.onPointerMove → dragMovedRef = true  
-DraggableGroup.onPointerUp → dragState 重置，但 dragMovedRef 仍为 true ❌
-                            → handleDragEnd 未被调用 ❌
-后续点击背景：
-DragPlane.onClick → !dragMovedRef.current (=true) → 不执行 onDeselect ❌
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
 ```
 
-## 修复方案
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-### 文件：`src/components/canvas/Layout3DPreview.tsx`
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
 
-**修改 `DraggableGroup` 的 `onPointerUp`**（第175-180行）：
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
 
-当检测到之前发生过拖拽（`hasDragStarted.current` 为 true）时，调用 `onDragEnd` 回调（需新增 prop），确保 `dragMovedRef` 被正确重置。如果没有发生拖拽，也主动将 `dragMovedRef` 重置为 false。
+```
+[宽度输入] × [高度输入]
+```
 
-具体改动：
-1. `DraggableGroup` 新增 `onDragEnd` prop
-2. `onPointerUp` 中：若 `hasDragStarted.current` 为 true，调用 `onDragEnd()`
-3. 所有 `DraggableGroup` 调用处传入 `onDragEnd={handleDragEnd}`
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
 
-约 10 行修改。
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 

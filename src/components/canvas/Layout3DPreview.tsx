@@ -129,6 +129,7 @@ function DraggableGroup({
   selectedObjectId,
   editMode,
   spaceHeld,
+  onDragEnd,
 }: {
   children: React.ReactNode;
   objectId: string;
@@ -141,6 +142,7 @@ function DraggableGroup({
   selectedObjectId?: string | null;
   editMode?: boolean;
   spaceHeld?: boolean;
+  onDragEnd?: () => void;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const pointerDownPos = useRef<{ x: number; y: number; point: THREE.Vector3 } | null>(null);
@@ -174,9 +176,14 @@ function DraggableGroup({
       }}
       onPointerUp={(e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
+        const wasDragging = hasDragStarted.current;
         pointerDownPos.current = null;
         hasDragStarted.current = false;
-        dragState.current = { isDragging: false, objectId: null, startPoint: null, startPos: null };
+        if (wasDragging) {
+          onDragEnd?.();
+        } else {
+          dragState.current = { isDragging: false, objectId: null, startPoint: null, startPos: null };
+        }
       }}
     >
       {children}
@@ -1971,6 +1978,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
             selectedObjectId={activeSelectedId}
             editMode={editMode}
             spaceHeld={spaceHeld}
+            onDragEnd={handleDragEnd}
           >
             <ProductBox
               dimensions={productDimensions}
@@ -2000,6 +2008,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 selectedObjectId={activeSelectedId}
                 editMode={editMode}
                 spaceHeld={spaceHeld}
+                onDragEnd={handleDragEnd}
               >
                 <Mechanism3DModel
                   obj={obj}
@@ -2034,6 +2043,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 selectedObjectId={activeSelectedId}
                 editMode={editMode}
                 spaceHeld={spaceHeld}
+                onDragEnd={handleDragEnd}
               >
                 <CameraObject obj={obj} selected={isSelected} dimmed={isDimmed} />
               </DraggableGroup>
