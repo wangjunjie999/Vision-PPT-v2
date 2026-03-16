@@ -2,7 +2,7 @@ import { memo, useRef, useCallback, useState, useMemo, useEffect, Suspense } fro
 import { Canvas, useThree, useFrame, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Box, Cone, Line, Text, Grid, Plane, Sphere, Cylinder, useGLTF, Billboard } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, X, Magnet, Eye, EyeOff, Save, Lock, Unlock } from 'lucide-react';
+import { RotateCcw, X, Magnet, Eye, EyeOff, Save, Lock, Unlock, Maximize2 } from 'lucide-react';
 import type { LayoutObject } from './ObjectPropertyPanel';
 import { CAMERA_INTERACTION_TYPES, PRODUCT_INTERACTION_TYPES } from './MechanismSVG';
 import * as THREE from 'three';
@@ -15,6 +15,7 @@ interface Layout3DPreviewProps {
   onUpdateObject?: (id: string, updates: Partial<LayoutObject>) => void;
   onUpdateProductDimensions?: (dims: { length: number; width: number; height: number }) => void;
   onScreenshotReady?: (fn: () => string | null) => void;
+  onFitAllReady?: (fn: () => void) => void;
   productPosition?: { posX: number; posY: number; posZ: number };
   onUpdateProductPosition?: (pos: { posX: number; posY: number; posZ: number }) => void;
   onStageLayout?: () => void;
@@ -1555,6 +1556,91 @@ function SelectedInfoPanel({ obj, objects, onDeselect, onUpdateObject, productDi
   );
 }
 
+// --- FitAll helper: calculates scene bounding box and moves camera ---
+function FitAllHelper({
+  objects,
+  productPosition,
+  productDimensions,
+  cameraRef,
+  onFitAllReady,
+}: {
+  objects: LayoutObject[];
+  productPosition: { posX: number; posY: number; posZ: number };
+  productDimensions: { length: number; width: number; height: number };
+  cameraRef: React.MutableRefObject<{ position: [number, number, number]; target: [number, number, number] } | null>;
+  onFitAllReady?: (fn: () => void) => void;
+}) {
+  const { camera } = useThree();
+
+  useEffect(() => {
+    if (!onFitAllReady) return;
+    onFitAllReady(() => {
+      // Collect all object positions and sizes to compute bounding box
+      let minX = Infinity, maxX = -Infinity;
+      let minY = Infinity, maxY = -Infinity;
+      let minZ = Infinity, maxZ = -Infinity;
+
+      const addPoint = (x: number, y: number, z: number) => {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+        if (z < minZ) minZ = z;
+        if (z > maxZ) maxZ = z;
+      };
+
+      // Product bounding box
+      const pw = (productDimensions.length ?? 100) * SCALE;
+      const ph = (productDimensions.height ?? 50) * SCALE;
+      const pd = (productDimensions.width ?? 100) * SCALE;
+      const ppx = productPosition.posX * SCALE;
+      const ppy = productPosition.posZ * SCALE;
+      const ppz = productPosition.posY * SCALE;
+      addPoint(ppx - pw / 2, ppy, ppz - pd / 2);
+      addPoint(ppx + pw / 2, ppy + ph, ppz + pd / 2);
+
+      // All layout objects
+      for (const obj of objects) {
+        const ox = (obj.posX ?? 0) * SCALE;
+        const oy = (obj.posZ ?? 0) * SCALE;
+        const oz = (obj.posY ?? 0) * SCALE;
+        const ow = (obj.width ?? 200) * SCALE / 2;
+        const oh = (obj.height ?? 200) * SCALE;
+        const od = ((obj as any).depth ?? 200) * SCALE / 2;
+        addPoint(ox - ow, oy, oz - od);
+        addPoint(ox + ow, oy + oh, oz + od);
+      }
+
+      // Fallback if no objects
+      if (!isFinite(minX)) {
+        minX = -1; maxX = 1; minY = 0; maxY = 2; minZ = -1; maxZ = 1;
+      }
+
+      const cx = (minX + maxX) / 2;
+      const cy = (minY + maxY) / 2;
+      const cz = (minZ + maxZ) / 2;
+      const width = maxX - minX;
+      const height = maxY - minY;
+      const depth = maxZ - minZ;
+      const maxExtent = Math.max(width, height, depth, 0.5);
+
+      const fov = (camera as THREE.PerspectiveCamera).fov;
+      const fovRad = (fov * Math.PI) / 180;
+      const distance = (maxExtent / 2) / Math.tan(fovRad / 2) * 1.4;
+
+      const dir = new THREE.Vector3(1, 0.85, 1).normalize();
+      const camPos = new THREE.Vector3(cx, cy, cz).add(dir.clone().multiplyScalar(distance));
+
+      cameraRef.current = {
+        position: [camPos.x, camPos.y, camPos.z],
+        target: [cx, cy, cz],
+      };
+    });
+  }, [objects, productPosition, productDimensions, camera, cameraRef, onFitAllReady]);
+
+  return null;
+}
+
 export const Layout3DPreview = memo(function Layout3DPreview({
   objects,
   productDimensions,
@@ -1563,6 +1649,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   onUpdateObject,
   onUpdateProductDimensions,
   onScreenshotReady,
+  onFitAllReady,
   productPosition: productPositionProp,
   onUpdateProductPosition,
   onStageLayout,
@@ -1571,6 +1658,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   const cameraActionRef = useRef<{ position: [number, number, number]; target: [number, number, number] } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
+  const fitAllFnRef = useRef<(() => void) | null>(null);
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [xrayMode, setXrayMode] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -1955,6 +2043,16 @@ export const Layout3DPreview = memo(function Layout3DPreview({
           <RelationshipLines objects={objects} xrayMode={xrayMode} productPosition={productPosition} />
           <CameraController cameraRef={cameraActionRef} isDragging={dragStateRef.current.isDragging} spaceHeld={spaceHeld} />
           {onScreenshotReady && <ScreenshotHelper onScreenshotReady={onScreenshotReady} />}
+          <FitAllHelper
+            objects={objects}
+            productPosition={productPosition}
+            productDimensions={productDimensions}
+            cameraRef={cameraActionRef}
+            onFitAllReady={(fn) => {
+              fitAllFnRef.current = fn;
+              onFitAllReady?.(fn);
+            }}
+          />
         </Suspense>
       </Canvas>
 
@@ -2038,6 +2136,16 @@ export const Layout3DPreview = memo(function Layout3DPreview({
           </Button>
         ))}
         <div className="h-px bg-slate-600/50 my-0.5" />
+        <Button
+          variant="secondary"
+          size="sm"
+          className="gap-1.5 h-7 text-xs bg-sky-900/60 hover:bg-sky-800/70 border border-sky-600/50 backdrop-blur-sm text-sky-300"
+          onClick={() => fitAllFnRef.current?.()}
+          title="自动适配视角以包含所有对象"
+        >
+          <Maximize2 className="h-3 w-3" />
+          适配
+        </Button>
         <Button
           variant="secondary"
           size="sm"

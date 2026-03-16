@@ -93,6 +93,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     front: false, side: false, top: false, isometric: false,
   });
   const isometricScreenshotFnRef = useRef<(() => string | null) | null>(null);
+  const fitAllFnRef = useRef<(() => void) | null>(null);
   const [cameraPickerOpen, setCameraPickerOpen] = useState(false);
 
   // Layer order
@@ -805,8 +806,10 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
           setSaveProgress(10 + Math.round(((i + 1) / views.length) * 35));
         }
 
-        // Capture isometric (3D) screenshot
+        // Capture isometric (3D) screenshot — fitAll first to ensure all objects visible
         setCurrentView('isometric');
+        await new Promise(r => setTimeout(r, 400));
+        fitAllFnRef.current?.();
         await new Promise(r => setTimeout(r, 600));
         if (isometricScreenshotFnRef.current) {
           try {
@@ -1005,6 +1008,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               updateWorkstation(workstationId, { product_dimensions: dims as any });
             }}
             onScreenshotReady={(fn) => { isometricScreenshotFnRef.current = fn; }}
+            onFitAllReady={(fn) => { fitAllFnRef.current = fn; }}
             productPosition={localProductPosition}
             onUpdateProductPosition={setLocalProductPosition}
             onStageLayout={handleStageLayout}

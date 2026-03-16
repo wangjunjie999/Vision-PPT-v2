@@ -1,58 +1,44 @@
 
 
-# 修复等轴测截图内容不全 — 自动适配相机
+# FOV 输入改为两个独立数值框
 
 ## 问题
 
-等轴测截图使用固定相机位置 `[7, 6, 7]`，FOV 50°。当布局中的硬件分布较大时，相机视野无法覆盖所有对象，导致截图内容不全。
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-## 方案
+## 修改方案
 
-### 文件：`src/components/canvas/Layout3DPreview.tsx`
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-**1. 添加 `fitAll` 函数**（在 `CameraController` 内或作为独立工具函数）
-
-- 遍历所有对象（mechanisms + cameras + product），计算场景包围盒（bounding box）
-- 根据包围盒大小 + 相机 FOV，计算等轴测方向上的最佳距离
-- 公式：`distance = maxExtent / (2 * tan(fov/2))` 再加 margin（1.3x）
-- 更新 `cameraActionRef` 驱动相机平滑移动
-
-**2. 暴露 `fitAll` 给父组件**
-
-- 扩展 `onScreenshotReady` 回调或新增 `onFitAllReady` prop，使 `DraggableLayoutCanvas` 可调用
-- 在保存布局截图前（L808-822），先执行 `fitAll()`，等待相机到位后再截图
-
-**3. 截图前自动 fitAll**
-
-修改 `DraggableLayoutCanvas.tsx` 的保存流程（L808）：
+在 `ModuleFormState` 中添加：
 ```
-setCurrentView('isometric');
-await new Promise(r => setTimeout(r, 300));
-fitAllFnRef.current?.();           // ← 新增：自动适配
-await new Promise(r => setTimeout(r, 600));
-const isoDataUrl = isometricScreenshotFnRef.current();
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
 ```
 
-**4. 工具栏添加"适配全部"按钮**
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-在 `Layout3DPreview` 右侧视角预设按钮区域，增加一个 `Maximize2` 图标的"适配"按钮，点击执行 fitAll，方便用户手动调整。
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
 
-### 计算逻辑
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
 
-```text
-所有对象坐标 → 包围盒 (minX, maxX, minY, maxY, minZ, maxZ)
-center = 包围盒中心
-maxExtent = max(宽, 高, 深)
-distance = (maxExtent / 2) / tan(FOV/2) * 1.3
-等轴测方向 = normalize([1, 0.85, 1])
-cameraPos = center + direction * distance
-target = center
+```
+[宽度输入] × [高度输入]
 ```
 
-### 修改文件
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
 
-- `src/components/canvas/Layout3DPreview.tsx` — fitAll 函数 + 按钮 + 暴露 ref
-- `src/components/canvas/DraggableLayoutCanvas.tsx` — 截图前调用 fitAll
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
 
-约 40 行新增代码。
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
