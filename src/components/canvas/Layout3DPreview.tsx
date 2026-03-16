@@ -1867,6 +1867,8 @@ export const Layout3DPreview = memo(function Layout3DPreview({
             onDragStart={handleDragStart}
             onClick={(id) => { handleSelect(id); }}
             objectClickedRef={objectClickedRef}
+            selectedObjectId={activeSelectedId}
+            editMode={editMode}
           >
             <ProductBox
               dimensions={productDimensions}
