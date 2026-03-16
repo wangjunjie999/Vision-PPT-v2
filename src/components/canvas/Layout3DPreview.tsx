@@ -2043,6 +2043,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 selectedObjectId={activeSelectedId}
                 editMode={editMode}
                 spaceHeld={spaceHeld}
+                onDragEnd={handleDragEnd}
               >
                 <CameraObject obj={obj} selected={isSelected} dimmed={isDimmed} />
               </DraggableGroup>
