@@ -999,6 +999,7 @@ export async function generatePPTX(
         front_view_image_url: wsLayout.front_view_image_url,
         side_view_image_url: wsLayout.side_view_image_url,
         top_view_image_url: wsLayout.top_view_image_url,
+        isometric_view_image_url: (wsLayout as any).isometric_view_image_url || null,
         primary_view: (wsLayout as any).primary_view || 'front',
         auxiliary_view: (wsLayout as any).auxiliary_view || 'side',
         layout_description: (wsLayout as any).layout_description || '',
@@ -1184,109 +1185,6 @@ export async function generatePPTX(
     align: 'center',
   });
 
-  // ========== APPENDIX: EXTRA FIELDS SLIDE (if any) ==========
-  // Safe helper to check if object has extra_fields
-  const hasExtraFields = (obj: any): boolean => {
-    if (!obj || typeof obj !== 'object') return false;
-    const extra = obj.extra_fields;
-    if (!extra || typeof extra !== 'object') return false;
-    return Object.keys(extra).length > 0;
-  };
-
-  // Safe helper to get extra fields with null checks
-  const safeGetExtraFields = (obj: any): Record<string, { key: string; label: string; value: string }> => {
-    if (!obj?.extra_fields || typeof obj.extra_fields !== 'object') return {};
-    return obj.extra_fields;
-  };
-
-  // Safe helper to truncate string
-  const safeTruncate = (val: any, maxLen: number = 50): string => {
-    const str = val != null ? String(val) : '';
-    return str.length > maxLen ? str.substring(0, maxLen - 3) + '...' : str;
-  };
-
-  const projectHasExtra = hasExtraFields(project);
-  const wsWithExtra = workstations.filter(ws => hasExtraFields(ws));
-  const layoutsWithExtra = layouts.filter(l => hasExtraFields(l));
-  const modulesWithExtra = modules.filter(m => hasExtraFields(m));
-
-  if (projectHasExtra || wsWithExtra.length > 0 || layoutsWithExtra.length > 0 || modulesWithExtra.length > 0) {
-    progress = 96;
-    onProgress(progress, isZh ? '生成附录...' : 'Generating appendix...', isZh ? '附录：补充字段' : 'Appendix');
-
-    const appendixSlide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
-    
-    appendixSlide.addText(isZh ? '附录：补充字段' : 'Appendix: Additional Fields', {
-      x: SLIDE_LAYOUT.contentLeft, y: SLIDE_LAYOUT.contentTop, w: SLIDE_LAYOUT.contentWidth, h: 0.4,
-      fontSize: 18, fontFace: FONTS.heading, color: COLORS.dark, bold: true,
-      shadow: HEADING_SHADOW,
-    });
-
-    let appendixY = SLIDE_LAYOUT.contentTop + 0.5;
-
-    // Collect all extra fields into a summary table
-    const allExtraRows: TableRow[] = [];
-
-    // Project extra fields
-    if (projectHasExtra) {
-      allExtraRows.push(row([isZh ? '【项目】' : '[Project]', '', '']));
-      const extraFields = safeGetExtraFields(project);
-      Object.values(extraFields).forEach(f => {
-        if (f?.label && f?.value != null) {
-          allExtraRows.push(row(['', f.label || '', safeTruncate(f.value)]));
-        }
-      });
-    }
-
-    // Workstation extra fields
-    for (const ws of wsWithExtra) {
-      allExtraRows.push(row([`${isZh ? '【工位】' : '[WS]'} ${ws.name || ''}`, '', '']));
-      const extraFields = safeGetExtraFields(ws);
-      Object.values(extraFields).forEach(f => {
-        if (f?.label && f?.value != null) {
-          allExtraRows.push(row(['', f.label || '', safeTruncate(f.value)]));
-        }
-      });
-    }
-
-    // Layout extra fields
-    for (const layout of layoutsWithExtra) {
-      const ws = workstations.find(w => w.id === (layout as any).workstation_id);
-      allExtraRows.push(row([`${isZh ? '【布局】' : '[Layout]'} ${ws?.name || 'N/A'}`, '', '']));
-      const extraFields = safeGetExtraFields(layout);
-      Object.values(extraFields).forEach(f => {
-        if (f?.label && f?.value != null) {
-          allExtraRows.push(row(['', f.label || '', safeTruncate(f.value)]));
-        }
-      });
-    }
-
-    // Module extra fields
-    for (const mod of modulesWithExtra) {
-      allExtraRows.push(row([`${isZh ? '【模块】' : '[Module]'} ${mod.name || ''}`, '', '']));
-      const extraFields = safeGetExtraFields(mod);
-      Object.values(extraFields).forEach(f => {
-        if (f?.label && f?.value != null) {
-          allExtraRows.push(row(['', f.label || '', safeTruncate(f.value)]));
-        }
-      });
-    }
-
-    if (allExtraRows.length > 0) {
-      appendixSlide.addTable(allExtraRows, {
-        x: SLIDE_LAYOUT.contentLeft, 
-        y: appendixY, 
-        w: SLIDE_LAYOUT.contentWidth,
-        fontFace: FONTS.body,
-        fontSize: 8,
-        colW: [2.2, 2.5, 4.5],
-        border: { pt: 0.5, color: COLORS.border },
-        fill: { color: COLORS.white },
-        valign: 'middle',
-        ...createAutoPageTableOptions(appendixY),
-      });
-    }
-  }
 
   // ========== END SLIDE (16:9 optimized) ==========
   progress = 98;
