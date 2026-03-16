@@ -999,6 +999,7 @@ export async function generatePPTX(
         front_view_image_url: wsLayout.front_view_image_url,
         side_view_image_url: wsLayout.side_view_image_url,
         top_view_image_url: wsLayout.top_view_image_url,
+        isometric_view_image_url: (wsLayout as any).isometric_view_image_url || null,
         primary_view: (wsLayout as any).primary_view || 'front',
         auxiliary_view: (wsLayout as any).auxiliary_view || 'side',
         layout_description: (wsLayout as any).layout_description || '',
