@@ -1697,6 +1697,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   useEffect(() => {
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'r' || e.key === 'R') rKeyHeld.current = false;
+      if (e.key === ' ' || e.code === 'Space') setSpaceHeld(false);
     };
     window.addEventListener('keyup', handleKeyUp);
     return () => window.removeEventListener('keyup', handleKeyUp);
