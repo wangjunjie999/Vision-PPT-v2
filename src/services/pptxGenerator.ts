@@ -890,17 +890,15 @@ export async function generatePPTX(
   
   const mountGuideSlide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
   
-  mountGuideSlide.addText(isZh ? '相机安装方向说明' : 'Camera Installation Direction Guide', {
-    x: 0.4, y: 0.05, w: 7.5, h: 0.38,
-    fontSize: 18, fontFace: FONTS.heading, color: COLORS.primary, bold: true,
-    shadow: HEADING_SHADOW,
-  });
+  // 使用 SLIDE_LAYOUT 常量确保内容在内容区内
+  const SL = SLIDE_LAYOUT;
+  
+  addSlideTitle(mountGuideSlide, isZh ? '4. 选型指南——相机安装方向说明' : '4. Selection Guide - Camera Installation Direction');
 
-  // 说明文字（参考图中"如何区分芯片的长短边?"）
+  // 说明文字
   mountGuideSlide.addText(isZh ? '如何区分芯片的长短边?' : 'How to identify the long/short side of the sensor?', {
-    x: 0.4, y: 1.0, w: 9, h: 0.3,
-    fontSize: 14, fontFace: FONTS.heading, color: '333333', bold: true,
-    shadow: HEADING_SHADOW,
+    x: SL.contentLeft, y: SL.contentTop + 0.5, w: SL.contentWidth, h: 0.3,
+    fontSize: 14, fontFace: FONTS.heading, color: COLORS.textSecondary, bold: true,
   });
 
   // 加载两张相机实物照片
@@ -909,33 +907,40 @@ export async function generatePPTX(
     fetchImageAsDataUri(`${window.location.origin}/ppt-covers/camera-back-photo.png`),
   ]);
 
-  // 按参考图布局：左右并排放置，居中偏上，留出底部空间
+  // 图片尺寸与位置：基于内容区居中对称
+  const imgW = 3.8;
+  const imgH = 3.2;
+  const gap = 0.6;
+  const totalImgW = imgW * 2 + gap;
+  const imgStartX = SL.contentLeft + (SL.contentWidth - totalImgW) / 2;
+  const imgY = SL.contentTop + 0.9;
+
   if (frontPhoto) {
     mountGuideSlide.addImage({
       data: frontPhoto,
-      x: 1.0, y: 1.5,
-      w: 3.5, h: 3.5,
-      sizing: { type: 'contain', w: 3.5, h: 3.5 },
+      x: imgStartX, y: imgY,
+      w: imgW, h: imgH,
+      sizing: { type: 'contain', w: imgW, h: imgH },
     });
   }
   if (backPhoto) {
     mountGuideSlide.addImage({
       data: backPhoto,
-      x: 5.5, y: 1.5,
-      w: 3.5, h: 3.5,
-      sizing: { type: 'contain', w: 3.5, h: 3.5 },
+      x: imgStartX + imgW + gap, y: imgY,
+      w: imgW, h: imgH,
+      sizing: { type: 'contain', w: imgW, h: imgH },
     });
   }
 
-  // 左图标注"长边"
+  // 标注文字：紧跟图片下方
+  const labelY = imgY + imgH + 0.1;
   mountGuideSlide.addText(isZh ? '长边' : 'Long side', {
-    x: 0.3, y: 3.2, w: 1.0, h: 0.25,
-    fontSize: 11, fontFace: FONTS.body, color: '333333',
+    x: imgStartX, y: labelY, w: imgW, h: 0.25,
+    fontSize: 11, fontFace: FONTS.body, color: COLORS.textSecondary, align: 'center',
   });
-  // 右图标注"长边"
   mountGuideSlide.addText(isZh ? '长边' : 'Long side', {
-    x: 8.7, y: 3.2, w: 1.0, h: 0.25,
-    fontSize: 11, fontFace: FONTS.body, color: '333333',
+    x: imgStartX + imgW + gap, y: labelY, w: imgW, h: 0.25,
+    fontSize: 11, fontFace: FONTS.body, color: COLORS.textSecondary, align: 'center',
   });
 
   // (Old slides 4.5+5+6 removed - content merged into slide 2 above)
