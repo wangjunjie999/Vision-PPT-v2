@@ -2042,6 +2042,13 @@ export const Layout3DPreview = memo(function Layout3DPreview({
           <RelationshipLines objects={objects} xrayMode={xrayMode} productPosition={productPosition} />
           <CameraController cameraRef={cameraActionRef} isDragging={dragStateRef.current.isDragging} spaceHeld={spaceHeld} />
           {onScreenshotReady && <ScreenshotHelper onScreenshotReady={onScreenshotReady} />}
+          <FitAllHelper
+            objects={objects}
+            productPosition={productPosition}
+            productDimensions={productDimensions}
+            cameraRef={cameraActionRef}
+            onFitAllReady={onFitAllReady}
+          />
         </Suspense>
       </Canvas>
 
