@@ -34,7 +34,8 @@ export const MechanismRenderer = memo(function MechanismRenderer({
           <g
             key={obj.id}
             transform={`translate(${obj.x}, ${obj.y}) rotate(${obj.rotation})`}
-            onMouseDown={(e) => onMouseDown(e, obj)}
+            onPointerDown={(e) => { e.stopPropagation(); onMouseDown(e, obj); }}
+            onPointerUp={(e) => e.stopPropagation()}
             style={{ cursor: obj.locked ? 'not-allowed' : panMode ? 'inherit' : 'move' }}
             filter={isSelected ? "url(#glow)" : "url(#drop-shadow)"}
           >

@@ -1024,10 +1024,10 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               ref={canvasRef}
               viewBox={`${-pan.x / zoom} ${-pan.y / zoom} ${canvasWidth / zoom} ${canvasHeight / zoom}`}
               className={cn("w-full h-full", panMode ? "cursor-grab" : "cursor-default", isPanning && "cursor-grabbing")}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-              onMouseDown={handleCanvasMouseDown}
+              onPointerMove={handleMouseMove as any}
+              onPointerUp={handleMouseUp}
+              onPointerLeave={handleMouseUp}
+              onPointerDown={handleCanvasMouseDown}
               onWheel={handleWheel}
             >
               <CanvasSVGDefs gridSize={gridSize} />
