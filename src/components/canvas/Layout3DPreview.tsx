@@ -1911,6 +1911,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 objectClickedRef={objectClickedRef}
                 selectedObjectId={activeSelectedId}
                 editMode={editMode}
+                spaceHeld={spaceHeld}
               >
                 <Mechanism3DModel
                   obj={obj}
