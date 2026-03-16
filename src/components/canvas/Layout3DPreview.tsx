@@ -1804,7 +1804,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeSelectedId, objects, onUpdateObject, onUpdateProductPosition, productPosition, snapEnabled, SNAP_GRID]);
+  }, [editMode, activeSelectedId, objects, onUpdateObject, onUpdateProductPosition, productPosition, snapEnabled, SNAP_GRID]);
 
   const selectedObj = activeSelectedId
     ? (activeSelectedId === '__product__'
