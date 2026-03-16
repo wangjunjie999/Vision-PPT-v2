@@ -1300,9 +1300,11 @@ const VIEW_PRESETS = [
 function CameraController({
   cameraRef,
   isDragging,
+  spaceHeld,
 }: {
   cameraRef: React.MutableRefObject<{ position: [number, number, number]; target: [number, number, number] } | null>;
   isDragging: boolean;
+  spaceHeld: boolean;
 }) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
@@ -1329,7 +1331,7 @@ function CameraController({
       maxDistance={30}
       enabled={!isDragging}
       mouseButtons={{
-        LEFT: undefined as any,
+        LEFT: spaceHeld ? THREE.MOUSE.PAN : (undefined as any),
         MIDDLE: THREE.MOUSE.DOLLY,
         RIGHT: THREE.MOUSE.ROTATE,
       }}
