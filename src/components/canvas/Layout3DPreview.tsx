@@ -127,6 +127,7 @@ function DraggableGroup({
   objectClickedRef,
   selectedObjectId,
   editMode,
+  spaceHeld,
 }: {
   children: React.ReactNode;
   objectId: string;
@@ -138,6 +139,7 @@ function DraggableGroup({
   objectClickedRef: React.MutableRefObject<boolean>;
   selectedObjectId?: string | null;
   editMode?: boolean;
+  spaceHeld?: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const pointerDownPos = useRef<{ x: number; y: number; point: THREE.Vector3 } | null>(null);
