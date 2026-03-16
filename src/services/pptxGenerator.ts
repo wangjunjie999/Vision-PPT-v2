@@ -893,7 +893,11 @@ export async function generatePPTX(
   // 使用 SLIDE_LAYOUT 常量确保内容在内容区内
   const SL = SLIDE_LAYOUT;
   
-  addSlideTitle(mountGuideSlide, isZh ? '4. 选型指南——相机安装方向说明' : '4. Selection Guide - Camera Installation Direction');
+  mountGuideSlide.addText(isZh ? '4. 选型指南——相机安装方向说明' : '4. Selection Guide - Camera Installation Direction', {
+    x: SL.contentLeft, y: SL.contentTop, w: SL.contentWidth, h: 0.4,
+    fontSize: 18, fontFace: FONTS.heading, color: COLORS.primary, bold: true,
+    shadow: HEADING_SHADOW,
+  });
 
   // 说明文字
   mountGuideSlide.addText(isZh ? '如何区分芯片的长短边?' : 'How to identify the long/short side of the sensor?', {
