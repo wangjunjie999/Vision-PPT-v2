@@ -1,44 +1,27 @@
 
 
-# FOV 输入改为两个独立数值框
+# 修复 PPT 三个问题
 
-## 问题
+## 问题 1：等轴测图片不显示
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+**根因**：`pptxGenerator.ts` 第 993-1012 行构建 layout 数据时，没有传递 `isometric_view_image_url` 字段。`workstationSlides.ts` 第 676 行读取 `layout.isometric_view_image_url` 时始终为 null。
 
-## 修改方案
-
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
-
-在 `ModuleFormState` 中添加：
+**修复**：在 `pptxGenerator.ts` 第 1001 行后添加：
 ```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
+isometric_view_image_url: (wsLayout as any).isometric_view_image_url || null,
 ```
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+## 问题 2：删除附录补充字段
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+**根因**：`pptxGenerator.ts` 第 1187-1289 行生成了"附录：补充字段"幻灯片。
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+**修复**：删除整段附录生成代码（约 100 行）。
 
-```
-[宽度输入] × [高度输入]
-```
+## 问题 3：第 4 页内容居中
 
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+用户反映放映模式正常但编辑模式不正常，这通常是 PPTX 编辑器的缩放显示差异，不是实际内容偏移。当前产品示意图容器 `x: 0.5, y: 1.2, width: 5.5` 已经合理。如果需要更居中，可以调整图片容器使其更对称（`x: 0.8, y: 1.0, width: 8.4` 居中全宽）。但因放映模式正常，暂不调整。
 
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+### 修改文件
 
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+- `src/services/pptxGenerator.ts` — 添加 isometric URL 传递 + 删除附录代码
 
