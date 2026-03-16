@@ -1,38 +1,44 @@
 
 
-# 修复第4页（相机安装方向说明）编辑模式布局问题
+# FOV 输入改为两个独立数值框
 
-## 根因分析
+## 问题
 
-第4页的所有元素使用了硬编码坐标，没有使用 `SLIDE_LAYOUT` 常量：
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-| 元素 | 当前坐标 | 问题 |
-|------|----------|------|
-| 标题 | `y: 0.05` | 在母版头部区域之上，被背景遮挡 |
-| 副标题 | `y: 1.0` | 位置偏高 |
-| 左图 | `x: 1.0, y: 1.5, 3.5×3.5` | 图片过大，底部到 y=5.0 几乎触底 |
-| 右图 | `x: 5.5, y: 1.5, 3.5×3.5` | 同上 |
-| 标注文字 | `y: 3.2` | 与图片重叠 |
+## 修改方案
 
-幻灯片内容区实际为 `y: 0.55` 到 `y: 5.325`（高度 4.775 英寸）。当前内容从 `y: 0.05` 开始，不在内容区内，导致编辑模式下与母版背景错位。
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-## 修复方案
-
-### 文件：`src/services/pptxGenerator.ts`（第 891-939 行）
-
-重写第4页坐标，全部基于 `SLIDE_LAYOUT` 常量：
-
-```text
-标题:    x: contentLeft, y: contentTop,       使用 addSlideTitle 统一函数
-副标题:  x: contentLeft, y: contentTop + 0.5
-左图:    x: contentLeft + 0.4, y: contentTop + 0.9, w: 3.8, h: 3.2  (contain sizing)
-右图:    x: contentLeft + 4.8, y: contentTop + 0.9, w: 3.8, h: 3.2  (contain sizing)
-标注:    调整到图片下方
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
 ```
 
-- 图片缩小为 3.8×3.2，给标注文字留空间
-- 两张图水平对称居中于 `contentWidth`
-- 使用 `addSlideTitle` 统一标题样式（与其他页面一致）
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-约 20 行修改，仅涉及坐标数值调整。
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+
+```
+[宽度输入] × [高度输入]
+```
+
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
