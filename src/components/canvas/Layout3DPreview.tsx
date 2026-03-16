@@ -127,6 +127,7 @@ function DraggableGroup({
   objectClickedRef,
   selectedObjectId,
   editMode,
+  spaceHeld,
 }: {
   children: React.ReactNode;
   objectId: string;
@@ -138,6 +139,7 @@ function DraggableGroup({
   objectClickedRef: React.MutableRefObject<boolean>;
   selectedObjectId?: string | null;
   editMode?: boolean;
+  spaceHeld?: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const pointerDownPos = useRef<{ x: number; y: number; point: THREE.Vector3 } | null>(null);
@@ -149,7 +151,7 @@ function DraggableGroup({
       position={position}
       rotation={rotation}
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
-        if (e.button !== 0) return;
+        if (e.button !== 0 || spaceHeld) return;
         e.stopPropagation();
         objectClickedRef.current = true;
         pointerDownPos.current = { x: e.clientX, y: e.clientY, point: e.point.clone() };
@@ -1300,9 +1302,11 @@ const VIEW_PRESETS = [
 function CameraController({
   cameraRef,
   isDragging,
+  spaceHeld,
 }: {
   cameraRef: React.MutableRefObject<{ position: [number, number, number]; target: [number, number, number] } | null>;
   isDragging: boolean;
+  spaceHeld: boolean;
 }) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
@@ -1329,7 +1333,7 @@ function CameraController({
       maxDistance={30}
       enabled={!isDragging}
       mouseButtons={{
-        LEFT: undefined as any,
+        LEFT: spaceHeld ? THREE.MOUSE.PAN : (undefined as any),
         MIDDLE: THREE.MOUSE.DOLLY,
         RIGHT: THREE.MOUSE.ROTATE,
       }}
@@ -1570,6 +1574,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [xrayMode, setXrayMode] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [spaceHeld, setSpaceHeld] = useState(false);
   const SNAP_GRID = 10;
   const dragStateRef = useRef<DragState>({
     isDragging: false,
@@ -1694,6 +1699,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   useEffect(() => {
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'r' || e.key === 'R') rKeyHeld.current = false;
+      if (e.key === ' ' || e.code === 'Space') setSpaceHeld(false);
     };
     window.addEventListener('keyup', handleKeyUp);
     return () => window.removeEventListener('keyup', handleKeyUp);
@@ -1703,6 +1709,13 @@ export const Layout3DPreview = memo(function Layout3DPreview({
     if (!onUpdateObject) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Space key: enable pan mode
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        if (!e.repeat) setSpaceHeld(true);
+        return;
+      }
+
       if (e.key === 'r' || e.key === 'R') {
         if (!e.repeat) rKeyHeld.current = true;
         return;
@@ -1869,6 +1882,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
             objectClickedRef={objectClickedRef}
             selectedObjectId={activeSelectedId}
             editMode={editMode}
+            spaceHeld={spaceHeld}
           >
             <ProductBox
               dimensions={productDimensions}
@@ -1897,6 +1911,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 objectClickedRef={objectClickedRef}
                 selectedObjectId={activeSelectedId}
                 editMode={editMode}
+                spaceHeld={spaceHeld}
               >
                 <Mechanism3DModel
                   obj={obj}
@@ -1930,6 +1945,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 objectClickedRef={objectClickedRef}
                 selectedObjectId={activeSelectedId}
                 editMode={editMode}
+                spaceHeld={spaceHeld}
               >
                 <CameraObject obj={obj} selected={isSelected} dimmed={isDimmed} />
               </DraggableGroup>
@@ -1937,7 +1953,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
           })}
 
           <RelationshipLines objects={objects} xrayMode={xrayMode} productPosition={productPosition} />
-          <CameraController cameraRef={cameraActionRef} isDragging={dragStateRef.current.isDragging} />
+          <CameraController cameraRef={cameraActionRef} isDragging={dragStateRef.current.isDragging} spaceHeld={spaceHeld} />
           {onScreenshotReady && <ScreenshotHelper onScreenshotReady={onScreenshotReady} />}
         </Suspense>
       </Canvas>
@@ -1996,7 +2012,12 @@ export const Layout3DPreview = memo(function Layout3DPreview({
           </div>
           {activeSelectedId && editMode && (
             <div className="flex items-center px-2.5 py-1 mt-1.5 text-[10px] text-slate-400 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-600/50">
-              ←→↑↓ 移动 · Shift+↑↓ 升降 · R+方向键 旋转
+              ←→↑↓ 移动 · Shift+↑↓ 升降 · R+方向键 旋转 · 空格+左键 平移视角
+            </div>
+          )}
+          {!editMode && (
+            <div className="flex items-center px-2.5 py-1 mt-1.5 text-[10px] text-slate-400 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-600/50">
+              右键旋转 · 滚轮缩放 · 空格+左键 平移视角
             </div>
           )}
         </div>
