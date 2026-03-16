@@ -1658,6 +1658,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   const cameraActionRef = useRef<{ position: [number, number, number]; target: [number, number, number] } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
+  const fitAllFnRef = useRef<(() => void) | null>(null);
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [xrayMode, setXrayMode] = useState(false);
   const [editMode, setEditMode] = useState(false);
