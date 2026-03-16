@@ -11,7 +11,7 @@ interface MechanismRendererProps {
   panMode: boolean;
   isDragging: boolean;
   draggingObject: LayoutObject | null;
-  onMouseDown: (e: React.MouseEvent, obj: LayoutObject) => void;
+  onMouseDown: (e: React.PointerEvent, obj: LayoutObject) => void;
   onResize: (id: string, width: number, height: number, x: number, y: number) => void;
   getMechanismImageForObject: (obj: LayoutObject) => string | null;
   currentView?: 'front' | 'side' | 'top';
