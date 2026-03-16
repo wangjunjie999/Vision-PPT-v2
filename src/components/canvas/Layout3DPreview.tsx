@@ -1647,7 +1647,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       };
     }
     dragMovedRef.current = false;
-  }, [onUpdateObject, onUpdateProductPosition, objects, productPosition]);
+  }, [editMode, activeSelectedId, onUpdateObject, onUpdateProductPosition, objects, productPosition]);
 
   const handleDragMove = useCallback((point: THREE.Vector3) => {
     const state = dragStateRef.current;
