@@ -1994,7 +1994,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
               网格吸附 ({SNAP_GRID}mm)
             </button>
           </div>
-          {activeSelectedId && (
+          {activeSelectedId && editMode && (
             <div className="flex items-center px-2.5 py-1 mt-1.5 text-[10px] text-slate-400 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-600/50">
               ←→↑↓ 移动 · Shift+↑↓ 升降 · R+方向键 旋转
             </div>
