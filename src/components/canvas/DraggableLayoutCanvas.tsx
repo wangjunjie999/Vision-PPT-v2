@@ -806,11 +806,28 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
           setSaveProgress(10 + Math.round(((i + 1) / views.length) * 35));
         }
 
-        // Capture isometric (3D) screenshot — fitAll first to ensure all objects visible
+        // Capture isometric (3D) screenshot — poll for 3D scene readiness
         setCurrentView('isometric');
-        await new Promise(r => setTimeout(r, 400));
-        fitAllFnRef.current?.();
-        await new Promise(r => setTimeout(r, 600));
+        // Wait for 3D canvas to mount and register screenshot/fitAll refs (up to 3s)
+        {
+          let attempts = 0;
+          while (!isometricScreenshotFnRef.current && attempts < 30) {
+            await new Promise(r => setTimeout(r, 100));
+            attempts++;
+          }
+        }
+        if (isometricScreenshotFnRef.current) {
+          // Wait for fitAll ref too
+          {
+            let attempts = 0;
+            while (!fitAllFnRef.current && attempts < 10) {
+              await new Promise(r => setTimeout(r, 100));
+              attempts++;
+            }
+          }
+          fitAllFnRef.current?.();
+          await new Promise(r => setTimeout(r, 600));
+        }
         if (isometricScreenshotFnRef.current) {
           try {
             const isoDataUrl = isometricScreenshotFnRef.current();

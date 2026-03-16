@@ -1631,11 +1631,41 @@ function FitAllHelper({
       const depth = maxZ - minZ;
       const maxExtent = Math.max(width, height, depth, 0.5);
 
-      const fov = (camera as THREE.PerspectiveCamera).fov;
-      const fovRad = (fov * Math.PI) / 180;
-      const distance = (maxExtent / 2) / Math.tan(fovRad / 2) * 1.4;
+      const perspCam = camera as THREE.PerspectiveCamera;
+      const fovRad = (perspCam.fov * Math.PI) / 180;
+      const aspect = perspCam.aspect || 1;
 
+      // Project bounding box onto isometric view plane
       const dir = new THREE.Vector3(1, 0.85, 1).normalize();
+      const right = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0, 1, 0)).normalize();
+      const up = new THREE.Vector3().crossVectors(right, dir).normalize();
+
+      // Compute projected extents on the view plane
+      const corners = [
+        new THREE.Vector3(minX, minY, minZ), new THREE.Vector3(maxX, minY, minZ),
+        new THREE.Vector3(minX, maxY, minZ), new THREE.Vector3(maxX, maxY, minZ),
+        new THREE.Vector3(minX, minY, maxZ), new THREE.Vector3(maxX, minY, maxZ),
+        new THREE.Vector3(minX, maxY, maxZ), new THREE.Vector3(maxX, maxY, maxZ),
+      ];
+      let projMinU = Infinity, projMaxU = -Infinity;
+      let projMinV = Infinity, projMaxV = -Infinity;
+      for (const c of corners) {
+        const u = c.dot(right);
+        const v = c.dot(up);
+        if (u < projMinU) projMinU = u;
+        if (u > projMaxU) projMaxU = u;
+        if (v < projMinV) projMinV = v;
+        if (v > projMaxV) projMaxV = v;
+      }
+      const projWidth = projMaxU - projMinU;
+      const projHeight = projMaxV - projMinV;
+
+      // Calculate distances needed for vertical and horizontal FOV
+      const distV = (projHeight / 2) / Math.tan(fovRad / 2);
+      const hFovRad = 2 * Math.atan(Math.tan(fovRad / 2) * aspect);
+      const distH = (projWidth / 2) / Math.tan(hFovRad / 2);
+      const distance = Math.max(distV, distH, 0.5) * 1.2;
+
       const camPos = new THREE.Vector3(cx, cy, cz).add(dir.clone().multiplyScalar(distance));
 
       cameraRef.current = {
