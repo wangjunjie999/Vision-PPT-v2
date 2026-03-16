@@ -1707,6 +1707,13 @@ export const Layout3DPreview = memo(function Layout3DPreview({
     if (!onUpdateObject) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Space key: enable pan mode
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        if (!e.repeat) setSpaceHeld(true);
+        return;
+      }
+
       if (e.key === 'r' || e.key === 'R') {
         if (!e.repeat) rKeyHeld.current = true;
         return;
