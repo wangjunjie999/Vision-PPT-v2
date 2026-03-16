@@ -1978,6 +1978,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
             selectedObjectId={activeSelectedId}
             editMode={editMode}
             spaceHeld={spaceHeld}
+            onDragEnd={handleDragEnd}
           >
             <ProductBox
               dimensions={productDimensions}
