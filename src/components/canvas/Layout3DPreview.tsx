@@ -1928,6 +1928,8 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 onDragStart={handleDragStart}
                 onClick={(id) => { handleSelect(id); }}
                 objectClickedRef={objectClickedRef}
+                selectedObjectId={activeSelectedId}
+                editMode={editMode}
               >
                 <CameraObject obj={obj} selected={isSelected} dimmed={isDimmed} />
               </DraggableGroup>
