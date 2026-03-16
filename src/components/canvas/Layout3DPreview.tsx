@@ -1959,6 +1959,18 @@ export const Layout3DPreview = memo(function Layout3DPreview({
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
           <div className="flex bg-slate-800/90 backdrop-blur-sm rounded-lg border border-slate-600/50 overflow-hidden">
             <button
+              onClick={() => setEditMode(!editMode)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
+                editMode
+                  ? 'bg-amber-600 text-white'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title={editMode ? '编辑模式：可拖拽和键盘移动硬件' : '预览模式：仅查看，不可移动硬件'}
+            >
+              {editMode ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+              {editMode ? '编辑' : '预览'}
+            </button>
+            <button
               onClick={() => setXrayMode(!xrayMode)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
                 xrayMode
