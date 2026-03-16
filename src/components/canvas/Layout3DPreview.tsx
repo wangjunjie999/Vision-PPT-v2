@@ -1556,6 +1556,91 @@ function SelectedInfoPanel({ obj, objects, onDeselect, onUpdateObject, productDi
   );
 }
 
+// --- FitAll helper: calculates scene bounding box and moves camera ---
+function FitAllHelper({
+  objects,
+  productPosition,
+  productDimensions,
+  cameraRef,
+  onFitAllReady,
+}: {
+  objects: LayoutObject[];
+  productPosition: { posX: number; posY: number; posZ: number };
+  productDimensions: { length: number; width: number; height: number };
+  cameraRef: React.MutableRefObject<{ position: [number, number, number]; target: [number, number, number] } | null>;
+  onFitAllReady?: (fn: () => void) => void;
+}) {
+  const { camera } = useThree();
+
+  useEffect(() => {
+    if (!onFitAllReady) return;
+    onFitAllReady(() => {
+      // Collect all object positions and sizes to compute bounding box
+      let minX = Infinity, maxX = -Infinity;
+      let minY = Infinity, maxY = -Infinity;
+      let minZ = Infinity, maxZ = -Infinity;
+
+      const addPoint = (x: number, y: number, z: number) => {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+        if (z < minZ) minZ = z;
+        if (z > maxZ) maxZ = z;
+      };
+
+      // Product bounding box
+      const pw = (productDimensions.length ?? 100) * SCALE;
+      const ph = (productDimensions.height ?? 50) * SCALE;
+      const pd = (productDimensions.width ?? 100) * SCALE;
+      const ppx = productPosition.posX * SCALE;
+      const ppy = productPosition.posZ * SCALE;
+      const ppz = productPosition.posY * SCALE;
+      addPoint(ppx - pw / 2, ppy, ppz - pd / 2);
+      addPoint(ppx + pw / 2, ppy + ph, ppz + pd / 2);
+
+      // All layout objects
+      for (const obj of objects) {
+        const ox = (obj.posX ?? 0) * SCALE;
+        const oy = (obj.posZ ?? 0) * SCALE;
+        const oz = (obj.posY ?? 0) * SCALE;
+        const ow = (obj.width ?? 200) * SCALE / 2;
+        const oh = (obj.height ?? 200) * SCALE;
+        const od = ((obj as any).depth ?? 200) * SCALE / 2;
+        addPoint(ox - ow, oy, oz - od);
+        addPoint(ox + ow, oy + oh, oz + od);
+      }
+
+      // Fallback if no objects
+      if (!isFinite(minX)) {
+        minX = -1; maxX = 1; minY = 0; maxY = 2; minZ = -1; maxZ = 1;
+      }
+
+      const cx = (minX + maxX) / 2;
+      const cy = (minY + maxY) / 2;
+      const cz = (minZ + maxZ) / 2;
+      const width = maxX - minX;
+      const height = maxY - minY;
+      const depth = maxZ - minZ;
+      const maxExtent = Math.max(width, height, depth, 0.5);
+
+      const fov = (camera as THREE.PerspectiveCamera).fov;
+      const fovRad = (fov * Math.PI) / 180;
+      const distance = (maxExtent / 2) / Math.tan(fovRad / 2) * 1.4;
+
+      const dir = new THREE.Vector3(1, 0.85, 1).normalize();
+      const camPos = new THREE.Vector3(cx, cy, cz).add(dir.clone().multiplyScalar(distance));
+
+      cameraRef.current = {
+        position: [camPos.x, camPos.y, camPos.z],
+        target: [cx, cy, cz],
+      };
+    });
+  }, [objects, productPosition, productDimensions, camera, cameraRef, onFitAllReady]);
+
+  return null;
+}
+
 export const Layout3DPreview = memo(function Layout3DPreview({
   objects,
   productDimensions,
@@ -1564,6 +1649,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   onUpdateObject,
   onUpdateProductDimensions,
   onScreenshotReady,
+  onFitAllReady,
   productPosition: productPositionProp,
   onUpdateProductPosition,
   onStageLayout,
