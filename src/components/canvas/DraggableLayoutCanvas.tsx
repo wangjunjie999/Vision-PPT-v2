@@ -93,6 +93,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     front: false, side: false, top: false, isometric: false,
   });
   const isometricScreenshotFnRef = useRef<(() => string | null) | null>(null);
+  const fitAllFnRef = useRef<(() => void) | null>(null);
   const [cameraPickerOpen, setCameraPickerOpen] = useState(false);
 
   // Layer order
