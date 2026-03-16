@@ -320,8 +320,7 @@ export function VisionSystemDiagram({
         {/* ===== FOV Cone - saturated purple, from lens bottom through light & bracket to product ===== */}
         <polygon 
           points={`275,175 ${275 - fovOffsetX},420 ${275 + fovOffsetX},420`}
-          fill="hsl(270, 60%, 50%)"
-          opacity="0.18"
+          fill="url(#fovGradient)"
         />
         <line 
           x1="275" y1="175" x2={275 - fovOffsetX} y2="420" 
