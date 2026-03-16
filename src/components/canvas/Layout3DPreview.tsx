@@ -125,6 +125,8 @@ function DraggableGroup({
   onDragStart,
   onClick,
   objectClickedRef,
+  selectedObjectId,
+  editMode,
 }: {
   children: React.ReactNode;
   objectId: string;
@@ -134,6 +136,8 @@ function DraggableGroup({
   onDragStart: (id: string, point: THREE.Vector3) => void;
   onClick: (id: string) => void;
   objectClickedRef: React.MutableRefObject<boolean>;
+  selectedObjectId?: string | null;
+  editMode?: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const pointerDownPos = useRef<{ x: number; y: number; point: THREE.Vector3 } | null>(null);
@@ -155,6 +159,9 @@ function DraggableGroup({
       }}
       onPointerMove={(e: ThreeEvent<PointerEvent>) => {
         if (!pointerDownPos.current || hasDragStarted.current) return;
+        // Only allow drag if in edit mode AND object is already selected
+        if (!editMode) return;
+        if (objectId !== selectedObjectId) return;
         const dx = Math.abs(e.clientX - pointerDownPos.current.x);
         const dy = Math.abs(e.clientY - pointerDownPos.current.y);
         if (dx > 5 || dy > 5) {
