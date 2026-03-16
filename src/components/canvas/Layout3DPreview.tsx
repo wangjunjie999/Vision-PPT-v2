@@ -2008,6 +2008,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 selectedObjectId={activeSelectedId}
                 editMode={editMode}
                 spaceHeld={spaceHeld}
+                onDragEnd={handleDragEnd}
               >
                 <Mechanism3DModel
                   obj={obj}
