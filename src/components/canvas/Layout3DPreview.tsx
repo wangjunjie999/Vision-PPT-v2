@@ -2048,7 +2048,10 @@ export const Layout3DPreview = memo(function Layout3DPreview({
             productPosition={productPosition}
             productDimensions={productDimensions}
             cameraRef={cameraActionRef}
-            onFitAllReady={onFitAllReady}
+            onFitAllReady={(fn) => {
+              fitAllFnRef.current = fn;
+              onFitAllReady?.(fn);
+            }}
           />
         </Suspense>
       </Canvas>
