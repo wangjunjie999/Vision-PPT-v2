@@ -484,7 +484,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
 
   const isIsometric = currentView === 'isometric';
 
-  const handleMouseDown = useCallback((e: React.MouseEvent, obj: LayoutObject) => {
+  const handleMouseDown = useCallback((e: React.PointerEvent, obj: LayoutObject) => {
     if (obj.locked || panMode || isIsometric) return;
     e.stopPropagation();
     if (e.shiftKey && selectedId && selectedId !== obj.id) {
