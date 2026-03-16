@@ -213,10 +213,11 @@ export function VisionSystemDiagram({
         style={{ maxHeight: '100%', transform: 'translateZ(0)' }}
       >
         <defs>
-          {/* Camera FOV gradient */}
+          {/* Camera FOV gradient - lens to product fade */}
           <linearGradient id="fovGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="hsl(220, 80%, 60%)" stopOpacity="0.15" />
-            <stop offset="100%" stopColor="hsl(220, 80%, 60%)" stopOpacity="0.05" />
+            <stop offset="0%" stopColor="hsl(270, 60%, 55%)" stopOpacity="0.35" />
+            <stop offset="40%" stopColor="hsl(270, 55%, 50%)" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="hsl(270, 50%, 45%)" stopOpacity="0.04" />
           </linearGradient>
 
           {/* Light cone gradient */}
@@ -319,8 +320,7 @@ export function VisionSystemDiagram({
         {/* ===== FOV Cone - saturated purple, from lens bottom through light & bracket to product ===== */}
         <polygon 
           points={`275,175 ${275 - fovOffsetX},420 ${275 + fovOffsetX},420`}
-          fill="hsl(270, 60%, 50%)"
-          opacity="0.18"
+          fill="url(#fovGradient)"
         />
         <line 
           x1="275" y1="175" x2={275 - fovOffsetX} y2="420" 
