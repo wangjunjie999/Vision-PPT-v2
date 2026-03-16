@@ -1008,6 +1008,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               updateWorkstation(workstationId, { product_dimensions: dims as any });
             }}
             onScreenshotReady={(fn) => { isometricScreenshotFnRef.current = fn; }}
+            onFitAllReady={(fn) => { fitAllFnRef.current = fn; }}
             productPosition={localProductPosition}
             onUpdateProductPosition={setLocalProductPosition}
             onStageLayout={handleStageLayout}
