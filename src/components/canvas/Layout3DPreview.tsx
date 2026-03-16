@@ -2136,6 +2136,16 @@ export const Layout3DPreview = memo(function Layout3DPreview({
         <Button
           variant="secondary"
           size="sm"
+          className="gap-1.5 h-7 text-xs bg-sky-900/60 hover:bg-sky-800/70 border border-sky-600/50 backdrop-blur-sm text-sky-300"
+          onClick={() => fitAllFnRef.current?.()}
+          title="自动适配视角以包含所有对象"
+        >
+          <Maximize2 className="h-3 w-3" />
+          适配
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
           className="gap-1.5 h-7 text-xs bg-slate-800/80 hover:bg-slate-700/80 border border-slate-600/50 backdrop-blur-sm"
           onClick={() => handleViewPreset([7, 6, 7], [0, 1, 0])}
         >
