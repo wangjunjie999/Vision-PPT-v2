@@ -1,55 +1,44 @@
 
 
-# 修复等轴测截图问题：挂载时序 + 相机适配
+# FOV 输入改为两个独立数值框
 
-## 问题分析
+## 问题
 
-从截图可以看到两个问题：
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-1. **部分工位无法保存等轴测**：保存时从 2D 切换到等轴测视图，`Layout3DPreview` 需要挂载 → Canvas 初始化 → `ScreenshotHelper` 注册回调。当前仅等待 400ms，3D 场景可能尚未完成初始化，导致 `isometricScreenshotFnRef.current` 为 null。
+## 修改方案
 
-2. **内容太小**：`FitAllHelper` 的距离计算未考虑画布宽高比。当前公式 `distance = maxExtent / 2 / tan(fov/2) * 1.4` 只用了垂直 FOV 和最大维度，没有检查水平方向是否溢出或留白过多。对于宽屏画布，内容在垂直方向被缩得很小。
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-## 修复方案
-
-### 文件 1：`src/components/canvas/Layout3DPreview.tsx`
-
-**改进 FitAllHelper 的相机距离计算**：
-
-- 获取 `camera.aspect`（宽高比）
-- 分别计算垂直和水平方向所需距离
-- 取两者中较大值，确保所有内容在任意宽高比下都能完整显示
-- 降低 margin 从 1.4x 到 1.2x，让内容更紧凑
-
-```text
-verticalDistance = boxHeight / (2 * tan(vFov/2))
-horizontalDistance = boxWidth / (2 * tan(hFov/2))
-  其中 hFov = 2 * atan(tan(vFov/2) * aspect)
-distance = max(verticalDistance, horizontalDistance) * 1.2
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
 ```
 
-还需要将包围盒投影到等轴测视平面上计算投影宽度和高度，而非直接使用世界坐标的 width/height/depth。
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-### 文件 2：`src/components/canvas/DraggableLayoutCanvas.tsx`
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
 
-**修复挂载时序**：
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
 
-- 将 `isometricScreenshotFnRef` 和 `fitAllFnRef` 的就绪检测改为轮询等待（最多 3 秒），而非固定 400ms 延时
-- 确保 3D 场景完全初始化后再执行 fitAll 和截图
-
-```text
-// 替换固定等待
-setCurrentView('isometric');
-// 轮询等待 ref 就绪，最多 3s
-await waitForRef(isometricScreenshotFnRef, 3000);
-await waitForRef(fitAllFnRef, 1000);
-fitAllFnRef.current?.();
-await new Promise(r => setTimeout(r, 500));
-const isoDataUrl = isometricScreenshotFnRef.current();
+```
+[宽度输入] × [高度输入]
 ```
 
-### 修改量
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
 
-- `Layout3DPreview.tsx`：FitAllHelper 约 15 行改动
-- `DraggableLayoutCanvas.tsx`：保存流程约 15 行改动
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
