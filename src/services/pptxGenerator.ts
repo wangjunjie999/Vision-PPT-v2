@@ -893,7 +893,11 @@ export async function generatePPTX(
   const SL = SLIDE_LAYOUT;
   
   // 标题
-  addSlideTitle(mountGuideSlide, isZh ? '4. 选型指南——相机安装方向说明' : '4. Selection Guide - Camera Installation Direction');
+  mountGuideSlide.addText(isZh ? '4. 选型指南——相机安装方向说明' : '4. Selection Guide - Camera Installation Direction', {
+    x: SL.contentLeft, y: SL.contentTop, w: SL.contentWidth, h: 0.4,
+    fontSize: 18, fontFace: FONTS.heading, color: COLORS.primary, bold: true,
+    shadow: HEADING_SHADOW,
+  });
 
   // 加载固定的相机安装说明图片
   const guideImg = await fetchImageAsDataUri(`${window.location.origin}/ppt-covers/camera-mount-guide.jpg`);
