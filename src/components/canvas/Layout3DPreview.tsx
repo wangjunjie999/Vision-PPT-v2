@@ -1572,6 +1572,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [xrayMode, setXrayMode] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [spaceHeld, setSpaceHeld] = useState(false);
   const SNAP_GRID = 10;
   const dragStateRef = useRef<DragState>({
     isDragging: false,
