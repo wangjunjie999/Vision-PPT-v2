@@ -8,7 +8,7 @@ interface ProductRendererProps {
   secondSelectedId: string | null;
   panMode: boolean;
   isIsometric: boolean;
-  onMouseDown: (e: React.PointerEvent, obj: LayoutObject) => void;
+  onMouseDown: (e: React.MouseEvent, obj: LayoutObject) => void;
   onResize: (id: string, width: number, height: number, x: number, y: number) => void;
   productDimensions: { length: number; width: number; height: number };
   productW: number;
@@ -108,8 +108,7 @@ export const ProductRenderer = memo(function ProductRenderer({
           <g
             key={obj.id}
             transform={`translate(${obj.x}, ${obj.y}) rotate(${obj.rotation})`}
-            onPointerDown={(e) => { e.stopPropagation(); onMouseDown(e, obj); }}
-            onPointerUp={(e) => e.stopPropagation()}
+            onMouseDown={(e) => onMouseDown(e, obj)}
             style={{ cursor: obj.locked ? 'not-allowed' : panMode ? 'inherit' : 'move' }}
             filter={isSelected ? "url(#glow)" : "url(#drop-shadow)"}
             opacity={isMounted ? 0.7 : 1}

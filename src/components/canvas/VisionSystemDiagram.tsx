@@ -419,7 +419,7 @@ export function VisionSystemDiagram({
 
         {/* ===== Interactive Camera Element ===== */}
         <foreignObject x="230" y="35" width="90" height="85">
-           <div style={{ width: '100%', height: '100%', backgroundColor: 'transparent', transform: 'translateZ(0)' }}>
+          <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
             <HardwareSelectPopover
               type="camera"
               items={cameras}
@@ -427,7 +427,7 @@ export function VisionSystemDiagram({
               onSelect={onCameraSelect || (() => {})}
               disabled={!interactive || !onCameraSelect}
             >
-              <button style={{ position: 'relative', width: '100%', height: '100%', cursor: 'pointer', backgroundColor: 'transparent', border: 'none', padding: 0 }} className="group">
+              <button className={cn("relative w-full h-full cursor-pointer group bg-transparent border-0 p-0")}>
                 <svg width="90" height="85" viewBox="0 0 90 85">
                   {/* Camera body - purple */}
                   <rect x="0" y="0" width="90" height="72" rx="6" fill="url(#cameraBody)" />
@@ -441,13 +441,13 @@ export function VisionSystemDiagram({
                   <rect x="32" y="72" width="26" height="13" fill="hsl(0, 0%, 22%)" />
                 </svg>
                 {interactive && onCameraSelect && (
-                  <div style={{ position: 'absolute', top: -1, right: -1, width: 20, height: 20, backgroundColor: 'hsl(270, 60%, 50%)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, zIndex: 10 }} className="group-hover:opacity-100 transition-opacity">
-                    <span style={{ color: '#ffffff', fontSize: '12px' }}>✎</span>
+                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <span className="text-primary-foreground text-xs">✎</span>
                   </div>
                 )}
                 {!hasCamera && interactive && (
-                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(30, 41, 59, 0.5)', borderRadius: '4px' }}>
-                    <span style={{ fontSize: '12px', color: 'hsl(220, 15%, 60%)' }}>点击选择</span>
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded">
+                    <span className="text-xs text-muted-foreground">点击选择</span>
                   </div>
                 )}
               </button>
@@ -457,7 +457,7 @@ export function VisionSystemDiagram({
 
         {/* ===== Interactive Lens Element ===== */}
         <foreignObject x="227" y="120" width="96" height="62">
-           <div style={{ width: '100%', height: '100%', backgroundColor: 'transparent', transform: 'translateZ(0)' }}>
+          <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
             <HardwareSelectPopover
               type="lens"
               items={lenses}
@@ -465,7 +465,7 @@ export function VisionSystemDiagram({
               onSelect={onLensSelect || (() => {})}
               disabled={!interactive || !onLensSelect}
             >
-              <button style={{ position: 'relative', width: '100%', height: '100%', cursor: 'pointer', backgroundColor: 'transparent', border: 'none', padding: 0 }} className="group">
+              <button className={cn("relative w-full h-full cursor-pointer group bg-transparent border-0 p-0")}>
                 <svg width="96" height="62" viewBox="0 0 96 62">
                   {/* Lens body - dark brown */}
                   <rect x="8" y="0" width="80" height="48" rx="3" fill="url(#lensBody)" />
@@ -478,13 +478,13 @@ export function VisionSystemDiagram({
                   <rect x="13" y="26" width="70" height="2.5" fill="hsl(30, 15%, 45%)" rx="1" />
                 </svg>
                 {interactive && onLensSelect && (
-                  <div style={{ position: 'absolute', top: -1, right: -1, width: 20, height: 20, backgroundColor: 'hsl(270, 60%, 50%)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, zIndex: 10 }} className="group-hover:opacity-100 transition-opacity">
-                    <span style={{ color: '#ffffff', fontSize: '12px' }}>✎</span>
+                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <span className="text-primary-foreground text-xs">✎</span>
                   </div>
                 )}
                 {!hasLens && interactive && (
-                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(30, 41, 59, 0.5)', borderRadius: '4px' }}>
-                    <span style={{ fontSize: '12px', color: 'hsl(220, 15%, 60%)' }}>点击选择</span>
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded">
+                    <span className="text-xs text-muted-foreground">点击选择</span>
                   </div>
                 )}
               </button>
@@ -494,7 +494,7 @@ export function VisionSystemDiagram({
 
         {/* ===== Interactive Light Element - gray bar with red LED strips ===== */}
         <foreignObject x="195" y="215" width="160" height="32">
-           <div style={{ width: '100%', height: '100%', backgroundColor: 'transparent', transform: 'translateZ(0)' }}>
+          <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
             <HardwareSelectPopover
               type="light"
               items={lights}
@@ -502,7 +502,7 @@ export function VisionSystemDiagram({
               onSelect={onLightSelect || (() => {})}
               disabled={!interactive || !onLightSelect}
             >
-              <button style={{ position: 'relative', width: '100%', height: '100%', cursor: 'pointer', backgroundColor: 'transparent', border: 'none', padding: 0 }} className="group">
+              <button className={cn("relative w-full h-full cursor-pointer group bg-transparent border-0 p-0")}>
                 <svg width="160" height="32" viewBox="0 0 160 32">
                   {/* Light bar body - gray */}
                   <rect x="0" y="0" width="160" height="32" rx="4" fill="hsl(0, 0%, 45%)" />
@@ -515,13 +515,13 @@ export function VisionSystemDiagram({
                   <rect x="120" y="8" width="32" height="16" rx="2" fill="hsl(0, 80%, 50%)" />
                 </svg>
                 {interactive && onLightSelect && (
-                  <div style={{ position: 'absolute', top: -1, right: -1, width: 20, height: 20, backgroundColor: 'hsl(270, 60%, 50%)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, zIndex: 10 }} className="group-hover:opacity-100 transition-opacity">
-                    <span style={{ color: '#ffffff', fontSize: '12px' }}>✎</span>
+                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <span className="text-primary-foreground text-xs">✎</span>
                   </div>
                 )}
                 {!hasLight && interactive && (
-                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(30, 41, 59, 0.5)', borderRadius: '4px' }}>
-                    <span style={{ fontSize: '12px', color: 'hsl(220, 15%, 60%)' }}>点击选择</span>
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded">
+                    <span className="text-xs text-muted-foreground">点击选择</span>
                   </div>
                 )}
               </button>
@@ -532,7 +532,7 @@ export function VisionSystemDiagram({
         {/* Interactive Controller Element - positioned at bottom right, only show if controller is selected */}
         {hasController && (
           <foreignObject x="370" y="385" width="140" height="80">
-             <div style={{ width: '100%', height: '100%', backgroundColor: 'transparent', transform: 'translateZ(0)' }}>
+            <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
               <HardwareSelectPopover
                 type="controller"
                 items={controllers}
@@ -540,7 +540,7 @@ export function VisionSystemDiagram({
                 onSelect={onControllerSelect || (() => {})}
                 disabled={!interactive || !onControllerSelect}
               >
-                <div style={{ position: 'relative', width: '100%', height: '100%', cursor: 'pointer', backgroundColor: 'transparent' }} className="group">
+                <div className="relative w-full h-full cursor-pointer group">
                   <svg width="140" height="80" viewBox="0 0 140 80">
                     {/* IPC Body - compact version */}
                     <rect x="0" y="5" width="140" height="70" rx="3" fill="hsl(220, 15%, 25%)" />
@@ -579,8 +579,8 @@ export function VisionSystemDiagram({
                     <text x="100" y="58" textAnchor="middle" fill="#ffffff" style={{ fontSize: '9px', fontWeight: 500 }}>IPC</text>
                   </svg>
                   {interactive && onControllerSelect && (
-                    <div style={{ position: 'absolute', top: -1, right: -1, width: 16, height: 16, backgroundColor: 'hsl(270, 60%, 50%)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, zIndex: 10 }} className="group-hover:opacity-100 transition-opacity">
-                      <span style={{ color: '#ffffff', fontSize: '10px' }}>✎</span>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      <span className="text-primary-foreground text-[10px]">✎</span>
                     </div>
                   )}
                 </div>

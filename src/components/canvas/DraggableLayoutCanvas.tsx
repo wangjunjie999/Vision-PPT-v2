@@ -484,24 +484,16 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
 
   const isIsometric = currentView === 'isometric';
 
-  const handleMouseDown = useCallback((e: React.PointerEvent, obj: LayoutObject) => {
+  const handleMouseDown = useCallback((e: React.MouseEvent, obj: LayoutObject) => {
     if (obj.locked || panMode || isIsometric) return;
     e.stopPropagation();
     if (e.shiftKey && selectedId && selectedId !== obj.id) {
       setSelectedIds(prev => prev.includes(obj.id) ? prev : [...prev, obj.id]);
       return;
     }
-
-    const alreadySelected = selectedId === obj.id;
-
-    if (!alreadySelected) {
-      // 首次点击：仅选中，不启动拖拽
-      setSelectedIds([obj.id]);
-      setShowPropertyPanel(true);
-      return;
-    }
-
-    // 已选中状态下再次按下：准备拖拽
+    setSelectedIds([obj.id]);
+    setShowPropertyPanel(true);
+    // Record mouse down position; don't start dragging yet
     const pos = screenToSvg(e.clientX, e.clientY);
     mouseDownPos.current = { x: e.clientX, y: e.clientY, objId: obj.id };
     setDragOffset({ x: pos.x - obj.x, y: pos.y - obj.y });
@@ -660,7 +652,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     mouseDownPos.current = null;
   };
 
-  const handleCanvasMouseDown = (e: React.PointerEvent) => {
+  const handleCanvasMouseDown = (e: React.MouseEvent) => {
     // If click hit an interactive object, stopPropagation already prevented reaching here
     // So any event that arrives is a background/grid click → deselect
     if (panMode) {
@@ -1024,10 +1016,10 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
               ref={canvasRef}
               viewBox={`${-pan.x / zoom} ${-pan.y / zoom} ${canvasWidth / zoom} ${canvasHeight / zoom}`}
               className={cn("w-full h-full", panMode ? "cursor-grab" : "cursor-default", isPanning && "cursor-grabbing")}
-              onPointerMove={handleMouseMove as any}
-              onPointerUp={handleMouseUp}
-              onPointerLeave={handleMouseUp}
-              onPointerDown={handleCanvasMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onMouseDown={handleCanvasMouseDown}
               onWheel={handleWheel}
             >
               <CanvasSVGDefs gridSize={gridSize} />
