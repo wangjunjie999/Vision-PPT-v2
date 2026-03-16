@@ -151,7 +151,7 @@ function DraggableGroup({
       position={position}
       rotation={rotation}
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
-        if (e.button !== 0) return;
+        if (e.button !== 0 || spaceHeld) return;
         e.stopPropagation();
         objectClickedRef.current = true;
         pointerDownPos.current = { x: e.clientX, y: e.clientY, point: e.point.clone() };
