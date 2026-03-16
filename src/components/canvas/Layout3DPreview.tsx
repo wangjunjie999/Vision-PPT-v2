@@ -1624,6 +1624,9 @@ export const Layout3DPreview = memo(function Layout3DPreview({
   }, []);
 
   const handleDragStart = useCallback((id: string, point: THREE.Vector3) => {
+    // Guard: only allow drag in edit mode and for already-selected objects
+    if (!editMode) return;
+    if (id !== activeSelectedId) return;
     if (id === '__product__') {
       if (!onUpdateProductPosition) return;
       dragStateRef.current = {
