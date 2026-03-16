@@ -806,8 +806,10 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
           setSaveProgress(10 + Math.round(((i + 1) / views.length) * 35));
         }
 
-        // Capture isometric (3D) screenshot
+        // Capture isometric (3D) screenshot — fitAll first to ensure all objects visible
         setCurrentView('isometric');
+        await new Promise(r => setTimeout(r, 400));
+        fitAllFnRef.current?.();
         await new Promise(r => setTimeout(r, 600));
         if (isometricScreenshotFnRef.current) {
           try {
