@@ -176,9 +176,14 @@ function DraggableGroup({
       }}
       onPointerUp={(e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
+        const wasDragging = hasDragStarted.current;
         pointerDownPos.current = null;
         hasDragStarted.current = false;
-        dragState.current = { isDragging: false, objectId: null, startPoint: null, startPos: null };
+        if (wasDragging) {
+          onDragEnd?.();
+        } else {
+          dragState.current = { isDragging: false, objectId: null, startPoint: null, startPos: null };
+        }
       }}
     >
       {children}
