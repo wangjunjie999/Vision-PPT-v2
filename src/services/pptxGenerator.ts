@@ -740,7 +740,7 @@ export async function generatePPTX(
   descSlide.addText(isZh ? '项目说明' : 'Project Description', {
     x: 0.4, y: 0.05, w: 5, h: 0.38,
     fontSize: 18, fontFace: FONTS.heading, color: COLORS.primary, bold: true,
-    shadow: HEADING_SHADOW,
+    shadow: createHeadingShadow(),
   });
   descSlide.addText(isZh ? '项目基本信息' : 'Project Information', {
     x: 0, y: 0.52, w: '100%', h: 0.22,
