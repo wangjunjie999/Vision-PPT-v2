@@ -167,50 +167,19 @@ export function ModuleSchematic() {
   // Export as PDF
   const handleExportPDF = useCallback(async () => {
     if (!diagramRef.current || !module) return;
-    
     try {
       toast.loading('正在生成PDF...');
-      const pixelRatio = getPixelRatio();
-      
-      const el = diagramRef.current;
-      const originalStyle = el.style.cssText;
-      el.style.width = '1200px';
-      el.style.height = '1100px';
-      el.style.maxWidth = 'none';
-      el.style.overflow = 'hidden';
-      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-      
-      const dataUrl = await toPng(el, {
-        width: 1200,
-        height: 1100,
-        quality: 1,
-        pixelRatio,
-        backgroundColor: '#1a1a2e',
-        skipFonts: true,
-      });
-      
-      el.style.cssText = originalStyle;
-      
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4',
-      });
-      
+      const dataUrl = await captureOffscreen(getPixelRatio());
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
       const imgWidth = 280;
-      const imgHeight = (diagramRef.current.offsetHeight / diagramRef.current.offsetWidth) * imgWidth;
-      
+      const imgHeight = (1100 / 1200) * imgWidth;
       pdf.setFillColor(26, 26, 46);
       pdf.rect(0, 0, 297, 210, 'F');
-      
       pdf.addImage(dataUrl, 'PNG', 8, 10, imgWidth, imgHeight);
-      
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(12);
       pdf.text(`${module.name} - 视觉系统示意图`, 148, 200, { align: 'center' });
-      
       pdf.save(`${module.name}-视觉系统示意图.pdf`);
-      
       toast.dismiss();
       toast.success('PDF已导出');
     } catch (error) {
@@ -218,7 +187,7 @@ export function ModuleSchematic() {
       toast.error('导出PDF失败');
       console.error(error);
     }
-  }, [module?.name, getPixelRatio]);
+  }, [module?.name, getPixelRatio, captureOffscreen]);
 
   // Lighting photos save handler
   const handleSaveLightingPhotos = useCallback(async (photos: Array<{ url: string; remark: string; created_at: string }>) => {
