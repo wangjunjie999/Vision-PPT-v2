@@ -271,6 +271,48 @@ export async function generateImageFromElement(
 }
 
 /**
+ * Generate image specifically optimized for schematic / optical diagrams.
+ * Uses fixed settings to avoid artifacts in PPT:
+ * - Fixed dark background (no transparency)
+ * - pixelRatio 2 (sharp but not excessive)
+ * - PNG format without JPEG recompression
+ * - No force-white injection (pure SVG export handles text color)
+ */
+export async function generateSchematicImage(
+  element: HTMLElement,
+): Promise<Blob> {
+  const backgroundColor = '#1a1a2e';
+
+  // Wait for render
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => resolve());
+    });
+  });
+
+  let dataUrl: string;
+  try {
+    dataUrl = await toPng(element, {
+      pixelRatio: 2,
+      backgroundColor,
+      skipFonts: true,
+      cacheBust: true,
+    });
+  } catch (error) {
+    console.warn('Schematic capture failed, retrying with lower pixelRatio:', error);
+    dataUrl = await toPng(element, {
+      pixelRatio: 1.5,
+      backgroundColor,
+      skipFonts: true,
+      cacheBust: true,
+    });
+  }
+
+  // Return PNG blob directly — no JPEG compression to avoid edge artifacts
+  return dataUrlToBlob(dataUrl);
+}
+
+/**
  * View name in Chinese
  */
 export function getViewLabel(view: ViewType): string {
