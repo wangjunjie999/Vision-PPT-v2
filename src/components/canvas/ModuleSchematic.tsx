@@ -148,35 +148,13 @@ export function ModuleSchematic() {
   // Export as PNG
   const handleExportPNG = useCallback(async () => {
     if (!diagramRef.current || !module) return;
-    
     try {
       toast.loading('正在生成PNG...');
-      const pixelRatio = getPixelRatio();
-      
-      const el = diagramRef.current;
-      const originalStyle = el.style.cssText;
-      el.style.width = '1200px';
-      el.style.height = '1100px';
-      el.style.maxWidth = 'none';
-      el.style.overflow = 'hidden';
-      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-      
-      const dataUrl = await toPng(el, {
-        width: 1200,
-        height: 1100,
-        quality: 1,
-        pixelRatio,
-        backgroundColor: '#1a1a2e',
-        skipFonts: true,
-      });
-      
-      el.style.cssText = originalStyle;
-      
+      const dataUrl = await captureOffscreen(getPixelRatio());
       const link = document.createElement('a');
       link.download = `${module.name}-视觉系统示意图.png`;
       link.href = dataUrl;
       link.click();
-      
       toast.dismiss();
       toast.success('PNG已导出');
     } catch (error) {
@@ -184,7 +162,7 @@ export function ModuleSchematic() {
       toast.error('导出PNG失败');
       console.error(error);
     }
-  }, [module?.name, getPixelRatio]);
+  }, [module?.name, getPixelRatio, captureOffscreen]);
 
   // Export as PDF
   const handleExportPDF = useCallback(async () => {
