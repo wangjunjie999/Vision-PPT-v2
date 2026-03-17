@@ -413,6 +413,9 @@ export async function generateProductSchematicSlide(
           const dims = await getImageDimensions(dataUri).catch(() => ({ width: 800, height: 600 }));
           const fit = calculateContainFit(dims.width, dims.height, { x: 0.5, y: 1.2, width: 5.5, height: 3.8 });
           slide.addImage({ data: dataUri, x: fit.x, y: fit.y, w: fit.width, h: fit.height });
+        } else {
+          console.warn('[PPT] 标注快照加载失败:', annotation.snapshot_url);
+          addImagePlaceholder(slide, { x: 0.5, y: 1.2, width: 5.5, height: 3.8 }, ctx.isZh ? '图片加载失败' : 'Image load failed', '📷');
         }
       } catch (e) {
         addImagePlaceholder(slide, { x: 0.5, y: 1.2, width: 5.5, height: 3.8 }, ctx.isZh ? '待上传产品图片' : 'Upload product image', '📷');
