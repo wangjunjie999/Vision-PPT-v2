@@ -125,7 +125,7 @@ function addSlideTitle(
   slide.addText(`${ctx.wsCode} ${ctx.wsName}`, {
     x: 0.4, y: 0.05, w: 7.5, h: 0.38,
     fontSize: 16, fontFace: FONTS.heading, color: COLORS.primary, bold: true,
-    shadow: HEADING_SHADOW,
+    shadow: createHeadingShadow(),
   });
 
   if (splitSubtitles) {
