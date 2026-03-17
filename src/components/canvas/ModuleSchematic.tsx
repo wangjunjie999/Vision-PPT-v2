@@ -32,6 +32,7 @@ import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import { getImageSaveErrorMessage } from '@/utils/errorMessages';
+import { generateSchematicImage } from '@/services/batchImageSaver';
 
 const moduleTypeIcons = {
   positioning: Crosshair,
