@@ -395,6 +395,7 @@ export async function generateProductSchematicSlide(
 ): Promise<void> {
   const { annotations: allAnnotations, productAsset } = data;
   const annotationsList = allAnnotations && allAnnotations.length > 0 ? allAnnotations : [];
+  console.log(`[PPT] 产品示意图: annotations=${annotationsList.length}, hasProductAsset=${!!productAsset}, previewImages=${productAsset?.preview_images?.length || 0}`);
   
   if (annotationsList.length > 0) {
     // Generate one slide per annotation
