@@ -246,7 +246,7 @@ export function generateWorkstationTitleSlide(
   slide.addText(ctx.wsCode, {
     x: 0.5, y: 1.6, w: 9, h: 0.6,
     fontSize: 36, fontFace: FONTS.heading, color: COLORS.primary, bold: true, align: 'center',
-    shadow: HEADING_SHADOW,
+    shadow: createHeadingShadow(),
   });
   
   // Workstation name - dark text
