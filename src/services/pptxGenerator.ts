@@ -721,7 +721,7 @@ export async function generatePPTX(
     coverSlide.addText(isZh ? '德星云智能' : 'TECH-SHINE', {
       x: 0.5, y: 1.5, w: 9, h: 0.6,
       fontSize: 36, fontFace: FONTS.heading, color: COLORS.primary, bold: true, align: 'center',
-      shadow: HEADING_SHADOW,
+      shadow: createHeadingShadow(),
     });
     
     coverSlide.addText(isZh ? COMPANY_NAME_ZH : COMPANY_NAME_EN, {
