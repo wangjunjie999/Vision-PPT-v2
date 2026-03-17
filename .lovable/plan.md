@@ -1,39 +1,44 @@
 
 
-# 修复白色残影：captureOffscreen 克隆了 interactive 模式的 foreignObject
+# FOV 输入改为两个独立数值框
 
-## 根因
+## 问题
 
-`ModuleSchematic.tsx` 的 `captureOffscreen` 函数通过 `cloneNode(true)` 克隆了 `diagramRef.current`。但该 ref 指向的是 `interactive={true}` 的 VisionSystemDiagram，其右侧标注面板是 **foreignObject + HTML div** 结构。
-
-虽然之前已为 `interactive={false}` 编写了纯 SVG 标注面板，但 **单模块保存和 PNG/PDF 导出从未使用过这个分支**——它们克隆的永远是带 foreignObject 的交互版本。
-
-对比 `BatchImageSaveButton.tsx`，它直接渲染 `interactive={false}` 的 VisionSystemDiagram，所以批量补图没有残影问题。
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
 ## 修改方案
 
-### 文件：`src/components/canvas/ModuleSchematic.tsx`
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-**策略**：添加一个 `exportDiagramRef`，在截图时临时渲染一个 `interactive={false}` 的 VisionSystemDiagram 到离屏容器，从它截图，截完移除。
-
-具体改动：
-
-1. 新增 `exportDiagramRef = useRef<HTMLDivElement>(null)` 和 `isCapturing` state
-2. 在组件 JSX 底部添加一个离屏容器（`position: absolute; left: -20000px`），仅当 `isCapturing` 时渲染 `<VisionSystemDiagram interactive={false} .../>` 
-3. 重写 `captureOffscreen`：
-   - 设置 `isCapturing = true`
-   - 等待 React 渲染完成（double rAF）
-   - 从 `exportDiagramRef` 调用 `toPng`（不再克隆 interactive 版本）
-   - 设置 `isCapturing = false`
-4. 使用 `generateSchematicImage`（已在 batchImageSaver.ts 中定义）代替手动 `toPng` 调用，保持参数一致
-
-```text
-渲染流程对比：
-  之前: diagramRef (interactive=true) → cloneNode → toPng (foreignObject残影)
-  修复: exportDiagramRef (interactive=false) → toPng (纯SVG, 无残影)
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
 ```
 
-### 改动量
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-约 40 行净变化，仅改 `ModuleSchematic.tsx` 一个文件。
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+
+```
+[宽度输入] × [高度输入]
+```
+
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
