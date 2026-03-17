@@ -232,50 +232,8 @@ export function ModuleSchematic() {
     setSavingSchematic(true);
     
     try {
-      await new Promise<void>((resolve) => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            resolve();
-          });
-        });
-      });
-      
       const pixelRatio = getPixelRatio();
-      
-      const badge = diagramRef.current.querySelector('[data-screenshot-hide]') as HTMLElement | null;
-      if (badge) badge.style.display = 'none';
-      
-      const forceStyle = document.createElement('style');
-      forceStyle.id = 'capture-force-white';
-      forceStyle.textContent = `
-        * { color: #ffffff !important; }
-        p, span, div, text, label, h1, h2, h3, h4, h5, h6 { color: #ffffff !important; fill: #ffffff !important; }
-        svg text, svg tspan { fill: #ffffff !important; }
-      `;
-      diagramRef.current.prepend(forceStyle);
-      
-      const el = diagramRef.current;
-      const originalStyle = el.style.cssText;
-      el.style.width = '1200px';
-      el.style.height = '1100px';
-      el.style.maxWidth = 'none';
-      el.style.overflow = 'hidden';
-      el.style.backgroundColor = '#1a1a2e';
-      
-      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-      
-      const dataUrl = await toPng(el, {
-        width: 1200,
-        height: 1100,
-        quality: 1,
-        pixelRatio,
-        backgroundColor: '#1a1a2e',
-        skipFonts: true,
-      });
-      
-      el.style.cssText = originalStyle;
-      if (badge) badge.style.display = '';
-      forceStyle.remove();
+      const dataUrl = await captureOffscreen(pixelRatio);
       
       const response = await fetch(dataUrl);
       const blob = await response.blob();
