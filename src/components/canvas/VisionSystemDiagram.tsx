@@ -204,13 +204,13 @@ export function VisionSystemDiagram({
   const interactiveClass = interactive ? "cursor-pointer hover:opacity-80 transition-opacity" : "";
 
   return (
-    <div className={cn("relative w-full h-full min-h-[700px]", className)} style={{ backgroundColor: '#1a1a2e', willChange: 'transform', contain: 'layout style paint' }}>
+    <div className={cn("relative w-full h-full min-h-[700px]", className)} style={{ backgroundColor: '#1a1a2e', contain: 'layout style paint', ...(interactive ? { willChange: 'transform' } : {}) }}>
       <svg 
         viewBox="0 0 800 750"
         className="w-full h-full"
         preserveAspectRatio="xMidYMid meet"
         shapeRendering="geometricPrecision"
-        style={{ maxHeight: '100%', transform: 'translateZ(0)' }}
+        style={{ maxHeight: '100%', ...(interactive ? { transform: 'translateZ(0)' } : {}) }}
       >
         <defs>
           {/* Camera FOV gradient - lens to product fade */}
