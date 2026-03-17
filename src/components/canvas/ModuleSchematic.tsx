@@ -172,7 +172,7 @@ export function ModuleSchematic() {
     if (!diagramRef.current || !module) return;
     try {
       toast.loading('正在生成PDF...');
-      const dataUrl = await captureOffscreen(getPixelRatio());
+      const dataUrl = await captureOffscreen();
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
       const imgWidth = 280;
       const imgHeight = (1100 / 1200) * imgWidth;
