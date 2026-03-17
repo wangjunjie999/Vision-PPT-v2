@@ -519,7 +519,7 @@ function renderLabelLegend(nodes: PlacedNode[], x: number, y: number, w: number)
             <circle cx={x + 10} cy={ry + 7} r={8} fill={obj.color} fillOpacity={0.9} />
             <text x={x + 10} y={ry + 11} textAnchor="middle" fill="#fff" fontSize={9} fontWeight="bold">{obj.label}</text>
             <text x={x + 24} y={ry + 11} fill="#e2e8f0" fontSize={10}>
-              {(obj.name || obj.label).slice(0, 16)}
+              {String(obj.name || obj.label || '').slice(0, 16)}
             </text>
             {obj.mountedToId && (
               <text x={x + w - 4} y={ry + 11} textAnchor="end" fill="#60a5fa" fontSize={8}>⛓ 已安装</text>
