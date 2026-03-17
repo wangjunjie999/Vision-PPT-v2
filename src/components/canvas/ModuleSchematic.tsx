@@ -110,6 +110,14 @@ export function ModuleSchematic() {
       setIsCapturing(false);
     }
   }, [isCapturing]);
+
+  // Trigger capture when exportDiagramRef mounts
+  useEffect(() => {
+    if (isCapturing) {
+      // Wait for React to render the off-screen diagram
+      requestAnimationFrame(() => requestAnimationFrame(() => handleExportReady()));
+    }
+  }, [isCapturing, handleExportReady]);
   
   const module = modules.find(m => m.id === selectedModuleId) as any;
   const workstation = workstations.find(w => w.id === selectedWorkstationId) as any;
