@@ -610,121 +610,225 @@ export function VisionSystemDiagram({
           </g>
         ))}
 
-        {/* Annotations in SVG - moved further right */}
-        <foreignObject x="500" y="20" width="290" height="680">
-          <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px', transform: 'translateZ(0)' }}>
-            {/* Camera specs */}
-            <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 28%)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                <span style={{ fontSize: '14px' }}>📷</span>
-                <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>工业相机</span>
-              </div>
-              {hasCamera ? (
-                <>
-                   <p style={{ fontSize: '11px', color: '#ffffff', margin: 0 }}>{camera.resolution} · 靶面{camera.sensor_size}</p>
-                   <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>{camera.brand} {camera.model} @ {camera.frame_rate}fps</p>
-                </>
-              ) : (
-                <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>点击左侧相机图标选择</p>
-              )}
-            </div>
-
-            {/* Lens specs */}
-            <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 28%)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                <span style={{ fontSize: '14px' }}>🔭</span>
-                <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>工业镜头</span>
-              </div>
-              {hasLens ? (
-                <>
-                   <p style={{ fontSize: '11px', color: '#ffffff', margin: 0 }}>焦距 {lens.focal_length} · 光圈 {lens.aperture}</p>
-                   <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>{lens.brand} {lens.model}</p>
-                </>
-              ) : (
-                <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>点击左侧镜头图标选择</p>
-              )}
-            </div>
-
-            {/* Light specs */}
-            <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 28%)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                <span style={{ fontSize: '14px' }}>💡</span>
-                <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>光源</span>
-              </div>
-              {hasLight ? (
-                <>
-                   <p style={{ fontSize: '11px', color: '#ffffff', margin: 0 }}>{light.color}{light.type} · {light.power}</p>
-                   <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>{light.brand} {light.model}</p>
-                   <p style={{ fontSize: '10px', color: '#ffffff', margin: '2px 0 0 0' }}>光源距离产品：{lightDistance}±20mm</p>
-                </>
-              ) : (
-                <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>点击左侧光源图标选择</p>
-              )}
-            </div>
-
-            {/* FOV info - editable */}
-            <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 28%)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                <span style={{ fontSize: '14px' }}>📐</span>
-                <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>视野参数</span>
-                {interactive && (onFovAngleChange || onLightDistanceChange) && (
-                  <span style={{ fontSize: '9px', color: '#ffffff', marginLeft: 'auto' }}>可编辑</span>
-                )}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '10px', color: '#ffffff', width: '56px' }}>视角:</span>
-                  {interactive && onFovAngleChange ? (
-                    <input
-                      type="number"
-                      value={fovAngle}
-                      onChange={(e) => onFovAngleChange(parseFloat(e.target.value) || 45)}
-                      style={{ width: '56px', height: '24px', fontSize: '11px', padding: '0 6px', borderRadius: '4px', border: '1px solid hsl(220, 15%, 35%)', backgroundColor: 'hsl(220, 15%, 22%)', color: '#fff', outline: 'none' }}
-                      min="10"
-                      max="120"
-                    />
-                  ) : (
-                    <span style={{ fontSize: '11px', color: '#ffffff' }}>{fovAngle}</span>
-                  )}
-                  <span style={{ fontSize: '10px', color: '#ffffff' }}>°</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '10px', color: '#ffffff', width: '56px' }}>工作距离:</span>
-                  {interactive && onLightDistanceChange ? (
-                    <input
-                      type="number"
-                      value={lightDistance}
-                      onChange={(e) => onLightDistanceChange(parseFloat(e.target.value) || 335)}
-                      style={{ width: '56px', height: '24px', fontSize: '11px', padding: '0 6px', borderRadius: '4px', border: '1px solid hsl(220, 15%, 35%)', backgroundColor: 'hsl(220, 15%, 22%)', color: '#fff', outline: 'none' }}
-                      min="50"
-                      max="1000"
-                    />
-                  ) : (
-                    <span style={{ fontSize: '11px', color: '#ffffff' }}>{lightDistance}</span>
-                  )}
-                  <span style={{ fontSize: '10px', color: '#ffffff' }}>mm</span>
-                </div>
-                <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>视野宽度约 {Math.round(fovOffsetX * 2)}mm</p>
-              </div>
-            </div>
-
-            {/* Controller specs */}
-            {hasController && (
+        {/* Annotations panel - pure SVG for export, foreignObject for interactive */}
+        {interactive ? (
+          <foreignObject x="500" y="20" width="290" height="680">
+            <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {/* Camera specs */}
               <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 28%)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                  <span style={{ fontSize: '14px' }}>🖥️</span>
-                   <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>工控机</span>
-                 </div>
-                 <p style={{ fontSize: '11px', color: '#ffffff', margin: 0 }}>{controller.cpu}</p>
-                 <p style={{ fontSize: '11px', color: '#ffffff', margin: 0 }}>{controller.memory} · {controller.storage}</p>
-                 <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>{controller.brand} {controller.model}</p>
-                {controller.gpu && (
-                  <p style={{ fontSize: '10px', color: '#ffffff', margin: '2px 0 0 0' }}>GPU: {controller.gpu}</p>
+                  <span style={{ fontSize: '14px' }}>📷</span>
+                  <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>工业相机</span>
+                </div>
+                {hasCamera ? (
+                  <>
+                     <p style={{ fontSize: '11px', color: '#ffffff', margin: 0 }}>{camera.resolution} · 靶面{camera.sensor_size}</p>
+                     <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>{camera.brand} {camera.model} @ {camera.frame_rate}fps</p>
+                  </>
+                ) : (
+                  <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>点击左侧相机图标选择</p>
                 )}
               </div>
-            )}
-          </div>
-        </foreignObject>
+
+              {/* Lens specs */}
+              <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 28%)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                  <span style={{ fontSize: '14px' }}>🔭</span>
+                  <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>工业镜头</span>
+                </div>
+                {hasLens ? (
+                  <>
+                     <p style={{ fontSize: '11px', color: '#ffffff', margin: 0 }}>焦距 {lens.focal_length} · 光圈 {lens.aperture}</p>
+                     <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>{lens.brand} {lens.model}</p>
+                  </>
+                ) : (
+                  <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>点击左侧镜头图标选择</p>
+                )}
+              </div>
+
+              {/* Light specs */}
+              <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 28%)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                  <span style={{ fontSize: '14px' }}>💡</span>
+                  <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>光源</span>
+                </div>
+                {hasLight ? (
+                  <>
+                     <p style={{ fontSize: '11px', color: '#ffffff', margin: 0 }}>{light.color}{light.type} · {light.power}</p>
+                     <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>{light.brand} {light.model}</p>
+                     <p style={{ fontSize: '10px', color: '#ffffff', margin: '2px 0 0 0' }}>光源距离产品：{lightDistance}±20mm</p>
+                  </>
+                ) : (
+                  <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>点击左侧光源图标选择</p>
+                )}
+              </div>
+
+              {/* FOV info - editable */}
+              <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 28%)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                  <span style={{ fontSize: '14px' }}>📐</span>
+                  <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>视野参数</span>
+                  {(onFovAngleChange || onLightDistanceChange) && (
+                    <span style={{ fontSize: '9px', color: '#ffffff', marginLeft: 'auto' }}>可编辑</span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '10px', color: '#ffffff', width: '56px' }}>视角:</span>
+                    {onFovAngleChange ? (
+                      <input
+                        type="number"
+                        value={fovAngle}
+                        onChange={(e) => onFovAngleChange(parseFloat(e.target.value) || 45)}
+                        style={{ width: '56px', height: '24px', fontSize: '11px', padding: '0 6px', borderRadius: '4px', border: '1px solid hsl(220, 15%, 35%)', backgroundColor: 'hsl(220, 15%, 22%)', color: '#fff', outline: 'none' }}
+                        min="10"
+                        max="120"
+                      />
+                    ) : (
+                      <span style={{ fontSize: '11px', color: '#ffffff' }}>{fovAngle}</span>
+                    )}
+                    <span style={{ fontSize: '10px', color: '#ffffff' }}>°</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '10px', color: '#ffffff', width: '56px' }}>工作距离:</span>
+                    {onLightDistanceChange ? (
+                      <input
+                        type="number"
+                        value={lightDistance}
+                        onChange={(e) => onLightDistanceChange(parseFloat(e.target.value) || 335)}
+                        style={{ width: '56px', height: '24px', fontSize: '11px', padding: '0 6px', borderRadius: '4px', border: '1px solid hsl(220, 15%, 35%)', backgroundColor: 'hsl(220, 15%, 22%)', color: '#fff', outline: 'none' }}
+                        min="50"
+                        max="1000"
+                      />
+                    ) : (
+                      <span style={{ fontSize: '11px', color: '#ffffff' }}>{lightDistance}</span>
+                    )}
+                    <span style={{ fontSize: '10px', color: '#ffffff' }}>mm</span>
+                  </div>
+                  <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>视野宽度约 {Math.round(fovOffsetX * 2)}mm</p>
+                </div>
+              </div>
+
+              {/* Controller specs */}
+              {hasController && (
+                <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 28%)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                    <span style={{ fontSize: '14px' }}>🖥️</span>
+                     <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>工控机</span>
+                   </div>
+                   <p style={{ fontSize: '11px', color: '#ffffff', margin: 0 }}>{controller.cpu}</p>
+                   <p style={{ fontSize: '11px', color: '#ffffff', margin: 0 }}>{controller.memory} · {controller.storage}</p>
+                   <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>{controller.brand} {controller.model}</p>
+                  {controller.gpu && (
+                    <p style={{ fontSize: '10px', color: '#ffffff', margin: '2px 0 0 0' }}>GPU: {controller.gpu}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </foreignObject>
+        ) : (
+          /* Export mode: pure SVG annotation cards - no foreignObject, no HTML */
+          <g>
+            {(() => {
+              const cardX = 508;
+              const cardW = 274;
+              const cardH = 52;
+              const cardGap = 6;
+              const cardBg = 'hsl(220, 15%, 18%)';
+              const cardBorder = 'hsl(220, 15%, 28%)';
+              const textColor = '#ffffff';
+              const textSecondary = 'hsl(220, 20%, 75%)';
+              let yOffset = 28;
+
+              const cards: React.ReactNode[] = [];
+
+              // Camera card
+              cards.push(
+                <g key="camera-card" transform={`translate(${cardX}, ${yOffset})`}>
+                  <rect width={cardW} height={cardH} rx="8" fill={cardBg} stroke={cardBorder} strokeWidth="1" />
+                  <text x="12" y="18" fill={textColor} style={{ fontSize: '12px', fontWeight: 600 }}>📷 工业相机</text>
+                  {hasCamera ? (
+                    <>
+                      <text x="12" y="32" fill={textColor} style={{ fontSize: '11px' }}>{camera.resolution} · 靶面{camera.sensor_size}</text>
+                      <text x="12" y="45" fill={textSecondary} style={{ fontSize: '10px' }}>{camera.brand} {camera.model} @ {camera.frame_rate}fps</text>
+                    </>
+                  ) : (
+                    <text x="12" y="35" fill={textSecondary} style={{ fontSize: '10px' }}>未选择相机</text>
+                  )}
+                </g>
+              );
+              yOffset += cardH + cardGap;
+
+              // Lens card
+              cards.push(
+                <g key="lens-card" transform={`translate(${cardX}, ${yOffset})`}>
+                  <rect width={cardW} height={cardH} rx="8" fill={cardBg} stroke={cardBorder} strokeWidth="1" />
+                  <text x="12" y="18" fill={textColor} style={{ fontSize: '12px', fontWeight: 600 }}>🔭 工业镜头</text>
+                  {hasLens ? (
+                    <>
+                      <text x="12" y="32" fill={textColor} style={{ fontSize: '11px' }}>焦距 {lens.focal_length} · 光圈 {lens.aperture}</text>
+                      <text x="12" y="45" fill={textSecondary} style={{ fontSize: '10px' }}>{lens.brand} {lens.model}</text>
+                    </>
+                  ) : (
+                    <text x="12" y="35" fill={textSecondary} style={{ fontSize: '10px' }}>未选择镜头</text>
+                  )}
+                </g>
+              );
+              yOffset += cardH + cardGap;
+
+              // Light card
+              const lightCardH = hasLight ? 62 : cardH;
+              cards.push(
+                <g key="light-card" transform={`translate(${cardX}, ${yOffset})`}>
+                  <rect width={cardW} height={lightCardH} rx="8" fill={cardBg} stroke={cardBorder} strokeWidth="1" />
+                  <text x="12" y="18" fill={textColor} style={{ fontSize: '12px', fontWeight: 600 }}>💡 光源</text>
+                  {hasLight ? (
+                    <>
+                      <text x="12" y="32" fill={textColor} style={{ fontSize: '11px' }}>{light.color}{light.type} · {light.power}</text>
+                      <text x="12" y="45" fill={textSecondary} style={{ fontSize: '10px' }}>{light.brand} {light.model}</text>
+                      <text x="12" y="57" fill={textSecondary} style={{ fontSize: '10px' }}>光源距离产品：{lightDistance}±20mm</text>
+                    </>
+                  ) : (
+                    <text x="12" y="35" fill={textSecondary} style={{ fontSize: '10px' }}>未选择光源</text>
+                  )}
+                </g>
+              );
+              yOffset += lightCardH + cardGap;
+
+              // FOV card
+              const fovCardH = 62;
+              cards.push(
+                <g key="fov-card" transform={`translate(${cardX}, ${yOffset})`}>
+                  <rect width={cardW} height={fovCardH} rx="8" fill={cardBg} stroke={cardBorder} strokeWidth="1" />
+                  <text x="12" y="18" fill={textColor} style={{ fontSize: '12px', fontWeight: 600 }}>📐 视野参数</text>
+                  <text x="12" y="34" fill={textColor} style={{ fontSize: '11px' }}>视角: {fovAngle}°</text>
+                  <text x="12" y="47" fill={textColor} style={{ fontSize: '11px' }}>工作距离: {lightDistance}mm</text>
+                  <text x="12" y="58" fill={textSecondary} style={{ fontSize: '10px' }}>视野宽度约 {Math.round(fovOffsetX * 2)}mm</text>
+                </g>
+              );
+              yOffset += fovCardH + cardGap;
+
+              // Controller card
+              if (hasController) {
+                const ctrlCardH = controller.gpu ? 72 : 62;
+                cards.push(
+                  <g key="ctrl-card" transform={`translate(${cardX}, ${yOffset})`}>
+                    <rect width={cardW} height={ctrlCardH} rx="8" fill={cardBg} stroke={cardBorder} strokeWidth="1" />
+                    <text x="12" y="18" fill={textColor} style={{ fontSize: '12px', fontWeight: 600 }}>🖥️ 工控机</text>
+                    <text x="12" y="32" fill={textColor} style={{ fontSize: '11px' }}>{controller.cpu}</text>
+                    <text x="12" y="45" fill={textColor} style={{ fontSize: '11px' }}>{controller.memory} · {controller.storage}</text>
+                    <text x="12" y="57" fill={textSecondary} style={{ fontSize: '10px' }}>{controller.brand} {controller.model}</text>
+                    {controller.gpu && (
+                      <text x="12" y="68" fill={textSecondary} style={{ fontSize: '10px' }}>GPU: {controller.gpu}</text>
+                    )}
+                  </g>
+                );
+              }
+
+              return cards;
+            })()}
+          </g>
+        )}
       </svg>
     </div>
   );

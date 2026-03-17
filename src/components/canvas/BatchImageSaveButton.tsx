@@ -18,6 +18,7 @@ import {
   saveViewToStorage,
   saveSchematicToStorage,
   generateImageFromElement,
+  generateSchematicImage,
   getViewLabel,
   type ViewType,
   type SaveProgress,
@@ -225,12 +226,7 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
 
           const diagramElement = schematicRef.current?.querySelector('.vision-diagram-container');
           if (diagramElement) {
-            const blob = await generateImageFromElement(diagramElement as HTMLElement, {
-              quality: 'standard',
-              backgroundColor: '#1a1a2e',
-              format: 'png',
-              forceWhiteText: true,
-            });
+            const blob = await generateSchematicImage(diagramElement as HTMLElement);
             
             await saveSchematicToStorage(
               schematicItem.moduleId,
