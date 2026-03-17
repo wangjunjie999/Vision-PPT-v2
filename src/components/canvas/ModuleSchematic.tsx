@@ -69,6 +69,44 @@ export function ModuleSchematic() {
   const [lightDistance, setLightDistance] = useState(335);
   const [savingSchematic, setSavingSchematic] = useState(false);
   const [schematicSaved, setSchematicSaved] = useState(false);
+
+  // Shared off-screen capture helper — clones the diagram to avoid visible flash
+  const captureOffscreen = useCallback(async (pixelRatio: number): Promise<string> => {
+    if (!diagramRef.current) throw new Error('No diagram ref');
+    const clone = diagramRef.current.cloneNode(true) as HTMLElement;
+    // Remove screenshot-hide elements from clone
+    clone.querySelectorAll('[data-screenshot-hide]').forEach(el => (el as HTMLElement).style.display = 'none');
+    // Force white text for dark background
+    const forceStyle = document.createElement('style');
+    forceStyle.textContent = `
+      * { color: #ffffff !important; }
+      p, span, div, text, label, h1, h2, h3, h4, h5, h6 { color: #ffffff !important; fill: #ffffff !important; }
+      svg text, svg tspan { fill: #ffffff !important; }
+    `;
+    clone.prepend(forceStyle);
+
+    const container = document.createElement('div');
+    container.style.cssText = 'position:absolute;left:-20000px;top:-20000px;width:1200px;height:1100px;overflow:hidden;pointer-events:none;';
+    clone.style.cssText = 'width:1200px;height:1100px;max-width:none;overflow:hidden;background-color:#1a1a2e;';
+    container.appendChild(clone);
+    document.body.appendChild(container);
+
+    await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+
+    try {
+      const dataUrl = await toPng(clone, {
+        width: 1200,
+        height: 1100,
+        quality: 1,
+        pixelRatio,
+        backgroundColor: '#1a1a2e',
+        skipFonts: true,
+      });
+      return dataUrl;
+    } finally {
+      document.body.removeChild(container);
+    }
+  }, []);
   
   const module = modules.find(m => m.id === selectedModuleId) as any;
   const workstation = workstations.find(w => w.id === selectedWorkstationId) as any;
