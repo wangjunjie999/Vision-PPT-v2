@@ -1044,7 +1044,7 @@ export async function generatePPTX(
   hwSlide.addText(isZh ? '硬件清单汇总' : 'Hardware Summary', {
     x: 0.4, y: 0.05, w: 7.5, h: 0.38,
     fontSize: 18, fontFace: FONTS.heading, color: COLORS.primary, bold: true,
-    shadow: HEADING_SHADOW,
+    shadow: createHeadingShadow(),
   });
   hwSlide.addText(isZh ? '设备清单' : 'Equipment List', {
     x: 0, y: 0.52, w: '100%', h: 0.22,

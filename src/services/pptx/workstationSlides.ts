@@ -261,7 +261,7 @@ export function generateWorkstationTitleSlide(
     slide.addText(`${ctx.isZh ? '负责人' : 'Responsible'}: ${ctx.responsible}`, {
       x: 0.5, y: 3.0, w: 9, h: 0.4,
       fontSize: 14, fontFace: FONTS.heading, color: COLORS.secondary, align: 'center',
-      shadow: HEADING_SHADOW,
+      shadow: createHeadingShadow(),
     });
   }
   
