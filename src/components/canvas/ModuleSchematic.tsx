@@ -64,49 +64,51 @@ export function ModuleSchematic() {
   const { controllers } = useControllers();
   const { getPixelRatio } = useAppStore();
   const diagramRef = useRef<HTMLDivElement>(null);
+  const exportDiagramRef = useRef<HTMLDivElement>(null);
   
   const [fovAngle, setFovAngle] = useState(45);
   const [lightDistance, setLightDistance] = useState(335);
   const [savingSchematic, setSavingSchematic] = useState(false);
   const [schematicSaved, setSchematicSaved] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
 
-  // Shared off-screen capture helper — clones the diagram to avoid visible flash
-  const captureOffscreen = useCallback(async (pixelRatio: number): Promise<string> => {
-    if (!diagramRef.current) throw new Error('No diagram ref');
-    const clone = diagramRef.current.cloneNode(true) as HTMLElement;
-    // Remove screenshot-hide elements from clone
-    clone.querySelectorAll('[data-screenshot-hide]').forEach(el => (el as HTMLElement).style.display = 'none');
-    // Force white text for dark background
-    const forceStyle = document.createElement('style');
-    forceStyle.textContent = `
-      * { color: #ffffff !important; }
-      p, span, div, text, label, h1, h2, h3, h4, h5, h6 { color: #ffffff !important; fill: #ffffff !important; }
-      svg text, svg tspan { fill: #ffffff !important; }
-    `;
-    clone.prepend(forceStyle);
+  // Resolve function ref for async capture flow
+  const captureResolveRef = useRef<((dataUrl: string) => void) | null>(null);
+  const captureRejectRef = useRef<((err: Error) => void) | null>(null);
 
-    const container = document.createElement('div');
-    container.style.cssText = 'position:absolute;left:-20000px;top:-20000px;width:1200px;height:1100px;overflow:hidden;pointer-events:none;';
-    clone.style.cssText = 'width:1200px;height:1100px;max-width:none;overflow:hidden;background-color:#1a1a2e;';
-    container.appendChild(clone);
-    document.body.appendChild(container);
-
-    await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
-
-    try {
-      const dataUrl = await toPng(clone, {
-        width: 1200,
-        height: 1100,
-        quality: 1,
-        pixelRatio,
-        backgroundColor: '#1a1a2e',
-        skipFonts: true,
-      });
-      return dataUrl;
-    } finally {
-      document.body.removeChild(container);
-    }
+  // Shared off-screen capture — renders interactive=false diagram, then captures
+  const captureOffscreen = useCallback(async (): Promise<string> => {
+    return new Promise<string>((resolve, reject) => {
+      captureResolveRef.current = resolve;
+      captureRejectRef.current = reject;
+      setIsCapturing(true);
+    });
   }, []);
+
+  // Effect: when isCapturing becomes true and exportDiagramRef is ready, do capture
+  const handleExportReady = useCallback(async () => {
+    if (!isCapturing || !exportDiagramRef.current) return;
+    const el = exportDiagramRef.current.querySelector('.vision-diagram-container') as HTMLElement;
+    if (!el) {
+      captureRejectRef.current?.(new Error('Export diagram not found'));
+      setIsCapturing(false);
+      return;
+    }
+    try {
+      const blob = await generateSchematicImage(el);
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      captureResolveRef.current?.(dataUrl);
+    } catch (err) {
+      captureRejectRef.current?.(err as Error);
+    } finally {
+      setIsCapturing(false);
+    }
+  }, [isCapturing]);
   
   const module = modules.find(m => m.id === selectedModuleId) as any;
   const workstation = workstations.find(w => w.id === selectedWorkstationId) as any;
