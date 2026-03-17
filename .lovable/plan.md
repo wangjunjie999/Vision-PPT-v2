@@ -1,44 +1,53 @@
 
 
-# FOV 输入改为两个独立数值框
+# Fix: Schematic Save Still Causes Visible "Zoom Flash"
 
-## 问题
+## Root Cause
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+The "保存放大" (save magnification) issue is in `src/components/canvas/ModuleSchematic.tsx`. Three functions (`handleSaveSchematic`, `handleExportPNG`, `handleExportPDF`) all do the same problematic pattern:
 
-## 修改方案
-
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
-
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
-
-在 `getDefaultFormState` 中添加默认值 `''`。
-
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
-
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
-
-```
-[宽度输入] × [高度输入]
+```typescript
+// Line 272-278 — modifies the VISIBLE element
+const el = diagramRef.current;
+const originalStyle = el.style.cssText;
+el.style.width = '1200px';    // ← user sees this resize
+el.style.height = '1100px';   // ← visible flash
+el.style.maxWidth = 'none';
+el.style.overflow = 'hidden';
+// ... take screenshot ...
+el.style.cssText = originalStyle; // ← user sees it shrink back
 ```
 
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+This directly mutates the on-screen diagram's dimensions, causing the visible "zoom in then zoom out" flash. The `BatchImageSaveButton` was already fixed (off-screen container), but the **single-module save button** in `ModuleSchematic.tsx` still uses the old in-place resize approach.
 
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+## Fix Strategy
 
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+For all three functions in `ModuleSchematic.tsx`, replace the in-place resize with a **clone-to-offscreen** approach:
 
-### 4. PPT 输出不变
+1. Clone `diagramRef.current` using `cloneNode(true)`
+2. Place the clone in a temporary off-screen container (`position: absolute; left: -20000px`)
+3. Set the desired dimensions on the **clone** (not the visible element)
+4. Take the screenshot from the clone
+5. Remove the clone from DOM
 
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+This way the visible element is never touched during capture.
 
-### 5. 自动计算兼容
+## Files Changed
 
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+### `src/components/canvas/ModuleSchematic.tsx`
+
+Extract a shared helper function `captureOffscreen` that:
+- Clones `diagramRef.current`
+- Appends to an off-screen `div` at `-20000px`
+- Applies `width: 1200px; height: 1100px; maxWidth: none; overflow: hidden; backgroundColor: #1a1a2e`
+- Calls `toPng` on the clone
+- Removes the clone container
+- Returns the data URL
+
+Then refactor:
+- **`handleExportPNG`** (line 111-149): Use `captureOffscreen()` instead of resizing visible element
+- **`handleExportPDF`** (line 152-205): Use `captureOffscreen()` instead of resizing visible element  
+- **`handleSaveSchematic`** (line 244-334): Use `captureOffscreen()` instead of resizing visible element
+
+No changes to props, types, or other files needed. Approximately 40 lines of net change.
 
