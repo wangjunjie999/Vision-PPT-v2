@@ -368,7 +368,7 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
 
             {/* Off-screen render area */}
             <div 
-              style={{ position: 'fixed', left: 0, top: 0, width: 1200, height: 1000, opacity: 0, zIndex: -9999, pointerEvents: 'none', overflow: 'hidden' }}
+              style={{ position: 'absolute', left: '-20000px', top: '-20000px', width: 1200, height: 1000, pointerEvents: 'none', overflow: 'hidden' }}
               aria-hidden="true"
             >
               {currentRenderWorkstation && (
