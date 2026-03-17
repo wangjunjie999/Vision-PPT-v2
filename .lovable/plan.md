@@ -1,68 +1,44 @@
 
 
-# 修复产品示意图幻灯片不显示问题
+# FOV 输入改为两个独立数值框
 
-## 根因分析
+## 问题
 
-在 `src/services/pptx/workstationSlides.ts` 第 409-418 行，`generateProductSchematicSlide` 存在一个代码缺陷：
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
-```typescript
-try {
-  const dataUri = await fetchImageAsDataUri(annotation.snapshot_url);
-  if (dataUri) {
-    // 添加图片...
-  }
-  // ❌ 没有 else 分支！当 dataUri 为空字符串时，既不添加图片也不添加占位符
-} catch (e) {
-  addImagePlaceholder(...);  // 只有抛异常才会走到这里
-}
+## 修改方案
+
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
 ```
 
-`fetchImageAsDataUri` 在加载失败时返回空字符串 `''`（不抛异常），导致 `if (dataUri)` 为 false，但也不触发 catch 块，最终幻灯片上**完全没有内容**——既没有图片也没有占位符提示。
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-同样的问题也出现在 fallback 路径（第 450-456 行），当 `productAsset.preview_images` 的 URL 加载失败时同样会导致空白页面。
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
 
-此外，数据库中所有 `product_assets` 的 `preview_images` 字段都是空数组 `[]`，产品图片只通过 `product_annotations.snapshot_url` 路径获取。如果标注数据的 scope/workstation 匹配失败或图片 URL 加载失败，就会出现灰色占位符或空白幻灯片。
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
 
-## 修复方案
-
-### 文件：`src/services/pptx/workstationSlides.ts`
-
-**修改1**（第 409-418 行）—— 注解图片加载分支补充 else：
-
-```typescript
-try {
-  const dataUri = await fetchImageAsDataUri(annotation.snapshot_url);
-  if (dataUri) {
-    const dims = await getImageDimensions(dataUri).catch(() => ({ width: 800, height: 600 }));
-    const fit = calculateContainFit(dims.width, dims.height, container);
-    slide.addImage({ data: dataUri, x: fit.x, y: fit.y, w: fit.width, h: fit.height });
-  } else {
-    // 🆕 图片加载返回空时也显示占位符
-    console.warn('[PPT] 标注快照加载失败:', annotation.snapshot_url);
-    addImagePlaceholder(slide, container, '图片加载失败', '📷');
-  }
-} catch (e) {
-  addImagePlaceholder(slide, container, '待上传产品图片', '📷');
-}
+```
+[宽度输入] × [高度输入]
 ```
 
-**修改2**（第 450-456 行）—— fallback 路径同样补充 else：
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
 
-```typescript
-if (dataUri) {
-  // ... add image
-} else {
-  console.warn('[PPT] 产品预览图加载失败:', imageUrl);
-  addImagePlaceholder(slide, container, '图片加载失败', '📷');
-}
-```
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
 
-**修改3** —— 添加调试日志，在函数入口处记录数据状态：
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
 
-```typescript
-console.log(`[PPT] 产品示意图: annotations=${annotationsList.length}, hasProductAsset=${!!productAsset}, previewImages=${productAsset?.preview_images?.length || 0}`);
-```
+### 4. PPT 输出不变
 
-共约 10 行代码变更，确保所有分支路径都有正确的视觉反馈（图片或占位符），消除空白幻灯片。
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
