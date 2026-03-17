@@ -1,44 +1,51 @@
 
 
-# FOV 输入改为两个独立数值框
+# 修复光学方案图截图闪动和白色残影
 
-## 问题
+## 问题总结
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+两个独立但相关的问题：
+1. **网页闪动**：离屏渲染容器使用 `position: fixed; left: 0; top: 0; opacity: 0`，浏览器仍参与合成计算
+2. **白色残影**：`VisionSystemDiagram` 的 `willChange: 'transform'` 和 `transform: 'translateZ(0)'` 在截图模式下制造 GPU 合成层伪影
 
 ## 修改方案
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+### 文件 1：`src/components/canvas/BatchImageSaveButton.tsx`（第 370-373 行）
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
+将离屏渲染容器从 `fixed + opacity:0` 改为真正远离视口：
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+```typescript
+// 之前
+style={{ position: 'fixed', left: 0, top: 0, width: 1200, height: 1000, opacity: 0, zIndex: -9999, pointerEvents: 'none', overflow: 'hidden' }}
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
-
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
-
-```
-[宽度输入] × [高度输入]
+// 之后
+style={{ position: 'absolute', left: '-20000px', top: '-20000px', width: 1200, height: 1000, pointerEvents: 'none', overflow: 'hidden' }}
 ```
 
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+这样浏览器不再把它当视口内固定层处理，消除闪动。
 
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+### 文件 2：`src/components/canvas/VisionSystemDiagram.tsx`
 
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+利用已有的 `interactive` prop（`false` = 截图模式）条件去除 GPU 提升样式：
 
-### 4. PPT 输出不变
+**第 207 行** — 外层 div：
+```typescript
+style={{
+  backgroundColor: '#1a1a2e',
+  contain: 'layout style paint',
+  ...(interactive ? { willChange: 'transform' } : {}),
+}}
+```
 
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+**第 213 行** — SVG：
+```typescript
+style={{
+  maxHeight: '100%',
+  ...(interactive ? { transform: 'translateZ(0)' } : {}),
+}}
+```
 
-### 5. 自动计算兼容
+截图模式下去掉 `willChange` 和 `translateZ(0)`，避免 GPU 合成层在 `html-to-image` 序列化时产生白边/残影。
 
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+共 2 个文件，约 6 行改动。
 
