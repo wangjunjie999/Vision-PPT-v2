@@ -253,7 +253,7 @@ export function generateWorkstationTitleSlide(
   slide.addText(ctx.wsName, {
     x: 0.5, y: 2.3, w: 9, h: 0.5,
     fontSize: 24, fontFace: FONTS.heading, color: COLORS.dark, bold: true, align: 'center',
-    shadow: HEADING_SHADOW,
+    shadow: createHeadingShadow(),
   });
   
   // Responsible person - secondary gray
