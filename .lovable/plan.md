@@ -1,44 +1,34 @@
 
 
-# FOV 输入改为两个独立数值框
+# 修复光学方案图截图白块残影
 
-## 问题
+## 根因
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+`VisionSystemDiagram.tsx` 中的4个 `foreignObject` 元素（相机、镜头、光源、工控机）内部使用了 Tailwind CSS 类名（`bg-transparent`、`bg-background/50`等）和 Radix Popover 组件。
 
-## 修改方案
+`html-to-image`（`toPng`）截图时会克隆 DOM 并序列化为内联 SVG。在克隆环境中，CSS 自定义变量（`var(--background)` 等）不可用，导致依赖这些变量的元素背景回退为白色，产生白块。
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+右侧标注面板（第593行 `foreignObject`）已全部使用内联样式，所以没有问题。
 
-在 `ModuleFormState` 中添加：
+## 修复方案
+
+**文件：`src/components/canvas/VisionSystemDiagram.tsx`**
+
+当 `interactive={false}`（截图模式）时，跳过 `foreignObject` + `Popover` + `button` 的包装层，直接渲染纯 SVG 元素（相机、镜头、光源、工控机的 SVG 图形已经在 `<button>` 内部定义好了）。
+
+具体改动：
+
+1. **提取4个硬件 SVG 图形为独立函数**（CameraSVG、LensSVG、LightSVG、ControllerSVG），返回纯 `<g>` 元素
+2. **条件渲染**：
+   - `interactive={true}`：保持现有 `foreignObject` + Popover 逻辑不变
+   - `interactive={false}`：直接用 `<g transform="translate(x,y)">` 包裹纯 SVG 图形，完全不使用 `foreignObject`
+
+```text
+interactive=true:  foreignObject → div → Popover → button → <svg>硬件图形</svg>
+interactive=false: <g transform>  → 硬件图形（纯SVG，无foreignObject）
 ```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+3. **删除截图路径中所有 Tailwind 类名依赖**，消除白块来源
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
-
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
-
-```
-[宽度输入] × [高度输入]
-```
-
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
-
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+约 80 行改动，仅重构渲染分支，不影响交互功能。
 
