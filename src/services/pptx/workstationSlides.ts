@@ -24,7 +24,7 @@ import {
   TRIGGER_LABELS,
   PROCESS_STAGE_LABELS,
   FONTS,
-  HEADING_SHADOW,
+  createHeadingShadow,
 } from './slideLabels';
 import { 
   MECHANISM_LABELS, 
@@ -125,7 +125,7 @@ function addSlideTitle(
   slide.addText(`${ctx.wsCode} ${ctx.wsName}`, {
     x: 0.4, y: 0.05, w: 7.5, h: 0.38,
     fontSize: 16, fontFace: FONTS.heading, color: COLORS.primary, bold: true,
-    shadow: HEADING_SHADOW,
+    shadow: createHeadingShadow(),
   });
 
   if (splitSubtitles) {
@@ -246,14 +246,14 @@ export function generateWorkstationTitleSlide(
   slide.addText(ctx.wsCode, {
     x: 0.5, y: 1.6, w: 9, h: 0.6,
     fontSize: 36, fontFace: FONTS.heading, color: COLORS.primary, bold: true, align: 'center',
-    shadow: HEADING_SHADOW,
+    shadow: createHeadingShadow(),
   });
   
   // Workstation name - dark text
   slide.addText(ctx.wsName, {
     x: 0.5, y: 2.3, w: 9, h: 0.5,
     fontSize: 24, fontFace: FONTS.heading, color: COLORS.dark, bold: true, align: 'center',
-    shadow: HEADING_SHADOW,
+    shadow: createHeadingShadow(),
   });
   
   // Responsible person - secondary gray
@@ -261,7 +261,7 @@ export function generateWorkstationTitleSlide(
     slide.addText(`${ctx.isZh ? '负责人' : 'Responsible'}: ${ctx.responsible}`, {
       x: 0.5, y: 3.0, w: 9, h: 0.4,
       fontSize: 14, fontFace: FONTS.heading, color: COLORS.secondary, align: 'center',
-      shadow: HEADING_SHADOW,
+      shadow: createHeadingShadow(),
     });
   }
   

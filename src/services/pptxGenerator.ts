@@ -23,7 +23,7 @@ import {
   COMPANY_NAME_ZH,
   COMPANY_NAME_EN,
   FONTS,
-  HEADING_SHADOW,
+  createHeadingShadow,
   getWorkstationCode,
   getModuleDisplayName,
 } from './pptx/slideLabels';
@@ -721,7 +721,7 @@ export async function generatePPTX(
     coverSlide.addText(isZh ? '德星云智能' : 'TECH-SHINE', {
       x: 0.5, y: 1.5, w: 9, h: 0.6,
       fontSize: 36, fontFace: FONTS.heading, color: COLORS.primary, bold: true, align: 'center',
-      shadow: HEADING_SHADOW,
+      shadow: createHeadingShadow(),
     });
     
     coverSlide.addText(isZh ? COMPANY_NAME_ZH : COMPANY_NAME_EN, {
@@ -740,7 +740,7 @@ export async function generatePPTX(
   descSlide.addText(isZh ? '项目说明' : 'Project Description', {
     x: 0.4, y: 0.05, w: 5, h: 0.38,
     fontSize: 18, fontFace: FONTS.heading, color: COLORS.primary, bold: true,
-    shadow: HEADING_SHADOW,
+    shadow: createHeadingShadow(),
   });
   descSlide.addText(isZh ? '项目基本信息' : 'Project Information', {
     x: 0, y: 0.52, w: '100%', h: 0.22,
@@ -832,7 +832,7 @@ export async function generatePPTX(
   revisionSlide.addText(isZh ? '变更履历' : 'Revision History', {
     x: 0.4, y: 0.05, w: 5, h: 0.38,
     fontSize: 18, fontFace: FONTS.heading, color: COLORS.primary, bold: true,
-    shadow: HEADING_SHADOW,
+    shadow: createHeadingShadow(),
   });
 
   revisionSlide.addText(isZh ? '变更表' : 'Change Log', {
@@ -1044,7 +1044,7 @@ export async function generatePPTX(
   hwSlide.addText(isZh ? '硬件清单汇总' : 'Hardware Summary', {
     x: 0.4, y: 0.05, w: 7.5, h: 0.38,
     fontSize: 18, fontFace: FONTS.heading, color: COLORS.primary, bold: true,
-    shadow: HEADING_SHADOW,
+    shadow: createHeadingShadow(),
   });
   hwSlide.addText(isZh ? '设备清单' : 'Equipment List', {
     x: 0, y: 0.52, w: '100%', h: 0.22,
