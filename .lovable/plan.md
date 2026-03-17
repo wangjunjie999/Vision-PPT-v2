@@ -1,44 +1,41 @@
 
 
-# FOV 输入改为两个独立数值框
+# 修复 HEADING_SHADOW 被 PptxGenJS 原地修改导致阴影参数指数膨胀
 
-## 问题
+## 根因
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+PptxGenJS 在处理 `shadow` 对象时会**原地修改**（mutate）其 `blur`/`offset`/`angle`/`opacity` 值，转换为内部单位。由于 `HEADING_SHADOW` 是共享常量对象，每次复用都会在已转换的值上再乘一遍，导致后续幻灯片的阴影参数指数级增长，PowerPoint 编辑模式渲染失败。
 
-## 修改方案
+## 修复方案
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+### 文件：`src/services/pptx/slideLabels.ts`
 
-在 `ModuleFormState` 中添加：
+将 `HEADING_SHADOW` 常量改为工厂函数：
+
+```typescript
+// 删除:
+export const HEADING_SHADOW = { type: 'outer' as const, blur: 3, offset: 2, angle: 45, color: '000000', opacity: 0.4 };
+
+// 替换为:
+export const createHeadingShadow = () => ({
+  type: 'outer' as const,
+  blur: 3,
+  offset: 2,
+  angle: 45,
+  color: '000000',
+  opacity: 0.4,
+});
 ```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+### 文件：`src/services/pptxGenerator.ts`
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+- 将 import 从 `HEADING_SHADOW` 改为 `createHeadingShadow`
+- 将所有 `shadow: HEADING_SHADOW` (4处) 改为 `shadow: createHeadingShadow()`
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+### 文件：`src/services/pptx/workstationSlides.ts`
 
-```
-[宽度输入] × [高度输入]
-```
+- 将 import 从 `HEADING_SHADOW` 改为 `createHeadingShadow`
+- 将所有 `shadow: HEADING_SHADOW` (4处) 改为 `shadow: createHeadingShadow()`
 
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
-
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+共 3 个文件，约 12 处改动，每次调用都返回全新对象，彻底避免 mutation 问题。
 
