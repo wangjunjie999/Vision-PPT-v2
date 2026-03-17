@@ -235,8 +235,7 @@ export function ModuleSchematic() {
     setSavingSchematic(true);
     
     try {
-      const pixelRatio = getPixelRatio();
-      const dataUrl = await captureOffscreen(pixelRatio);
+      const dataUrl = await captureOffscreen();
       
       const response = await fetch(dataUrl);
       const blob = await response.blob();
