@@ -66,14 +66,15 @@ export const FONTS = {
 };
 
 // Heading shadow effect for primary titles
-export const HEADING_SHADOW = {
+// IMPORTANT: Use factory function to avoid PptxGenJS mutating shared object
+export const createHeadingShadow = () => ({
   type: 'outer' as const,
   blur: 3,
   offset: 2,
   angle: 45,
   color: '000000',
   opacity: 0.4,
-};
+});
 
 // 16:9 Slide Layout Constants
 export const SLIDE_LAYOUT = {

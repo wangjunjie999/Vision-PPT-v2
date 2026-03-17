@@ -23,7 +23,7 @@ import {
   COMPANY_NAME_ZH,
   COMPANY_NAME_EN,
   FONTS,
-  HEADING_SHADOW,
+  createHeadingShadow,
   getWorkstationCode,
   getModuleDisplayName,
 } from './pptx/slideLabels';

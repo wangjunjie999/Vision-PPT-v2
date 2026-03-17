@@ -24,7 +24,7 @@ import {
   TRIGGER_LABELS,
   PROCESS_STAGE_LABELS,
   FONTS,
-  HEADING_SHADOW,
+  createHeadingShadow,
 } from './slideLabels';
 import { 
   MECHANISM_LABELS, 
