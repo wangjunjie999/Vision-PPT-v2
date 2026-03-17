@@ -832,7 +832,7 @@ export async function generatePPTX(
   revisionSlide.addText(isZh ? '变更履历' : 'Revision History', {
     x: 0.4, y: 0.05, w: 5, h: 0.38,
     fontSize: 18, fontFace: FONTS.heading, color: COLORS.primary, bold: true,
-    shadow: HEADING_SHADOW,
+    shadow: createHeadingShadow(),
   });
 
   revisionSlide.addText(isZh ? '变更表' : 'Change Log', {
