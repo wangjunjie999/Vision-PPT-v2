@@ -886,6 +886,25 @@ export async function generatePPTX(
 
   // (Camera installation guide slide removed)
 
+  // ========== SLIDE 4: Full-page image ==========
+  const fullImageSlide = pptx.addSlide({ masterName: undefined });
+  const slide4ImageUrl = `${window.location.origin}/ppt-covers/4.jpg`;
+  const slide4DataUri = await fetchImageAsDataUri(slide4ImageUrl);
+  if (slide4DataUri) {
+    fullImageSlide.addImage({
+      data: slide4DataUri,
+      x: 0, y: 0,
+      w: SLIDE_LAYOUT.width,
+      h: SLIDE_LAYOUT.height,
+    });
+  } else {
+    fullImageSlide.addText('（图片未找到）', {
+      x: 0, y: 0, w: '100%', h: '100%',
+      align: 'center', valign: 'middle',
+      fontSize: 24, color: COLORS.textSecondary,
+    });
+  }
+
   // ========== WORKSTATION SLIDES (Dynamic pages per workstation) ==========
   // Order: a.基本信息+检测要求 → b.产品截图标注 → c.机械三视图 → d.光学方案×N → e.BOM
   const totalWsProgress = 65;
