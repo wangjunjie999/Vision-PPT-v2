@@ -414,6 +414,45 @@ export function ModuleSchematic() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Off-screen export diagram (interactive=false, pure SVG) */}
+      {isCapturing && (
+        <div
+          ref={exportDiagramRef}
+          style={{
+            position: 'absolute',
+            left: '-20000px',
+            top: '-20000px',
+            width: '1200px',
+            height: '1100px',
+            overflow: 'hidden',
+            pointerEvents: 'none',
+          }}
+        >
+          <VisionSystemDiagram
+            camera={selectedCamera || null}
+            lens={selectedLens || null}
+            light={selectedLight || null}
+            controller={selectedController || null}
+            cameras={cameras}
+            lenses={lenses}
+            lights={lights}
+            controllers={controllers}
+            onCameraSelect={handleCameraSelect}
+            onLensSelect={handleLensSelect}
+            onLightSelect={handleLightSelect}
+            onControllerSelect={handleControllerSelect}
+            lightDistance={lightDistance}
+            fovAngle={fovAngle}
+            onFovAngleChange={handleFovAngleChange}
+            onLightDistanceChange={handleLightDistanceChange}
+            roiStrategy={module.roi_strategy || 'full'}
+            moduleType={module.type || 'positioning'}
+            interactive={false}
+            className="vision-diagram-container w-full h-full"
+          />
+        </div>
+      )}
     </div>
   );
 }
