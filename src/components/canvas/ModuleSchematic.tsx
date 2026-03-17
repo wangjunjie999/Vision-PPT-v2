@@ -24,7 +24,7 @@ import {
   CheckCircle2,
   Camera
 } from 'lucide-react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { VisionSystemDiagram } from './VisionSystemDiagram';
 import { LightingPhotosPanel } from './LightingPhotosPanel';
