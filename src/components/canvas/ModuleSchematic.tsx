@@ -69,6 +69,44 @@ export function ModuleSchematic() {
   const [lightDistance, setLightDistance] = useState(335);
   const [savingSchematic, setSavingSchematic] = useState(false);
   const [schematicSaved, setSchematicSaved] = useState(false);
+
+  // Shared off-screen capture helper — clones the diagram to avoid visible flash
+  const captureOffscreen = useCallback(async (pixelRatio: number): Promise<string> => {
+    if (!diagramRef.current) throw new Error('No diagram ref');
+    const clone = diagramRef.current.cloneNode(true) as HTMLElement;
+    // Remove screenshot-hide elements from clone
+    clone.querySelectorAll('[data-screenshot-hide]').forEach(el => (el as HTMLElement).style.display = 'none');
+    // Force white text for dark background
+    const forceStyle = document.createElement('style');
+    forceStyle.textContent = `
+      * { color: #ffffff !important; }
+      p, span, div, text, label, h1, h2, h3, h4, h5, h6 { color: #ffffff !important; fill: #ffffff !important; }
+      svg text, svg tspan { fill: #ffffff !important; }
+    `;
+    clone.prepend(forceStyle);
+
+    const container = document.createElement('div');
+    container.style.cssText = 'position:absolute;left:-20000px;top:-20000px;width:1200px;height:1100px;overflow:hidden;pointer-events:none;';
+    clone.style.cssText = 'width:1200px;height:1100px;max-width:none;overflow:hidden;background-color:#1a1a2e;';
+    container.appendChild(clone);
+    document.body.appendChild(container);
+
+    await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+
+    try {
+      const dataUrl = await toPng(clone, {
+        width: 1200,
+        height: 1100,
+        quality: 1,
+        pixelRatio,
+        backgroundColor: '#1a1a2e',
+        skipFonts: true,
+      });
+      return dataUrl;
+    } finally {
+      document.body.removeChild(container);
+    }
+  }, []);
   
   const module = modules.find(m => m.id === selectedModuleId) as any;
   const workstation = workstations.find(w => w.id === selectedWorkstationId) as any;
@@ -110,35 +148,13 @@ export function ModuleSchematic() {
   // Export as PNG
   const handleExportPNG = useCallback(async () => {
     if (!diagramRef.current || !module) return;
-    
     try {
       toast.loading('正在生成PNG...');
-      const pixelRatio = getPixelRatio();
-      
-      const el = diagramRef.current;
-      const originalStyle = el.style.cssText;
-      el.style.width = '1200px';
-      el.style.height = '1100px';
-      el.style.maxWidth = 'none';
-      el.style.overflow = 'hidden';
-      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-      
-      const dataUrl = await toPng(el, {
-        width: 1200,
-        height: 1100,
-        quality: 1,
-        pixelRatio,
-        backgroundColor: '#1a1a2e',
-        skipFonts: true,
-      });
-      
-      el.style.cssText = originalStyle;
-      
+      const dataUrl = await captureOffscreen(getPixelRatio());
       const link = document.createElement('a');
       link.download = `${module.name}-视觉系统示意图.png`;
       link.href = dataUrl;
       link.click();
-      
       toast.dismiss();
       toast.success('PNG已导出');
     } catch (error) {
@@ -146,55 +162,24 @@ export function ModuleSchematic() {
       toast.error('导出PNG失败');
       console.error(error);
     }
-  }, [module?.name, getPixelRatio]);
+  }, [module?.name, getPixelRatio, captureOffscreen]);
 
   // Export as PDF
   const handleExportPDF = useCallback(async () => {
     if (!diagramRef.current || !module) return;
-    
     try {
       toast.loading('正在生成PDF...');
-      const pixelRatio = getPixelRatio();
-      
-      const el = diagramRef.current;
-      const originalStyle = el.style.cssText;
-      el.style.width = '1200px';
-      el.style.height = '1100px';
-      el.style.maxWidth = 'none';
-      el.style.overflow = 'hidden';
-      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-      
-      const dataUrl = await toPng(el, {
-        width: 1200,
-        height: 1100,
-        quality: 1,
-        pixelRatio,
-        backgroundColor: '#1a1a2e',
-        skipFonts: true,
-      });
-      
-      el.style.cssText = originalStyle;
-      
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4',
-      });
-      
+      const dataUrl = await captureOffscreen(getPixelRatio());
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
       const imgWidth = 280;
-      const imgHeight = (diagramRef.current.offsetHeight / diagramRef.current.offsetWidth) * imgWidth;
-      
+      const imgHeight = (1100 / 1200) * imgWidth;
       pdf.setFillColor(26, 26, 46);
       pdf.rect(0, 0, 297, 210, 'F');
-      
       pdf.addImage(dataUrl, 'PNG', 8, 10, imgWidth, imgHeight);
-      
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(12);
       pdf.text(`${module.name} - 视觉系统示意图`, 148, 200, { align: 'center' });
-      
       pdf.save(`${module.name}-视觉系统示意图.pdf`);
-      
       toast.dismiss();
       toast.success('PDF已导出');
     } catch (error) {
@@ -202,7 +187,7 @@ export function ModuleSchematic() {
       toast.error('导出PDF失败');
       console.error(error);
     }
-  }, [module?.name, getPixelRatio]);
+  }, [module?.name, getPixelRatio, captureOffscreen]);
 
   // Lighting photos save handler
   const handleSaveLightingPhotos = useCallback(async (photos: Array<{ url: string; remark: string; created_at: string }>) => {
@@ -247,50 +232,8 @@ export function ModuleSchematic() {
     setSavingSchematic(true);
     
     try {
-      await new Promise<void>((resolve) => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            resolve();
-          });
-        });
-      });
-      
       const pixelRatio = getPixelRatio();
-      
-      const badge = diagramRef.current.querySelector('[data-screenshot-hide]') as HTMLElement | null;
-      if (badge) badge.style.display = 'none';
-      
-      const forceStyle = document.createElement('style');
-      forceStyle.id = 'capture-force-white';
-      forceStyle.textContent = `
-        * { color: #ffffff !important; }
-        p, span, div, text, label, h1, h2, h3, h4, h5, h6 { color: #ffffff !important; fill: #ffffff !important; }
-        svg text, svg tspan { fill: #ffffff !important; }
-      `;
-      diagramRef.current.prepend(forceStyle);
-      
-      const el = diagramRef.current;
-      const originalStyle = el.style.cssText;
-      el.style.width = '1200px';
-      el.style.height = '1100px';
-      el.style.maxWidth = 'none';
-      el.style.overflow = 'hidden';
-      el.style.backgroundColor = '#1a1a2e';
-      
-      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-      
-      const dataUrl = await toPng(el, {
-        width: 1200,
-        height: 1100,
-        quality: 1,
-        pixelRatio,
-        backgroundColor: '#1a1a2e',
-        skipFonts: true,
-      });
-      
-      el.style.cssText = originalStyle;
-      if (badge) badge.style.display = '';
-      forceStyle.remove();
+      const dataUrl = await captureOffscreen(pixelRatio);
       
       const response = await fetch(dataUrl);
       const blob = await response.blob();
