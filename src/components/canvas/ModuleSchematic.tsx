@@ -153,7 +153,7 @@ export function ModuleSchematic() {
     if (!diagramRef.current || !module) return;
     try {
       toast.loading('正在生成PNG...');
-      const dataUrl = await captureOffscreen(getPixelRatio());
+      const dataUrl = await captureOffscreen();
       const link = document.createElement('a');
       link.download = `${module.name}-视觉系统示意图.png`;
       link.href = dataUrl;
