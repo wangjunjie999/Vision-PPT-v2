@@ -417,120 +417,137 @@ export function VisionSystemDiagram({
           <line x1="360" y1="231" x2="495" y2="210" />
         </g>
 
-        {/* ===== Interactive Camera Element ===== */}
-        <foreignObject x="230" y="35" width="90" height="85">
-          <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
-            <HardwareSelectPopover
-              type="camera"
-              items={cameras}
-              selectedId={camera?.id || null}
-              onSelect={onCameraSelect || (() => {})}
-              disabled={!interactive || !onCameraSelect}
-            >
-              <button className={cn("relative w-full h-full cursor-pointer group bg-transparent border-0 p-0")}>
-                <svg width="90" height="85" viewBox="0 0 90 85">
-                  {/* Camera body - purple */}
-                  <rect x="0" y="0" width="90" height="72" rx="6" fill="url(#cameraBody)" />
-                  {/* Top label strip */}
-                  <rect x="8" y="5" width="28" height="8" rx="2" fill="hsl(270, 30%, 60%)" opacity="0.5" />
-                  {/* Green status LED */}
-                  <circle cx="76" cy="11" r="4" fill="hsl(120, 70%, 50%)" />
-                  {/* Cam1 label */}
-                  <text x="45" y="48" textAnchor="middle" fill="white" style={{ fontSize: '14px', fontWeight: 600 }}>Cam1</text>
-                  {/* Lens mount connector */}
-                  <rect x="32" y="72" width="26" height="13" fill="hsl(0, 0%, 22%)" />
-                </svg>
-                {interactive && onCameraSelect && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    <span className="text-primary-foreground text-xs">✎</span>
-                  </div>
-                )}
-                {!hasCamera && interactive && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded">
-                    <span className="text-xs text-muted-foreground">点击选择</span>
-                  </div>
-                )}
-              </button>
-            </HardwareSelectPopover>
-          </div>
-        </foreignObject>
+        {/* ===== Camera Element ===== */}
+        {interactive ? (
+          <foreignObject x="230" y="35" width="90" height="85">
+            <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
+              <HardwareSelectPopover
+                type="camera"
+                items={cameras}
+                selectedId={camera?.id || null}
+                onSelect={onCameraSelect || (() => {})}
+                disabled={!onCameraSelect}
+              >
+                <button className={cn("relative w-full h-full cursor-pointer group bg-transparent border-0 p-0")}>
+                  <svg width="90" height="85" viewBox="0 0 90 85">
+                    <rect x="0" y="0" width="90" height="72" rx="6" fill="url(#cameraBody)" />
+                    <rect x="8" y="5" width="28" height="8" rx="2" fill="hsl(270, 30%, 60%)" opacity="0.5" />
+                    <circle cx="76" cy="11" r="4" fill="hsl(120, 70%, 50%)" />
+                    <text x="45" y="48" textAnchor="middle" fill="white" style={{ fontSize: '14px', fontWeight: 600 }}>Cam1</text>
+                    <rect x="32" y="72" width="26" height="13" fill="hsl(0, 0%, 22%)" />
+                  </svg>
+                  {onCameraSelect && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      <span className="text-primary-foreground text-xs">✎</span>
+                    </div>
+                  )}
+                  {!hasCamera && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded">
+                      <span className="text-xs text-muted-foreground">点击选择</span>
+                    </div>
+                  )}
+                </button>
+              </HardwareSelectPopover>
+            </div>
+          </foreignObject>
+        ) : (
+          <g transform="translate(230, 35)">
+            <rect x="0" y="0" width="90" height="72" rx="6" fill="url(#cameraBody)" />
+            <rect x="8" y="5" width="28" height="8" rx="2" fill="hsl(270, 30%, 60%)" opacity="0.5" />
+            <circle cx="76" cy="11" r="4" fill="hsl(120, 70%, 50%)" />
+            <text x="45" y="48" textAnchor="middle" fill="white" style={{ fontSize: '14px', fontWeight: 600 }}>Cam1</text>
+            <rect x="32" y="72" width="26" height="13" fill="hsl(0, 0%, 22%)" />
+          </g>
+        )}
 
-        {/* ===== Interactive Lens Element ===== */}
-        <foreignObject x="227" y="120" width="96" height="62">
-          <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
-            <HardwareSelectPopover
-              type="lens"
-              items={lenses}
-              selectedId={lens?.id || null}
-              onSelect={onLensSelect || (() => {})}
-              disabled={!interactive || !onLensSelect}
-            >
-              <button className={cn("relative w-full h-full cursor-pointer group bg-transparent border-0 p-0")}>
-                <svg width="96" height="62" viewBox="0 0 96 62">
-                  {/* Lens body - dark brown */}
-                  <rect x="8" y="0" width="80" height="48" rx="3" fill="url(#lensBody)" />
-                  {/* Lens glass reflection */}
-                  <ellipse cx="48" cy="38" rx="22" ry="7" fill="url(#lensGlass)" />
-                  {/* Bottom ring - dark */}
-                  <rect x="0" y="44" width="96" height="12" rx="2" fill="hsl(0, 0%, 18%)" />
-                  {/* Grip rings */}
-                  <rect x="13" y="12" width="70" height="2.5" fill="hsl(30, 15%, 45%)" rx="1" />
-                  <rect x="13" y="26" width="70" height="2.5" fill="hsl(30, 15%, 45%)" rx="1" />
-                </svg>
-                {interactive && onLensSelect && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    <span className="text-primary-foreground text-xs">✎</span>
-                  </div>
-                )}
-                {!hasLens && interactive && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded">
-                    <span className="text-xs text-muted-foreground">点击选择</span>
-                  </div>
-                )}
-              </button>
-            </HardwareSelectPopover>
-          </div>
-        </foreignObject>
+        {/* ===== Lens Element ===== */}
+        {interactive ? (
+          <foreignObject x="227" y="120" width="96" height="62">
+            <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
+              <HardwareSelectPopover
+                type="lens"
+                items={lenses}
+                selectedId={lens?.id || null}
+                onSelect={onLensSelect || (() => {})}
+                disabled={!onLensSelect}
+              >
+                <button className={cn("relative w-full h-full cursor-pointer group bg-transparent border-0 p-0")}>
+                  <svg width="96" height="62" viewBox="0 0 96 62">
+                    <rect x="8" y="0" width="80" height="48" rx="3" fill="url(#lensBody)" />
+                    <ellipse cx="48" cy="38" rx="22" ry="7" fill="url(#lensGlass)" />
+                    <rect x="0" y="44" width="96" height="12" rx="2" fill="hsl(0, 0%, 18%)" />
+                    <rect x="13" y="12" width="70" height="2.5" fill="hsl(30, 15%, 45%)" rx="1" />
+                    <rect x="13" y="26" width="70" height="2.5" fill="hsl(30, 15%, 45%)" rx="1" />
+                  </svg>
+                  {onLensSelect && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      <span className="text-primary-foreground text-xs">✎</span>
+                    </div>
+                  )}
+                  {!hasLens && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded">
+                      <span className="text-xs text-muted-foreground">点击选择</span>
+                    </div>
+                  )}
+                </button>
+              </HardwareSelectPopover>
+            </div>
+          </foreignObject>
+        ) : (
+          <g transform="translate(227, 120)">
+            <rect x="8" y="0" width="80" height="48" rx="3" fill="url(#lensBody)" />
+            <ellipse cx="48" cy="38" rx="22" ry="7" fill="url(#lensGlass)" />
+            <rect x="0" y="44" width="96" height="12" rx="2" fill="hsl(0, 0%, 18%)" />
+            <rect x="13" y="12" width="70" height="2.5" fill="hsl(30, 15%, 45%)" rx="1" />
+            <rect x="13" y="26" width="70" height="2.5" fill="hsl(30, 15%, 45%)" rx="1" />
+          </g>
+        )}
 
-        {/* ===== Interactive Light Element - gray bar with red LED strips ===== */}
-        <foreignObject x="195" y="215" width="160" height="32">
-          <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
-            <HardwareSelectPopover
-              type="light"
-              items={lights}
-              selectedId={light?.id || null}
-              onSelect={onLightSelect || (() => {})}
-              disabled={!interactive || !onLightSelect}
-            >
-              <button className={cn("relative w-full h-full cursor-pointer group bg-transparent border-0 p-0")}>
-                <svg width="160" height="32" viewBox="0 0 160 32">
-                  {/* Light bar body - gray */}
-                  <rect x="0" y="0" width="160" height="32" rx="4" fill="hsl(0, 0%, 45%)" />
-                  <rect x="3" y="3" width="154" height="26" rx="3" fill="hsl(0, 0%, 35%)" />
-                  {/* Center dark aperture */}
-                  <rect x="45" y="6" width="70" height="20" rx="3" fill="hsl(0, 0%, 12%)" />
-                  {/* Left red LED strip */}
-                  <rect x="8" y="8" width="32" height="16" rx="2" fill="hsl(0, 80%, 50%)" />
-                  {/* Right red LED strip */}
-                  <rect x="120" y="8" width="32" height="16" rx="2" fill="hsl(0, 80%, 50%)" />
-                </svg>
-                {interactive && onLightSelect && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    <span className="text-primary-foreground text-xs">✎</span>
-                  </div>
-                )}
-                {!hasLight && interactive && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded">
-                    <span className="text-xs text-muted-foreground">点击选择</span>
-                  </div>
-                )}
-              </button>
-            </HardwareSelectPopover>
-          </div>
-        </foreignObject>
+        {/* ===== Light Element ===== */}
+        {interactive ? (
+          <foreignObject x="195" y="215" width="160" height="32">
+            <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
+              <HardwareSelectPopover
+                type="light"
+                items={lights}
+                selectedId={light?.id || null}
+                onSelect={onLightSelect || (() => {})}
+                disabled={!onLightSelect}
+              >
+                <button className={cn("relative w-full h-full cursor-pointer group bg-transparent border-0 p-0")}>
+                  <svg width="160" height="32" viewBox="0 0 160 32">
+                    <rect x="0" y="0" width="160" height="32" rx="4" fill="hsl(0, 0%, 45%)" />
+                    <rect x="3" y="3" width="154" height="26" rx="3" fill="hsl(0, 0%, 35%)" />
+                    <rect x="45" y="6" width="70" height="20" rx="3" fill="hsl(0, 0%, 12%)" />
+                    <rect x="8" y="8" width="32" height="16" rx="2" fill="hsl(0, 80%, 50%)" />
+                    <rect x="120" y="8" width="32" height="16" rx="2" fill="hsl(0, 80%, 50%)" />
+                  </svg>
+                  {onLightSelect && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      <span className="text-primary-foreground text-xs">✎</span>
+                    </div>
+                  )}
+                  {!hasLight && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded">
+                      <span className="text-xs text-muted-foreground">点击选择</span>
+                    </div>
+                  )}
+                </button>
+              </HardwareSelectPopover>
+            </div>
+          </foreignObject>
+        ) : (
+          <g transform="translate(195, 215)">
+            <rect x="0" y="0" width="160" height="32" rx="4" fill="hsl(0, 0%, 45%)" />
+            <rect x="3" y="3" width="154" height="26" rx="3" fill="hsl(0, 0%, 35%)" />
+            <rect x="45" y="6" width="70" height="20" rx="3" fill="hsl(0, 0%, 12%)" />
+            <rect x="8" y="8" width="32" height="16" rx="2" fill="hsl(0, 80%, 50%)" />
+            <rect x="120" y="8" width="32" height="16" rx="2" fill="hsl(0, 80%, 50%)" />
+          </g>
+        )}
 
-        {/* Interactive Controller Element - positioned at bottom right, only show if controller is selected */}
-        {hasController && (
+        {/* ===== Controller Element ===== */}
+        {hasController && (interactive ? (
           <foreignObject x="370" y="385" width="140" height="80">
             <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
               <HardwareSelectPopover
@@ -538,47 +555,30 @@ export function VisionSystemDiagram({
                 items={controllers}
                 selectedId={controller?.id || null}
                 onSelect={onControllerSelect || (() => {})}
-                disabled={!interactive || !onControllerSelect}
+                disabled={!onControllerSelect}
               >
                 <div className="relative w-full h-full cursor-pointer group">
                   <svg width="140" height="80" viewBox="0 0 140 80">
-                    {/* IPC Body - compact version */}
                     <rect x="0" y="5" width="140" height="70" rx="3" fill="hsl(220, 15%, 25%)" />
                     <rect x="4" y="9" width="132" height="62" rx="2" fill="hsl(220, 15%, 20%)" />
-                    
-                    {/* Front panel */}
                     <rect x="8" y="13" width="124" height="54" rx="2" fill="hsl(220, 15%, 15%)" />
-                    
-                    {/* Power button */}
                     <circle cx="20" cy="28" r="5" fill="hsl(220, 10%, 30%)" />
                     <circle cx="20" cy="28" r="3" fill="hsl(120, 70%, 50%)" />
-                    
-                    {/* Drive bay */}
                     <rect x="32" y="20" width="45" height="12" rx="1" fill="hsl(220, 10%, 25%)" />
-                    
-                    {/* Activity LEDs */}
                     <circle cx="85" cy="26" r="2" fill="hsl(220, 80%, 50%)" />
                     <circle cx="93" cy="26" r="2" fill="hsl(40, 80%, 50%)" />
-                    
-                    {/* Ventilation */}
                     <g fill="hsl(220, 10%, 10%)">
                       <rect x="105" y="18" width="22" height="2" rx="1" />
                       <rect x="105" y="23" width="22" height="2" rx="1" />
                       <rect x="105" y="28" width="22" height="2" rx="1" />
                       <rect x="105" y="33" width="22" height="2" rx="1" />
                     </g>
-                    
-                    {/* USB ports */}
                     <rect x="16" y="50" width="10" height="5" rx="1" fill="hsl(0, 0%, 15%)" stroke="hsl(0, 0%, 40%)" strokeWidth="0.5" />
                     <rect x="30" y="50" width="10" height="5" rx="1" fill="hsl(0, 0%, 15%)" stroke="hsl(0, 0%, 40%)" strokeWidth="0.5" />
-                    
-                    {/* Display port */}
                     <rect x="46" y="49" width="16" height="7" rx="1" fill="hsl(0, 0%, 15%)" stroke="hsl(220, 80%, 50%)" strokeWidth="0.5" />
-                    
-                    {/* Label */}
                     <text x="100" y="58" textAnchor="middle" fill="#ffffff" style={{ fontSize: '9px', fontWeight: 500 }}>IPC</text>
                   </svg>
-                  {interactive && onControllerSelect && (
+                  {onControllerSelect && (
                     <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
                       <span className="text-primary-foreground text-[10px]">✎</span>
                     </div>
@@ -587,7 +587,28 @@ export function VisionSystemDiagram({
               </HardwareSelectPopover>
             </div>
           </foreignObject>
-        )}
+        ) : (
+          <g transform="translate(370, 385)">
+            <rect x="0" y="5" width="140" height="70" rx="3" fill="hsl(220, 15%, 25%)" />
+            <rect x="4" y="9" width="132" height="62" rx="2" fill="hsl(220, 15%, 20%)" />
+            <rect x="8" y="13" width="124" height="54" rx="2" fill="hsl(220, 15%, 15%)" />
+            <circle cx="20" cy="28" r="5" fill="hsl(220, 10%, 30%)" />
+            <circle cx="20" cy="28" r="3" fill="hsl(120, 70%, 50%)" />
+            <rect x="32" y="20" width="45" height="12" rx="1" fill="hsl(220, 10%, 25%)" />
+            <circle cx="85" cy="26" r="2" fill="hsl(220, 80%, 50%)" />
+            <circle cx="93" cy="26" r="2" fill="hsl(40, 80%, 50%)" />
+            <g fill="hsl(220, 10%, 10%)">
+              <rect x="105" y="18" width="22" height="2" rx="1" />
+              <rect x="105" y="23" width="22" height="2" rx="1" />
+              <rect x="105" y="28" width="22" height="2" rx="1" />
+              <rect x="105" y="33" width="22" height="2" rx="1" />
+            </g>
+            <rect x="16" y="50" width="10" height="5" rx="1" fill="hsl(0, 0%, 15%)" stroke="hsl(0, 0%, 40%)" strokeWidth="0.5" />
+            <rect x="30" y="50" width="10" height="5" rx="1" fill="hsl(0, 0%, 15%)" stroke="hsl(0, 0%, 40%)" strokeWidth="0.5" />
+            <rect x="46" y="49" width="16" height="7" rx="1" fill="hsl(0, 0%, 15%)" stroke="hsl(220, 80%, 50%)" strokeWidth="0.5" />
+            <text x="100" y="58" textAnchor="middle" fill="#ffffff" style={{ fontSize: '9px', fontWeight: 500 }}>IPC</text>
+          </g>
+        ))}
 
         {/* Annotations in SVG - moved further right */}
         <foreignObject x="500" y="20" width="290" height="680">
