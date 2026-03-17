@@ -18,6 +18,7 @@ import {
   saveViewToStorage,
   saveSchematicToStorage,
   generateImageFromElement,
+  generateSchematicImage,
   getViewLabel,
   type ViewType,
   type SaveProgress,
