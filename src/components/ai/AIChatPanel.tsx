@@ -248,8 +248,8 @@ export function AIChatPanel() {
         <Bot className="h-6 w-6" />
       </Button>
 
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-[400px] sm:w-[440px] p-0 flex flex-col gap-0">
+      <Sheet open={open} onOpenChange={setOpen} modal={false}>
+        <SheetContent side="right" className="w-[400px] sm:w-[440px] p-0 flex flex-col gap-0 shadow-2xl">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0">
             <div className="flex items-center gap-2">
