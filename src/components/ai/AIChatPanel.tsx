@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Bot, Send, Trash2, X, Loader2, Database, Settings, Check } from 'lucide-react';
+import { Bot, Send, Trash2, X, Loader2, Database, Settings, Check, Plus, History, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,8 +10,9 @@ import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useData } from '@/contexts/DataContext';
+import { useChatHistory } from '@/hooks/useChatHistory';
 
-type Message = { role: 'user' | 'assistant'; content: string };
+type Message = { role: 'user' | 'assistant'; content: string; provider?: string };
 
 interface CustomAIConfig {
   apiKey: string;
@@ -78,7 +79,6 @@ async function streamChat({
     throw new Error(err.error || `Error ${resp.status}`);
   }
 
-  // Read provider header
   const provider = resp.headers.get('X-AI-Provider');
   if (provider && onProvider) onProvider(provider);
 
@@ -116,7 +116,6 @@ async function streamChat({
     }
   }
 
-  // flush remaining
   if (buffer.trim()) {
     for (let raw of buffer.split('\n')) {
       if (!raw) continue;
@@ -231,15 +230,18 @@ function buildProjectContext(data: ReturnType<typeof useData>): string {
 
 export function AIChatPanel() {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [contextEnabled, setContextEnabled] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [customConfig, setCustomConfig] = useState<CustomAIConfig>(loadCustomConfig);
   const [currentProvider, setCurrentProvider] = useState<string>('lovable');
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  const chatHistory = useChatHistory();
+  const { messages, setMessages, activeConversationId, conversations, loadingHistory } = chatHistory;
 
   // Draggable state
   const [pos, setPos] = useState(() => {
@@ -324,7 +326,19 @@ export function AIChatPanel() {
     setInput('');
     setIsLoading(true);
 
+    // Ensure conversation exists
+    let convId = activeConversationId;
+    if (!convId) {
+      convId = await chatHistory.createConversation(text);
+    }
+
+    // Save user message to DB
+    if (convId) {
+      chatHistory.saveMessage(convId, userMsg);
+    }
+
     let assistantSoFar = '';
+    let assistantProvider = 'lovable';
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -349,8 +363,14 @@ export function AIChatPanel() {
         context: contextPayload,
         customConfig: customConfig.apiKey ? customConfig : undefined,
         onDelta: upsert,
-        onDone: () => setIsLoading(false),
-        onProvider: (p) => setCurrentProvider(p),
+        onDone: () => {
+          setIsLoading(false);
+          // Save assistant message to DB
+          if (convId && assistantSoFar) {
+            chatHistory.saveMessage(convId, { role: 'assistant', content: assistantSoFar, provider: assistantProvider });
+          }
+        },
+        onProvider: (p) => { setCurrentProvider(p); assistantProvider = p; },
         signal: controller.signal,
       });
     } catch (e: any) {
@@ -370,8 +390,18 @@ export function AIChatPanel() {
 
   const handleClear = () => {
     if (abortRef.current) abortRef.current.abort();
-    setMessages([]);
+    chatHistory.startNewChat();
     setIsLoading(false);
+  };
+
+  const handleNewChat = () => {
+    handleClear();
+    setShowHistory(false);
+  };
+
+  const handleSelectConversation = async (id: string) => {
+    await chatHistory.loadMessages(id);
+    setShowHistory(false);
   };
 
   return (
@@ -384,7 +414,6 @@ export function AIChatPanel() {
           onMouseDown={e => { e.preventDefault(); handleDragStart(e.clientX, e.clientY); }}
           onTouchStart={e => handleDragStart(e.touches[0].clientX, e.touches[0].clientY)}
         >
-          {/* Pulse glow ring */}
           <span className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
           <span className="absolute -inset-1 rounded-full bg-gradient-to-br from-primary/30 to-accent/20 animate-pulse-glow" />
           <Button
@@ -422,7 +451,30 @@ export function AIChatPanel() {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                onClick={() => setShowSettings(prev => !prev)}
+                onClick={() => { setShowHistory(prev => !prev); setShowSettings(false); }}
+                title="对话历史"
+                className={cn(
+                  "rounded-lg h-8 w-8 transition-all",
+                  showHistory
+                    ? "bg-primary/15 text-primary hover:bg-primary/25"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                )}
+              >
+                <History className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={handleNewChat}
+                title="新对话"
+                className="rounded-lg h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => { setShowSettings(prev => !prev); setShowHistory(false); }}
                 title="API 设置"
                 className={cn(
                   "rounded-lg h-8 w-8 transition-all",
@@ -467,6 +519,48 @@ export function AIChatPanel() {
             </div>
           </div>
 
+          {/* History panel */}
+          {showHistory && (
+            <div className="border-b border-border/40 bg-muted/20 backdrop-blur-md shrink-0 max-h-[300px] overflow-auto">
+              <div className="px-4 py-2">
+                <p className="text-xs font-medium text-muted-foreground mb-2">对话历史</p>
+                {conversations.length === 0 ? (
+                  <p className="text-xs text-muted-foreground/60 py-4 text-center">暂无对话记录</p>
+                ) : (
+                  <div className="space-y-1">
+                    {conversations.map(conv => (
+                      <div
+                        key={conv.id}
+                        onClick={() => handleSelectConversation(conv.id)}
+                        className={cn(
+                          "flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-xs transition-all",
+                          conv.id === activeConversationId
+                            ? "bg-primary/10 text-primary"
+                            : "hover:bg-accent/50 text-foreground"
+                        )}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate font-medium">{conv.title}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                            {new Date(conv.updated_at).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                          onClick={(e) => { e.stopPropagation(); chatHistory.deleteConversation(conv.id); }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Settings panel */}
           {showSettings && (
             <div className="px-4 py-3 border-b border-border/40 bg-muted/20 backdrop-blur-md space-y-2.5 shrink-0">
@@ -510,13 +604,17 @@ export function AIChatPanel() {
           {/* Messages */}
           <ScrollArea className="flex-1 overflow-hidden">
             <div ref={scrollRef} className="p-4 space-y-4 min-h-full">
-              {messages.length === 0 && (
+              {loadingHistory ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : messages.length === 0 ? (
                 <div className="text-center text-muted-foreground text-sm py-12 space-y-3">
                   <Bot className="h-12 w-12 mx-auto text-muted-foreground/40" />
                   <p>你好！我是 AI 视觉方案助手。</p>
                   <p className="text-xs">可以问我关于相机选型、镜头计算、光源设计、检测算法等问题。</p>
                 </div>
-              )}
+              ) : null}
               {messages.map((msg, i) => (
                 <div
                   key={i}
