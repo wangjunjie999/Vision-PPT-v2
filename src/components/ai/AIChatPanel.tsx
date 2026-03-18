@@ -287,27 +287,45 @@ export function AIChatPanel() {
       </Button>
 
       <Sheet open={open} onOpenChange={setOpen} modal={false}>
-        <SheetContent side="right" className="w-[400px] sm:w-[440px] p-0 flex flex-col gap-0 shadow-2xl">
+        <SheetContent side="right" className="w-[400px] sm:w-[440px] p-0 flex flex-col gap-0 shadow-2xl bg-background/60 backdrop-blur-xl border-border/50 [&>button]:hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-card/80 backdrop-blur-md shrink-0">
             <div className="flex items-center gap-2">
-              <Bot className="h-5 w-5 text-primary" />
+              <div className="h-7 w-7 rounded-lg bg-primary/15 flex items-center justify-center">
+                <Bot className="h-4 w-4 text-primary" />
+              </div>
               <span className="font-semibold text-sm">AI 视觉方案助手</span>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
               <Button
-                variant={contextEnabled && projectContext ? "default" : "ghost"}
+                variant="ghost"
                 size="icon-sm"
                 onClick={() => setContextEnabled(prev => !prev)}
                 title={contextEnabled && projectContext ? "已启用项目上下文" : "点击启用项目上下文"}
-                className={cn(contextEnabled && projectContext && "bg-primary/20 text-primary hover:bg-primary/30")}
+                className={cn(
+                  "rounded-lg h-8 w-8 transition-all",
+                  contextEnabled && projectContext
+                    ? "bg-primary/15 text-primary hover:bg-primary/25"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                )}
               >
                 <Database className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon-sm" onClick={handleClear} title="清空对话">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={handleClear}
+                title="清空对话"
+                className="rounded-lg h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all"
+              >
                 <Trash2 className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon-sm" onClick={() => setOpen(false)}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setOpen(false)}
+                className="rounded-lg h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+              >
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -315,7 +333,7 @@ export function AIChatPanel() {
 
           {/* Context indicator */}
           {contextEnabled && projectContext && (
-            <div className="px-4 py-1.5 bg-primary/5 border-b border-border text-xs text-muted-foreground flex items-center gap-1.5 shrink-0">
+            <div className="px-4 py-1.5 bg-primary/5 border-b border-border/40 text-xs text-muted-foreground flex items-center gap-1.5 shrink-0 backdrop-blur-md">
               <Database className="h-3 w-3 text-primary" />
               <span>已加载当前项目配置信息，AI 将基于实际数据回答</span>
             </div>
@@ -368,7 +386,7 @@ export function AIChatPanel() {
           </ScrollArea>
 
           {/* Input */}
-          <div className="p-3 border-t border-border bg-card shrink-0">
+          <div className="p-3 border-t border-border/40 bg-card/80 backdrop-blur-md shrink-0">
             <div className="flex gap-2">
               <Textarea
                 value={input}
