@@ -183,10 +183,7 @@ export function TopToolbar({ onAdminClick, showBackButton, isMobile, onOpenLeftD
         <div className="flex items-center gap-2 md:gap-3 relative z-10">
           {/* Search - Hidden on mobile, compact on tablet */}
           {!showBackButton && !isMobile && (
-            <div className={cn(
-              "relative transition-all duration-300 hidden sm:block",
-              searchFocused ? "w-64 lg:w-80" : "w-48 lg:w-64"
-            )}>
+            <div className="relative hidden sm:block w-64">
               <Search className={cn(
                 "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-200",
                 searchFocused ? "text-primary" : "text-muted-foreground"
@@ -198,13 +195,10 @@ export function TopToolbar({ onAdminClick, showBackButton, isMobile, onOpenLeftD
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
                 className={cn(
-                  "pl-9 h-9 bg-secondary/50 border-secondary hover:border-primary/30 focus:border-primary transition-all duration-200",
+                  "pl-9 h-9 bg-secondary/50 border-secondary hover:border-primary/30 focus:border-primary transition-colors duration-200",
                   searchFocused && "bg-card shadow-sm"
                 )}
               />
-              {searchFocused && (
-                <div className="absolute inset-0 -z-10 rounded-md bg-primary/5 blur-sm" />
-              )}
             </div>
           )}
           

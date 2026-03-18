@@ -466,14 +466,32 @@ export function ProjectTree() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-3">
-        <div className="relative">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <div className="absolute inset-0 animate-ping opacity-20">
-            <Loader2 className="h-8 w-8 text-primary" />
+      <div className="p-3 space-y-3">
+        {/* Skeleton tree nodes */}
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="space-y-2">
+            <div className="flex items-center gap-2 px-2 py-2">
+              <div className="w-4 h-4 rounded bg-muted animate-pulse" />
+              <div className="w-4 h-4 rounded bg-muted animate-pulse" />
+              <div className="h-4 rounded bg-muted animate-pulse flex-1" />
+              <div className="w-12 h-5 rounded bg-muted animate-pulse" />
+            </div>
+            {i <= 2 && (
+              <div className="ml-8 space-y-1.5">
+                <div className="flex items-center gap-2 px-2 py-1.5">
+                  <div className="w-3.5 h-3.5 rounded bg-muted/70 animate-pulse" />
+                  <div className="h-3.5 rounded bg-muted/70 animate-pulse w-3/4" />
+                </div>
+                {i === 1 && (
+                  <div className="flex items-center gap-2 px-2 py-1.5">
+                    <div className="w-3.5 h-3.5 rounded bg-muted/70 animate-pulse" />
+                    <div className="h-3.5 rounded bg-muted/70 animate-pulse w-1/2" />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        </div>
-        <span className="text-sm text-muted-foreground font-medium">加载项目...</span>
+        ))}
       </div>
     );
   }
