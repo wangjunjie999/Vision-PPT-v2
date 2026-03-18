@@ -359,10 +359,10 @@ export function AIChatPanel() {
                 >
                   <div
                     className={cn(
-                      'max-w-[85%] rounded-xl px-3 py-2 text-sm',
+                    'max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm backdrop-blur-md',
                       msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-foreground'
+                        ? 'bg-primary/70 text-primary-foreground'
+                        : 'bg-muted/60 border border-border/30 text-foreground'
                     )}
                   >
                     {msg.role === 'assistant' ? (
@@ -377,7 +377,7 @@ export function AIChatPanel() {
               ))}
               {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
                 <div className="flex justify-start">
-                  <div className="bg-muted rounded-xl px-3 py-2">
+                  <div className="bg-muted/60 backdrop-blur-md rounded-2xl px-3 py-2">
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   </div>
                 </div>
