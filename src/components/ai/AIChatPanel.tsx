@@ -333,7 +333,7 @@ export function AIChatPanel() {
 
           {/* Context indicator */}
           {contextEnabled && projectContext && (
-            <div className="px-4 py-1.5 bg-primary/5 border-b border-border text-xs text-muted-foreground flex items-center gap-1.5 shrink-0">
+            <div className="px-4 py-1.5 bg-primary/5 border-b border-border/40 text-xs text-muted-foreground flex items-center gap-1.5 shrink-0 backdrop-blur-md">
               <Database className="h-3 w-3 text-primary" />
               <span>已加载当前项目配置信息，AI 将基于实际数据回答</span>
             </div>
