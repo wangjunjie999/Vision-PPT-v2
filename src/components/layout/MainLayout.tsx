@@ -98,6 +98,7 @@ export function MainLayout() {
           open={rightDrawerOpen} 
           onOpenChange={setRightDrawerOpen} 
         />
+        <AIChatPanel />
       </div>
     );
   }
