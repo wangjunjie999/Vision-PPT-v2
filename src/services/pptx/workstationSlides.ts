@@ -123,9 +123,9 @@ function addSlideTitle(
 ): void {
   // Main title text overlaid on the navy header bar (primary blue)
   slide.addText(`${ctx.wsCode} ${ctx.wsName}`, {
-    x: 0.4, y: 0.05, w: 7.5, h: 0.38,
-    fontSize: 16, fontFace: FONTS.heading, color: COLORS.primary, bold: true,
-    shadow: createHeadingShadow(),
+    x: 0.4, y: 0.08, w: 7.5, h: 0.38,
+    fontSize: 16, fontFace: FONTS.heading, color: COLORS.primary,
+    bold: false, italic: false,
   });
 
   if (splitSubtitles) {
