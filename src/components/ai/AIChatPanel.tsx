@@ -377,7 +377,7 @@ export function AIChatPanel() {
               ))}
               {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
                 <div className="flex justify-start">
-                  <div className="bg-muted/60 backdrop-blur-md rounded-2xl px-3 py-2">
+                  <div className="bg-muted/30 backdrop-blur-md rounded-2xl px-3 py-2">
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   </div>
                 </div>
