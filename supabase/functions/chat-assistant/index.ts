@@ -1,0 +1,126 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+const SYSTEM_PROMPT = `你是一位资深的工业视觉检测方案专家，拥有15年以上的行业经验。你精通以下领域：
+
+## 工业相机选型
+- 面阵相机与线阵相机的区别与选型原则
+- 分辨率、帧率、像元尺寸的匹配计算
+- 接口类型（GigE、USB3、Camera Link、CoaXPress）的选择
+- 主流品牌（Basler、Cognex、Keyence、海康、大恒）的产品特点
+
+## 工业镜头计算
+- 焦距计算公式：f = WD × sensor_size / FOV
+- 视场角、工作距离、景深的关系
+- 远心镜头、微距镜头的应用场景
+- 镜头与相机的匹配（C口/CS口、靶面覆盖）
+
+## 光源方案设计
+- 环形光、背光、同轴光、条形光、穹顶光的特点与适用场景
+- 光源颜色选择（红/蓝/白/红外）与被测物的关系
+- 明场照明与暗场照明的区别
+- 频闪控制与曝光同步
+
+## 视觉检测算法
+- 缺陷检测：划伤、凹坑、异物、色差等
+- OCR/OCV：字符识别与验证
+- 尺寸测量：亚像素精度、标定方法
+- 定位引导：模板匹配、特征点定位
+- 颜色检测与分类
+
+## 深度学习应用
+- CNN在缺陷检测中的应用
+- 目标检测（YOLO、SSD）在视觉中的应用
+- 图像分割在复杂场景中的应用
+- 训练数据采集与标注策略
+- 模型部署与推理优化
+
+## 系统集成
+- 工控机选型（CPU/GPU性能、接口数量）
+- 通信协议（TCP/IP、Modbus、Profinet、EtherCAT）
+- 触发方式（外触发、编码器触发、自由运行）
+- 与PLC/MES/SCADA的集成方案
+
+## 回答要求
+- 使用中文回答
+- 给出专业、实用、可落地的建议
+- 涉及计算时给出具体公式和数值
+- 提供多种方案时说明各自优缺点
+- 如果问题信息不足，主动询问关键参数`;
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { messages } = await req.json();
+
+    if (!messages || !Array.isArray(messages)) {
+      return new Response(
+        JSON.stringify({ error: "messages array is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    const response = await fetch(
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            ...messages,
+          ],
+          stream: true,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "请求过于频繁，请稍后再试。" }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "AI 额度已用完，请联系管理员充值。" }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const text = await response.text();
+      console.error("AI gateway error:", response.status, text);
+      return new Response(
+        JSON.stringify({ error: "AI 服务暂时不可用，请稍后再试。" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    return new Response(response.body, {
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    });
+  } catch (e) {
+    console.error("chat-assistant error:", e);
+    return new Response(
+      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
