@@ -13,6 +13,7 @@ import { Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { MobileFormDrawer, MobileFormTrigger } from '@/components/forms/MobileFormDrawer';
+import { AIChatPanel } from '@/components/ai/AIChatPanel';
 import {
   ResizablePanelGroup,
   ResizablePanel,
