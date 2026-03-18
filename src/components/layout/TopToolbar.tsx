@@ -119,7 +119,7 @@ export function TopToolbar({ onAdminClick, showBackButton, isMobile, onOpenLeftD
       )}>
         {/* Subtle gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-primary/[0.02] via-transparent to-accent/[0.02] pointer-events-none" />
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
         
         <div className="flex items-center gap-2 md:gap-4 relative z-10">
           {showBackButton ? (
