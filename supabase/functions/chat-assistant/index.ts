@@ -59,7 +59,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages, context } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
@@ -73,6 +73,18 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    // Build system messages with optional project context
+    const systemMessages: any[] = [
+      { role: "system", content: SYSTEM_PROMPT },
+    ];
+
+    if (context && typeof context === "string") {
+      systemMessages.push({
+        role: "system",
+        content: `以下是用户当前正在配置的项目信息，请基于这些实际数据给出更精准的建议：\n\n${context}`,
+      });
+    }
+
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
@@ -84,7 +96,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
           messages: [
-            { role: "system", content: SYSTEM_PROMPT },
+            ...systemMessages,
             ...messages,
           ],
           stream: true,

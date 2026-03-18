@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { Bot, Send, Trash2, X, Loader2 } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { Bot, Send, Trash2, X, Loader2, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -7,6 +7,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useData } from '@/contexts/DataContext';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
@@ -14,11 +15,13 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-assista
 
 async function streamChat({
   messages,
+  context,
   onDelta,
   onDone,
   signal,
 }: {
   messages: Message[];
+  context?: string;
   onDelta: (text: string) => void;
   onDone: () => void;
   signal?: AbortSignal;
@@ -29,7 +32,7 @@ async function streamChat({
       'Content-Type': 'application/json',
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ messages, context }),
     signal,
   });
 
@@ -91,13 +94,75 @@ async function streamChat({
   onDone();
 }
 
+function buildProjectContext(data: ReturnType<typeof useData>): string {
+  const { selectedProjectId, selectedWorkstationId, selectedModuleId, projects, workstations, modules, layouts, getProjectWorkstations, getWorkstationModules } = data;
+
+  const parts: string[] = [];
+
+  const project = projects.find(p => p.id === selectedProjectId);
+  if (project) {
+    parts.push(`【当前项目】${project.name}（编号: ${project.code || '无'}）`);
+    if (project.customer) parts.push(`客户: ${project.customer}`);
+    if (project.product_process) parts.push(`工艺: ${project.product_process}`);
+    if (project.cycle_time_target) parts.push(`节拍目标: ${project.cycle_time_target}s`);
+    if (project.main_camera_brand) parts.push(`主相机品牌: ${project.main_camera_brand}`);
+    if (project.environment) parts.push(`环境: ${project.environment}`);
+
+    const pws = getProjectWorkstations(project.id);
+    parts.push(`工位数量: ${pws.length}`);
+
+    pws.forEach((ws, wi) => {
+      parts.push(`\n  工位${wi + 1}: ${ws.name}（编号: ${ws.code || '无'}, 类型: ${ws.type || '未知'}）`);
+      if (ws.observation_target) parts.push(`    观测目标: ${ws.observation_target}`);
+      if (ws.cycle_time) parts.push(`    节拍: ${ws.cycle_time}s`);
+      if (ws.process_stage) parts.push(`    工序: ${ws.process_stage}`);
+      if (ws.motion_description) parts.push(`    运动描述: ${ws.motion_description}`);
+      const dims = ws.product_dimensions as any;
+      if (dims && (dims.length || dims.width || dims.height)) {
+        parts.push(`    产品尺寸: ${dims.length || '?'}×${dims.width || '?'}×${dims.height || '?'} mm`);
+      }
+
+      const layout = layouts.find(l => l.workstation_id === ws.id);
+      if (layout) {
+        if (layout.width || layout.height || layout.depth) {
+          parts.push(`    布局尺寸: ${layout.width || '?'}×${layout.height || '?'}×${layout.depth || '?'} mm`);
+        }
+        if (layout.conveyor_type) parts.push(`    传送类型: ${layout.conveyor_type}`);
+        if (layout.camera_count) parts.push(`    相机数量: ${layout.camera_count}`);
+      }
+
+      const wsMods = getWorkstationModules(ws.id);
+      wsMods.forEach((mod, mi) => {
+        parts.push(`    模块${mi + 1}: ${mod.name}（类型: ${mod.type || '未知'}, 状态: ${mod.status || '未知'}）`);
+        if (mod.description) parts.push(`      描述: ${mod.description}`);
+        if (mod.selected_camera) parts.push(`      相机: ${mod.selected_camera}`);
+        if (mod.selected_lens) parts.push(`      镜头: ${mod.selected_lens}`);
+        if (mod.selected_light) parts.push(`      光源: ${mod.selected_light}`);
+        if (mod.selected_controller) parts.push(`      控制器: ${mod.selected_controller}`);
+        if (mod.trigger_type) parts.push(`      触发方式: ${mod.trigger_type}`);
+        if (mod.roi_strategy) parts.push(`      ROI策略: ${mod.roi_strategy}`);
+        if (mod.processing_time_limit) parts.push(`      处理时限: ${mod.processing_time_limit}ms`);
+        if (mod.output_types?.length) parts.push(`      输出类型: ${mod.output_types.join(', ')}`);
+      });
+    });
+  }
+
+  return parts.length > 0 ? parts.join('\n') : '';
+}
+
 export function AIChatPanel() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [contextEnabled, setContextEnabled] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  const dataCtx = useData();
+  const projectContext = useMemo(() => buildProjectContext(dataCtx), [
+    dataCtx.selectedProjectId, dataCtx.projects, dataCtx.workstations, dataCtx.modules, dataCtx.layouts,
+  ]);
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -135,8 +200,13 @@ export function AIChatPanel() {
     };
 
     try {
+      // Build messages with optional project context
+      const chatMessages = [...messages, userMsg];
+      const contextPayload = contextEnabled && projectContext ? projectContext : undefined;
+
       await streamChat({
-        messages: [...messages, userMsg],
+        messages: chatMessages,
+        context: contextPayload,
         onDelta: upsert,
         onDone: () => setIsLoading(false),
         signal: controller.signal,
@@ -187,6 +257,15 @@ export function AIChatPanel() {
               <span className="font-semibold text-sm">AI 视觉方案助手</span>
             </div>
             <div className="flex items-center gap-1">
+              <Button
+                variant={contextEnabled && projectContext ? "default" : "ghost"}
+                size="icon-sm"
+                onClick={() => setContextEnabled(prev => !prev)}
+                title={contextEnabled && projectContext ? "已启用项目上下文" : "点击启用项目上下文"}
+                className={cn(contextEnabled && projectContext && "bg-primary/20 text-primary hover:bg-primary/30")}
+              >
+                <Database className="h-4 w-4" />
+              </Button>
               <Button variant="ghost" size="icon-sm" onClick={handleClear} title="清空对话">
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -195,6 +274,14 @@ export function AIChatPanel() {
               </Button>
             </div>
           </div>
+
+          {/* Context indicator */}
+          {contextEnabled && projectContext && (
+            <div className="px-4 py-1.5 bg-primary/5 border-b border-border text-xs text-muted-foreground flex items-center gap-1.5 shrink-0">
+              <Database className="h-3 w-3 text-primary" />
+              <span>已加载当前项目配置信息，AI 将基于实际数据回答</span>
+            </div>
+          )}
 
           {/* Messages */}
           <ScrollArea className="flex-1 overflow-hidden">
