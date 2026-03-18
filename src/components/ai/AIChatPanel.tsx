@@ -257,6 +257,15 @@ export function AIChatPanel() {
               <span className="font-semibold text-sm">AI 视觉方案助手</span>
             </div>
             <div className="flex items-center gap-1">
+              <Button
+                variant={contextEnabled && projectContext ? "default" : "ghost"}
+                size="icon-sm"
+                onClick={() => setContextEnabled(prev => !prev)}
+                title={contextEnabled && projectContext ? "已启用项目上下文" : "点击启用项目上下文"}
+                className={cn(contextEnabled && projectContext && "bg-primary/20 text-primary hover:bg-primary/30")}
+              >
+                <Database className="h-4 w-4" />
+              </Button>
               <Button variant="ghost" size="icon-sm" onClick={handleClear} title="清空对话">
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -265,6 +274,14 @@ export function AIChatPanel() {
               </Button>
             </div>
           </div>
+
+          {/* Context indicator */}
+          {contextEnabled && projectContext && (
+            <div className="px-4 py-1.5 bg-primary/5 border-b border-border text-xs text-muted-foreground flex items-center gap-1.5 shrink-0">
+              <Database className="h-3 w-3 text-primary" />
+              <span>已加载当前项目配置信息，AI 将基于实际数据回答</span>
+            </div>
+          )}
 
           {/* Messages */}
           <ScrollArea className="flex-1 overflow-hidden">
