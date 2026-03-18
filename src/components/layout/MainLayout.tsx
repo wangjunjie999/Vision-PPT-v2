@@ -13,6 +13,7 @@ import { Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { MobileFormDrawer, MobileFormTrigger } from '@/components/forms/MobileFormDrawer';
+import { AIChatPanel } from '@/components/ai/AIChatPanel';
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -97,6 +98,7 @@ export function MainLayout() {
           open={rightDrawerOpen} 
           onOpenChange={setRightDrawerOpen} 
         />
+        <AIChatPanel />
       </div>
     );
   }
@@ -190,11 +192,10 @@ export function MainLayout() {
             </div>
           )}
         </AnimatePresence>
+        <AIChatPanel />
       </div>
     );
   }
-
-  // Desktop Layout
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       <TopToolbar 
@@ -270,6 +271,7 @@ export function MainLayout() {
           </div>
         )}
       </AnimatePresence>
-    </div>
-  );
+        <AIChatPanel />
+      </div>
+    );
 }
