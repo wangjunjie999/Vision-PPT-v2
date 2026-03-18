@@ -198,8 +198,13 @@ export function AIChatPanel() {
     };
 
     try {
+      // Build messages with optional project context
+      const chatMessages = [...messages, userMsg];
+      const contextPayload = contextEnabled && projectContext ? projectContext : undefined;
+
       await streamChat({
-        messages: [...messages, userMsg],
+        messages: chatMessages,
+        context: contextPayload,
         onDelta: upsert,
         onDone: () => setIsLoading(false),
         signal: controller.signal,
