@@ -130,7 +130,7 @@
     --background: 230 25% 6%;
     --foreground: 220 12% 94%;
 
-    --card: 230 22% 10%;
+    --card: 230 22% 12%;
     --card-foreground: 220 12% 94%;
 
     --popover: 230 24% 12%;
@@ -158,8 +158,8 @@
     --warning: 38 90% 55%;
     --warning-foreground: 38 100% 8%;
 
-    --border: 230 20% 18%;
-    --input: 230 20% 18%;
+    --border: 230 20% 20%;
+    --input: 230 20% 20%;
     --ring: 215 90% 58%;
 
     --panel-bg: 230 22% 8%;
@@ -283,7 +283,7 @@
   }
 
   .form-section-title {
-    @apply text-xs font-bold text-muted-foreground mb-3 flex items-center gap-2 uppercase tracking-widest;
+    @apply text-xs font-bold text-muted-foreground mb-3 pb-2 flex items-center gap-2 uppercase tracking-widest border-b border-border/40;
     font-family: var(--font-heading);
   }
 
@@ -546,11 +546,11 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply bg-border rounded-full;
+    @apply bg-muted-foreground/30 rounded-full;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/50;
+    @apply bg-muted-foreground/60;
   }
 
   /* Industrial text utilities */
