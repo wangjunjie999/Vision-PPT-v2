@@ -192,11 +192,10 @@ export function MainLayout() {
             </div>
           )}
         </AnimatePresence>
+        <AIChatPanel />
       </div>
     );
   }
-
-  // Desktop Layout
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       <TopToolbar 
