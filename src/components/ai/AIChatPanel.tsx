@@ -197,6 +197,59 @@ export function AIChatPanel() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  // Draggable state
+  const [pos, setPos] = useState(() => {
+    try {
+      const saved = localStorage.getItem('ai-btn-pos');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return { x: window.innerWidth - 80, y: window.innerHeight - 80 };
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef({ startX: 0, startY: 0, startPosX: 0, startPosY: 0, moved: false });
+
+  const handleDragStart = useCallback((clientX: number, clientY: number) => {
+    dragRef.current = { startX: clientX, startY: clientY, startPosX: pos.x, startPosY: pos.y, moved: false };
+    setIsDragging(true);
+  }, [pos]);
+
+  const handleDragMove = useCallback((clientX: number, clientY: number) => {
+    if (!isDragging) return;
+    const dx = clientX - dragRef.current.startX;
+    const dy = clientY - dragRef.current.startY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragRef.current.moved = true;
+    const newX = Math.max(0, Math.min(window.innerWidth - 56, dragRef.current.startPosX + dx));
+    const newY = Math.max(0, Math.min(window.innerHeight - 56, dragRef.current.startPosY + dy));
+    setPos({ x: newX, y: newY });
+  }, [isDragging]);
+
+  const handleDragEnd = useCallback(() => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    localStorage.setItem('ai-btn-pos', JSON.stringify(pos));
+    if (!dragRef.current.moved) {
+      setOpen(true);
+    }
+  }, [isDragging, pos]);
+
+  useEffect(() => {
+    if (!isDragging) return;
+    const onMove = (e: MouseEvent) => handleDragMove(e.clientX, e.clientY);
+    const onUp = () => handleDragEnd();
+    const onTouchMove = (e: TouchEvent) => { e.preventDefault(); handleDragMove(e.touches[0].clientX, e.touches[0].clientY); };
+    const onTouchEnd = () => handleDragEnd();
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [isDragging, handleDragMove, handleDragEnd]);
+
   const dataCtx = useData();
   const projectContext = useMemo(() => buildProjectContext(dataCtx), [
     dataCtx.selectedProjectId, dataCtx.projects, dataCtx.workstations, dataCtx.modules, dataCtx.layouts,
@@ -272,19 +325,31 @@ export function AIChatPanel() {
 
   return (
     <>
-      {/* Floating trigger button */}
-      <Button
-        onClick={() => setOpen(true)}
-        size="icon-lg"
-        className={cn(
-          'fixed bottom-6 right-6 z-50 rounded-full shadow-xl',
-          'bg-primary text-primary-foreground hover:bg-primary/90',
-          'transition-transform hover:scale-105',
-          open && 'hidden'
-        )}
-      >
-        <Bot className="h-6 w-6" />
-      </Button>
+      {/* Floating draggable trigger button */}
+      {!open && (
+        <div
+          style={{ left: pos.x, top: pos.y }}
+          className="fixed z-50 select-none"
+          onMouseDown={e => { e.preventDefault(); handleDragStart(e.clientX, e.clientY); }}
+          onTouchStart={e => handleDragStart(e.touches[0].clientX, e.touches[0].clientY)}
+        >
+          {/* Pulse glow ring */}
+          <span className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
+          <span className="absolute -inset-1 rounded-full bg-gradient-to-br from-primary/30 to-accent/20 animate-pulse-glow" />
+          <Button
+            size="icon-lg"
+            className={cn(
+              'relative rounded-full shadow-lg shadow-primary/40',
+              'bg-gradient-to-br from-primary via-primary/80 to-accent text-primary-foreground',
+              'hover:scale-110 hover:rotate-6 hover:shadow-xl hover:shadow-primary/50',
+              'transition-all duration-300 cursor-grab active:cursor-grabbing',
+              isDragging && 'scale-95 opacity-80 rotate-0'
+            )}
+          >
+            <Bot className="h-6 w-6 animate-float" />
+          </Button>
+        </div>
+      )}
 
       <Sheet open={open} onOpenChange={setOpen} modal={false}>
         <SheetContent side="right" className="w-[400px] sm:w-[440px] p-0 flex flex-col gap-0 shadow-2xl bg-background/60 backdrop-blur-xl border-border/50 [&>button]:hidden">
