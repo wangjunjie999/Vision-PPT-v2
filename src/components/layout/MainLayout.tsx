@@ -271,6 +271,7 @@ export function MainLayout() {
           </div>
         )}
       </AnimatePresence>
-    </div>
-  );
+        <AIChatPanel />
+      </div>
+    );
 }
