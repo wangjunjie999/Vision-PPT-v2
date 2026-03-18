@@ -197,6 +197,59 @@ export function AIChatPanel() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  // Draggable state
+  const [pos, setPos] = useState(() => {
+    try {
+      const saved = localStorage.getItem('ai-btn-pos');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return { x: window.innerWidth - 80, y: window.innerHeight - 80 };
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef({ startX: 0, startY: 0, startPosX: 0, startPosY: 0, moved: false });
+
+  const handleDragStart = useCallback((clientX: number, clientY: number) => {
+    dragRef.current = { startX: clientX, startY: clientY, startPosX: pos.x, startPosY: pos.y, moved: false };
+    setIsDragging(true);
+  }, [pos]);
+
+  const handleDragMove = useCallback((clientX: number, clientY: number) => {
+    if (!isDragging) return;
+    const dx = clientX - dragRef.current.startX;
+    const dy = clientY - dragRef.current.startY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragRef.current.moved = true;
+    const newX = Math.max(0, Math.min(window.innerWidth - 56, dragRef.current.startPosX + dx));
+    const newY = Math.max(0, Math.min(window.innerHeight - 56, dragRef.current.startPosY + dy));
+    setPos({ x: newX, y: newY });
+  }, [isDragging]);
+
+  const handleDragEnd = useCallback(() => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    localStorage.setItem('ai-btn-pos', JSON.stringify(pos));
+    if (!dragRef.current.moved) {
+      setOpen(true);
+    }
+  }, [isDragging, pos]);
+
+  useEffect(() => {
+    if (!isDragging) return;
+    const onMove = (e: MouseEvent) => handleDragMove(e.clientX, e.clientY);
+    const onUp = () => handleDragEnd();
+    const onTouchMove = (e: TouchEvent) => { e.preventDefault(); handleDragMove(e.touches[0].clientX, e.touches[0].clientY); };
+    const onTouchEnd = () => handleDragEnd();
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [isDragging, handleDragMove, handleDragEnd]);
+
   const dataCtx = useData();
   const projectContext = useMemo(() => buildProjectContext(dataCtx), [
     dataCtx.selectedProjectId, dataCtx.projects, dataCtx.workstations, dataCtx.modules, dataCtx.layouts,
