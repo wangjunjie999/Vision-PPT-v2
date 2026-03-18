@@ -94,8 +94,15 @@ async function streamChat({
   onDone();
 }
 
+function formatJsonConfig(label: string, config: any): string {
+  if (!config || typeof config !== 'object') return '';
+  const entries = Object.entries(config).filter(([, v]) => v !== null && v !== undefined && v !== '');
+  if (entries.length === 0) return '';
+  return `      ${label}: ${entries.map(([k, v]) => `${k}=${v}`).join(', ')}`;
+}
+
 function buildProjectContext(data: ReturnType<typeof useData>): string {
-  const { selectedProjectId, selectedWorkstationId, selectedModuleId, projects, workstations, modules, layouts, getProjectWorkstations, getWorkstationModules } = data;
+  const { selectedProjectId, projects, workstations, modules, layouts, getProjectWorkstations, getWorkstationModules } = data;
 
   const parts: string[] = [];
 
@@ -107,6 +114,13 @@ function buildProjectContext(data: ReturnType<typeof useData>): string {
     if (project.cycle_time_target) parts.push(`节拍目标: ${project.cycle_time_target}s`);
     if (project.main_camera_brand) parts.push(`主相机品牌: ${project.main_camera_brand}`);
     if (project.environment) parts.push(`环境: ${project.environment}`);
+    if (project.quality_strategy) parts.push(`质量策略: ${project.quality_strategy}`);
+    if (project.production_line) parts.push(`产线: ${project.production_line}`);
+    if (project.responsible) parts.push(`负责人: ${project.responsible}`);
+    if (project.vision_responsible) parts.push(`视觉负责人: ${project.vision_responsible}`);
+    if (project.sales_responsible) parts.push(`销售负责人: ${project.sales_responsible}`);
+    if (project.notes) parts.push(`备注: ${project.notes}`);
+    if (project.status) parts.push(`状态: ${project.status}`);
 
     const pws = getProjectWorkstations(project.id);
     parts.push(`工位数量: ${pws.length}`);
@@ -117,9 +131,23 @@ function buildProjectContext(data: ReturnType<typeof useData>): string {
       if (ws.cycle_time) parts.push(`    节拍: ${ws.cycle_time}s`);
       if (ws.process_stage) parts.push(`    工序: ${ws.process_stage}`);
       if (ws.motion_description) parts.push(`    运动描述: ${ws.motion_description}`);
+      if (ws.risk_notes) parts.push(`    风险提示: ${ws.risk_notes}`);
+      if (ws.action_script) parts.push(`    动作脚本: ${ws.action_script}`);
+      if (ws.enclosed) parts.push(`    封闭环境: 是`);
+      if (ws.shot_count) parts.push(`    拍照次数: ${ws.shot_count}`);
+      if (ws.status) parts.push(`    状态: ${ws.status}`);
       const dims = ws.product_dimensions as any;
       if (dims && (dims.length || dims.width || dims.height)) {
         parts.push(`    产品尺寸: ${dims.length || '?'}×${dims.width || '?'}×${dims.height || '?'} mm`);
+      }
+      const installSpace = ws.install_space as any;
+      if (installSpace && (installSpace.length || installSpace.width || installSpace.height)) {
+        parts.push(`    安装空间: ${installSpace.length || '?'}×${installSpace.width || '?'}×${installSpace.height || '?'} mm`);
+      }
+      const acceptance = ws.acceptance_criteria as any;
+      if (acceptance) {
+        const accStr = typeof acceptance === 'object' ? JSON.stringify(acceptance) : String(acceptance);
+        if (accStr !== '{}' && accStr !== 'null') parts.push(`    验收标准: ${accStr}`);
       }
 
       const layout = layouts.find(l => l.workstation_id === ws.id);
@@ -143,6 +171,16 @@ function buildProjectContext(data: ReturnType<typeof useData>): string {
         if (mod.roi_strategy) parts.push(`      ROI策略: ${mod.roi_strategy}`);
         if (mod.processing_time_limit) parts.push(`      处理时限: ${mod.processing_time_limit}ms`);
         if (mod.output_types?.length) parts.push(`      输出类型: ${mod.output_types.join(', ')}`);
+        const defectLine = formatJsonConfig('缺陷检测配置', mod.defect_config);
+        if (defectLine) parts.push(defectLine);
+        const measureLine = formatJsonConfig('测量配置', mod.measurement_config);
+        if (measureLine) parts.push(measureLine);
+        const ocrLine = formatJsonConfig('OCR配置', mod.ocr_config);
+        if (ocrLine) parts.push(ocrLine);
+        const dlLine = formatJsonConfig('深度学习配置', mod.deep_learning_config);
+        if (dlLine) parts.push(dlLine);
+        const posLine = formatJsonConfig('定位配置', mod.positioning_config);
+        if (posLine) parts.push(posLine);
       });
     });
   }
