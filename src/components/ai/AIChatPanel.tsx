@@ -386,7 +386,7 @@ export function AIChatPanel() {
           </ScrollArea>
 
           {/* Input */}
-          <div className="p-3 border-t border-border bg-card shrink-0">
+          <div className="p-3 border-t border-border/40 bg-card/80 backdrop-blur-md shrink-0">
             <div className="flex gap-2">
               <Textarea
                 value={input}
