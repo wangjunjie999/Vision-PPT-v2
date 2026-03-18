@@ -15,11 +15,13 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-assista
 
 async function streamChat({
   messages,
+  context,
   onDelta,
   onDone,
   signal,
 }: {
   messages: Message[];
+  context?: string;
   onDelta: (text: string) => void;
   onDone: () => void;
   signal?: AbortSignal;
@@ -30,7 +32,7 @@ async function streamChat({
       'Content-Type': 'application/json',
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ messages, context }),
     signal,
   });
 
