@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Bot, Send, Trash2, X, Loader2, Database } from 'lucide-react';
+import { Bot, Send, Trash2, X, Loader2, Database, Settings, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Badge } from '@/components/ui/badge';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -11,28 +13,63 @@ import { useData } from '@/contexts/DataContext';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
+interface CustomAIConfig {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+}
+
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-assistant`;
+
+const DEFAULT_CONFIG: CustomAIConfig = {
+  apiKey: '',
+  baseUrl: 'https://api.openai.com',
+  model: 'gpt-4o',
+};
+
+function loadCustomConfig(): CustomAIConfig {
+  try {
+    const saved = localStorage.getItem('ai-custom-config');
+    if (saved) return { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
+  } catch {}
+  return { ...DEFAULT_CONFIG };
+}
+
+function saveCustomConfig(config: CustomAIConfig) {
+  localStorage.setItem('ai-custom-config', JSON.stringify(config));
+}
 
 async function streamChat({
   messages,
   context,
+  customConfig,
   onDelta,
   onDone,
+  onProvider,
   signal,
 }: {
   messages: Message[];
   context?: string;
+  customConfig?: CustomAIConfig;
   onDelta: (text: string) => void;
   onDone: () => void;
+  onProvider?: (provider: string) => void;
   signal?: AbortSignal;
 }) {
+  const body: any = { messages, context };
+  if (customConfig?.apiKey) {
+    body.customApiKey = customConfig.apiKey;
+    body.customBaseUrl = customConfig.baseUrl;
+    body.customModel = customConfig.model;
+  }
+
   const resp = await fetch(CHAT_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ messages, context }),
+    body: JSON.stringify(body),
     signal,
   });
 
@@ -40,6 +77,10 @@ async function streamChat({
     const err = await resp.json().catch(() => ({ error: 'Unknown error' }));
     throw new Error(err.error || `Error ${resp.status}`);
   }
+
+  // Read provider header
+  const provider = resp.headers.get('X-AI-Provider');
+  if (provider && onProvider) onProvider(provider);
 
   if (!resp.body) throw new Error('No response body');
 
@@ -194,6 +235,9 @@ export function AIChatPanel() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [contextEnabled, setContextEnabled] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
+  const [customConfig, setCustomConfig] = useState<CustomAIConfig>(loadCustomConfig);
+  const [currentProvider, setCurrentProvider] = useState<string>('lovable');
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -265,6 +309,12 @@ export function AIChatPanel() {
 
   useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
 
+  const handleSaveConfig = () => {
+    saveCustomConfig(customConfig);
+    toast.success('API 配置已保存');
+    setShowSettings(false);
+  };
+
   const handleSend = async () => {
     const text = input.trim();
     if (!text || isLoading) return;
@@ -291,15 +341,16 @@ export function AIChatPanel() {
     };
 
     try {
-      // Build messages with optional project context
       const chatMessages = [...messages, userMsg];
       const contextPayload = contextEnabled && projectContext ? projectContext : undefined;
 
       await streamChat({
         messages: chatMessages,
         context: contextPayload,
+        customConfig: customConfig.apiKey ? customConfig : undefined,
         onDelta: upsert,
         onDone: () => setIsLoading(false),
+        onProvider: (p) => setCurrentProvider(p),
         signal: controller.signal,
       });
     } catch (e: any) {
@@ -360,8 +411,28 @@ export function AIChatPanel() {
                 <Bot className="h-4 w-4 text-primary" />
               </div>
               <span className="font-semibold text-sm">AI 视觉方案助手</span>
+              <Badge
+                variant={currentProvider === 'custom' ? 'warning' : 'glow'}
+                className="text-[10px] px-1.5 py-0"
+              >
+                {currentProvider === 'custom' ? '自定义API' : 'Lovable AI'}
+              </Badge>
             </div>
             <div className="flex items-center gap-0.5">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setShowSettings(prev => !prev)}
+                title="API 设置"
+                className={cn(
+                  "rounded-lg h-8 w-8 transition-all",
+                  showSettings
+                    ? "bg-primary/15 text-primary hover:bg-primary/25"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                )}
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -395,6 +466,38 @@ export function AIChatPanel() {
               </Button>
             </div>
           </div>
+
+          {/* Settings panel */}
+          {showSettings && (
+            <div className="px-4 py-3 border-b border-border/40 bg-muted/20 backdrop-blur-md space-y-2.5 shrink-0">
+              <p className="text-xs font-medium text-muted-foreground">自定义 API 配置（当 Lovable AI 额度不足时自动切换）</p>
+              <div className="space-y-2">
+                <Input
+                  type="password"
+                  placeholder="API Key"
+                  value={customConfig.apiKey}
+                  onChange={e => setCustomConfig(prev => ({ ...prev, apiKey: e.target.value }))}
+                  className="h-8 text-xs"
+                />
+                <Input
+                  placeholder="API Base URL（默认 https://api.openai.com）"
+                  value={customConfig.baseUrl}
+                  onChange={e => setCustomConfig(prev => ({ ...prev, baseUrl: e.target.value }))}
+                  className="h-8 text-xs"
+                />
+                <Input
+                  placeholder="模型名称（默认 gpt-4o）"
+                  value={customConfig.model}
+                  onChange={e => setCustomConfig(prev => ({ ...prev, model: e.target.value }))}
+                  className="h-8 text-xs"
+                />
+              </div>
+              <Button size="sm" onClick={handleSaveConfig} className="w-full h-7 text-xs gap-1">
+                <Check className="h-3 w-3" />
+                保存配置
+              </Button>
+            </div>
+          )}
 
           {/* Context indicator */}
           {contextEnabled && projectContext && (

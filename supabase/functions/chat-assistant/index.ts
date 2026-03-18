@@ -90,13 +90,49 @@ const SYSTEM_PROMPT = `你是一位资深的工业视觉检测方案专家与项
 - 如果问题信息不足，主动询问关键参数
 - **重要**：当系统提供了用户的项目配置数据时，你必须主动引用这些具体数据（如项目编号、相机型号、镜头参数、工位信息等）来回答问题，而不是泛泛而谈或要求用户重新提供已有的信息`;
 
+function buildMessages(messages: any[], context?: string) {
+  const systemMessages: any[] = [
+    { role: "system", content: SYSTEM_PROMPT },
+  ];
+
+  if (context && typeof context === "string") {
+    systemMessages.push({
+      role: "system",
+      content: `【项目数据已加载】以下是用户当前项目的完整配置数据，你已经拥有这些信息，可以直接读取和引用。当用户提到项目编号或询问项目相关问题时，请直接基于以下数据回答，无需再向用户索要这些已有的信息：\n\n${context}\n\n请在回答中主动引用上述数据中的具体参数（如项目编号、相机型号、镜头规格、光源类型、工位配置等），给出有针对性的分析和建议。`,
+    });
+  }
+
+  return [...systemMessages, ...messages];
+}
+
+async function callCustomApi(
+  baseUrl: string,
+  apiKey: string,
+  model: string,
+  allMessages: any[]
+): Promise<Response> {
+  const url = baseUrl.replace(/\/+$/, "") + "/v1/chat/completions";
+  return await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages: allMessages,
+      stream: true,
+    }),
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { messages, context } = await req.json();
+    const { messages, context, customApiKey, customBaseUrl, customModel } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
@@ -105,65 +141,93 @@ serve(async (req) => {
       );
     }
 
+    const allMessages = buildMessages(messages, context);
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
 
-    const systemMessages: any[] = [
-      { role: "system", content: SYSTEM_PROMPT },
-    ];
+    // Try Lovable Gateway first
+    if (LOVABLE_API_KEY) {
+      const response = await fetch(
+        "https://ai.gateway.lovable.dev/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-3-flash-preview",
+            messages: allMessages,
+            stream: true,
+          }),
+        }
+      );
 
-    if (context && typeof context === "string") {
-      systemMessages.push({
-        role: "system",
-        content: `【项目数据已加载】以下是用户当前项目的完整配置数据，你已经拥有这些信息，可以直接读取和引用。当用户提到项目编号或询问项目相关问题时，请直接基于以下数据回答，无需再向用户索要这些已有的信息：\n\n${context}\n\n请在回答中主动引用上述数据中的具体参数（如项目编号、相机型号、镜头规格、光源类型、工位配置等），给出有针对性的分析和建议。`,
-      });
-    }
-
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            ...systemMessages,
-            ...messages,
-          ],
-          stream: true,
-        }),
+      if (response.ok) {
+        return new Response(response.body, {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "text/event-stream",
+            "X-AI-Provider": "lovable",
+          },
+        });
       }
-    );
 
-    if (!response.ok) {
-      if (response.status === 429) {
+      // If 402 (credits exhausted) and custom API available, fall through
+      if (response.status === 402 && customApiKey) {
+        console.log("Lovable AI credits exhausted, falling back to custom API");
+      } else if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "请求过于频繁，请稍后再试。" }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
-      }
-      if (response.status === 402) {
+      } else if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: "AI 额度已用完，请联系管理员充值。" }),
+          JSON.stringify({ error: "AI 额度已用完，请配置自定义 API Key 或联系管理员充值。" }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+      } else {
+        const text = await response.text();
+        console.error("AI gateway error:", response.status, text);
+        // If custom API available, try it as fallback
+        if (!customApiKey) {
+          return new Response(
+            JSON.stringify({ error: "AI 服务暂时不可用，请稍后再试。" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
       }
-      const text = await response.text();
-      console.error("AI gateway error:", response.status, text);
-      return new Response(
-        JSON.stringify({ error: "AI 服务暂时不可用，请稍后再试。" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
     }
 
-    return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-    });
+    // Fallback to custom API
+    if (customApiKey) {
+      const baseUrl = customBaseUrl || "https://api.openai.com";
+      const model = customModel || "gpt-4o";
+
+      const customResponse = await callCustomApi(baseUrl, customApiKey, model, allMessages);
+
+      if (!customResponse.ok) {
+        const text = await customResponse.text();
+        console.error("Custom API error:", customResponse.status, text);
+        return new Response(
+          JSON.stringify({ error: `自定义 API 请求失败 (${customResponse.status})，请检查 API Key 和配置。` }),
+          { status: customResponse.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(customResponse.body, {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "text/event-stream",
+          "X-AI-Provider": "custom",
+        },
+      });
+    }
+
+    // No API available
+    return new Response(
+      JSON.stringify({ error: "没有可用的 AI 服务，请配置 API Key。" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (e) {
     console.error("chat-assistant error:", e);
     return new Response(
