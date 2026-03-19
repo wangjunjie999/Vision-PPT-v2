@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Loader2, Zap, Sparkles, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Sparkles, ArrowRight } from 'lucide-react';
 import { z } from 'zod';
 import { ParticleBackground } from '@/components/effects/ParticleBackground';
 import { motion, AnimatePresence } from 'framer-motion';
