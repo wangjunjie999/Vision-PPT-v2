@@ -28,17 +28,78 @@ serve(async (req) => {
 
 请分析用户意图，找到目标实体，并生成要填写的字段值。
 
-字段映射说明：
-- 项目字段: code, name, customer, production_line, product_process, responsible, sales_responsible, vision_responsible, cycle_time_target, quality_strategy, spec_version, notes, environment
-- 工位字段: code, name, cycleTime, length, width, height, process_stage, observation_target, motion_description, shot_count, action_script, risk_notes, environment_description, notes, acceptance_accuracy, acceptance_cycle_time, acceptance_compatible_sizes
-- 模块字段: name, description, detectionObject, workingDistance, fieldOfViewCommon, resolutionPerPixel, exposure, lightMode, lightAngle, communicationMethod, signalDefinition
+## 字段映射说明
 
-注意：
+### 项目字段
+code, name, customer, production_line, product_process, responsible, sales_responsible, vision_responsible, cycle_time_target, quality_strategy, spec_version, notes, environment, description, main_camera_brand
+
+### 工位字段
+code, name, cycleTime, length, width, height, process_stage, observation_target, motion_description, shot_count, action_script, risk_notes, description, notes
+- acceptance_accuracy, acceptance_cycle_time, acceptance_compatible_sizes（验收标准相关）
+
+### 模块通用字段
+name, description, type, detectionObject, workingDistance, fieldOfViewCommon, resolutionPerPixel, exposure, lightMode, lightAngle, communicationMethod, signalDefinition, dataRetentionDays
+
+### 模块类型专用字段
+
+**测量模块 (measurement)**：
+- measurementFieldOfView: 测量视野范围
+- measurementResolution: 测量分辨率
+- targetAccuracy: 目标精度(mm)
+- systemAccuracy: 系统精度(mm)
+- measurementCalibrationMethod: 标定方法（如"棋盘格标定"、"圆点阵列标定"）
+- measurementDatum: 测量基准
+- measurementObjectDescription: 测量对象描述
+- calibrationPlateSpec: 标定板规格
+- grr: GRR值
+- edgeExtractionMethod: 边缘提取方法（如"Canny边缘检测"、"亚像素边缘提取"）
+- measurementItems: 测量项目列表
+
+**缺陷检测模块 (defect)**：
+- defectClasses: 缺陷类型列表
+- minDefectSize: 最小缺陷尺寸(mm)
+- allowedMissRate: 允许漏检率
+- allowedFalseRate: 允许误检率
+- defectContrast: 缺陷对比度
+- inspectionSurfaces: 检测面
+
+**定位模块 (positioning)**：
+- accuracyRequirement: 定位精度要求(mm)
+- repeatabilityRequirement: 重复精度要求
+- calibrationMethod: 标定方式
+- coordinateDescription: 坐标说明
+- targetType: 定位目标类型
+- outputCoordinate: 输出坐标类型
+
+**OCR模块 (ocr)**：
+- charType: 字符类型（喷码/激光/丝印/标签/二维码/条码）
+- charset: 字符集
+- minCharHeight: 最小字符高度(mm)
+- contentRule: 内容规则
+
+**深度学习模块 (deeplearning)**：
+- dlTaskType: 任务类型（分类/检测/分割/异常检测）
+- targetClasses: 目标类别
+- inferenceTimeTarget: 推理时间目标(ms)
+- deployTarget: 部署目标(cpu/gpu/edge)
+- updateStrategy: 更新策略
+- sampleSize: 样本数量
+
+## 自然语言到字段的映射提示
+- "测量方法" → 填写 measurementCalibrationMethod, measurementObjectDescription, edgeExtractionMethod, measurementItems 等测量相关字段
+- "环境说明"/"现场环境" → 填写 risk_notes
+- "检测参数" → 根据模块类型填写对应配置字段
+- "验收标准" → 填写 acceptance_accuracy, acceptance_cycle_time 等
+- "标定方法" → 填写 measurementCalibrationMethod 或 calibrationMethod
+- "缺陷类型" → 填写 defectClasses, minDefectSize 等
+
+## 注意
 - 匹配项目时，用项目的 code 字段（如 DB260101）进行模糊匹配
 - 匹配工位时，可以用工位编号（code字段）、工位名称（name字段）、或工位序号（如"06工位"表示第6个工位）
-- 如果用户提到"现场环境说明"，对应字段为 environment_description 或 risk_notes
+- 如果目标是模块级别的字段，需要先定位到工位，再找到对应的模块
 - 生成的内容应该专业、详细、符合工业视觉行业惯例
-- 根据项目的实际上下文（客户、工艺、产品等）生成相关内容`;
+- 根据项目的实际上下文（客户、工艺、产品等）生成相关内容
+- 对于模块专用字段，将值作为 JSON 字符串放入 fields 对象中`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
