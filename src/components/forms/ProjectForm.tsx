@@ -1,4 +1,5 @@
 import { useData } from '@/contexts/DataContext';
+import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { usePPTTemplates } from '@/hooks/usePPTTemplates';
 import { Button } from '@/components/ui/button';
