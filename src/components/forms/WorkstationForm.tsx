@@ -156,6 +156,15 @@ export function WorkstationForm() {
     setFormField: setWsFormField,
   });
 
+  // Listen for pendingAIFill from chat
+  const { pendingAIFill, setPendingAIFill } = useAppStore();
+  useEffect(() => {
+    if (pendingAIFill && pendingAIFill.targetType === 'workstation' && pendingAIFill.targetId === workstation?.id) {
+      aiFill.fillWithSuggestions(pendingAIFill.fields);
+      setPendingAIFill(null);
+    }
+  }, [pendingAIFill, workstation?.id]);
+
   useEffect(() => {
     if (workstation) {
       const ws = workstation as any;

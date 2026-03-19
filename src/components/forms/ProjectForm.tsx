@@ -97,6 +97,15 @@ const [formData, setFormData] = useState({
     setFormField,
   });
 
+  // Listen for pendingAIFill from chat
+  const { pendingAIFill, setPendingAIFill } = useAppStore();
+  useEffect(() => {
+    if (pendingAIFill && pendingAIFill.targetType === 'project' && pendingAIFill.targetId === project?.id) {
+      aiFill.fillWithSuggestions(pendingAIFill.fields);
+      setPendingAIFill(null);
+    }
+  }, [pendingAIFill, project?.id]);
+
   useEffect(() => {
     if (project) {
       const proj = project as any;
