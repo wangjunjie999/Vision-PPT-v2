@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react';
 import type { LayoutObject } from './ObjectPropertyPanel';
 import { getMountPointWorldPosition } from './CameraMountPoints';
+import { getMechanismMountPoints } from './MechanismSVG';
 
 interface ConnectionLinesProps {
   objects: LayoutObject[];
@@ -9,12 +10,25 @@ interface ConnectionLinesProps {
 }
 
 export const ConnectionLines = memo(function ConnectionLines({ objects, isIsometric, currentView = 'front' }: ConnectionLinesProps) {
-  // Identify robot_arm mechanisms for special rendering
   const robotArmIds = useMemo(() => {
     return new Set(
       objects.filter(o => o.type === 'mechanism' && o.mechanismType === 'robot_arm').map(o => o.id)
     );
   }, [objects]);
+
+  const products = useMemo(() => objects.filter(o => o.type === 'product'), [objects]);
+
+  // Find nearest product to a mechanism
+  const findNearestProduct = (mech: { x: number; y: number }) => {
+    if (products.length === 0) return null;
+    let nearest = products[0];
+    let minDist = Infinity;
+    for (const p of products) {
+      const d = Math.sqrt((p.x - mech.x) ** 2 + (p.y - mech.y) ** 2);
+      if (d < minDist) { minDist = d; nearest = p; }
+    }
+    return nearest;
+  };
 
   return (
     <>
@@ -25,14 +39,20 @@ export const ConnectionLines = memo(function ConnectionLines({ objects, isIsomet
 
         const isRobotArm = robotArmIds.has(mech.id);
 
-        // For robot_arm, use arm_end mount point as start position
+        // For robot_arm, use dynamic arm_end mount point (tracking nearest product)
         let startX = mech.x;
         let startY = mech.y;
         if (isRobotArm) {
-          const mountPos = getMountPointWorldPosition(mech, cam.mountPointId || 'arm_end', currentView);
-          if (mountPos) {
-            startX = mountPos.x;
-            startY = mountPos.y;
+          const nearestProduct = findNearestProduct(mech);
+          const mountPoints = getMechanismMountPoints(
+            'robot_arm', currentView,
+            nearestProduct ? { x: nearestProduct.x, y: nearestProduct.y } : undefined,
+            { x: mech.x, y: mech.y },
+          );
+          const armEnd = mountPoints.find(mp => mp.id === 'arm_end');
+          if (armEnd) {
+            startX = mech.x + armEnd.position.x * (mech.width / 2);
+            startY = mech.y + armEnd.position.y * (mech.height / 2);
           }
         }
 

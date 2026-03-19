@@ -33,21 +33,63 @@ interface MechanismSVGProps {
 }
 
 // Camera mount points - ONLY for camera interaction mechanisms
-export const getMechanismMountPoints = (type: string, view: 'front' | 'side' | 'top'): CameraMountPoint[] => {
+// targetPosition & mechPosition are optional: when provided for robot_arm, the arm_end flange tracks toward the target
+export const getMechanismMountPoints = (
+  type: string,
+  view: 'front' | 'side' | 'top',
+  targetPosition?: { x: number; y: number },
+  mechPosition?: { x: number; y: number },
+): CameraMountPoint[] => {
   // Only camera interaction mechanisms have camera mount points
   if (!CAMERA_INTERACTION_TYPES.includes(type)) return [];
+
+  // Default static configs
+  const defaultArmEnd: Record<string, { x: number; y: number; rotation: number }> = {
+    front: { x: 0.75, y: -0.55, rotation: -45 },
+    side: { x: 0.85, y: -0.45, rotation: -30 },
+    top: { x: 0.7, y: -0.1, rotation: 0 },
+  };
+
+  // For robot_arm, dynamically compute arm_end position when a target is provided
+  if (type === 'robot_arm' && targetPosition && mechPosition) {
+    const dx = targetPosition.x - mechPosition.x;
+    const dy = targetPosition.y - mechPosition.y;
+    const angle = Math.atan2(dy, dx);
+
+    // Clamp within reachable elliptical range
+    const reachX = 0.8;
+    const reachY = 0.7;
+    const flangeX = Math.max(-reachX, Math.min(reachX, Math.cos(angle) * reachX));
+    const flangeY = Math.max(-reachY, Math.min(0.3, Math.sin(angle) * reachY));
+    const flangeRotation = (angle * 180) / Math.PI;
+
+    const armEndPoint: CameraMountPoint = {
+      id: 'arm_end', type: 'arm_end',
+      position: { x: flangeX, y: flangeY },
+      rotation: flangeRotation,
+      description: '末端法兰安装',
+    };
+
+    if (view === 'front') {
+      return [
+        armEndPoint,
+        { id: 'wrist', type: 'side', position: { x: flangeX * 0.6, y: flangeY * 0.6 }, rotation: 0, description: '腕部侧装' },
+      ];
+    }
+    return [armEndPoint];
+  }
   
   const configs: Record<string, Record<string, CameraMountPoint[]>> = {
     robot_arm: {
       front: [
-        { id: 'arm_end', type: 'arm_end', position: { x: 0.75, y: -0.55 }, rotation: -45, description: '末端法兰安装' },
+        { id: 'arm_end', type: 'arm_end', position: defaultArmEnd.front, rotation: defaultArmEnd.front.rotation, description: '末端法兰安装' },
         { id: 'wrist', type: 'side', position: { x: 0.5, y: -0.2 }, rotation: 0, description: '腕部侧装' },
       ],
       side: [
-        { id: 'arm_end', type: 'arm_end', position: { x: 0.85, y: -0.45 }, rotation: -30, description: '末端法兰安装' },
+        { id: 'arm_end', type: 'arm_end', position: defaultArmEnd.side, rotation: defaultArmEnd.side.rotation, description: '末端法兰安装' },
       ],
       top: [
-        { id: 'arm_end', type: 'arm_end', position: { x: 0.7, y: -0.1 }, rotation: 0, description: '末端法兰安装' },
+        { id: 'arm_end', type: 'arm_end', position: defaultArmEnd.top, rotation: defaultArmEnd.top.rotation, description: '末端法兰安装' },
       ],
     },
     camera_mount: {
