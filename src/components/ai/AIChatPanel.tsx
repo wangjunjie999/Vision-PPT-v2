@@ -389,7 +389,10 @@ export function AIChatPanel() {
       setTimeout(() => {
         setMessages(prev => {
           const copy = [...prev];
-          const lastAssistant = copy.findLastIndex(m => m.role === 'assistant');
+          let lastAssistant = -1;
+          for (let i = copy.length - 1; i >= 0; i--) {
+            if (copy[i].role === 'assistant') { lastAssistant = i; break; }
+          }
           if (lastAssistant >= 0) {
             copy[lastAssistant] = {
               role: 'assistant',
