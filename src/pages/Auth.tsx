@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Loader2, Zap, Sparkles, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Sparkles, ArrowRight } from 'lucide-react';
 import { z } from 'zod';
 import { ParticleBackground } from '@/components/effects/ParticleBackground';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -138,9 +138,9 @@ export default function Auth() {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-              className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary via-primary to-blue-600 shadow-lg shadow-primary/30 mb-6"
+              className="inline-flex items-center justify-center w-16 h-16 rounded-2xl overflow-hidden shadow-lg shadow-primary/30 mb-6"
             >
-              <Zap className="h-8 w-8 text-white" />
+              <img src="/ppt-covers/tech-shine-logo.png" alt="德星云" className="w-full h-full object-contain" />
             </motion.div>
             
             <motion.h1

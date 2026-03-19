@@ -143,10 +143,10 @@ export function TopToolbar({ onAdminClick, showBackButton, isMobile, onOpenLeftD
               >
                 <div className="relative">
                   <div className={cn(
-                    "rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg group-hover:shadow-primary/25 transition-all duration-300 group-active:scale-95",
+                    "rounded-xl overflow-hidden shadow-lg group-hover:shadow-primary/25 transition-all duration-300 group-active:scale-95",
                     isMobile ? "w-8 h-8" : "w-10 h-10"
                   )}>
-                    <Zap className={cn("text-primary-foreground", isMobile ? "h-4 w-4" : "h-5 w-5")} />
+                    <img src="/ppt-covers/tech-shine-logo.png" alt="德星云" className="w-full h-full object-contain" />
                   </div>
                   <div className="absolute inset-0 rounded-xl bg-primary/30 blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
@@ -155,7 +155,7 @@ export function TopToolbar({ onAdminClick, showBackButton, isMobile, onOpenLeftD
                     视觉方案配置系统
                   </span>
                   <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest hidden md:block">
-                    Vision Solution Studio
+                    DXY Intelligent Solution
                   </span>
                 </div>
               </button>
