@@ -94,14 +94,23 @@ name, description, type, detectionObject, workingDistance, fieldOfViewCommon, re
 - "缺陷类型" → 填写 defectClasses, minDefectSize 等
 
 ## 重要规则
-- **你必须在 fields 中生成具体的字段值！** 不要返回空的 fields 对象。根据用户意图和上下文，为相关字段生成专业、合理的内容。
-- 例如用户说"测量方法"，你必须生成 measurementCalibrationMethod、measurementObjectDescription、edgeExtractionMethod 等字段的具体值。
+- **你必须在 fields 中生成具体的字段值！** 不要返回空的 fields 对象。
+- 例如用户说"测量方法"，你必须生成如下字段值：
+  { "measurementCalibrationMethod": "棋盘格标定，使用10x7棋盘格标定板...", "edgeExtractionMethod": "亚像素边缘提取..." }
 - 匹配项目时，用项目的 code 字段（如 DB260101）进行模糊匹配
 - 匹配工位时，可以用工位编号（code字段）、工位名称（name字段）、或工位序号（如"06工位"表示第6个工位）
 - 如果目标是模块级别的字段，需要先定位到工位，再找到对应的模块
 - 生成的内容应该专业、详细、符合工业视觉行业惯例
-- 根据项目的实际上下文（客户、工艺、产品等）生成相关内容
-- 所有字段值都必须是字符串类型`;
+- 所有字段值都必须是字符串类型
+
+请严格以以下 JSON 格式回复，不要包含任何其他文字：
+{
+  "targetType": "project" | "workstation" | "module",
+  "targetId": "目标实体的UUID",
+  "targetLabel": "可读标签如'DB260101项目的06工位'",
+  "fields": { "字段名": "字段值", ... },
+  "explanation": "简短说明"
+}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -115,45 +124,7 @@ name, description, type, detectionObject, workingDistance, fieldOfViewCommon, re
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
         ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "fill_target_form",
-              description: "定位目标实体并填写表单字段",
-              parameters: {
-                type: "object",
-                properties: {
-                  targetType: {
-                    type: "string",
-                    enum: ["project", "workstation", "module"],
-                    description: "目标实体类型",
-                  },
-                  targetId: {
-                    type: "string",
-                    description: "目标实体的UUID（从提供的数据中匹配）",
-                  },
-                  targetLabel: {
-                    type: "string",
-                    description: "目标实体的可读标签，用于显示（如'DB260101项目的06工位'）",
-                  },
-                  fields: {
-                    type: "object",
-                    description: "要填写的字段键值对",
-                    additionalProperties: { type: "string" },
-                  },
-                  explanation: {
-                    type: "string",
-                    description: "简短说明你要做什么，用于在聊天中显示",
-                  },
-                },
-                required: ["targetType", "targetId", "fields", "explanation"],
-                additionalProperties: false,
-              },
-            },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "fill_target_form" } },
+        response_format: { type: "json_object" },
       }),
     });
 
@@ -176,9 +147,9 @@ name, description, type, detectionObject, workingDistance, fieldOfViewCommon, re
     }
 
     const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    const content = data.choices?.[0]?.message?.content;
 
-    if (!toolCall?.function?.arguments) {
+    if (!content) {
       return new Response(JSON.stringify({ error: "AI 未能理解指令" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -186,9 +157,15 @@ name, description, type, detectionObject, workingDistance, fieldOfViewCommon, re
 
     let result: any;
     try {
-      result = JSON.parse(toolCall.function.arguments);
+      result = JSON.parse(content);
     } catch {
       return new Response(JSON.stringify({ error: "AI 返回格式异常" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!result.fields || Object.keys(result.fields).length === 0) {
+      return new Response(JSON.stringify({ error: "AI 未能生成具体字段值" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
