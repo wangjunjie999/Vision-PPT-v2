@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react';
 import type { LayoutObject } from './ObjectPropertyPanel';
 import { getMountPointWorldPosition } from './CameraMountPoints';
+import { getMechanismMountPoints } from './MechanismSVG';
 
 interface ConnectionLinesProps {
   objects: LayoutObject[];
