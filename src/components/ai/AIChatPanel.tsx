@@ -338,7 +338,7 @@ export function AIChatPanel() {
     }
 
     let assistantSoFar = '';
-    let assistantProvider = 'lovable';
+    let assistantProvider = 'default';
     const controller = new AbortController();
     abortRef.current = controller;
 
