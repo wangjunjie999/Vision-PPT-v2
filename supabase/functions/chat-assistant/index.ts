@@ -144,7 +144,7 @@ serve(async (req) => {
     const allMessages = buildMessages(messages, context);
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
-    // Try Lovable Gateway first
+    // Try default gateway first
     if (LOVABLE_API_KEY) {
       const response = await fetch(
         "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -167,14 +167,14 @@ serve(async (req) => {
           headers: {
             ...corsHeaders,
             "Content-Type": "text/event-stream",
-            "X-AI-Provider": "lovable",
+            "X-AI-Provider": "default",
           },
         });
       }
 
       // If 402 (credits exhausted) and custom API available, fall through
       if (response.status === 402 && customApiKey) {
-        console.log("Lovable AI credits exhausted, falling back to custom API");
+        console.log("Default API credits exhausted, falling back to custom API");
       } else if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "请求过于频繁，请稍后再试。" }),
