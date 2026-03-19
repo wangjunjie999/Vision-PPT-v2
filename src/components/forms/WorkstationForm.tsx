@@ -1010,6 +1010,13 @@ export function WorkstationForm() {
   return (
     <FormStepWizard
       title="工位配置"
+      headerActions={
+        <AIFillButton
+          status={aiFill.status}
+          onStart={aiFill.startFill}
+          onStop={aiFill.stopFill}
+        />
+      }
       steps={steps}
       currentStep={currentStep}
       onStepChange={setCurrentStep}
