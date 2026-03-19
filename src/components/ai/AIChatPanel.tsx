@@ -236,7 +236,7 @@ export function AIChatPanel() {
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [customConfig, setCustomConfig] = useState<CustomAIConfig>(loadCustomConfig);
-  const [currentProvider, setCurrentProvider] = useState<string>('lovable');
+  const [currentProvider, setCurrentProvider] = useState<string>('default');
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -338,7 +338,7 @@ export function AIChatPanel() {
     }
 
     let assistantSoFar = '';
-    let assistantProvider = 'lovable';
+    let assistantProvider = 'default';
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -444,7 +444,7 @@ export function AIChatPanel() {
                 variant={currentProvider === 'custom' ? 'warning' : 'glow'}
                 className="text-[10px] px-1.5 py-0"
               >
-                {currentProvider === 'custom' ? '自定义API' : 'Lovable AI'}
+                {currentProvider === 'custom' ? '自定义API' : '接口1'}
               </Badge>
             </div>
             <div className="flex items-center gap-0.5">
@@ -564,7 +564,7 @@ export function AIChatPanel() {
           {/* Settings panel */}
           {showSettings && (
             <div className="px-4 py-3 border-b border-border/40 bg-muted/20 backdrop-blur-md space-y-2.5 shrink-0">
-              <p className="text-xs font-medium text-muted-foreground">自定义 API 配置（当 Lovable AI 额度不足时自动切换）</p>
+              <p className="text-xs font-medium text-muted-foreground">自定义 API 配置（当接口1额度不足时自动切换）</p>
               <div className="space-y-2">
                 <Input
                   type="password"

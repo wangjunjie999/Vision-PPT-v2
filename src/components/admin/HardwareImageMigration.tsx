@@ -231,7 +231,7 @@ export function HardwareImageMigration() {
           硬件图片云存储迁移
         </CardTitle>
         <CardDescription>
-          将本地硬件图片迁移到Lovable Cloud存储，确保PPT生成时图片正确加载
+          将本地硬件图片迁移到云端存储，确保PPT生成时图片正确加载
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
