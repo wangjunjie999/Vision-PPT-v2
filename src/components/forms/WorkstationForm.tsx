@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, Settings2, ImageIcon } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { HardwareConfigPanel, HardwareItemData } from '@/components/hardware/HardwareConfigPanel';
 import { toast } from 'sonner';
@@ -22,6 +22,10 @@ import {
 } from "@/components/ui/tooltip";
 import type { Database } from '@/integrations/supabase/types';
 import { FormStepWizard, FormStep } from './FormStepWizard';
+import { useAIFormFill } from '@/hooks/useAIFormFill';
+import { AIFillButton, getFieldHighlightClass } from './AIFillButton';
+
+
 
 type WorkstationType = 'line' | 'turntable' | 'robot' | 'platform';
 type CameraMount = 'top' | 'side' | 'angled';
@@ -138,6 +142,17 @@ export function WorkstationForm() {
     primaryView: 'front' as 'front' | 'side' | 'top',
     auxiliaryView: 'side' as 'front' | 'side' | 'top',
     layoutDescription: '',
+  });
+
+  const getWsFormData = useCallback(() => wsForm, [wsForm]);
+  const setWsFormField = useCallback((field: string, value: string) => {
+    setWsForm(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const aiFill = useAIFormFill({
+    formType: 'workstation',
+    getFormData: getWsFormData,
+    setFormField: setWsFormField,
   });
 
   useEffect(() => {
@@ -995,6 +1010,13 @@ export function WorkstationForm() {
   return (
     <FormStepWizard
       title="工位配置"
+      headerActions={
+        <AIFillButton
+          status={aiFill.status}
+          onStart={aiFill.startFill}
+          onStop={aiFill.stopFill}
+        />
+      }
       steps={steps}
       currentStep={currentStep}
       onStepChange={setCurrentStep}

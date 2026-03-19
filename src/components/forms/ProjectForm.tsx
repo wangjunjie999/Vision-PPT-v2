@@ -1,4 +1,5 @@
 import { useData } from '@/contexts/DataContext';
+import { cn } from '@/lib/utils';
 import { usePPTTemplates } from '@/hooks/usePPTTemplates';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,9 +15,11 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Save, RotateCcw, Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
+import { useAIFormFill } from '@/hooks/useAIFormFill';
+import { AIFillButton, getFieldHighlightClass } from './AIFillButton';
 
 type QualityStrategy = 'no_miss' | 'balanced' | 'allow_pass';
 
@@ -81,6 +84,17 @@ const [formData, setFormData] = useState({
     notes: '',
   });
   const [saving, setSaving] = useState(false);
+
+  const getFormData = useCallback(() => formData, [formData]);
+  const setFormField = useCallback((field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const aiFill = useAIFormFill({
+    formType: 'project',
+    getFormData,
+    setFormField,
+  });
 
   useEffect(() => {
     if (project) {
@@ -183,10 +197,15 @@ const [formData, setFormData] = useState({
       <div className="panel-header flex items-center justify-between">
         <span className="font-medium">项目配置</span>
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={handleReset} disabled={saving}>
+          <AIFillButton
+            status={aiFill.status}
+            onStart={aiFill.startFill}
+            onStop={aiFill.stopFill}
+          />
+          <Button variant="ghost" size="sm" onClick={handleReset} disabled={saving || aiFill.isActive}>
             <RotateCcw className="h-4 w-4" />
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={saving}>
+          <Button size="sm" onClick={handleSave} disabled={saving || aiFill.isActive}>
             {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
             保存
           </Button>
@@ -210,7 +229,7 @@ const [formData, setFormData] = useState({
                   value={formData.code}
                   onChange={e => setFormData(prev => ({ ...prev, code: e.target.value }))}
                   placeholder="VIS-2024-XXX"
-                  className="h-9"
+                  className={cn("h-9", getFieldHighlightClass('code', aiFill.currentField, aiFill.completedFields))}
                   maxLength={50}
                 />
               </div>
@@ -233,7 +252,7 @@ const [formData, setFormData] = useState({
                 value={formData.name}
                 onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="请输入项目名称"
-                className="h-9"
+                className={cn("h-9", getFieldHighlightClass('name', aiFill.currentField, aiFill.completedFields))}
                 maxLength={200}
               />
             </div>
@@ -245,7 +264,7 @@ const [formData, setFormData] = useState({
                 value={formData.customer}
                 onChange={e => setFormData(prev => ({ ...prev, customer: e.target.value }))}
                 placeholder="请输入客户名称"
-                className="h-9"
+                className={cn("h-9", getFieldHighlightClass('customer', aiFill.currentField, aiFill.completedFields))}
                 maxLength={200}
               />
             </div>

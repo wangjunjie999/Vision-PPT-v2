@@ -1,7 +1,7 @@
 import { useData } from '@/contexts/DataContext';
 import { useCameras, useLenses, useLights, useControllers } from '@/hooks/useHardware';
 import { Badge } from '@/components/ui/badge';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 import { ModuleFormState, getDefaultFormState } from './module/types';
@@ -11,6 +11,8 @@ import { ModuleStep1Basic } from './module/ModuleStep1Basic';
 import { ModuleStep2Detection } from './module/ModuleStep2Detection';
 import { ModuleStep3Imaging } from './module/ModuleStep3Imaging';
 import { ModuleStep4Output } from './module/ModuleStep4Output';
+import { useAIFormFill } from '@/hooks/useAIFormFill';
+import { AIFillButton } from './AIFillButton';
 
 type ModuleType = 'positioning' | 'defect' | 'ocr' | 'deeplearning' | 'measurement';
 type TriggerType = 'io' | 'encoder' | 'software' | 'continuous';
@@ -34,6 +36,17 @@ export function ModuleForm() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<ModuleFormState>(getDefaultFormState());
   const [currentStep, setCurrentStep] = useState(0);
+
+  const getModuleFormData = useCallback(() => form as unknown as Record<string, any>, [form]);
+  const setModuleFormField = useCallback((field: string, value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const aiFill = useAIFormFill({
+    formType: 'module',
+    getFormData: getModuleFormData,
+    setFormField: setModuleFormField,
+  });
   
   // Get workstation layout for hardware inheritance
   const workstationLayout = module ? getLayoutByWorkstation(module.workstation_id) : null;
@@ -426,6 +439,13 @@ export function ModuleForm() {
         <Badge variant="outline" className="text-xs">
           {moduleTypeLabels[form.type]}
         </Badge>
+      }
+      headerActions={
+        <AIFillButton
+          status={aiFill.status}
+          onStart={aiFill.startFill}
+          onStop={aiFill.stopFill}
+        />
       }
       steps={steps}
       currentStep={currentStep}
