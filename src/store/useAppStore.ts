@@ -25,6 +25,11 @@ interface Store {
   annotationScope: 'workstation' | 'module';
   annotationWorkstationId: string | null;
   annotationExistingData: { annotations: Array<{ id: string; type: string; x: number; y: number; number?: number; name: string; category: string; description: string; width?: number; height?: number; radius?: number }>; remark: string | null; recordId: string } | null;
+  
+  // AI Form Fill from chat
+  pendingAIFill: { targetType: 'project' | 'workstation' | 'module'; targetId: string; fields: Record<string, string> } | null;
+  setPendingAIFill: (fill: { targetType: 'project' | 'workstation' | 'module'; targetId: string; fields: Record<string, string> } | null) => void;
+  
   enterAnnotationMode: (snapshot: string, assetId: string, scope: 'workstation' | 'module', workstationId?: string, existingData?: { annotations: any[]; remark: string | null; recordId: string }) => void;
   exitAnnotationMode: () => void;
   
