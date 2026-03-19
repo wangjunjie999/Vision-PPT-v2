@@ -23,6 +23,19 @@ export const MechanismRenderer = memo(function MechanismRenderer({
 }: MechanismRendererProps) {
   const mechanisms = objects.filter(obj => obj.type === 'mechanism');
   const cameras = objects.filter(obj => obj.type === 'camera');
+  const products = objects.filter(obj => obj.type === 'product');
+
+  // Find nearest product for a given mechanism
+  const findNearestProduct = (mech: LayoutObject) => {
+    if (products.length === 0) return null;
+    let nearest = products[0];
+    let minDist = Infinity;
+    for (const p of products) {
+      const d = Math.sqrt((p.x - mech.x) ** 2 + (p.y - mech.y) ** 2);
+      if (d < minDist) { minDist = d; nearest = p; }
+    }
+    return nearest;
+  };
   return (
     <>
       {mechanisms.map(obj => {
