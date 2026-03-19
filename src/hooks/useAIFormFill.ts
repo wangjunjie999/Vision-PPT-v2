@@ -132,6 +132,7 @@ export function useAIFormFill({
     completedFields,
     startFill,
     stopFill,
+    fillWithSuggestions,
     isGenerating: status === 'generating',
     isTyping: status === 'typing',
     isDone: status === 'done',
