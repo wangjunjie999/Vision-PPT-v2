@@ -8,10 +8,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, Settings2, ImageIcon } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { HardwareConfigPanel, HardwareItemData } from '@/components/hardware/HardwareConfigPanel';
 import { toast } from 'sonner';
+import { ProductAnnotationPanel } from '@/components/product/ProductAnnotationPanel';
+import { LayoutViewsPreview } from '@/components/canvas/LayoutViewsPreview';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import type { Database } from '@/integrations/supabase/types';
+import { FormStepWizard, FormStep } from './FormStepWizard';
+import { useAIFormFill } from '@/hooks/useAIFormFill';
+import { AIFillButton, getFieldHighlightClass } from './AIFillButton';
 import { ProductAnnotationPanel } from '@/components/product/ProductAnnotationPanel';
 import { LayoutViewsPreview } from '@/components/canvas/LayoutViewsPreview';
 import {

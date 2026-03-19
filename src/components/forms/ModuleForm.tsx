@@ -1,7 +1,7 @@
 import { useData } from '@/contexts/DataContext';
 import { useCameras, useLenses, useLights, useControllers } from '@/hooks/useHardware';
 import { Badge } from '@/components/ui/badge';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 import { ModuleFormState, getDefaultFormState } from './module/types';
@@ -11,6 +11,8 @@ import { ModuleStep1Basic } from './module/ModuleStep1Basic';
 import { ModuleStep2Detection } from './module/ModuleStep2Detection';
 import { ModuleStep3Imaging } from './module/ModuleStep3Imaging';
 import { ModuleStep4Output } from './module/ModuleStep4Output';
+import { useAIFormFill } from '@/hooks/useAIFormFill';
+import { AIFillButton } from './AIFillButton';
 
 type ModuleType = 'positioning' | 'defect' | 'ocr' | 'deeplearning' | 'measurement';
 type TriggerType = 'io' | 'encoder' | 'software' | 'continuous';
