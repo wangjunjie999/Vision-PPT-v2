@@ -139,7 +139,7 @@ export function TopToolbar({ onAdminClick, showBackButton, isMobile, onOpenLeftD
                 onClick={() => {
                   selectProject(null);
                 }}
-                className="flex items-center gap-2 md:gap-3 group cursor-pointer hover:opacity-90 transition-opacity"
+                className="flex items-center gap-3 md:gap-4 group cursor-pointer hover:opacity-90 transition-opacity"
               >
                 <div className="relative">
                   <div className={cn(
@@ -150,11 +150,11 @@ export function TopToolbar({ onAdminClick, showBackButton, isMobile, onOpenLeftD
                   </div>
                   <div className="absolute inset-0 rounded-xl bg-primary/30 blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
-                <div className="flex-col text-left hidden sm:flex">
-                  <span className={cn("font-bold text-foreground tracking-tight", isMobile ? "text-sm" : "text-base")}>
+                <div className="flex-col text-left hidden sm:flex gap-0.5">
+                  <span className={cn("font-bold text-foreground tracking-tight leading-tight", isMobile ? "text-base" : "text-lg")}>
                     视觉方案配置系统
                   </span>
-                  <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest hidden md:block">
+                  <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider hidden md:block">
                     DXY Intelligent Solution
                   </span>
                 </div>
