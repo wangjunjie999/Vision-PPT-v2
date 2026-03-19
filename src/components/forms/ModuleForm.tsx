@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 import { ModuleFormState, getDefaultFormState } from './module/types';
 import { ModuleAnnotationPanel } from '@/components/product/ModuleAnnotationPanel';
+import { useAppStore } from '@/store/useAppStore';
 import { FormStepWizard, FormStep } from './FormStepWizard';
 import { ModuleStep1Basic } from './module/ModuleStep1Basic';
 import { ModuleStep2Detection } from './module/ModuleStep2Detection';
