@@ -14,9 +14,11 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Save, RotateCcw, Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
+import { useAIFormFill } from '@/hooks/useAIFormFill';
+import { AIFillButton, getFieldHighlightClass } from './AIFillButton';
 
 type QualityStrategy = 'no_miss' | 'balanced' | 'allow_pass';
 
