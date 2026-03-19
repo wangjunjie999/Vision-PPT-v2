@@ -9,12 +9,25 @@ interface ConnectionLinesProps {
 }
 
 export const ConnectionLines = memo(function ConnectionLines({ objects, isIsometric, currentView = 'front' }: ConnectionLinesProps) {
-  // Identify robot_arm mechanisms for special rendering
   const robotArmIds = useMemo(() => {
     return new Set(
       objects.filter(o => o.type === 'mechanism' && o.mechanismType === 'robot_arm').map(o => o.id)
     );
   }, [objects]);
+
+  const products = useMemo(() => objects.filter(o => o.type === 'product'), [objects]);
+
+  // Find nearest product to a mechanism
+  const findNearestProduct = (mech: { x: number; y: number }) => {
+    if (products.length === 0) return null;
+    let nearest = products[0];
+    let minDist = Infinity;
+    for (const p of products) {
+      const d = Math.sqrt((p.x - mech.x) ** 2 + (p.y - mech.y) ** 2);
+      if (d < minDist) { minDist = d; nearest = p; }
+    }
+    return nearest;
+  };
 
   return (
     <>
