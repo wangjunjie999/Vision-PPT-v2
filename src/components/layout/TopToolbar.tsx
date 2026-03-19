@@ -155,7 +155,7 @@ export function TopToolbar({ onAdminClick, showBackButton, isMobile, onOpenLeftD
                     视觉方案配置系统
                   </span>
                   <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest hidden md:block">
-                    Vision Solution Studio
+                    DXY Intelligent Solution
                   </span>
                 </div>
               </button>
