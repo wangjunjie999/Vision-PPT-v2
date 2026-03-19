@@ -1,22 +1,44 @@
 
 
-# 连接线实时跟随模型移动
+# FOV 输入改为两个独立数值框
 
-## 问题分析
-`RelationshipLines` 组件中的连接线坐标通过 `useMemo([objects, productPosition])` 计算。在拖拽过程中，虽然 `objects` 数据会更新，但 `memo` 包裹的 `Layout3DPreview` 可能在快速拖拽时导致连接线更新滞后或不同步。
+## 问题
+
+当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
 
 ## 修改方案
 
-### `src/components/canvas/Layout3DPreview.tsx` — RelationshipLines 组件
+### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
 
-1. **移除 `useMemo`**：将 `lines` 的计算从 `useMemo` 改为直接计算（每次渲染都重新计算），确保连接线始终与最新的 `objects` 位置同步
-2. **添加 `useFrame` 实时更新**：使用 `useFrame` 钩子在每帧检查是否有拖拽进行中，如果有则强制更新连接线的端点位置，确保拖拽过程中线条平滑跟随
-3. **通过 ref 读取实际 Three.js 节点位置**：在 `RelationshipLines` 中引入一个 groupRef map，在 `useFrame` 中读取场景中各个 DraggableGroup 的实际世界坐标来更新线条端点，避免 React 状态更新延迟
+在 `ModuleFormState` 中添加：
+```
+fieldOfViewWidth: string;   // FOV 宽 (mm)
+fieldOfViewHeight: string;  // FOV 高 (mm)
+```
 
-### 具体实现
-- 在 `RelationshipLines` 中将 `useMemo` 替换为 `useState` + `useFrame` 模式
-- `useFrame` 回调中遍历 `objects`，对有 `mountedToMechanismId` 的对象，实时计算连接线起止坐标
-- 将计算出的线条数据存入 ref 而非 state（避免触发不必要的 React 重渲染），使用 `useFrame` 直接操作 Three.js Line geometry
+在 `getDefaultFormState` 中添加默认值 `''`。
 
-共修改 1 个文件。
+### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+
+将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+
+```
+[宽度输入] × [高度输入]
+```
+
+- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
+- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
+- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+
+### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+
+同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+
+### 4. PPT 输出不变
+
+PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
+
+### 5. 自动计算兼容
+
+`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
 
