@@ -76,6 +76,11 @@ export const useAppStore = create<Store>()(
       annotationScope: 'workstation',
       annotationWorkstationId: null,
       annotationExistingData: null,
+      
+      // AI Form Fill
+      pendingAIFill: null,
+      setPendingAIFill: (fill) => set({ pendingAIFill: fill }),
+      
       enterAnnotationMode: (snapshot, assetId, scope, workstationId, existingData) => set({
         annotationMode: true,
         annotationSnapshot: snapshot,
