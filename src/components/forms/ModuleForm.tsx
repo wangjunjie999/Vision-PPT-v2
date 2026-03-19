@@ -440,6 +440,13 @@ export function ModuleForm() {
           {moduleTypeLabels[form.type]}
         </Badge>
       }
+      headerActions={
+        <AIFillButton
+          status={aiFill.status}
+          onStart={aiFill.startFill}
+          onStop={aiFill.stopFill}
+        />
+      }
       steps={steps}
       currentStep={currentStep}
       onStepChange={setCurrentStep}
