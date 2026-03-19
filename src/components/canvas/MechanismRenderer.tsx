@@ -150,27 +150,47 @@ export const MechanismRenderer = memo(function MechanismRenderer({
               </g>
             )}
 
-            {/* Robot arm end-effector flange marker */}
+            {/* Robot arm end-effector flange marker — tracks nearest product */}
             {obj.mechanismType === 'robot_arm' && (() => {
-              const mountPoints = getMechanismMountPoints('robot_arm', currentView);
+              const nearestProduct = findNearestProduct(obj);
+              const mountPoints = getMechanismMountPoints(
+                'robot_arm', currentView,
+                nearestProduct ? { x: nearestProduct.x, y: nearestProduct.y } : undefined,
+                { x: obj.x, y: obj.y },
+              );
               const armEnd = mountPoints.find(mp => mp.id === 'arm_end');
               if (!armEnd) return null;
               const flangeX = armEnd.position.x * (obj.width / 2);
               const flangeY = armEnd.position.y * (obj.height / 2);
               const hasMountedCamera = cameras.some(c => c.mountedToMechanismId === obj.id);
+
+              // Direction arrow angle toward product (in local coords)
+              const arrowAngle = nearestProduct
+                ? Math.atan2(nearestProduct.y - obj.y, nearestProduct.x - obj.x)
+                : null;
+
               return (
                 <g transform={`translate(${flangeX}, ${flangeY})`}>
                   {/* Outer glow */}
-                  <circle r={14} fill="none" stroke="#f97316" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.5} />
+                  <circle r={14} fill="none" stroke="hsl(var(--accent))" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.5} />
                   {/* Flange ring */}
                   <circle r={9} fill={hasMountedCamera ? 'rgba(59,130,246,0.3)' : 'rgba(249,115,22,0.25)'} 
                     stroke={hasMountedCamera ? '#3b82f6' : '#f97316'} strokeWidth={2.5} />
                   {/* Center dot */}
                   <circle r={3} fill={hasMountedCamera ? '#3b82f6' : '#f97316'} />
+
+                  {/* Direction arrow pointing toward product */}
+                  {arrowAngle !== null && (
+                    <g transform={`rotate(${(arrowAngle * 180) / Math.PI})`}>
+                      <line x1={12} y1={0} x2={22} y2={0} stroke="#22c55e" strokeWidth={2} opacity={0.8} />
+                      <polygon points="22,0 17,-4 17,4" fill="#22c55e" opacity={0.8} />
+                    </g>
+                  )}
+
                   {/* Label */}
                   <text x={0} y={-18} textAnchor="middle" fill="#fdba74" fontSize="8" fontWeight="600"
                     style={{ pointerEvents: 'none' }}>
-                    {hasMountedCamera ? '🔗' : '⊕'} 法兰
+                    {hasMountedCamera ? '🔗' : nearestProduct ? '➤' : '⊕'} 法兰
                   </text>
                 </g>
               );

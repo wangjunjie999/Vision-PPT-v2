@@ -38,14 +38,20 @@ export const ConnectionLines = memo(function ConnectionLines({ objects, isIsomet
 
         const isRobotArm = robotArmIds.has(mech.id);
 
-        // For robot_arm, use arm_end mount point as start position
+        // For robot_arm, use dynamic arm_end mount point (tracking nearest product)
         let startX = mech.x;
         let startY = mech.y;
         if (isRobotArm) {
-          const mountPos = getMountPointWorldPosition(mech, cam.mountPointId || 'arm_end', currentView);
-          if (mountPos) {
-            startX = mountPos.x;
-            startY = mountPos.y;
+          const nearestProduct = findNearestProduct(mech);
+          const mountPoints = getMechanismMountPoints(
+            'robot_arm', currentView,
+            nearestProduct ? { x: nearestProduct.x, y: nearestProduct.y } : undefined,
+            { x: mech.x, y: mech.y },
+          );
+          const armEnd = mountPoints.find(mp => mp.id === 'arm_end');
+          if (armEnd) {
+            startX = mech.x + armEnd.position.x * (mech.width / 2);
+            startY = mech.y + armEnd.position.y * (mech.height / 2);
           }
         }
 
