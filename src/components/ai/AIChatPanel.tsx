@@ -236,7 +236,7 @@ export function AIChatPanel() {
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [customConfig, setCustomConfig] = useState<CustomAIConfig>(loadCustomConfig);
-  const [currentProvider, setCurrentProvider] = useState<string>('lovable');
+  const [currentProvider, setCurrentProvider] = useState<string>('default');
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
