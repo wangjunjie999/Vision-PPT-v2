@@ -14,6 +14,8 @@ import { useChatHistory } from '@/hooks/useChatHistory';
 import { useAppStore } from '@/store/useAppStore';
 import { supabase } from '@/integrations/supabase/client';
 
+type Message = { role: 'user' | 'assistant' | 'system'; content: string; provider?: string; isAction?: boolean };
+
 interface CustomAIConfig {
   apiKey: string;
   baseUrl: string;
