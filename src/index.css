@@ -1362,27 +1362,3 @@
     border-radius: 2px;
   }
 }
-
-/* Logo animation keyframes */
-@keyframes logo-shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(200%); }
-}
-
-@keyframes logo-halo-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes pulse-glow-logo {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(1.05); }
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-  .animate-\\[logo-shimmer_1\\.5s_ease-in-out_0\\.5s_forwards\\],
-  .animate-\\[logo-halo-spin_6s_linear_infinite\\] {
-    animation: none !important;
-  }
-}

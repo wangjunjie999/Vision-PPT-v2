@@ -139,38 +139,22 @@ export function TopToolbar({ onAdminClick, showBackButton, isMobile, onOpenLeftD
                 onClick={() => {
                   selectProject(null);
                 }}
-                className="flex items-center gap-3 md:gap-4 group cursor-pointer"
+                className="flex items-center gap-3 md:gap-4 group cursor-pointer hover:opacity-90 transition-opacity"
               >
                 <div className="relative">
-                  {/* Gradient border wrapper */}
                   <div className={cn(
-                    "relative rounded-xl p-[1.5px] bg-gradient-to-br from-primary/40 via-accent/20 to-primary/40 group-hover:from-primary/70 group-hover:via-accent/50 group-hover:to-primary/70 transition-all duration-500",
-                    "group-hover:-translate-y-0.5 group-hover:scale-105 group-active:scale-95"
+                    "rounded-xl overflow-hidden shadow-lg group-hover:shadow-primary/25 transition-all duration-300 group-active:scale-95",
+                    isMobile ? "h-9 w-auto" : "h-12 w-auto"
                   )}>
-                    <div className={cn(
-                      "rounded-[10px] overflow-hidden bg-card",
-                      isMobile ? "h-9 w-auto" : "h-12 w-auto"
-                    )}>
-                      <img src="/ppt-covers/tech-shine-logo.png" alt="德星云" className="w-full h-full object-contain" />
-                    </div>
-                    {/* Shimmer sweep overlay - plays once on load */}
-                    <div className="absolute inset-0 rounded-[10px] overflow-hidden pointer-events-none">
-                      <div className="absolute inset-0 -translate-x-full animate-[logo-shimmer_1.5s_ease-in-out_0.5s_forwards] bg-gradient-to-r from-transparent via-white/25 to-transparent" />
-                    </div>
+                    <img src="/ppt-covers/tech-shine-logo.png" alt="德星云" className="w-full h-full object-contain" />
                   </div>
-                  {/* Dual-color breathing glow */}
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/30 to-accent/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10" />
-                  <div className="absolute inset-0 rounded-xl bg-primary/20 blur-lg opacity-0 group-hover:opacity-60 animate-pulse-glow transition-opacity duration-500 -z-10" />
+                  <div className="absolute inset-0 rounded-xl bg-primary/30 blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <div className="flex-col text-left hidden sm:flex gap-0.5">
-                  <span className={cn(
-                    "font-bold tracking-tight leading-tight transition-all duration-300",
-                    "text-foreground group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-primary group-hover:to-accent",
-                    isMobile ? "text-base" : "text-lg"
-                  )}>
+                  <span className={cn("font-bold text-foreground tracking-tight leading-tight", isMobile ? "text-base" : "text-lg")}>
                     视觉方案配置系统
                   </span>
-                  <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider hidden md:block group-hover:text-primary/60 transition-colors duration-300">
+                  <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider hidden md:block">
                     DXY Intelligent Solution
                   </span>
                 </div>
