@@ -196,10 +196,15 @@ const [formData, setFormData] = useState({
       <div className="panel-header flex items-center justify-between">
         <span className="font-medium">项目配置</span>
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={handleReset} disabled={saving}>
+          <AIFillButton
+            status={aiFill.status}
+            onStart={aiFill.startFill}
+            onStop={aiFill.stopFill}
+          />
+          <Button variant="ghost" size="sm" onClick={handleReset} disabled={saving || aiFill.isActive}>
             <RotateCcw className="h-4 w-4" />
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={saving}>
+          <Button size="sm" onClick={handleSave} disabled={saving || aiFill.isActive}>
             {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
             保存
           </Button>
