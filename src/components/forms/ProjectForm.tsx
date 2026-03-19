@@ -84,6 +84,17 @@ const [formData, setFormData] = useState({
   });
   const [saving, setSaving] = useState(false);
 
+  const getFormData = useCallback(() => formData, [formData]);
+  const setFormField = useCallback((field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const aiFill = useAIFormFill({
+    formType: 'project',
+    getFormData,
+    setFormField,
+  });
+
   useEffect(() => {
     if (project) {
       const proj = project as any;
