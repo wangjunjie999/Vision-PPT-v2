@@ -93,13 +93,15 @@ name, description, type, detectionObject, workingDistance, fieldOfViewCommon, re
 - "标定方法" → 填写 measurementCalibrationMethod 或 calibrationMethod
 - "缺陷类型" → 填写 defectClasses, minDefectSize 等
 
-## 注意
+## 重要规则
+- **你必须在 fields 中生成具体的字段值！** 不要返回空的 fields 对象。根据用户意图和上下文，为相关字段生成专业、合理的内容。
+- 例如用户说"测量方法"，你必须生成 measurementCalibrationMethod、measurementObjectDescription、edgeExtractionMethod 等字段的具体值。
 - 匹配项目时，用项目的 code 字段（如 DB260101）进行模糊匹配
 - 匹配工位时，可以用工位编号（code字段）、工位名称（name字段）、或工位序号（如"06工位"表示第6个工位）
 - 如果目标是模块级别的字段，需要先定位到工位，再找到对应的模块
 - 生成的内容应该专业、详细、符合工业视觉行业惯例
 - 根据项目的实际上下文（客户、工艺、产品等）生成相关内容
-- 对于模块专用字段，将值作为 JSON 字符串放入 fields 对象中`;
+- 所有字段值都必须是字符串类型`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
