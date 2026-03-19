@@ -144,7 +144,7 @@ export function TopToolbar({ onAdminClick, showBackButton, isMobile, onOpenLeftD
                 <div className="relative">
                   <div className={cn(
                     "rounded-xl overflow-hidden shadow-lg group-hover:shadow-primary/25 transition-all duration-300 group-active:scale-95",
-                    isMobile ? "w-10 h-10" : "w-14 h-14"
+                    isMobile ? "h-9 w-auto" : "h-12 w-auto"
                   )}>
                     <img src="/ppt-covers/tech-shine-logo.png" alt="德星云" className="w-full h-full object-contain" />
                   </div>
