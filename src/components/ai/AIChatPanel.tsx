@@ -299,6 +299,7 @@ export function AIChatPanel() {
   }, [isDragging, handleDragMove, handleDragEnd]);
 
   const dataCtx = useData();
+  const { setPendingAIFill } = useAppStore();
   const projectContext = useMemo(() => buildProjectContext(dataCtx), [
     dataCtx.selectedProjectId, dataCtx.projects, dataCtx.workstations, dataCtx.modules, dataCtx.layouts,
   ]);
