@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, Settings2, ImageIcon } from 'lucide-react';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
+import { useAppStore } from '@/store/useAppStore';
 import { HardwareConfigPanel, HardwareItemData } from '@/components/hardware/HardwareConfigPanel';
 import { toast } from 'sonner';
 import { ProductAnnotationPanel } from '@/components/product/ProductAnnotationPanel';
@@ -154,6 +155,15 @@ export function WorkstationForm() {
     getFormData: getWsFormData,
     setFormField: setWsFormField,
   });
+
+  // Listen for pendingAIFill from chat
+  const { pendingAIFill, setPendingAIFill } = useAppStore();
+  useEffect(() => {
+    if (pendingAIFill && pendingAIFill.targetType === 'workstation' && pendingAIFill.targetId === workstation?.id) {
+      aiFill.fillWithSuggestions(pendingAIFill.fields);
+      setPendingAIFill(null);
+    }
+  }, [pendingAIFill, workstation?.id]);
 
   useEffect(() => {
     if (workstation) {

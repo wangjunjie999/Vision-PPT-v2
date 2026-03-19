@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 import { ModuleFormState, getDefaultFormState } from './module/types';
 import { ModuleAnnotationPanel } from '@/components/product/ModuleAnnotationPanel';
+import { useAppStore } from '@/store/useAppStore';
 import { FormStepWizard, FormStep } from './FormStepWizard';
 import { ModuleStep1Basic } from './module/ModuleStep1Basic';
 import { ModuleStep2Detection } from './module/ModuleStep2Detection';
@@ -48,6 +49,15 @@ export function ModuleForm() {
     setFormField: setModuleFormField,
   });
   
+  // Listen for pendingAIFill from chat
+  const { pendingAIFill, setPendingAIFill } = useAppStore();
+  useEffect(() => {
+    if (pendingAIFill && pendingAIFill.targetType === 'module' && pendingAIFill.targetId === module?.id) {
+      aiFill.fillWithSuggestions(pendingAIFill.fields);
+      setPendingAIFill(null);
+    }
+  }, [pendingAIFill, module?.id]);
+
   // Get workstation layout for hardware inheritance
   const workstationLayout = module ? getLayoutByWorkstation(module.workstation_id) : null;
 

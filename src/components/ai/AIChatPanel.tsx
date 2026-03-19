@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Bot, Send, Trash2, X, Loader2, Database, Settings, Check, Plus, History, ChevronLeft } from 'lucide-react';
+import { Bot, Send, Trash2, X, Loader2, Database, Settings, Check, Plus, History, ChevronLeft, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,8 +11,10 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useData } from '@/contexts/DataContext';
 import { useChatHistory } from '@/hooks/useChatHistory';
+import { useAppStore } from '@/store/useAppStore';
+import { supabase } from '@/integrations/supabase/client';
 
-type Message = { role: 'user' | 'assistant'; content: string; provider?: string };
+type Message = { role: 'user' | 'assistant'; content: string; provider?: string; isAction?: boolean };
 
 interface CustomAIConfig {
   apiKey: string;
@@ -297,6 +299,7 @@ export function AIChatPanel() {
   }, [isDragging, handleDragMove, handleDragEnd]);
 
   const dataCtx = useData();
+  const { setPendingAIFill } = useAppStore();
   const projectContext = useMemo(() => buildProjectContext(dataCtx), [
     dataCtx.selectedProjectId, dataCtx.projects, dataCtx.workstations, dataCtx.modules, dataCtx.layouts,
   ]);
@@ -317,6 +320,96 @@ export function AIChatPanel() {
     setShowSettings(false);
   };
 
+  // Detect if message looks like a form fill command
+  const isFormFillIntent = useCallback((text: string): boolean => {
+    const keywords = ['填写', '完成', '补充', '填好', '填入', '写好', '帮我填', '自动填', '环境说明', '风险说明', '备注'];
+    const targetKeywords = ['项目', '工位', '模块', '工站'];
+    const hasKeyword = keywords.some(k => text.includes(k));
+    const hasTarget = targetKeywords.some(k => text.includes(k));
+    return hasKeyword && hasTarget;
+  }, []);
+
+  const handleFormCommand = useCallback(async (text: string): Promise<boolean> => {
+    try {
+      // Prepare minimal project data for the AI to match
+      const projectsData = dataCtx.projects.map(p => ({ id: p.id, code: p.code, name: p.name, customer: p.customer }));
+      const workstationsData = dataCtx.workstations.map(w => ({ id: w.id, code: w.code, name: w.name, project_id: w.project_id }));
+      const modulesData = dataCtx.modules.map(m => ({ id: m.id, name: m.name, workstation_id: m.workstation_id, type: m.type }));
+
+      // Show action message
+      setMessages(prev => [...prev, { role: 'assistant', content: '🔍 正在分析指令，定位目标...' }]);
+
+      const { data, error } = await supabase.functions.invoke('ai-form-command', {
+        body: { userMessage: text, projectsData, workstationsData, modulesData },
+      });
+
+      if (error || data?.error) {
+        setMessages(prev => {
+          const copy = [...prev];
+          copy[copy.length - 1] = { role: 'assistant', content: `❌ ${data?.error || '指令解析失败，请重试'}` };
+          return copy;
+        });
+        return true;
+      }
+
+      const { targetType, targetId, fields, explanation, targetLabel } = data;
+
+      if (!targetId || !fields || Object.keys(fields).length === 0) {
+        setMessages(prev => {
+          const copy = [...prev];
+          copy[copy.length - 1] = { role: 'assistant', content: '❌ 未能匹配到目标或生成内容，请提供更多细节' };
+          return copy;
+        });
+        return true;
+      }
+
+      // Navigate to target
+      const label = targetLabel || targetId;
+      setMessages(prev => {
+        const copy = [...prev];
+        copy[copy.length - 1] = { role: 'assistant', content: `📍 已定位到 **${label}**\n\n${explanation || ''}\n\n⏳ 正在自动填写中...` };
+        return copy;
+      });
+
+      // Auto-navigate
+      if (targetType === 'project') {
+        dataCtx.selectProject(targetId);
+      } else if (targetType === 'workstation') {
+        dataCtx.selectWorkstation(targetId);
+      } else if (targetType === 'module') {
+        dataCtx.selectModule(targetId);
+      }
+
+      // Wait for form to render, then trigger fill
+      setTimeout(() => {
+        setPendingAIFill({ targetType, targetId, fields });
+      }, 500);
+
+      // Update message after a delay
+      setTimeout(() => {
+        setMessages(prev => {
+          const copy = [...prev];
+          let lastAssistant = -1;
+          for (let i = copy.length - 1; i >= 0; i--) {
+            if (copy[i].role === 'assistant') { lastAssistant = i; break; }
+          }
+          if (lastAssistant >= 0) {
+            copy[lastAssistant] = {
+              role: 'assistant',
+              content: `✅ 已定位到 **${label}** 并开始填写\n\n${explanation || ''}\n\n填写字段：${Object.keys(fields).join('、')}`,
+            };
+          }
+          return copy;
+        });
+      }, 2000);
+
+      return true;
+    } catch (err) {
+      console.error('Form command error:', err);
+      return false;
+    }
+  }, [dataCtx, setPendingAIFill, setMessages]);
+
   const handleSend = async () => {
     const text = input.trim();
     if (!text || isLoading) return;
@@ -325,6 +418,19 @@ export function AIChatPanel() {
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsLoading(true);
+
+    // Check if this is a form fill command
+    if (isFormFillIntent(text)) {
+      const handled = await handleFormCommand(text);
+      if (handled) {
+        // Save to history
+        let convId = activeConversationId;
+        if (!convId) convId = await chatHistory.createConversation(text);
+        if (convId) chatHistory.saveMessage(convId, userMsg);
+        setIsLoading(false);
+        return;
+      }
+    }
 
     // Ensure conversation exists
     let convId = activeConversationId;

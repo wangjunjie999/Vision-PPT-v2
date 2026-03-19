@@ -91,13 +91,24 @@ export function useAIFormFill({
         return;
       }
 
-      setStatus('typing');
+      await fillWithSuggestions(suggestions);
+    } catch (err) {
+      console.error('AI form fill error:', err);
+      toast.error('AI 填写失败');
+      setStatus('idle');
+    }
+  }, [formType, getFormData, projectContext, typeFieldValue]);
 
-      // Type each field sequentially
+  /** Fill with pre-generated suggestions (called from chat command) */
+  const fillWithSuggestions = useCallback(async (suggestions: Record<string, string>) => {
+    abortRef.current = false;
+    setCompletedFields(new Set());
+    setStatus('typing');
+
+    try {
       for (const [field, value] of Object.entries(suggestions)) {
         if (abortRef.current) break;
         await typeFieldValue(field, value);
-        // Brief pause between fields
         if (!abortRef.current) {
           await new Promise(r => { timerRef.current = setTimeout(r, 200); });
         }
@@ -113,7 +124,7 @@ export function useAIFormFill({
       toast.error('AI 填写失败');
       setStatus('idle');
     }
-  }, [formType, getFormData, projectContext, typeFieldValue]);
+  }, [typeFieldValue]);
 
   return {
     status,
@@ -121,6 +132,7 @@ export function useAIFormFill({
     completedFields,
     startFill,
     stopFill,
+    fillWithSuggestions,
     isGenerating: status === 'generating',
     isTyping: status === 'typing',
     isDone: status === 'done',

@@ -1,4 +1,5 @@
 import { useData } from '@/contexts/DataContext';
+import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { usePPTTemplates } from '@/hooks/usePPTTemplates';
 import { Button } from '@/components/ui/button';
@@ -95,6 +96,15 @@ const [formData, setFormData] = useState({
     getFormData,
     setFormField,
   });
+
+  // Listen for pendingAIFill from chat
+  const { pendingAIFill, setPendingAIFill } = useAppStore();
+  useEffect(() => {
+    if (pendingAIFill && pendingAIFill.targetType === 'project' && pendingAIFill.targetId === project?.id) {
+      aiFill.fillWithSuggestions(pendingAIFill.fields);
+      setPendingAIFill(null);
+    }
+  }, [pendingAIFill, project?.id]);
 
   useEffect(() => {
     if (project) {
