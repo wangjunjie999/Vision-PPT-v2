@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Bot, Send, Trash2, X, Loader2, Database, Settings, Check, Plus, History, ChevronLeft } from 'lucide-react';
+import { Bot, Send, Trash2, X, Loader2, Database, Settings, Check, Plus, History, ChevronLeft, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,8 +11,8 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useData } from '@/contexts/DataContext';
 import { useChatHistory } from '@/hooks/useChatHistory';
-
-type Message = { role: 'user' | 'assistant'; content: string; provider?: string };
+import { useAppStore } from '@/store/useAppStore';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CustomAIConfig {
   apiKey: string;
