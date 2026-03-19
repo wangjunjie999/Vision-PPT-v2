@@ -134,14 +134,34 @@ export default function Auth() {
           
           {/* Header */}
           <div className="text-center pt-10 pb-6 px-8">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-              className="inline-flex items-center justify-center h-20 w-auto rounded-2xl overflow-hidden shadow-lg shadow-primary/30 mb-6"
-            >
-              <img src="/ppt-covers/tech-shine-logo.png" alt="德星云" className="w-full h-full object-contain" />
-            </motion.div>
+            {/* Logo with rotating halo + float + reflection */}
+            <div className="relative mb-6">
+              {/* Rotating gradient halo ring */}
+              <div className="absolute inset-[-12px] rounded-3xl animate-[logo-halo-spin_6s_linear_infinite] opacity-60"
+                style={{ background: 'conic-gradient(from 0deg, hsl(var(--primary) / 0.5), hsl(221 83% 53% / 0.3), transparent, hsl(var(--primary) / 0.5))' }}
+              />
+              <div className="absolute inset-[-12px] rounded-3xl bg-background/80 blur-[1px]" />
+              
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                className="relative"
+              >
+                <motion.div
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  className="inline-flex items-center justify-center h-20 w-auto rounded-2xl overflow-hidden shadow-[0_8px_32px_-4px_hsl(var(--primary)/0.4),0_4px_16px_-2px_hsl(221_83%_53%/0.3)]"
+                >
+                  <img src="/ppt-covers/tech-shine-logo.png" alt="德星云" className="w-full h-full object-contain" />
+                </motion.div>
+              </motion.div>
+              
+              {/* Blurred reflection */}
+              <div className="flex justify-center mt-1 pointer-events-none" aria-hidden="true">
+                <div className="h-8 w-16 rounded-full bg-primary/15 blur-xl" />
+              </div>
+            </div>
             
             <motion.h1
               initial={{ opacity: 0, y: 10 }}
