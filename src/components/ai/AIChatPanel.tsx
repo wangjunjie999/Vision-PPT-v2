@@ -444,7 +444,7 @@ export function AIChatPanel() {
                 variant={currentProvider === 'custom' ? 'warning' : 'glow'}
                 className="text-[10px] px-1.5 py-0"
               >
-                {currentProvider === 'custom' ? '自定义API' : 'Lovable AI'}
+                {currentProvider === 'custom' ? '自定义API' : '接口1'}
               </Badge>
             </div>
             <div className="flex items-center gap-0.5">
