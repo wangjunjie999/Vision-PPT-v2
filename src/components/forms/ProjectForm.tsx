@@ -228,7 +228,7 @@ const [formData, setFormData] = useState({
                   value={formData.code}
                   onChange={e => setFormData(prev => ({ ...prev, code: e.target.value }))}
                   placeholder="VIS-2024-XXX"
-                  className="h-9"
+                  className={cn("h-9", getFieldHighlightClass('code', aiFill.currentField, aiFill.completedFields))}
                   maxLength={50}
                 />
               </div>
