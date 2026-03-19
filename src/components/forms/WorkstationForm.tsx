@@ -144,6 +144,17 @@ export function WorkstationForm() {
     layoutDescription: '',
   });
 
+  const getWsFormData = useCallback(() => wsForm, [wsForm]);
+  const setWsFormField = useCallback((field: string, value: string) => {
+    setWsForm(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const aiFill = useAIFormFill({
+    formType: 'workstation',
+    getFormData: getWsFormData,
+    setFormField: setWsFormField,
+  });
+
   useEffect(() => {
     if (workstation) {
       const ws = workstation as any;

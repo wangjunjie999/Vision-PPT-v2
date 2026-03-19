@@ -36,6 +36,17 @@ export function ModuleForm() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<ModuleFormState>(getDefaultFormState());
   const [currentStep, setCurrentStep] = useState(0);
+
+  const getModuleFormData = useCallback(() => form as unknown as Record<string, any>, [form]);
+  const setModuleFormField = useCallback((field: string, value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const aiFill = useAIFormFill({
+    formType: 'module',
+    getFormData: getModuleFormData,
+    setFormField: setModuleFormField,
+  });
   
   // Get workstation layout for hardware inheritance
   const workstationLayout = module ? getLayoutByWorkstation(module.workstation_id) : null;
