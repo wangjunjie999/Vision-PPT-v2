@@ -1,7 +1,7 @@
 /**
  * Hardware Image URL Mapping
  * Provides local bundled asset resolution for hardware images
- * Ensures PPT generation works across all environments (Lovable, local deploy, production)
+ * Ensures PPT generation works across all environments (cloud, local deploy, production)
  */
 
 // Camera images

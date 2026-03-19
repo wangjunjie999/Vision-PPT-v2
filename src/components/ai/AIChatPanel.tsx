@@ -564,7 +564,7 @@ export function AIChatPanel() {
           {/* Settings panel */}
           {showSettings && (
             <div className="px-4 py-3 border-b border-border/40 bg-muted/20 backdrop-blur-md space-y-2.5 shrink-0">
-              <p className="text-xs font-medium text-muted-foreground">自定义 API 配置（当 Lovable AI 额度不足时自动切换）</p>
+              <p className="text-xs font-medium text-muted-foreground">自定义 API 配置（当接口1额度不足时自动切换）</p>
               <div className="space-y-2">
                 <Input
                   type="password"
