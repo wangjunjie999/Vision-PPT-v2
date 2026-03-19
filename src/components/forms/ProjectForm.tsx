@@ -263,7 +263,7 @@ const [formData, setFormData] = useState({
                 value={formData.customer}
                 onChange={e => setFormData(prev => ({ ...prev, customer: e.target.value }))}
                 placeholder="请输入客户名称"
-                className="h-9"
+                className={cn("h-9", getFieldHighlightClass('customer', aiFill.currentField, aiFill.completedFields))}
                 maxLength={200}
               />
             </div>
