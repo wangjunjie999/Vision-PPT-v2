@@ -1,44 +1,35 @@
 
 
-# FOV 输入改为两个独立数值框
+# 机械臂法兰跟随产品位置
 
-## 问题
+## 当前状态
+机械臂的法兰标记位置是固定的（由 `getMechanismMountPoints` 返回的静态坐标，如正视图 `{x: 0.75, y: -0.55}`）。法兰不会根据场景中产品的位置调整方向，无法直观表达"臂伸向产品"的空间关系。
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+## 改进方案
 
-## 修改方案
+### 核心思路
+当场景中存在产品对象时，机械臂的法兰标记位置根据产品相对方向动态偏移，使法兰"指向"最近的产品。无产品时保持默认位置。
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+### 修改文件
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
+**1. `src/components/canvas/MechanismSVG.tsx`**
+- `getMechanismMountPoints` 增加可选参数 `targetPosition?: {x: number, y: number}` 和 `mechPosition?: {x: number, y: number}`
+- 当 `robot_arm` 类型传入目标位置时，根据产品相对于机械臂的角度，动态计算法兰的 `position.x/y`（在合理范围内钳位，如 x: -0.8~0.8, y: -0.7~0.3），模拟臂末端朝向产品
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+**2. `src/components/canvas/MechanismRenderer.tsx`**
+- 法兰标记渲染部分（约第 140-167 行）：查找场景中最近的产品对象，将产品位置传入计算法兰坐标
+- 法兰标记根据产品方向旋转，添加指向产品的方向指示
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+**3. `src/components/canvas/ConnectionLines.tsx`**
+- 机械臂的相机连接线起点也改为使用动态法兰位置（如果有产品，法兰指向产品方向）
+- 新增机械臂 → 产品的特殊连接线样式（从法兰到最近产品，用虚线+🤖图标）
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+**4. `src/components/canvas/DraggableLayoutCanvas.tsx`**
+- 将产品对象列表传递给 `MechanismRenderer`（当前已有 `objects` prop，无需额外传递）
 
-```
-[宽度输入] × [高度输入]
-```
-
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
-
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+### 技术细节
+- 法兰位置计算：`atan2(productY - armY, productX - armX)` 得到角度，映射到法兰可达范围的归一化坐标
+- 可达范围用椭圆弧约束：x ∈ [-0.8, 0.8], y ∈ [-0.7, 0.3]，模拟真实臂展
+- 多个产品时取最近的一个
+- 法兰标记添加小箭头指示产品方向
 
