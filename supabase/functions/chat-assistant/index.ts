@@ -167,7 +167,7 @@ serve(async (req) => {
           headers: {
             ...corsHeaders,
             "Content-Type": "text/event-stream",
-            "X-AI-Provider": "lovable",
+            "X-AI-Provider": "default",
           },
         });
       }
