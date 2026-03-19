@@ -1,44 +1,51 @@
 
 
-# FOV 输入改为两个独立数值框
+# Logo展示动效与设计增强
 
-## 问题
+## 目标
+为顶部工具栏和登录页的Logo添加更丰富的动效和视觉设计，提升品牌感和高级感。
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+## 修改内容
 
-## 修改方案
+### 1. 顶部工具栏 Logo (`src/components/layout/TopToolbar.tsx`)
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+**当前状态**: 悬停时仅有简单的opacity变化和一个blur发光层。
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
+**增强方案**:
+- Logo容器添加渐变边框（从primary到accent的微妙渐变）
+- 悬停时Logo轻微上浮 + 放大（translateY(-2px) scale(1.05)）
+- 发光层改为双色渐变发光（primary + accent），增加呼吸感
+- 旁边文字"视觉方案配置系统"添加悬停时的渐变色过渡效果
+- 添加一个微妙的光泽扫过动画（shimmer），页面加载时播放一次
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+### 2. 登录页 Logo (`src/pages/Auth.tsx`)
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+**当前状态**: 有spring弹入动画和shadow-primary阴影。
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+**增强方案**:
+- 弹入后添加持续的悬浮浮动动画（上下轻微浮动）
+- Logo周围添加光晕环（rotating gradient ring），缓慢旋转
+- 底部添加模糊倒影效果，增加纵深感
+- 增强阴影为多层渐变阴影
 
-```
-[宽度输入] × [高度输入]
-```
+### 3. 自定义动画关键帧 (`tailwind.config.ts`)
 
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+添加以下新动画：
+- `shimmer`: 光泽扫过效果
+- `float`: 上下浮动效果
+- `glow-pulse`: 发光呼吸效果
 
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
+## 技术细节
 
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
+- 工具栏shimmer使用CSS `background-position`动画 + 线性渐变实现
+- 登录页浮动用`translateY`的infinite动画
+- 旋转光晕用`conic-gradient` + `rotate`动画
+- 所有动画使用`prefers-reduced-motion`媒体查询适配无障碍需求
 
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+## 文件变更
+| 文件 | 变更 |
+|------|------|
+| `tailwind.config.ts` | 添加shimmer/float/glow-pulse关键帧和动画 |
+| `src/components/layout/TopToolbar.tsx` | Logo区域增强悬停动效、shimmer光泽、渐变边框 |
+| `src/pages/Auth.tsx` | Logo浮动动画、旋转光晕环、倒影效果 |
 
