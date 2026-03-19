@@ -24,16 +24,8 @@ import type { Database } from '@/integrations/supabase/types';
 import { FormStepWizard, FormStep } from './FormStepWizard';
 import { useAIFormFill } from '@/hooks/useAIFormFill';
 import { AIFillButton, getFieldHighlightClass } from './AIFillButton';
-import { ProductAnnotationPanel } from '@/components/product/ProductAnnotationPanel';
-import { LayoutViewsPreview } from '@/components/canvas/LayoutViewsPreview';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import type { Database } from '@/integrations/supabase/types';
-import { FormStepWizard, FormStep } from './FormStepWizard';
+
+
 
 type WorkstationType = 'line' | 'turntable' | 'robot' | 'platform';
 type CameraMount = 'top' | 'side' | 'angled';
