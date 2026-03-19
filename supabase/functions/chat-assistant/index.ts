@@ -174,7 +174,7 @@ serve(async (req) => {
 
       // If 402 (credits exhausted) and custom API available, fall through
       if (response.status === 402 && customApiKey) {
-        console.log("Lovable AI credits exhausted, falling back to custom API");
+        console.log("Default API credits exhausted, falling back to custom API");
       } else if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "请求过于频繁，请稍后再试。" }),
