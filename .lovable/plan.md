@@ -1,34 +1,15 @@
 
 
-# 修复 PPT 不显示打光照片
+# 副标题下移 3 像素
 
-## 问题根因
+## 改动
 
-`lighting_photos` 字段在数据流转过程中被丢弃了。数据链路：
+**文件：`src/services/pptx/workstationSlides.ts`**
 
-```text
-DB (有 lighting_photos) 
-  → reportDataBuilder (❌ 未包含) 
-    → PPTGenerationDialog moduleData (❌ 未包含) 
-      → pptxGenerator (读取为空数组)
-```
+`addSlideTitle` 函数中副标题的 `y` 值从 `0.52` 改为 `0.55`（约 3px ≈ 0.03 英寸）。
 
-## 修改方案
-
-### 1. `src/services/reportDataBuilder.ts`
-
-- 在 `ReportModule` 接口中添加 `lighting_photos` 字段（约 line 258）
-- 在模块映射函数中传递 `lighting_photos`（约 line 697）
-- 在 `MODULE_DISPLAYED_FIELDS` 数组中添加 `lighting_photos`（约 line 345）
-
-### 2. `src/components/dialogs/PPTGenerationDialog.tsx`
-
-- 在 `moduleData` 映射中添加 `lighting_photos` 字段（约 line 755）
-
-```typescript
-// 添加到 moduleData mapping:
-lighting_photos: (m as any).lighting_photos || [],
-```
-
-共 2 个文件，约 4 处改动。
+涉及 3 处：
+- Line 134: split subtitle left `y: 0.52` → `y: 0.55`
+- Line 139: split subtitle right `y: 0.52` → `y: 0.55`
+- Line 146: single subtitle `y: 0.52` → `y: 0.55`
 
