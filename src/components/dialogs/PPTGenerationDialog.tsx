@@ -937,6 +937,10 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
             front_view_image_url: layoutItem.front_view_image_url || null,
             side_view_image_url: layoutItem.side_view_image_url || null,
             top_view_image_url: layoutItem.top_view_image_url || null,
+            isometric_view_image_url: layoutItem.isometric_view_image_url || null,
+            primary_view: layoutItem.primary_view || 'front',
+            auxiliary_view: layoutItem.auxiliary_view || 'side',
+            layout_description: layoutItem.layout_description || '',
           };
         });
 
