@@ -1,25 +1,34 @@
 
 
-# 修复切换模块时打光照片不更新
+# 修复 PPT 不显示打光照片
 
-## 问题
+## 问题根因
 
-`LightingPhotosPanel` 使用 `useState(initialPhotos)` 初始化照片列表。`useState` 的初始值只在组件首次挂载时生效，当切换模块导致 `moduleId` 和 `initialPhotos` 变化时，状态不会更新，导致显示的始终是第一个模块的照片。
+`lighting_photos` 字段在数据流转过程中被丢弃了。数据链路：
 
-## 方案
-
-**文件：`src/components/canvas/LightingPhotosPanel.tsx`**
-
-添加 `useEffect` 监听 `moduleId` 变化，当模块切换时重置 `photos` 状态：
-
-```typescript
-import { useState, useCallback, useEffect } from 'react';
-
-// 在 useState 后添加：
-useEffect(() => {
-  setPhotos(initialPhotos || []);
-}, [moduleId]);
+```text
+DB (有 lighting_photos) 
+  → reportDataBuilder (❌ 未包含) 
+    → PPTGenerationDialog moduleData (❌ 未包含) 
+      → pptxGenerator (读取为空数组)
 ```
 
-单文件改动，约 3 行代码。
+## 修改方案
+
+### 1. `src/services/reportDataBuilder.ts`
+
+- 在 `ReportModule` 接口中添加 `lighting_photos` 字段（约 line 258）
+- 在模块映射函数中传递 `lighting_photos`（约 line 697）
+- 在 `MODULE_DISPLAYED_FIELDS` 数组中添加 `lighting_photos`（约 line 345）
+
+### 2. `src/components/dialogs/PPTGenerationDialog.tsx`
+
+- 在 `moduleData` 映射中添加 `lighting_photos` 字段（约 line 755）
+
+```typescript
+// 添加到 moduleData mapping:
+lighting_photos: (m as any).lighting_photos || [],
+```
+
+共 2 个文件，约 4 处改动。
 
