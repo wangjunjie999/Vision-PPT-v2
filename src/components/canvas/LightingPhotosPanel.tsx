@@ -26,6 +26,10 @@ interface LightingPhotosPanelProps {
 
 export function LightingPhotosPanel({ moduleId, moduleName, initialPhotos, onSave }: LightingPhotosPanelProps) {
   const [photos, setPhotos] = useState<LightingPhoto[]>(initialPhotos || []);
+
+  useEffect(() => {
+    setPhotos(initialPhotos || []);
+  }, [moduleId]);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
