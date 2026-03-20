@@ -255,6 +255,7 @@ export interface ReportModuleData {
   ocr_config: Record<string, unknown> | null;
   measurement_config: Record<string, unknown> | null;
   deep_learning_config: Record<string, unknown> | null;
+  lighting_photos: Array<{ url: string; remark?: string }>;
   extra_fields: Record<string, { key: string; label: string; value: string }>;
 }
 
@@ -342,7 +343,7 @@ const MODULE_DISPLAYED_FIELDS = new Set([
   'selected_camera', 'selected_lens', 'selected_light', 'selected_controller',
   'schematic_image_url', 'positioning_config', 'defect_config',
   'ocr_config', 'measurement_config', 'deep_learning_config',
-  'rotation', 'x', 'y', 'status', 'camera_id', 'lens_id', 'light_id', 'controller_id',
+  'rotation', 'x', 'y', 'status', 'camera_id', 'lens_id', 'light_id', 'controller_id', 'lighting_photos',
 ]);
 
 /**
@@ -694,6 +695,7 @@ export function buildReportData(input: BuilderInput): ReportData {
       ocr_config: mod.ocr_config as Record<string, unknown> | null,
       measurement_config: mod.measurement_config as Record<string, unknown> | null,
       deep_learning_config: mod.deep_learning_config as Record<string, unknown> | null,
+      lighting_photos: Array.isArray(mod.lighting_photos) ? mod.lighting_photos as Array<{ url: string; remark?: string }> : [],
       extra_fields: collectExtraFields(mod as unknown as Record<string, unknown>, MODULE_DISPLAYED_FIELDS, lang),
     };
   });
