@@ -1,50 +1,48 @@
 
 
-# 修复 3D 连接线端点不准确
+# 修复 PPT 等轴测主视图不显示 3D 截图
 
 ## 问题根因
 
-`getConnectionEndpoint` 和 `getMechMountType` 使用的偏移量与实际 3D 模型几何体不匹配：
+`PPTGenerationDialog.tsx` 中将 `reportData.layouts` 转换为 `layoutData` 时，**丢失了关键字段**：
 
-1. **机构模型底部对齐**（Y=0 是底部，Y=h 是顶部），但连接端点计算假设模型居中对齐
-2. **'center' 挂载**返回 `(0, 0, 0)` 即底部原点，实际视觉中心在 `h/2`
-3. **'side' 挂载**返回 `(w*0.5, 0, 0)` 即底部侧面，应在 `(w*0.5, h*0.5, 0)` 即中部侧面
-4. **'top' 挂载**返回 `(0, h*0.5, 0)` — 对传送带大致正确（belt at h\*0.5），但转盘表面在 h\*0.50、升降台在 h\*0.63 等各不相同
-5. **机械臂法兰**肩部基准 `h*0.08` 与模型中的 `h*0.09` 有偏差
+- `isometric_view_image_url` — 等轴测截图 URL（完全未传递）
+- `primary_view` — 主视图选择（未传递，PPT 默认回退到 'front'）
+- `auxiliary_view` — 辅视图选择（未传递）
+- `layout_description` — 布局说明（未传递）
+
+当用户设置主视图为"等轴测"并保存后，PPT 生成时 `primary_view` 始终为 `'front'`，所以 PPT 机械布局幻灯片始终显示正视图而非等轴测截图。
+
+同时 `reportDataBuilder.ts` 也缺少 `isometric_view_image_url` 字段。
 
 ## 修改方案
 
-**仅修改 `src/components/canvas/Layout3DPreview.tsx`**
+### 1. `src/services/reportDataBuilder.ts`
 
-### 1. 替换 `getMechMountType` + `getConnectionEndpoint` 为精确的 `getMechMountOffset3D`
+在 `LAYOUT_DISPLAYED_FIELDS` 中添加 `isometric_view_image_url` 和 `isometric_view_saved`。
 
-新函数根据机构类型返回精确的本地坐标偏移，匹配实际 3D 模型几何：
-
-```text
-机构类型        挂载点Y偏移            说明
-conveyor       h * 0.50              传送带表面
-turntable      h * 0.50              转盘圆盘表面
-lift           h * 0.63              升降平台表面
-stop           (w*0.5, h*0.4, 0)     挡块侧面中心
-cylinder       (w*0.5, h*0.5, 0)     气缸侧面中心
-gripper        (0, 0, 0)             夹爪底端
-camera_mount   (0, h*0.8, 0)        支架顶部
-default        (0, h*0.5, 0)         居中
+在 layout 返回对象中添加：
+```typescript
+isometric_view_image_url: (layout as any).isometric_view_image_url || null,
+isometric_view_saved: (layout as any).isometric_view_saved || false,
 ```
 
-### 2. 修复 `getRobotArmFlangePosition`
+### 2. `src/components/dialogs/PPTGenerationDialog.tsx`
 
-将肩部基准从 `h * 0.08` 修正为 `h * 0.09` 以匹配模型中 `position={[0, h*0.09 + waistH, 0]}` 的实际位置。
+在三个 layoutData 映射位置补充缺失字段：
 
-### 3. 更新 `computeRelLines` 中的端点计算
+**PPT 路径（~line 714-720）** 添加：
+```typescript
+isometric_view_image_url: l.isometric_view_image_url || (l as any).isometric_view_image_url || null,
+primary_view: l.primary_view || (l as any).primary_view || 'front',
+auxiliary_view: l.auxiliary_view || (l as any).auxiliary_view || 'side',
+layout_description: l.layout_description || (l as any).layout_description || '',
+```
 
-- 相机端使用 'center'（相机模型确实居中于原点，无需改）
-- 机构端调用新的 `getMechMountOffset3D(mechType, w, h, d)` 获取精确偏移
-- 产品端保持 'center'（ProductBox 也居中于原点）
-
-### 修改文件
+**Word 路径（~line 797-800）** 和 **PDF 路径（~line 929-931）** 同样添加这四个字段。
 
 | 文件 | 操作 |
 |------|------|
-| `src/components/canvas/Layout3DPreview.tsx` | 修改 - 替换挂载点计算逻辑，匹配实际3D模型几何 |
+| `src/services/reportDataBuilder.ts` | 添加 isometric_view_image_url 到 layout 数据 |
+| `src/components/dialogs/PPTGenerationDialog.tsx` | 三处 layoutData 映射补充四个缺失字段 |
 
