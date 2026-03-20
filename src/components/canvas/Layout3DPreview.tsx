@@ -1294,19 +1294,16 @@ function getRobotArmFlangePosition(parent: LayoutObject): [number, number, numbe
   const h = (parent.height ?? 120) / 100;
   
   const waistH = h * 0.12;
-  const baseTop = h * 0.08 + waistH;
+  const baseTop = h * 0.09 + waistH; // fixed: match model's h*0.09
   const arm1L = h * 0.30;
   const arm2L = h * 0.25;
   const arm3L = h * 0.18;
   const flangeLen = arm3L + h * 0.06;
 
-  // Accumulate rotation angles (around Z axis in local space)
   const theta1 = 0.5;
-  const theta2 = theta1 + (-1.2); // -0.7
-  const theta3 = theta2 + (-0.6); // -1.3
+  const theta2 = theta1 + (-1.2);
+  const theta3 = theta2 + (-0.6);
 
-  // Trace through joints: each segment extends along rotated Y axis
-  // In XY plane: direction = [sin(theta), cos(theta)]
   const elbowX = -arm1L * Math.sin(theta1);
   const elbowY = baseTop + arm1L * Math.cos(theta1);
 
@@ -1323,40 +1320,52 @@ function getRobotArmFlangePosition(parent: LayoutObject): [number, number, numbe
   return [parentX + flangeX, parentYWorld + flangeY, parentZ];
 }
 
-// Helper: get connection endpoint with rotation-aware mount offset
-function getConnectionEndpoint(
+// Precise 3D mount offset for mechanism types, matching actual model geometry
+// Models are bottom-aligned: Y=0 is base, Y=h is top
+function getMechMountOffset3D(
+  mechType: string,
+  w: number, h: number, d: number
+): THREE.Vector3 {
+  switch (mechType) {
+    case 'conveyor':
+      return new THREE.Vector3(0, h * 0.64, 0);       // belt surface
+    case 'turntable':
+      return new THREE.Vector3(0, h * 0.50, 0);       // disc surface
+    case 'lift':
+      return new THREE.Vector3(0, h * 0.63, 0);       // platform surface
+    case 'stop':
+      return new THREE.Vector3(w * 0.5, h * 0.40, 0); // stopper side center
+    case 'cylinder':
+      return new THREE.Vector3(w * 0.5, h * 0.50, 0); // cylinder side center
+    case 'gripper':
+      return new THREE.Vector3(0, 0, 0);               // grip bottom end
+    case 'camera_mount':
+      return new THREE.Vector3(0, h * 0.80, 0);       // bracket top area
+    default:
+      return new THREE.Vector3(0, h * 0.50, 0);       // geometric center
+  }
+}
+
+// Get connection endpoint using precise mechanism-type-aware offsets with rotation
+function getConnectionEndpoint3D(
   obj: LayoutObject,
-  mountType: 'top' | 'side' | 'bottom' | 'center',
+  localOffset: THREE.Vector3,
 ): [number, number, number] {
   const cx = (obj.posX ?? 0) * SCALE;
   const cy = (obj.posZ ?? 0) * SCALE;
   const cz = (obj.posY ?? 0) * SCALE;
 
-  const h = (obj.height ?? 100) / 100;
-  const w = (obj.width ?? 100) / 100;
-  const localOffset = new THREE.Vector3(0, 0, 0);
-  switch (mountType) {
-    case 'top': localOffset.set(0, h * 0.5, 0); break;
-    case 'side': localOffset.set(w * 0.5, 0, 0); break;
-    case 'bottom': localOffset.set(0, -h * 0.5, 0); break;
-    case 'center': break;
-  }
-
   const rx = ((obj.rotX ?? 0) * Math.PI) / 180;
   const ry = ((obj.rotY ?? 0) * Math.PI) / 180;
   const rz = ((obj.rotZ ?? 0) * Math.PI) / 180;
-  localOffset.applyEuler(new THREE.Euler(rx, ry, rz));
+  const rotatedOffset = localOffset.clone().applyEuler(new THREE.Euler(rx, ry, rz));
 
-  return [cx + localOffset.x, cy + localOffset.y, cz + localOffset.z];
+  return [cx + rotatedOffset.x, cy + rotatedOffset.y, cz + rotatedOffset.z];
 }
 
-function getMechMountType(mechType: string): 'top' | 'side' | 'bottom' | 'center' {
-  switch (mechType) {
-    case 'conveyor': case 'turntable': case 'lift': return 'top';
-    case 'stop': case 'cylinder': return 'side';
-    case 'gripper': return 'bottom';
-    default: return 'center';
-  }
+// Camera center offset (cameras are origin-centered in 3D)
+function getCameraEndpoint(obj: LayoutObject): [number, number, number] {
+  return getConnectionEndpoint3D(obj, new THREE.Vector3(0, 0, 0));
 }
 
 function computeRelLines(objects: LayoutObject[], productPosition?: { posX: number; posY: number; posZ: number }): RelLine[] {
@@ -1370,10 +1379,13 @@ function computeRelLines(objects: LayoutObject[], productPosition?: { posX: numb
     const parentMechType = parent.mechanismType || '';
     const isRobotArm = parentMechType === 'robot_arm';
 
-    const start = getConnectionEndpoint(obj, 'center');
+    const start = getCameraEndpoint(obj);
+    const parentW = (parent.width ?? 100) / 100;
+    const parentH = (parent.height ?? 100) / 100;
+    const parentD = (parent.width ?? 100) / 100;
     const end: [number, number, number] = isRobotArm
       ? getRobotArmFlangePosition(parent)
-      : getConnectionEndpoint(parent, getMechMountType(parentMechType));
+      : getConnectionEndpoint3D(parent, getMechMountOffset3D(parentMechType, parentW, parentH, parentD));
 
     const mid: [number, number, number] = [
       (start[0] + end[0]) / 2,
@@ -1406,7 +1418,10 @@ function computeRelLines(objects: LayoutObject[], productPosition?: { posX: numb
 
   objects.forEach(obj => {
     if (obj.type === 'mechanism' && isProductInteraction(obj.mechanismType || '')) {
-      const mechEnd = getConnectionEndpoint(obj, getMechMountType(obj.mechanismType || ''));
+      const mechW = (obj.width ?? 100) / 100;
+      const mechH = (obj.height ?? 100) / 100;
+      const mechD = (obj.width ?? 100) / 100;
+      const mechEnd = getConnectionEndpoint3D(obj, getMechMountOffset3D(obj.mechanismType || '', mechW, mechH, mechD));
       const productPos: [number, number, number] = [
         (productPosition?.posX ?? 0) * SCALE,
         (productPosition?.posZ ?? 0) * SCALE,
