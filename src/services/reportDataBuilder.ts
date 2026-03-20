@@ -329,8 +329,9 @@ const LAYOUT_DISPLAYED_FIELDS = new Set([
   'lens_count', 'light_count', 'camera_mounts', 'mechanisms',
   'width', 'height', 'depth', 'selected_cameras', 'selected_lenses',
   'selected_lights', 'selected_controller', 'front_view_image_url',
-  'side_view_image_url', 'top_view_image_url', 'front_view_saved',
-  'side_view_saved', 'top_view_saved', 'description', 'layout_type',
+  'side_view_image_url', 'top_view_image_url', 'isometric_view_image_url',
+  'front_view_saved', 'side_view_saved', 'top_view_saved', 'isometric_view_saved',
+  'description', 'layout_type',
   'grid_enabled', 'snap_enabled', 'show_distances', 'machine_outline', 'layout_objects',
   'primary_view', 'auxiliary_view', 'layout_description',
 ]);
