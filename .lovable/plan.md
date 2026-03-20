@@ -1,33 +1,42 @@
 
 
-# 统一 PPT 副标题字体并下移主标题
+# 打光照片紧跟光学方案幻灯片
 
-## 现状
+## 问题
 
-`addSlideTitle` 函数中：
-- 主标题（工位编号+名称）：`y: 0.08`，`fontSize: 16`，`fontFace: FONTS.heading`（微软雅黑）
-- 副标题（蓝色横条上的白字）：`y: 0.52`，`fontSize: 16`，`fontFace: FONTS.heading`（微软雅黑）
+当前 `pptxGenerator.ts` 中，光学方案和打光照片分在两个独立循环中生成：
+- 循环 d：所有模块的光学方案
+- 循环 e：所有模块的打光照片
 
-字体和大小已统一为微软雅黑 16pt。需要调整的是主标题的 Y 位置往下移 3 个字符高度。
+导致打光照片被集中放在所有光学方案之后，而不是每个模块的光学方案紧跟其打光照片。
 
-## 修改方案
+## 方案
 
-**文件：`src/services/pptx/workstationSlides.ts`**
+**文件：`src/services/pptxGenerator.ts`**
 
-将 `addSlideTitle` 中主标题的 `y: 0.08` 改为 `y: 0.14`（下移约 3 个字符的间距，16pt 字符高 ≈ 0.022 英寸/pt，3 字符 ≈ 0.06 英寸）。
+将两个循环合并为一个：每个模块先生成光学方案幻灯片，紧接着生成该模块的打光照片幻灯片。
 
 ```typescript
-// Line 126: y 从 0.08 → 0.14
-slide.addText(`${ctx.wsCode} ${ctx.wsName}`, {
-  x: 0.4, y: 0.14, w: 7.5, h: 0.38,
-  fontSize: 16, fontFace: FONTS.body, color: COLORS.primary,
-  bold: false, italic: false,
-});
+// d. 光学方案 × N + 打光照片 (Each module's optical followed by its lighting photos)
+for (let mi = 0; mi < wsModules.length; mi++) {
+  step++;
+  const modName = wsModules[mi].name;
+  onProgress(..., `光学方案: ${modName}`);
+  await generateModuleOpticalSlide(ctx, slideData, mi);
+
+  // 紧跟该模块的打光照片
+  const photos = (wsModules[mi] as any).lighting_photos || [];
+  if (photos.length > 0) {
+    step++;
+    onProgress(..., `打光照片: ${modName}`);
+    await generateLightingPhotosSlide(ctx, slideData, mi);
+  }
+}
 ```
 
-同时将所有副标题的 `fontFace` 从 `FONTS.heading` 统一为 `FONTS.body`（两者当前值相同，均为 Microsoft YaHei，但语义上副标题应使用 body 字体以保持一致性）。
+删除原来的独立循环 e。
 
 | 文件 | 操作 |
 |------|------|
-| `src/services/pptx/workstationSlides.ts` | 主标题 y: 0.08 → 0.14，确认副标题均为微软雅黑 16pt |
+| `src/services/pptxGenerator.ts` | 合并光学方案和打光照片循环，~line 1030-1047 |
 
