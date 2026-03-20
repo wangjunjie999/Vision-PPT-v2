@@ -255,6 +255,7 @@ export interface ReportModuleData {
   ocr_config: Record<string, unknown> | null;
   measurement_config: Record<string, unknown> | null;
   deep_learning_config: Record<string, unknown> | null;
+  lighting_photos: Array<{ url: string; remark?: string }>;
   extra_fields: Record<string, { key: string; label: string; value: string }>;
 }
 
