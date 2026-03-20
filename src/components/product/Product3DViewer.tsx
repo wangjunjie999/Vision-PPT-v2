@@ -81,6 +81,15 @@ function CameraController({
 }) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
+  const [shiftHeld, setShiftHeld] = useState(false);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Shift') setShiftHeld(true); };
+    const onKeyUp = (e: KeyboardEvent) => { if (e.key === 'Shift') setShiftHeld(false); };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => { window.removeEventListener('keydown', onKeyDown); window.removeEventListener('keyup', onKeyUp); };
+  }, []);
 
   useEffect(() => {
     if (viewPreset && controlsRef.current) {
@@ -104,6 +113,11 @@ function CameraController({
       dampingFactor={0.1}
       minDistance={2}
       maxDistance={20}
+      mouseButtons={{
+        LEFT: shiftHeld ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: undefined as any,
+      }}
     />
   );
 }
