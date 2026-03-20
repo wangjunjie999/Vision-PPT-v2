@@ -123,8 +123,8 @@ function addSlideTitle(
 ): void {
   // Main title text overlaid on the navy header bar (primary blue)
   slide.addText(`${ctx.wsCode} ${ctx.wsName}`, {
-    x: 0.4, y: 0.08, w: 7.5, h: 0.38,
-    fontSize: 16, fontFace: FONTS.heading, color: COLORS.primary,
+    x: 0.4, y: 0.14, w: 7.5, h: 0.38,
+    fontSize: 16, fontFace: FONTS.body, color: COLORS.primary,
     bold: false, italic: false,
   });
 
