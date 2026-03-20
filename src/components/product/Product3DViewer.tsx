@@ -268,7 +268,7 @@ export function Product3DViewer({ modelUrl, imageUrls = [], onReady, fillContain
 
         {/* Controls hint */}
         <div className="absolute bottom-2 right-2 text-[10px] text-muted-foreground bg-background/80 px-2 py-1 rounded">
-          鼠标拖拽旋转 | 滚轮缩放 | 右键平移
+          鼠标拖拽旋转 | 滚轮缩放 | Shift+拖拽平移
         </div>
       </div>
     </div>
