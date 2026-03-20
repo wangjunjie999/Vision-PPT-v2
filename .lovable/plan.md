@@ -1,44 +1,33 @@
 
 
-# 移除 PPT 机械布局幻灯片中多余的等轴测图
+# 统一 PPT 副标题字体并下移主标题
 
-## 问题
+## 现状
 
-当前逻辑：辅视图下方有等轴测 URL 时显示等轴测 3D 图，没有时才显示布局说明。这导致：
-1. 如果主视图已选"等轴测"，则等轴测图重复出现两次
-2. 布局说明被挤掉不显示
+`addSlideTitle` 函数中：
+- 主标题（工位编号+名称）：`y: 0.08`，`fontSize: 16`，`fontFace: FONTS.heading`（微软雅黑）
+- 副标题（蓝色横条上的白字）：`y: 0.52`，`fontSize: 16`，`fontFace: FONTS.heading`（微软雅黑）
 
-## 方案
+字体和大小已统一为微软雅黑 16pt。需要调整的是主标题的 Y 位置往下移 3 个字符高度。
 
-**移除右下角的等轴测 3D 图区块**，改为**始终显示布局说明**。等轴测视图已可作为主视图显示，无需单独再放。
+## 修改方案
 
-### 修改文件
+**文件：`src/services/pptx/workstationSlides.ts`**
 
-| 文件 | 操作 |
-|------|------|
-| `src/services/pptx/workstationSlides.ts` | 删除 line 747-763 的等轴测判断分支，保留 else 中的布局说明逻辑作为默认渲染 |
-
-### 具体改动（~line 746-780）
-
-删除 `if (isometricUrl) { ... }` 分支，只保留布局说明区域，且不再用 `else` 包裹：
+将 `addSlideTitle` 中主标题的 `y: 0.08` 改为 `y: 0.14`（下移约 3 个字符的间距，16pt 字符高 ≈ 0.022 英寸/pt，3 字符 ≈ 0.06 英寸）。
 
 ```typescript
-// Right bottom: Layout description (always shown)
-slide.addShape('rect', {
-  x: 5.9, y: 3.9, w: 3.6, h: 1.2,
-  fill: { color: 'F8F9FA' },
-  line: { color: COLORS.border, width: 0.5 },
-});
-slide.addText(ctx.isZh ? '布局说明' : 'Layout Description', {
-  x: 6.0, y: 3.95, w: 3.4, h: 0.25,
-  fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
-});
-slide.addText(layoutDescription || (ctx.isZh ? '（未填写布局说明）' : '(No description)'), {
-  x: 6.0, y: 4.2, w: 3.4, h: 0.85,
-  fontSize: 9, fontFace: FONTS.body, color: layoutDescription ? COLORS.dark : COLORS.secondary,
-  valign: 'top',
+// Line 126: y 从 0.08 → 0.14
+slide.addText(`${ctx.wsCode} ${ctx.wsName}`, {
+  x: 0.4, y: 0.14, w: 7.5, h: 0.38,
+  fontSize: 16, fontFace: FONTS.body, color: COLORS.primary,
+  bold: false, italic: false,
 });
 ```
 
-同时可移除 `isometricUrl` 变量声明（line 686）。
+同时将所有副标题的 `fontFace` 从 `FONTS.heading` 统一为 `FONTS.body`（两者当前值相同，均为 Microsoft YaHei，但语义上副标题应使用 body 字体以保持一致性）。
+
+| 文件 | 操作 |
+|------|------|
+| `src/services/pptx/workstationSlides.ts` | 主标题 y: 0.08 → 0.14，确认副标题均为微软雅黑 16pt |
 
