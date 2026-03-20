@@ -714,6 +714,10 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
         front_view_image_url: l.front_view_image_url,
         side_view_image_url: l.side_view_image_url,
         top_view_image_url: l.top_view_image_url,
+        isometric_view_image_url: l.isometric_view_image_url || null,
+        primary_view: l.primary_view || 'front',
+        auxiliary_view: l.auxiliary_view || 'side',
+        layout_description: l.layout_description || '',
         width: l.width,
         height: l.height,
         depth: l.depth,
@@ -797,6 +801,10 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
             front_view_image_url: layoutItem.front_view_image_url || null,
             side_view_image_url: layoutItem.side_view_image_url || null,
             top_view_image_url: layoutItem.top_view_image_url || null,
+            isometric_view_image_url: layoutItem.isometric_view_image_url || null,
+            primary_view: layoutItem.primary_view || 'front',
+            auxiliary_view: layoutItem.auxiliary_view || 'side',
+            layout_description: layoutItem.layout_description || '',
           };
         });
 
@@ -929,6 +937,10 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
             front_view_image_url: layoutItem.front_view_image_url || null,
             side_view_image_url: layoutItem.side_view_image_url || null,
             top_view_image_url: layoutItem.top_view_image_url || null,
+            isometric_view_image_url: layoutItem.isometric_view_image_url || null,
+            primary_view: layoutItem.primary_view || 'front',
+            auxiliary_view: layoutItem.auxiliary_view || 'side',
+            layout_description: layoutItem.layout_description || '',
           };
         });
 

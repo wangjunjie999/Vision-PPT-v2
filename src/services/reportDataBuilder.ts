@@ -212,9 +212,11 @@ export interface ReportLayoutData {
   front_view_image_url: string | null;
   side_view_image_url: string | null;
   top_view_image_url: string | null;
+  isometric_view_image_url: string | null;
   front_view_saved: boolean | null;
   side_view_saved: boolean | null;
   top_view_saved: boolean | null;
+  isometric_view_saved: boolean | null;
   primary_view: string | null;
   auxiliary_view: string | null;
   layout_description: string | null;
@@ -327,8 +329,9 @@ const LAYOUT_DISPLAYED_FIELDS = new Set([
   'lens_count', 'light_count', 'camera_mounts', 'mechanisms',
   'width', 'height', 'depth', 'selected_cameras', 'selected_lenses',
   'selected_lights', 'selected_controller', 'front_view_image_url',
-  'side_view_image_url', 'top_view_image_url', 'front_view_saved',
-  'side_view_saved', 'top_view_saved', 'description', 'layout_type',
+  'side_view_image_url', 'top_view_image_url', 'isometric_view_image_url',
+  'front_view_saved', 'side_view_saved', 'top_view_saved', 'isometric_view_saved',
+  'description', 'layout_type',
   'grid_enabled', 'snap_enabled', 'show_distances', 'machine_outline', 'layout_objects',
   'primary_view', 'auxiliary_view', 'layout_description',
 ]);
@@ -643,12 +646,14 @@ export function buildReportData(input: BuilderInput): ReportData {
       front_view_image_url: layout.front_view_image_url,
       side_view_image_url: layout.side_view_image_url,
       top_view_image_url: layout.top_view_image_url,
+      isometric_view_image_url: layout.isometric_view_image_url || null,
       front_view_saved: layout.front_view_saved,
       side_view_saved: layout.side_view_saved,
       top_view_saved: layout.top_view_saved,
-      primary_view: (layout as any).primary_view || 'front',
-      auxiliary_view: (layout as any).auxiliary_view || 'side',
-      layout_description: (layout as any).layout_description || '',
+      isometric_view_saved: layout.isometric_view_saved || false,
+      primary_view: layout.primary_view || 'front',
+      auxiliary_view: layout.auxiliary_view || 'side',
+      layout_description: layout.layout_description || '',
       extra_fields: collectExtraFields(layout as unknown as Record<string, unknown>, LAYOUT_DISPLAYED_FIELDS, lang),
     };
   });
