@@ -343,7 +343,7 @@ const MODULE_DISPLAYED_FIELDS = new Set([
   'selected_camera', 'selected_lens', 'selected_light', 'selected_controller',
   'schematic_image_url', 'positioning_config', 'defect_config',
   'ocr_config', 'measurement_config', 'deep_learning_config',
-  'rotation', 'x', 'y', 'status', 'camera_id', 'lens_id', 'light_id', 'controller_id',
+  'rotation', 'x', 'y', 'status', 'camera_id', 'lens_id', 'light_id', 'controller_id', 'lighting_photos',
 ]);
 
 /**
