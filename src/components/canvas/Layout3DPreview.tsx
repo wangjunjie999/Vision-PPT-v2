@@ -1420,7 +1420,7 @@ function computeRelLines(objects: LayoutObject[], productPosition?: { posX: numb
     if (obj.type === 'mechanism' && isProductInteraction(obj.mechanismType || '')) {
       const mechW = (obj.width ?? 100) / 100;
       const mechH = (obj.height ?? 100) / 100;
-      const mechD = (obj.depth ?? 100) / 100;
+      const mechD = (obj.width ?? 100) / 100;
       const mechEnd = getConnectionEndpoint3D(obj, getMechMountOffset3D(obj.mechanismType || '', mechW, mechH, mechD));
       const productPos: [number, number, number] = [
         (productPosition?.posX ?? 0) * SCALE,
