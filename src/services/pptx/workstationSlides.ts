@@ -136,7 +136,7 @@ function addSlideTitle(
       bold: false, italic: false,
     });
     slide.addText(splitSubtitles.right, {
-      x: '50%', y: 0.52, w: '50%', h: 0.22,
+      x: '50%', y: 0.55, w: '50%', h: 0.22,
       fontSize: 16, fontFace: FONTS.body, color: COLORS.white, align: 'center', valign: 'middle',
       bold: false, italic: false,
     });
