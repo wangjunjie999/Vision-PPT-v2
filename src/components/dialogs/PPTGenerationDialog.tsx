@@ -752,6 +752,7 @@ export function PPTGenerationDialog({ open, onOpenChange }: { open: boolean; onO
         ocr_config: m.ocr_config,
         measurement_config: m.measurement_config,
         deep_learning_config: m.deep_learning_config,
+        lighting_photos: m.lighting_photos || [],
         extra_fields: m.extra_fields,
       }));
 

@@ -695,6 +695,7 @@ export function buildReportData(input: BuilderInput): ReportData {
       ocr_config: mod.ocr_config as Record<string, unknown> | null,
       measurement_config: mod.measurement_config as Record<string, unknown> | null,
       deep_learning_config: mod.deep_learning_config as Record<string, unknown> | null,
+      lighting_photos: Array.isArray(mod.lighting_photos) ? mod.lighting_photos as Array<{ url: string; remark?: string }> : [],
       extra_fields: collectExtraFields(mod as unknown as Record<string, unknown>, MODULE_DISPLAYED_FIELDS, lang),
     };
   });
