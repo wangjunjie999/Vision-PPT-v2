@@ -1,48 +1,44 @@
 
 
-# 修复 PPT 等轴测主视图不显示 3D 截图
+# 移除 PPT 机械布局幻灯片中多余的等轴测图
 
-## 问题根因
+## 问题
 
-`PPTGenerationDialog.tsx` 中将 `reportData.layouts` 转换为 `layoutData` 时，**丢失了关键字段**：
+当前逻辑：辅视图下方有等轴测 URL 时显示等轴测 3D 图，没有时才显示布局说明。这导致：
+1. 如果主视图已选"等轴测"，则等轴测图重复出现两次
+2. 布局说明被挤掉不显示
 
-- `isometric_view_image_url` — 等轴测截图 URL（完全未传递）
-- `primary_view` — 主视图选择（未传递，PPT 默认回退到 'front'）
-- `auxiliary_view` — 辅视图选择（未传递）
-- `layout_description` — 布局说明（未传递）
+## 方案
 
-当用户设置主视图为"等轴测"并保存后，PPT 生成时 `primary_view` 始终为 `'front'`，所以 PPT 机械布局幻灯片始终显示正视图而非等轴测截图。
+**移除右下角的等轴测 3D 图区块**，改为**始终显示布局说明**。等轴测视图已可作为主视图显示，无需单独再放。
 
-同时 `reportDataBuilder.ts` 也缺少 `isometric_view_image_url` 字段。
-
-## 修改方案
-
-### 1. `src/services/reportDataBuilder.ts`
-
-在 `LAYOUT_DISPLAYED_FIELDS` 中添加 `isometric_view_image_url` 和 `isometric_view_saved`。
-
-在 layout 返回对象中添加：
-```typescript
-isometric_view_image_url: (layout as any).isometric_view_image_url || null,
-isometric_view_saved: (layout as any).isometric_view_saved || false,
-```
-
-### 2. `src/components/dialogs/PPTGenerationDialog.tsx`
-
-在三个 layoutData 映射位置补充缺失字段：
-
-**PPT 路径（~line 714-720）** 添加：
-```typescript
-isometric_view_image_url: l.isometric_view_image_url || (l as any).isometric_view_image_url || null,
-primary_view: l.primary_view || (l as any).primary_view || 'front',
-auxiliary_view: l.auxiliary_view || (l as any).auxiliary_view || 'side',
-layout_description: l.layout_description || (l as any).layout_description || '',
-```
-
-**Word 路径（~line 797-800）** 和 **PDF 路径（~line 929-931）** 同样添加这四个字段。
+### 修改文件
 
 | 文件 | 操作 |
 |------|------|
-| `src/services/reportDataBuilder.ts` | 添加 isometric_view_image_url 到 layout 数据 |
-| `src/components/dialogs/PPTGenerationDialog.tsx` | 三处 layoutData 映射补充四个缺失字段 |
+| `src/services/pptx/workstationSlides.ts` | 删除 line 747-763 的等轴测判断分支，保留 else 中的布局说明逻辑作为默认渲染 |
+
+### 具体改动（~line 746-780）
+
+删除 `if (isometricUrl) { ... }` 分支，只保留布局说明区域，且不再用 `else` 包裹：
+
+```typescript
+// Right bottom: Layout description (always shown)
+slide.addShape('rect', {
+  x: 5.9, y: 3.9, w: 3.6, h: 1.2,
+  fill: { color: 'F8F9FA' },
+  line: { color: COLORS.border, width: 0.5 },
+});
+slide.addText(ctx.isZh ? '布局说明' : 'Layout Description', {
+  x: 6.0, y: 3.95, w: 3.4, h: 0.25,
+  fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
+});
+slide.addText(layoutDescription || (ctx.isZh ? '（未填写布局说明）' : '(No description)'), {
+  x: 6.0, y: 4.2, w: 3.4, h: 0.85,
+  fontSize: 9, fontFace: FONTS.body, color: layoutDescription ? COLORS.dark : COLORS.secondary,
+  valign: 'top',
+});
+```
+
+同时可移除 `isometricUrl` 变量声明（line 686）。
 
