@@ -137,7 +137,7 @@ function addSlideTitle(
     });
     slide.addText(splitSubtitles.right, {
       x: '50%', y: 0.52, w: '50%', h: 0.22,
-      fontSize: 16, fontFace: FONTS.heading, color: COLORS.white, align: 'center', valign: 'middle',
+      fontSize: 16, fontFace: FONTS.body, color: COLORS.white, align: 'center', valign: 'middle',
       bold: false, italic: false,
     });
   } else {
