@@ -1382,7 +1382,7 @@ function computeRelLines(objects: LayoutObject[], productPosition?: { posX: numb
     const start = getCameraEndpoint(obj);
     const parentW = (parent.width ?? 100) / 100;
     const parentH = (parent.height ?? 100) / 100;
-    const parentD = (parent.depth ?? 100) / 100;
+    const parentD = (parent.width ?? 100) / 100;
     const end: [number, number, number] = isRobotArm
       ? getRobotArmFlangePosition(parent)
       : getConnectionEndpoint3D(parent, getMechMountOffset3D(parentMechType, parentW, parentH, parentD));
