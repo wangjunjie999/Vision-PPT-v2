@@ -1,44 +1,41 @@
 
 
-# FOV 输入改为两个独立数值框
+# 替换右键旋转为更兼容的交互方式
 
 ## 问题
+当前 3D 画布（Layout3DPreview + Product3DViewer）使用鼠标右键旋转视角，部分浏览器不支持或会弹出右键菜单导致冲突。
 
-当前 FOV 需要用户输入 `100×80` 这样的格式，中间的 `×` 号不好打，体验差。
+## 方案
 
-## 修改方案
+将右键旋转改为 **鼠标左键默认旋转**，平移改用 **Shift + 左键拖拽**（替代当前的空格键方案用于 Product3DViewer，Layout3DPreview 保留空格键平移）。
 
-### 1. 表单状态新增两个字段（`src/components/forms/module/types.ts`）
+### 具体改动
 
-在 `ModuleFormState` 中添加：
-```
-fieldOfViewWidth: string;   // FOV 宽 (mm)
-fieldOfViewHeight: string;  // FOV 高 (mm)
-```
+**`src/components/canvas/Layout3DPreview.tsx`** — CameraController 组件：
+- `RIGHT: THREE.MOUSE.ROTATE` → 移除右键绑定
+- 改为：左键默认旋转（非拖拽硬件时），空格+左键平移（已有逻辑保留）
+- 当前逻辑：`LEFT: spaceHeld ? PAN : undefined`，`RIGHT: ROTATE`
+- 新逻辑：`LEFT: spaceHeld ? PAN : ROTATE`，`RIGHT: undefined`
+- 这样在编辑模式下：点击硬件=选中/拖拽，点击空白=旋转，空格+拖拽=平移
 
-在 `getDefaultFormState` 中添加默认值 `''`。
+但这会与硬件拖拽冲突——当前左键在非 spaceHeld 时设为 undefined 是为了让硬件拖拽优先。需要调整为：
+- 编辑模式且有选中硬件时：左键由硬件拖拽接管（OrbitControls disabled during drag）
+- 其他情况：左键旋转
 
-### 2. FOV 输入 UI 改为两个框（`src/components/forms/module/ModuleStep3Imaging.tsx`）
+实际上当前 `enabled={!isDragging}` 已经处理了这个问题。只需把 `LEFT: undefined` 改为 `LEFT: THREE.MOUSE.ROTATE` 即可，因为拖拽时 OrbitControls 已被禁用。
 
-将原来的单个 FOV 输入框改为两个并排输入框，中间显示 `×` 文字：
+- 修改 mouseButtons: `{ LEFT: spaceHeld ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: undefined as any }`
 
-```
-[宽度输入] × [高度输入]
-```
+**`src/components/product/Product3DViewer.tsx`** — CameraController 组件：
+- 默认 OrbitControls 就是左键旋转、右键平移，需要改为左键旋转、中键缩放、Shift+左键平移
+- 添加 mouseButtons 配置：`{ LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: undefined }`
+- 添加键盘修饰符：按住 Shift 时切换为平移模式（通过 state + keydown 监听）
+- 更新提示文字：`鼠标拖拽旋转 | 滚轮缩放 | 右键平移` → `鼠标拖拽旋转 | 滚轮缩放 | Shift+拖拽平移`
 
-- 宽度绑定 `fieldOfViewWidth`，高度绑定 `fieldOfViewHeight`
-- 同时自动拼接为 `fieldOfViewCommon`（或 `fieldOfView`）= `"{width}×{height}"`，保持下游逻辑兼容
-- 加载表单时，从已有的 `fieldOfViewCommon` 解析出宽高回填（通过 `parseFOV` 工具函数）
+### 修改文件
 
-### 3. 定位模块 FOV 同步改（`src/components/forms/module/PositioningForm.tsx`）
-
-同样将 `fieldOfView` 输入框改为宽+高两个框，中间显示 `×`。
-
-### 4. PPT 输出不变
-
-PPT 中已经是读取 `fieldOfView` 字符串（含 `×`），因为我们在表单层自动拼接，PPT 输出自然带 `×` 号，无需改动。
-
-### 5. 自动计算兼容
-
-`parseFOV` 函数已经能解析 `100×80` 格式，拼接后的字符串可以被正确解析，自动计算功能不受影响。
+| 文件 | 操作 |
+|------|------|
+| `src/components/canvas/Layout3DPreview.tsx` | 修改 mouseButtons，左键旋转替代右键 |
+| `src/components/product/Product3DViewer.tsx` | 添加 mouseButtons 配置 + Shift 平移 + 更新提示文字 |
 
