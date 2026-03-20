@@ -212,9 +212,11 @@ export interface ReportLayoutData {
   front_view_image_url: string | null;
   side_view_image_url: string | null;
   top_view_image_url: string | null;
+  isometric_view_image_url: string | null;
   front_view_saved: boolean | null;
   side_view_saved: boolean | null;
   top_view_saved: boolean | null;
+  isometric_view_saved: boolean | null;
   primary_view: string | null;
   auxiliary_view: string | null;
   layout_description: string | null;
