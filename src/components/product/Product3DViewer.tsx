@@ -81,6 +81,15 @@ function CameraController({
 }) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
+  const [shiftHeld, setShiftHeld] = useState(false);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Shift') setShiftHeld(true); };
+    const onKeyUp = (e: KeyboardEvent) => { if (e.key === 'Shift') setShiftHeld(false); };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => { window.removeEventListener('keydown', onKeyDown); window.removeEventListener('keyup', onKeyUp); };
+  }, []);
 
   useEffect(() => {
     if (viewPreset && controlsRef.current) {
@@ -104,6 +113,11 @@ function CameraController({
       dampingFactor={0.1}
       minDistance={2}
       maxDistance={20}
+      mouseButtons={{
+        LEFT: shiftHeld ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: undefined as any,
+      }}
     />
   );
 }
@@ -254,7 +268,7 @@ export function Product3DViewer({ modelUrl, imageUrls = [], onReady, fillContain
 
         {/* Controls hint */}
         <div className="absolute bottom-2 right-2 text-[10px] text-muted-foreground bg-background/80 px-2 py-1 rounded">
-          鼠标拖拽旋转 | 滚轮缩放 | 右键平移
+          鼠标拖拽旋转 | 滚轮缩放 | Shift+拖拽平移
         </div>
       </div>
     </div>

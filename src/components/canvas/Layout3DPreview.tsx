@@ -1573,9 +1573,9 @@ function CameraController({
       maxDistance={30}
       enabled={!isDragging}
       mouseButtons={{
-        LEFT: spaceHeld ? THREE.MOUSE.PAN : (undefined as any),
+        LEFT: spaceHeld ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
         MIDDLE: THREE.MOUSE.DOLLY,
-        RIGHT: THREE.MOUSE.ROTATE,
+        RIGHT: undefined as any,
       }}
     />
   );
