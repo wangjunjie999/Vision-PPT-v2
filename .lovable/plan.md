@@ -1,42 +1,25 @@
 
 
-# 打光照片紧跟光学方案幻灯片
+# 修复切换模块时打光照片不更新
 
 ## 问题
 
-当前 `pptxGenerator.ts` 中，光学方案和打光照片分在两个独立循环中生成：
-- 循环 d：所有模块的光学方案
-- 循环 e：所有模块的打光照片
-
-导致打光照片被集中放在所有光学方案之后，而不是每个模块的光学方案紧跟其打光照片。
+`LightingPhotosPanel` 使用 `useState(initialPhotos)` 初始化照片列表。`useState` 的初始值只在组件首次挂载时生效，当切换模块导致 `moduleId` 和 `initialPhotos` 变化时，状态不会更新，导致显示的始终是第一个模块的照片。
 
 ## 方案
 
-**文件：`src/services/pptxGenerator.ts`**
+**文件：`src/components/canvas/LightingPhotosPanel.tsx`**
 
-将两个循环合并为一个：每个模块先生成光学方案幻灯片，紧接着生成该模块的打光照片幻灯片。
+添加 `useEffect` 监听 `moduleId` 变化，当模块切换时重置 `photos` 状态：
 
 ```typescript
-// d. 光学方案 × N + 打光照片 (Each module's optical followed by its lighting photos)
-for (let mi = 0; mi < wsModules.length; mi++) {
-  step++;
-  const modName = wsModules[mi].name;
-  onProgress(..., `光学方案: ${modName}`);
-  await generateModuleOpticalSlide(ctx, slideData, mi);
+import { useState, useCallback, useEffect } from 'react';
 
-  // 紧跟该模块的打光照片
-  const photos = (wsModules[mi] as any).lighting_photos || [];
-  if (photos.length > 0) {
-    step++;
-    onProgress(..., `打光照片: ${modName}`);
-    await generateLightingPhotosSlide(ctx, slideData, mi);
-  }
-}
+// 在 useState 后添加：
+useEffect(() => {
+  setPhotos(initialPhotos || []);
+}, [moduleId]);
 ```
 
-删除原来的独立循环 e。
-
-| 文件 | 操作 |
-|------|------|
-| `src/services/pptxGenerator.ts` | 合并光学方案和打光照片循环，~line 1030-1047 |
+单文件改动，约 3 行代码。
 
