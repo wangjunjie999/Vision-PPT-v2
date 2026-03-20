@@ -2,7 +2,7 @@
  * LightingPhotosPanel - Upload and manage lighting effect photos for a module
  * Max 4 photos with remark support
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { DragDropUpload } from '@/components/upload/DragDropUpload';
 import { Input } from '@/components/ui/input';
