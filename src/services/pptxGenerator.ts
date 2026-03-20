@@ -1027,20 +1027,17 @@ export async function generatePPTX(
     onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '机械布局' : 'Mechanical Layout'}`, `[SLIDE:${ws.name}:c] ${isZh ? '机械布局' : 'Mechanical Layout'}`);
     await generateLayoutAndOpticalSlide(ctx, slideData);
     
-    // d. 光学方案 × N (One page per module)
+    // d. 光学方案 × N + 打光照片 (Each module's optical followed by its lighting photos)
     for (let mi = 0; mi < wsModules.length; mi++) {
       step++;
       const modName = wsModules[mi].name;
       onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '光学方案' : 'Optical'}: ${modName}`, `[SLIDE:${ws.name}:d${mi + 1}] ${isZh ? '光学方案' : 'Optical'}: ${modName}`);
       await generateModuleOpticalSlide(ctx, slideData, mi);
-    }
-    
-    // e. 打光照片 × N
-    for (let mi = 0; mi < wsModules.length; mi++) {
+
+      // 紧跟该模块的打光照片
       const photos = (wsModules[mi] as any).lighting_photos || [];
       if (photos.length > 0) {
         step++;
-        const modName = wsModules[mi].name;
         onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '打光照片' : 'Lighting'}: ${modName}`, `[SLIDE:${ws.name}:e${mi + 1}] ${isZh ? '打光照片' : 'Lighting photos'}: ${modName}`);
         await generateLightingPhotosSlide(ctx, slideData, mi);
       }
