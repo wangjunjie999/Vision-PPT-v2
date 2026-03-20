@@ -1290,34 +1290,43 @@ interface RelLine {
 }
 
 function getRobotArmFlangePosition(parent: LayoutObject): [number, number, number] {
-  const w = (parent.width ?? 80) / 100;
   const h = (parent.height ?? 120) / 100;
-  
+
   const waistH = h * 0.12;
-  const baseTop = h * 0.09 + waistH; // fixed: match model's h*0.09
+  const baseTop = h * 0.09 + waistH;
   const arm1L = h * 0.30;
   const arm2L = h * 0.25;
   const arm3L = h * 0.18;
   const flangeLen = arm3L + h * 0.06;
 
   const theta1 = 0.5;
-  const theta2 = theta1 + (-1.2);
-  const theta3 = theta2 + (-0.6);
+  const theta2 = theta1 - 1.2;
+  const theta3 = theta2 - 0.6;
 
   const elbowX = -arm1L * Math.sin(theta1);
   const elbowY = baseTop + arm1L * Math.cos(theta1);
 
-  const wristX = elbowX + (-arm2L * Math.sin(theta2));
+  const wristX = elbowX - arm2L * Math.sin(theta2);
   const wristY = elbowY + arm2L * Math.cos(theta2);
 
-  const flangeX = wristX + (-flangeLen * Math.sin(theta3));
+  const flangeX = wristX - flangeLen * Math.sin(theta3);
   const flangeY = wristY + flangeLen * Math.cos(theta3);
+
+  const localFlange = new THREE.Vector3(flangeX, flangeY, 0);
+  const rx = ((parent.rotX ?? 0) * Math.PI) / 180;
+  const ry = ((parent.rotY ?? 0) * Math.PI) / 180;
+  const rz = ((parent.rotZ ?? 0) * Math.PI) / 180;
+  const rotatedFlange = localFlange.applyEuler(new THREE.Euler(rx, ry, rz));
 
   const parentX = (parent.posX ?? 0) * SCALE;
   const parentYWorld = (parent.posZ ?? 0) * SCALE;
   const parentZ = (parent.posY ?? 0) * SCALE;
 
-  return [parentX + flangeX, parentYWorld + flangeY, parentZ];
+  return [
+    parentX + rotatedFlange.x,
+    parentYWorld + rotatedFlange.y,
+    parentZ + rotatedFlange.z,
+  ];
 }
 
 // Precise 3D mount offset for mechanism types, matching actual model geometry
