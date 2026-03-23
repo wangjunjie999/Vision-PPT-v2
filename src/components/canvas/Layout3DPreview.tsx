@@ -2367,7 +2367,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
       {/* Toolbar: xray + snap */}
       {onUpdateObject && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
-          <div className="flex bg-slate-800/90 backdrop-blur-sm rounded-lg border border-slate-600/50 overflow-hidden">
+        <div className="flex items-center bg-slate-800/90 backdrop-blur-sm rounded-lg border border-slate-600/50 overflow-hidden">
             <button
               onClick={() => setEditMode(!editMode)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
@@ -2403,13 +2403,12 @@ export const Layout3DPreview = memo(function Layout3DPreview({
               <Magnet className="h-3.5 w-3.5" />
               网格吸附 ({SNAP_GRID}mm)
             </button>
+            <div className="px-2.5 py-1.5 text-[10px] text-slate-400 border-l border-slate-600/50 whitespace-nowrap">
+              {activeSelectedId && editMode
+                ? '←→↑↓ 移动 · Shift+↑↓ 升降 · R旋转 · 拖拽旋转视角 · 空格+拖拽平移'
+                : '拖拽旋转 · 滚轮缩放 · 空格+拖拽平移'}
+            </div>
           </div>
-          <div className="flex items-center px-2.5 py-1 ml-2 text-[10px] text-slate-400 border-l border-slate-600/50 pl-2.5">
-            {activeSelectedId && editMode
-              ? '←→↑↓ 移动 · Shift+↑↓ 升降 · R旋转 · 拖拽旋转视角 · 空格+拖拽平移'
-              : '拖拽旋转 · 滚轮缩放 · 空格+拖拽平移'}
-          </div>
-        </div>
       )}
 
       {/* View presets */}
