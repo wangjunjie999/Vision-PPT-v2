@@ -2366,8 +2366,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
 
       {/* Toolbar: xray + snap */}
       {onUpdateObject && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
-          <div className="flex bg-slate-800/90 backdrop-blur-sm rounded-lg border border-slate-600/50 overflow-hidden">
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 flex items-center bg-slate-800/90 backdrop-blur-sm rounded-lg border border-slate-600/50 overflow-hidden">
             <button
               onClick={() => setEditMode(!editMode)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
@@ -2403,17 +2402,11 @@ export const Layout3DPreview = memo(function Layout3DPreview({
               <Magnet className="h-3.5 w-3.5" />
               网格吸附 ({SNAP_GRID}mm)
             </button>
-          </div>
-          {activeSelectedId && editMode && (
-            <div className="flex items-center px-2.5 py-1 mt-1.5 text-[10px] text-slate-400 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-600/50">
-              ←→↑↓ 移动 · Shift+↑↓ 升降 · R+方向键 旋转 · 空格+左键 平移视角
+            <div className="px-2.5 py-1.5 text-[10px] text-slate-400 border-l border-slate-600/50 whitespace-nowrap">
+              {activeSelectedId && editMode
+                ? '←→↑↓ 移动 · Shift+↑↓ 升降 · R旋转 · 拖拽旋转视角 · 空格+拖拽平移'
+                : '拖拽旋转 · 滚轮缩放 · 空格+拖拽平移'}
             </div>
-          )}
-          {!editMode && (
-            <div className="flex items-center px-2.5 py-1 mt-1.5 text-[10px] text-slate-400 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-600/50">
-              右键旋转 · 滚轮缩放 · 空格+左键 平移视角
-            </div>
-          )}
         </div>
       )}
 
@@ -2493,12 +2486,6 @@ export const Layout3DPreview = memo(function Layout3DPreview({
         </div>
       </div>
 
-      <div className="absolute bottom-3 left-3 text-[10px] text-slate-500 bg-slate-800/60 backdrop-blur-sm rounded px-2 py-1 z-10">
-        {editMode
-          ? '🖱 左键选中/拖拽 · 右键旋转视角 · 滚轮缩放 · 方向键移动 · Shift+↑↓升降'
-          : '🔒 预览模式 · 左键选中 · 右键旋转视角 · 滚轮缩放'
-        }
-      </div>
     </div>
   );
 });
