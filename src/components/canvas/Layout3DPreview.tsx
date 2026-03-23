@@ -2404,16 +2404,11 @@ export const Layout3DPreview = memo(function Layout3DPreview({
               网格吸附 ({SNAP_GRID}mm)
             </button>
           </div>
-          {activeSelectedId && editMode && (
-            <div className="flex items-center px-2.5 py-1 mt-1.5 text-[10px] text-slate-400 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-600/50">
-              ←→↑↓ 移动 · Shift+↑↓ 升降 · R+方向键 旋转 · 空格+左键 平移视角
-            </div>
-          )}
-          {!editMode && (
-            <div className="flex items-center px-2.5 py-1 mt-1.5 text-[10px] text-slate-400 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-600/50">
-              右键旋转 · 滚轮缩放 · 空格+左键 平移视角
-            </div>
-          )}
+          <div className="flex items-center px-2.5 py-1 ml-2 text-[10px] text-slate-400 border-l border-slate-600/50 pl-2.5">
+            {activeSelectedId && editMode
+              ? '←→↑↓ 移动 · Shift+↑↓ 升降 · R旋转 · 拖拽旋转视角 · 空格+拖拽平移'
+              : '拖拽旋转 · 滚轮缩放 · 空格+拖拽平移'}
+          </div>
         </div>
       )}
 
