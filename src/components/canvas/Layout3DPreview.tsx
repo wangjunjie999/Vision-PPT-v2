@@ -2366,8 +2366,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
 
       {/* Toolbar: xray + snap */}
       {onUpdateObject && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
-        <div className="flex items-center bg-slate-800/90 backdrop-blur-sm rounded-lg border border-slate-600/50 overflow-hidden">
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 flex items-center bg-slate-800/90 backdrop-blur-sm rounded-lg border border-slate-600/50 overflow-hidden">
             <button
               onClick={() => setEditMode(!editMode)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
@@ -2408,7 +2407,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 ? '←→↑↓ 移动 · Shift+↑↓ 升降 · R旋转 · 拖拽旋转视角 · 空格+拖拽平移'
                 : '拖拽旋转 · 滚轮缩放 · 空格+拖拽平移'}
             </div>
-          </div>
+        </div>
       )}
 
       {/* View presets */}
