@@ -204,7 +204,7 @@ export function VisionSystemDiagram({
   const interactiveClass = interactive ? "cursor-pointer hover:opacity-80 transition-opacity" : "";
 
   return (
-    <div className={cn("relative w-full h-full min-h-[700px]", className)} style={{ backgroundColor: '#1a1a2e', contain: 'layout style paint', ...(interactive ? { willChange: 'transform' } : {}) }}>
+    <div className={cn("relative w-full h-full min-h-[700px]", className)} style={{ backgroundColor: '#ffffff', contain: 'layout style paint', ...(interactive ? { willChange: 'transform' } : {}) }}>
       <svg 
         viewBox="0 0 800 750"
         className="w-full h-full"
@@ -310,10 +310,10 @@ export function VisionSystemDiagram({
         {/* Background grid - subtle */}
         <g opacity="0.06">
           {Array.from({ length: 13 }).map((_, i) => (
-            <line key={`h${i}`} x1="60" y1={20 + i * 40} x2="490" y2={20 + i * 40} stroke="#ffffff" strokeWidth="0.5" />
+            <line key={`h${i}`} x1="60" y1={20 + i * 40} x2="490" y2={20 + i * 40} stroke="#000000" strokeWidth="0.5" />
           ))}
           {Array.from({ length: 12 }).map((_, i) => (
-            <line key={`v${i}`} x1={60 + i * 40} y1="20" x2={60 + i * 40} y2="510" stroke="#ffffff" strokeWidth="0.5" />
+            <line key={`v${i}`} x1={60 + i * 40} y1="20" x2={60 + i * 40} y2="510" stroke="#000000" strokeWidth="0.5" />
           ))}
         </g>
 
@@ -335,7 +335,7 @@ export function VisionSystemDiagram({
           d={`M ${275 - 15} 190 A 20 20 0 0 1 ${275 + 15} 190`}
           fill="none" stroke="hsl(270, 50%, 60%)" strokeWidth="1.5"
         />
-        <text x="300" y="187" textAnchor="start" fill="#ffffff" style={{ fontSize: '11px', fontWeight: 500 }}>
+        <text x="300" y="187" textAnchor="start" fill="#333333" style={{ fontSize: '11px', fontWeight: 500 }}>
           {fovAngle}°
         </text>
 
@@ -356,20 +356,20 @@ export function VisionSystemDiagram({
           <circle cx="275" cy="435" r="8" fill="none" stroke="hsl(220, 80%, 55%)" strokeWidth="1" opacity="0.5" />
           {/* Leader line */}
           <line x1="283" y1="435" x2="340" y2="435" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
-          <text x="345" y="438" fill="hsl(220, 80%, 70%)" style={{ fontSize: '10px' }}>检测点</text>
+          <text x="345" y="438" fill="hsl(220, 80%, 45%)" style={{ fontSize: '10px' }}>检测点</text>
         </g>
 
         {/* ===== Product - gray rectangle ===== */}
         <g>
-          <rect x="200" y="420" width="150" height="40" rx="3" fill="hsl(0, 0%, 40%)" />
-          <rect x="200" y="420" width="150" height="40" rx="3" fill="none" stroke="hsl(0, 0%, 50%)" strokeWidth="1" />
+          <rect x="200" y="420" width="150" height="40" rx="3" fill="hsl(220, 10%, 85%)" />
+          <rect x="200" y="420" width="150" height="40" rx="3" fill="none" stroke="hsl(220, 10%, 70%)" strokeWidth="1" />
           {/* ROI indicator */}
           <rect 
             x={roiStrategy === 'full' ? 205 : 225} y="424" 
             width={roiStrategy === 'full' ? 140 : 100} height="32" rx="2"
             fill="none" stroke="hsl(120, 70%, 50%)" strokeWidth="1.5" strokeDasharray="4,2" opacity="0.7"
           />
-          <text x="275" y="443" textAnchor="middle" fill="#ffffff" style={{ fontSize: '10px', fontWeight: 500 }}>
+          <text x="275" y="443" textAnchor="middle" fill="#333333" style={{ fontSize: '10px', fontWeight: 500 }}>
             产品
           </text>
         </g>
@@ -388,7 +388,7 @@ export function VisionSystemDiagram({
           />
           {/* Distance label */}
           <text 
-            x="118" y="350" textAnchor="middle" fill="#ffffff"
+            x="118" y="350" textAnchor="middle" fill="#333333"
             style={{ fontSize: '11px', fontWeight: 500 }}
             transform="rotate(-90, 118, 350)"
           >
@@ -405,7 +405,7 @@ export function VisionSystemDiagram({
             stroke="hsl(220, 80%, 55%)" strokeWidth="1.5"
             markerStart="url(#arrowLeft)" markerEnd="url(#arrowRight)"
           />
-          <text x="275" y="492" textAnchor="middle" fill="#ffffff" style={{ fontSize: '10px' }}>
+          <text x="275" y="492" textAnchor="middle" fill="#333333" style={{ fontSize: '10px' }}>
             视野宽度 ~{Math.round(fovOffsetX * 2)}mm
           </text>
         </g>
@@ -615,112 +615,112 @@ export function VisionSystemDiagram({
           <foreignObject x="500" y="20" width="290" height="680">
             <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {/* Camera specs */}
-              <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 28%)' }}>
+              <div style={{ backgroundColor: 'hsl(220, 10%, 96%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 82%)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
                   <span style={{ fontSize: '14px' }}>📷</span>
-                  <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>工业相机</span>
+                  <span style={{ fontWeight: 600, fontSize: '12px', color: '#333333' }}>工业相机</span>
                 </div>
                 {hasCamera ? (
                   <>
-                     <p style={{ fontSize: '11px', color: '#ffffff', margin: 0 }}>{camera.resolution} · 靶面{camera.sensor_size}</p>
-                     <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>{camera.brand} {camera.model} @ {camera.frame_rate}fps</p>
+                     <p style={{ fontSize: '11px', color: '#333333', margin: 0 }}>{camera.resolution} · 靶面{camera.sensor_size}</p>
+                     <p style={{ fontSize: '10px', color: '#666666', margin: 0 }}>{camera.brand} {camera.model} @ {camera.frame_rate}fps</p>
                   </>
                 ) : (
-                  <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>点击左侧相机图标选择</p>
+                  <p style={{ fontSize: '10px', color: '#666666', margin: 0 }}>点击左侧相机图标选择</p>
                 )}
               </div>
 
               {/* Lens specs */}
-              <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 28%)' }}>
+              <div style={{ backgroundColor: 'hsl(220, 10%, 96%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 82%)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
                   <span style={{ fontSize: '14px' }}>🔭</span>
-                  <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>工业镜头</span>
+                  <span style={{ fontWeight: 600, fontSize: '12px', color: '#333333' }}>工业镜头</span>
                 </div>
                 {hasLens ? (
                   <>
-                     <p style={{ fontSize: '11px', color: '#ffffff', margin: 0 }}>焦距 {lens.focal_length} · 光圈 {lens.aperture}</p>
-                     <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>{lens.brand} {lens.model}</p>
+                     <p style={{ fontSize: '11px', color: '#333333', margin: 0 }}>焦距 {lens.focal_length} · 光圈 {lens.aperture}</p>
+                     <p style={{ fontSize: '10px', color: '#666666', margin: 0 }}>{lens.brand} {lens.model}</p>
                   </>
                 ) : (
-                  <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>点击左侧镜头图标选择</p>
+                  <p style={{ fontSize: '10px', color: '#666666', margin: 0 }}>点击左侧镜头图标选择</p>
                 )}
               </div>
 
               {/* Light specs */}
-              <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 28%)' }}>
+              <div style={{ backgroundColor: 'hsl(220, 10%, 96%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 82%)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
                   <span style={{ fontSize: '14px' }}>💡</span>
-                  <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>光源</span>
+                  <span style={{ fontWeight: 600, fontSize: '12px', color: '#333333' }}>光源</span>
                 </div>
                 {hasLight ? (
                   <>
-                     <p style={{ fontSize: '11px', color: '#ffffff', margin: 0 }}>{light.color}{light.type} · {light.power}</p>
-                     <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>{light.brand} {light.model}</p>
-                     <p style={{ fontSize: '10px', color: '#ffffff', margin: '2px 0 0 0' }}>光源距离产品：{lightDistance}±20mm</p>
+                     <p style={{ fontSize: '11px', color: '#333333', margin: 0 }}>{light.color}{light.type} · {light.power}</p>
+                     <p style={{ fontSize: '10px', color: '#666666', margin: 0 }}>{light.brand} {light.model}</p>
+                     <p style={{ fontSize: '10px', color: '#666666', margin: '2px 0 0 0' }}>光源距离产品：{lightDistance}±20mm</p>
                   </>
                 ) : (
-                  <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>点击左侧光源图标选择</p>
+                  <p style={{ fontSize: '10px', color: '#666666', margin: 0 }}>点击左侧光源图标选择</p>
                 )}
               </div>
 
               {/* FOV info - editable */}
-              <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 28%)' }}>
+              <div style={{ backgroundColor: 'hsl(220, 10%, 96%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 82%)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
                   <span style={{ fontSize: '14px' }}>📐</span>
-                  <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>视野参数</span>
+                  <span style={{ fontWeight: 600, fontSize: '12px', color: '#333333' }}>视野参数</span>
                   {(onFovAngleChange || onLightDistanceChange) && (
-                    <span style={{ fontSize: '9px', color: '#ffffff', marginLeft: 'auto' }}>可编辑</span>
+                    <span style={{ fontSize: '9px', color: '#666666', marginLeft: 'auto' }}>可编辑</span>
                   )}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '10px', color: '#ffffff', width: '56px' }}>视角:</span>
+                    <span style={{ fontSize: '10px', color: '#333333', width: '56px' }}>视角:</span>
                     {onFovAngleChange ? (
                       <input
                         type="number"
                         value={fovAngle}
                         onChange={(e) => onFovAngleChange(parseFloat(e.target.value) || 45)}
-                        style={{ width: '56px', height: '24px', fontSize: '11px', padding: '0 6px', borderRadius: '4px', border: '1px solid hsl(220, 15%, 35%)', backgroundColor: 'hsl(220, 15%, 22%)', color: '#fff', outline: 'none' }}
+                        style={{ width: '56px', height: '24px', fontSize: '11px', padding: '0 6px', borderRadius: '4px', border: '1px solid hsl(220, 15%, 78%)', backgroundColor: 'hsl(220, 10%, 98%)', color: '#333', outline: 'none' }}
                         min="10"
                         max="120"
                       />
                     ) : (
-                      <span style={{ fontSize: '11px', color: '#ffffff' }}>{fovAngle}</span>
+                      <span style={{ fontSize: '11px', color: '#333333' }}>{fovAngle}</span>
                     )}
-                    <span style={{ fontSize: '10px', color: '#ffffff' }}>°</span>
+                    <span style={{ fontSize: '10px', color: '#333333' }}>°</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '10px', color: '#ffffff', width: '56px' }}>工作距离:</span>
+                    <span style={{ fontSize: '10px', color: '#333333', width: '56px' }}>工作距离:</span>
                     {onLightDistanceChange ? (
                       <input
                         type="number"
                         value={lightDistance}
                         onChange={(e) => onLightDistanceChange(parseFloat(e.target.value) || 335)}
-                        style={{ width: '56px', height: '24px', fontSize: '11px', padding: '0 6px', borderRadius: '4px', border: '1px solid hsl(220, 15%, 35%)', backgroundColor: 'hsl(220, 15%, 22%)', color: '#fff', outline: 'none' }}
+                        style={{ width: '56px', height: '24px', fontSize: '11px', padding: '0 6px', borderRadius: '4px', border: '1px solid hsl(220, 15%, 78%)', backgroundColor: 'hsl(220, 10%, 98%)', color: '#333', outline: 'none' }}
                         min="50"
                         max="1000"
                       />
                     ) : (
-                      <span style={{ fontSize: '11px', color: '#ffffff' }}>{lightDistance}</span>
+                      <span style={{ fontSize: '11px', color: '#333333' }}>{lightDistance}</span>
                     )}
-                    <span style={{ fontSize: '10px', color: '#ffffff' }}>mm</span>
+                    <span style={{ fontSize: '10px', color: '#333333' }}>mm</span>
                   </div>
-                  <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>视野宽度约 {Math.round(fovOffsetX * 2)}mm</p>
+                  <p style={{ fontSize: '10px', color: '#666666', margin: 0 }}>视野宽度约 {Math.round(fovOffsetX * 2)}mm</p>
                 </div>
               </div>
 
               {/* Controller specs */}
               {hasController && (
-                <div style={{ backgroundColor: 'hsl(220, 15%, 18%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 28%)' }}>
+                <div style={{ backgroundColor: 'hsl(220, 10%, 96%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 82%)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
                     <span style={{ fontSize: '14px' }}>🖥️</span>
-                     <span style={{ fontWeight: 600, fontSize: '12px', color: '#ffffff' }}>工控机</span>
+                     <span style={{ fontWeight: 600, fontSize: '12px', color: '#333333' }}>工控机</span>
                    </div>
-                   <p style={{ fontSize: '11px', color: '#ffffff', margin: 0 }}>{controller.cpu}</p>
-                   <p style={{ fontSize: '11px', color: '#ffffff', margin: 0 }}>{controller.memory} · {controller.storage}</p>
-                   <p style={{ fontSize: '10px', color: '#ffffff', margin: 0 }}>{controller.brand} {controller.model}</p>
+                   <p style={{ fontSize: '11px', color: '#333333', margin: 0 }}>{controller.cpu}</p>
+                   <p style={{ fontSize: '11px', color: '#333333', margin: 0 }}>{controller.memory} · {controller.storage}</p>
+                   <p style={{ fontSize: '10px', color: '#666666', margin: 0 }}>{controller.brand} {controller.model}</p>
                   {controller.gpu && (
-                    <p style={{ fontSize: '10px', color: '#ffffff', margin: '2px 0 0 0' }}>GPU: {controller.gpu}</p>
+                    <p style={{ fontSize: '10px', color: '#666666', margin: '2px 0 0 0' }}>GPU: {controller.gpu}</p>
                   )}
                 </div>
               )}
@@ -734,10 +734,10 @@ export function VisionSystemDiagram({
               const cardW = 274;
               const cardH = 52;
               const cardGap = 6;
-              const cardBg = 'hsl(220, 15%, 18%)';
-              const cardBorder = 'hsl(220, 15%, 28%)';
-              const textColor = '#ffffff';
-              const textSecondary = 'hsl(220, 20%, 75%)';
+              const cardBg = 'hsl(220, 10%, 96%)';
+              const cardBorder = 'hsl(220, 15%, 82%)';
+              const textColor = '#333333';
+              const textSecondary = '#666666';
               let yOffset = 28;
 
               const cards: React.ReactNode[] = [];
