@@ -1,69 +1,35 @@
 
 
-# 重构机械臂模型 — 高保真 KUKA 风格 1:1 复刻
+# 修复等轴测截图 + 移除画布 GLB 导出按钮
 
-## 问题分析
+## 问题
 
-当前模型过于简化：臂段是简单的 Box/Cylinder，关节只是圆盘叠加，缺少 KUKA 特有的：
-- **肩部包裹式外壳**（J1/J2 轴区域的大型弧面外壳）
-- **大臂的弧形截面轮廓**（KUKA 标志性的弧形臂体，非方形）
-- **小臂渐缩锥形设计**
-- **紧凑的三轴腕部结构**（J4/J5/J6 紧凑排列）
-- **底座的分段设计**（下部宽法兰 + 上部锥形塔）
+1. **等轴测截图不正确**：点击"保存"后，切换到 isometric 视图等待 600ms 后截图，但新的高保真机械臂模型渲染时间更长（可能需要 1-2 秒），导致截图时模型尚未完全加载
+2. **GLB 导出按钮位置不对**：画布底部的"下载 GLB / 上传到存储"按钮应该移除，GLB 上传功能已在对象属性面板（`ObjectPropertyPanel`）中通过 `GLBUploadField` 提供
 
-## 改进方案
+## 修改
 
-### 几何重构要点
+### 1. `src/components/canvas/DraggableLayoutCanvas.tsx` — 增加等轴测截图等待时间
 
-**底座 (J1)**：
-- 底部宽法兰盘（带螺栓孔环）
-- 上部锥形圆柱塔，顶部有转台环
-- 增加底座高度比例至 h * 0.22
+- 将 fitAll 后的等待时间从 600ms 增加到 1500ms，确保 3D 模型完全渲染
+- 增加一个额外的渲染帧等待：在截图前执行两次 `requestAnimationFrame` 等效延迟
+- 移除 `RobotArmGLBExporter` 相关 import（如果仅在 Layout3DPreview 中使用）
 
-**肩部外壳 (J2)**：
-- 用多个重叠的 Box + Cylinder 构建包裹式肩壳
-- 两侧凸出的电机罩（更大、更突出）
-- 肩壳与大臂之间有明显的过渡段
+### 2. `src/components/canvas/Layout3DPreview.tsx` — 移除画布中的 GLB 导出按钮
 
-**大臂 (Link 2)**：
-- 主体改用 **圆角矩形截面**（用 Box 主体 + 侧边圆柱模拟）
-- 增加臂体宽度，添加顶部/底部加强筋
-- 臂体表面添加 KUKA 标志性的中线凸起
-- 比例：arm1L = h * 0.32
+- 删除 `import RobotArmGLBExporter` (第 6 行)
+- 删除第 2535-2545 行的 robot arm GLB export 区块（条件渲染 `RobotArmGLBExporter` 的部分）
+- 移除未使用的 `Download` 图标导入
 
-**小臂 (Link 3)**：
-- 锥形圆柱 + 两侧加强板
-- 比大臂更细，明显渐缩
-- 比例：arm2L = h * 0.28
+### 3. 不变的部分
 
-**腕部 (J4/J5/J6)**：
-- 三个紧密排列的旋转关节
-- J4：沿小臂轴向旋转的圆柱
-- J5：俯仰关节（短粗圆柱）
-- J6：末端旋转关节 + 法兰
-- 整体更紧凑，总长 h * 0.12
+- `ObjectPropertyPanel` 中的 `GLBUploadField` 组件保持不变（用户通过点击机构详情面板上传 GLB）
+- `RobotArmGLBExporter.tsx` 文件保留，以备将来其他地方引用
 
-**细节**：
-- 线缆从肩部顶部引出，沿大臂后侧走线至肘部
-- 每个关节处添加密封环（薄圆环）
-- 底座螺栓改为更精细的六角螺栓
-- KUKA 标志位置预留（大臂侧面的浅色矩形标签区）
-
-### 默认姿态
-
-参考图中的典型展示姿态：
-- J2（肩）：大臂向上约 60°（约 1.05 rad）
-- J3（肘）：小臂向前水平偏下（约 -1.8 rad 相对大臂）
-- J5（腕俯仰）：法兰朝下（约 -0.5 rad）
-
-## 修改文件
+## 涉及文件
 
 | 文件 | 操作 |
 |------|------|
-| `src/components/canvas/Layout3DPreview.tsx` L237-488 | 重写 `RobotArmModel`，增加肩壳、弧形臂体、三轴腕部等细节 |
-| `src/components/canvas/Layout3DPreview.tsx` L284-330 | 同步重写 xray 模式 |
-| `src/components/canvas/RobotArmGLBExporter.tsx` L31-206 | 同步更新 `RobotArmGeometry` |
-
-## 不变的部分
-- 颜色体系、材质函数、导出逻辑、尺寸参数化机制均不变
+| `src/components/canvas/Layout3DPreview.tsx` | 移除 RobotArmGLBExporter 导入和渲染 |
+| `src/components/canvas/DraggableLayoutCanvas.tsx` | 增加等轴测截图等待时间 |
 
