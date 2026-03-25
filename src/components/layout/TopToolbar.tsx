@@ -117,9 +117,9 @@ export function TopToolbar({ onAdminClick, showBackButton, isMobile, onOpenLeftD
         "border-b border-border bg-card flex items-center justify-between gap-2 shrink-0 relative overflow-hidden shadow-sm",
         isMobile ? "h-14 px-3" : "h-16 px-5 gap-4"
       )}>
-        {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/[0.02] via-transparent to-accent/[0.02] pointer-events-none" />
-        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+        {/* Cartography precision gradient */}
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/[0.02] via-transparent to-accent/[0.01] pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-accent/40 to-transparent" />
         
         <div className="flex items-center gap-2 md:gap-4 relative z-10">
           {showBackButton ? (
@@ -154,8 +154,8 @@ export function TopToolbar({ onAdminClick, showBackButton, isMobile, onOpenLeftD
                   <span className={cn("font-bold text-foreground tracking-tight leading-tight", isMobile ? "text-base" : "text-lg")}>
                     视觉方案配置系统
                   </span>
-                  <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider hidden md:block">
-                    DXY Intelligent Solution
+                  <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-[0.15em] hidden md:block font-mono">
+                    DXY SYSTEMATIC · V2.0
                   </span>
                 </div>
               </button>
