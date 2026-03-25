@@ -181,26 +181,6 @@ export function TopToolbar({ onAdminClick, showBackButton, isMobile, onOpenLeftD
         </div>
         
         <div className="flex items-center gap-2 md:gap-3 relative z-10">
-          {/* Search - Hidden on mobile, compact on tablet */}
-          {!showBackButton && !isMobile && (
-            <div className="relative hidden sm:block w-64">
-              <Search className={cn(
-                "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-200",
-                searchFocused ? "text-primary" : "text-muted-foreground"
-              )} />
-              <Input
-                placeholder="搜索项目..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-                className={cn(
-                  "pl-9 h-9 bg-secondary/50 border-secondary hover:border-primary/30 focus:border-primary transition-colors duration-200",
-                  searchFocused && "bg-card shadow-sm"
-                )}
-              />
-            </div>
-          )}
           
           {/* Guide Steps Indicator - Hidden on mobile */}
           {!showBackButton && !isMobile && isGuideActive && (
