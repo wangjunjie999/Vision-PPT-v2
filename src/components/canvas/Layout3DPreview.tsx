@@ -2459,6 +2459,17 @@ export const Layout3DPreview = memo(function Layout3DPreview({
             </Button>
           </>
         )}
+        {/* Robot arm GLB export */}
+        {objects.some(o => o.mechType === 'robot_arm') && (
+          <>
+            <div className="h-px bg-slate-600/50 my-0.5" />
+            <RobotArmGLBExporter
+              w={objects.find(o => o.mechType === 'robot_arm')?.w ?? 200}
+              h={objects.find(o => o.mechType === 'robot_arm')?.h ?? 600}
+              d={objects.find(o => o.mechType === 'robot_arm')?.d ?? 200}
+            />
+          </>
+        )}
       </div>
 
       {/* Legend */}
