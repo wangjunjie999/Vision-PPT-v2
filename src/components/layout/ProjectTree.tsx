@@ -498,12 +498,12 @@ export function ProjectTree() {
 
   return (
     <>
-      {/* Header */}
-      <div className="panel-header flex items-center justify-between bg-gradient-to-r from-panel-header to-card">
+      {/* Header — Cartography style */}
+      <div className="panel-header flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FolderOpen className="h-4 w-4 text-primary" />
-          <span className="font-heading font-semibold tracking-wide">项目列表</span>
-          <span className="text-xs text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
+          <FolderOpen className="h-3.5 w-3.5 text-accent" />
+          <span className="font-mono text-[10px] font-bold tracking-[0.15em]">项目列表</span>
+          <span className="text-[10px] text-accent font-mono bg-accent/10 px-1.5 py-0.5 rounded border border-accent/20">
             {projects.length}
           </span>
         </div>
@@ -515,7 +515,7 @@ export function ProjectTree() {
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-7 w-7 hover:bg-primary/10 hover:text-primary active:animate-click-shake"
+              className="h-7 w-7 hover:bg-accent/10 hover:text-accent active:animate-click-shake"
               onClick={() => setShowNewProject(true)}
             >
               <Plus className="h-4 w-4" />
@@ -711,7 +711,7 @@ export function ProjectTree() {
                   
                   {/* Workstations - with connecting line */}
                   {isExpanded && (
-                    <div className="relative ml-4 pl-2 border-l-2 border-border/50">
+                    <div className="relative ml-4 pl-2 border-l border-accent/20">
                       {displayWorkstations.map((ws, wsIndex) => {
                         const wsModules = getWorkstationModules(ws.id);
                         // Filter modules if searching
@@ -792,7 +792,7 @@ export function ProjectTree() {
                             
                             {/* Modules */}
                             {wsExpanded && displayModules.length > 0 && (
-                              <div className="relative ml-4 pl-2 border-l-2 border-border/30">
+                              <div className="relative ml-4 pl-2 border-l border-accent/15">
                                 {displayModules.map((mod, modIndex) => {
                                   const modSelected = selectedModuleId === mod.id;
                                   const modStatus = getModuleStatus(mod.id);
@@ -850,7 +850,7 @@ export function ProjectTree() {
 
                             {/* Add module guide tip - show when workstation expanded and no modules */}
                             {(wsExpanded || (isGuideActive && currentStep === 'module')) && displayModules.length === 0 && (
-                              <div className="relative ml-4 pl-2 border-l-2 border-border/30">
+                              <div className="relative ml-4 pl-2 border-l border-accent/15">
                                 <GuideHighlight
                                   active={isGuideActive && currentStep === 'module'}
                                   pulseColor="accent"
@@ -931,11 +931,12 @@ export function ProjectTree() {
         )}
       </div>
 
-      {/* Footer Stats */}
-      <div className="px-3 py-2 border-t border-border bg-panel-header/50 text-xs text-muted-foreground">
+      {/* Footer Stats — Cartography data readout */}
+      <div className="px-3 py-2 border-t border-border bg-panel-header/50 font-mono text-[10px] text-muted-foreground tracking-wider">
         <div className="flex items-center justify-between">
-          <span>工位: {workstations.length}</span>
-          <span>模块: {modules.length}</span>
+          <span>STA: {workstations.length}</span>
+          <span className="text-accent/60">·</span>
+          <span>MOD: {modules.length}</span>
         </div>
       </div>
 
