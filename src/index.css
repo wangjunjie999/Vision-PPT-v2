@@ -5,149 +5,153 @@
 /* Guide System Colors */
 :root {
   --guide-primary: 25 95% 53%;      /* Vibrant orange #FF6B35 */
-  --guide-secondary: 187 100% 50%;  /* Cyan #00D9FF */
+  --guide-secondary: 187 82% 37%;   /* Precision Cyan #0891B2 */
   --guide-success: 142 76% 36%;     /* Green #22C55E */
-  --guide-accent: 187 100% 50%;     /* Cyan accent */
+  --guide-accent: 187 82% 37%;      /* Precision Cyan */
 }
 
 .dark {
   --guide-primary: 25 95% 53%;
-  --guide-secondary: 187 100% 50%;
+  --guide-secondary: 187 82% 45%;
   --guide-success: 142 76% 36%;
-  --guide-accent: 187 100% 50%;
+  --guide-accent: 187 82% 45%;
 }
 
 @layer base {
   :root {
-    /* Modern Industrial Palette - Deep Slate & Electric Blue */
-    --background: 220 20% 97%;
-    --foreground: 220 30% 12%;
+    /* Systematic Cartography — Clinical Precision Palette */
+    --background: 220 15% 98%;
+    --foreground: 230 25% 14%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 30% 12%;
+    --card-foreground: 230 25% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 30% 12%;
+    --popover-foreground: 230 25% 14%;
 
-    /* Electric Blue Primary - More vibrant */
-    --primary: 215 85% 50%;
+    /* Navy-Blue Primary — Cartographic precision */
+    --primary: 220 75% 48%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 215 90% 60%;
+    --primary-glow: 220 80% 58%;
 
-    /* Cool Gray Secondary */
-    --secondary: 220 15% 92%;
-    --secondary-foreground: 220 25% 25%;
+    /* Slate Secondary */
+    --secondary: 215 15% 93%;
+    --secondary-foreground: 215 25% 25%;
 
-    --muted: 220 12% 85%;
-    --muted-foreground: 220 15% 45%;
+    --muted: 215 12% 86%;
+    --muted-foreground: 215 15% 46%;
 
-    /* Vibrant Teal Accent */
-    --accent: 175 70% 42%;
+    /* Precision Cyan Accent — #0891B2 */
+    --accent: 187 82% 37%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 75% 55%;
+    --destructive: 0 72% 52%;
     --destructive-foreground: 0 0% 100%;
 
     --success: 155 65% 42%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 95% 50%;
+    --warning: 38 92% 50%;
     --warning-foreground: 38 100% 12%;
 
-    --border: 220 18% 85%;
-    --input: 220 15% 88%;
-    --ring: 215 85% 50%;
+    --border: 215 18% 86%;
+    --input: 215 15% 89%;
+    --ring: 220 75% 48%;
 
     --radius: 0.5rem;
 
-    /* Enhanced custom tokens */
-    --panel-bg: 220 15% 99%;
-    --panel-header: 220 18% 96%;
-    --panel-border: 220 18% 88%;
-    --tree-hover: 220 25% 95%;
-    --tree-selected: 215 50% 94%;
-    --canvas-bg: 225 30% 10%;
-    --canvas-grid: 225 25% 15%;
+    /* Enhanced custom tokens — Cartography */
+    --panel-bg: 215 15% 99%;
+    --panel-header: 215 18% 96%;
+    --panel-border: 215 18% 88%;
+    --tree-hover: 215 20% 95%;
+    --tree-selected: 220 45% 94%;
+    --canvas-bg: 230 28% 10%;
+    --canvas-grid: 230 22% 15%;
     --toolbar-bg: 0 0% 100%;
-    --status-incomplete: 38 95% 50%;
+    --status-incomplete: 38 92% 50%;
     --status-complete: 155 65% 42%;
-    --status-draft: 220 15% 60%;
+    --status-draft: 215 15% 60%;
 
-    --sidebar-background: 225 28% 12%;
-    --sidebar-foreground: 220 12% 94%;
-    --sidebar-primary: 215 85% 55%;
+    --sidebar-background: 230 28% 11%;
+    --sidebar-foreground: 215 12% 94%;
+    --sidebar-primary: 220 75% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 175 70% 48%;
+    --sidebar-accent: 187 82% 42%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 225 25% 20%;
-    --sidebar-ring: 215 85% 55%;
+    --sidebar-border: 230 25% 18%;
+    --sidebar-ring: 220 75% 55%;
 
-    /* Enhanced slot tokens */
-    --slot-empty: 220 15% 97%;
-    --slot-empty-border: 220 15% 82%;
-    --slot-filled: 215 40% 95%;
-    --slot-filled-border: 215 70% 55%;
-    --slot-hover: 215 30% 93%;
+    /* Slot tokens */
+    --slot-empty: 215 15% 97%;
+    --slot-empty-border: 215 15% 82%;
+    --slot-filled: 220 40% 95%;
+    --slot-filled-border: 220 70% 52%;
+    --slot-hover: 220 30% 93%;
 
-    /* Rich gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(215 85% 50%), hsl(215 90% 60%));
-    --gradient-steel: linear-gradient(180deg, hsl(220 15% 97%), hsl(220 18% 92%));
-    --gradient-dark: linear-gradient(180deg, hsl(225 28% 12%), hsl(225 30% 6%));
-    --gradient-header: linear-gradient(90deg, hsl(225 25% 14%), hsl(225 28% 10%));
-    --gradient-glow: radial-gradient(ellipse at center, hsl(215 85% 50% / 0.15), transparent 70%);
-    --gradient-accent: linear-gradient(135deg, hsl(175 70% 42%), hsl(175 75% 50%));
+    /* Rich gradients — Cartography */
+    --gradient-primary: linear-gradient(135deg, hsl(220 75% 48%), hsl(220 80% 58%));
+    --gradient-steel: linear-gradient(180deg, hsl(215 15% 97%), hsl(215 18% 92%));
+    --gradient-dark: linear-gradient(180deg, hsl(230 28% 11%), hsl(230 30% 5%));
+    --gradient-header: linear-gradient(90deg, hsl(230 25% 12%), hsl(230 28% 8%));
+    --gradient-glow: radial-gradient(ellipse at center, hsl(187 82% 37% / 0.12), transparent 70%);
+    --gradient-accent: linear-gradient(135deg, hsl(187 82% 37%), hsl(187 85% 45%));
 
-    /* Typography */
+    /* Typography — Clinical precision */
     --font-sans: 'Noto Sans SC', 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
     --font-heading: 'Inter', 'DIN Alternate', ui-sans-serif, system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', 'Roboto Mono', ui-monospace, monospace;
+    --font-display: 'Jura', 'Inter', ui-sans-serif, system-ui, sans-serif;
 
-    --chart-1: 215 85% 50%;
-    --chart-2: 175 70% 42%;
+    --chart-1: 220 75% 48%;
+    --chart-2: 187 82% 37%;
     --chart-3: 155 65% 42%;
-    --chart-4: 38 95% 50%;
-    --chart-5: 0 75% 55%;
-    --sidebar: 225 28% 12%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 72% 52%;
+    --sidebar: 230 28% 11%;
 
-    /* Enhanced shadows with glow effects */
-    --shadow-2xs: 0 1px 2px 0 hsl(225 30% 10% / 0.03);
-    --shadow-xs: 0 1px 3px 0 hsl(225 30% 10% / 0.05);
-    --shadow-sm: 0 2px 6px -1px hsl(225 30% 10% / 0.08), 0 1px 3px -1px hsl(225 30% 10% / 0.04);
-    --shadow: 0 4px 12px -2px hsl(225 30% 10% / 0.10), 0 2px 6px -1px hsl(225 30% 10% / 0.05);
-    --shadow-md: 0 8px 20px -4px hsl(225 30% 10% / 0.12), 0 4px 10px -2px hsl(225 30% 10% / 0.06);
-    --shadow-lg: 0 16px 32px -6px hsl(225 30% 10% / 0.14), 0 8px 16px -4px hsl(225 30% 10% / 0.07);
-    --shadow-xl: 0 24px 48px -8px hsl(225 30% 10% / 0.18), 0 12px 24px -6px hsl(225 30% 10% / 0.09);
-    --shadow-2xl: 0 32px 64px -12px hsl(225 30% 10% / 0.22);
-    --shadow-glow: 0 0 24px hsl(215 85% 50% / 0.3);
-    --shadow-glow-accent: 0 0 24px hsl(175 70% 42% / 0.3);
-    --shadow-inset: inset 0 2px 4px 0 hsl(225 30% 10% / 0.06);
+    /* Shadows with cartography blue tint */
+    --shadow-2xs: 0 1px 2px 0 hsl(230 30% 10% / 0.03);
+    --shadow-xs: 0 1px 3px 0 hsl(230 30% 10% / 0.05);
+    --shadow-sm: 0 2px 6px -1px hsl(230 30% 10% / 0.08), 0 1px 3px -1px hsl(230 30% 10% / 0.04);
+    --shadow: 0 4px 12px -2px hsl(230 30% 10% / 0.10), 0 2px 6px -1px hsl(230 30% 10% / 0.05);
+    --shadow-md: 0 8px 20px -4px hsl(230 30% 10% / 0.12), 0 4px 10px -2px hsl(230 30% 10% / 0.06);
+    --shadow-lg: 0 16px 32px -6px hsl(230 30% 10% / 0.14), 0 8px 16px -4px hsl(230 30% 10% / 0.07);
+    --shadow-xl: 0 24px 48px -8px hsl(230 30% 10% / 0.18), 0 12px 24px -6px hsl(230 30% 10% / 0.09);
+    --shadow-2xl: 0 32px 64px -12px hsl(230 30% 10% / 0.22);
+    --shadow-glow: 0 0 24px hsl(187 82% 37% / 0.25);
+    --shadow-glow-accent: 0 0 24px hsl(187 82% 37% / 0.3);
+    --shadow-inset: inset 0 2px 4px 0 hsl(230 30% 10% / 0.06);
     
     --tracking-normal: 0.01em;
     --spacing: 0.25rem;
   }
 
   .dark {
-    --background: 230 25% 6%;
-    --foreground: 220 12% 94%;
+    /* Systematic Cartography Dark — Deep Navy #1A1A2E foundation */
+    --background: 235 25% 9%;
+    --foreground: 215 12% 94%;
 
-    --card: 230 22% 12%;
-    --card-foreground: 220 12% 94%;
+    --card: 235 22% 13%;
+    --card-foreground: 215 12% 94%;
 
-    --popover: 230 24% 12%;
-    --popover-foreground: 220 12% 94%;
+    --popover: 235 24% 13%;
+    --popover-foreground: 215 12% 94%;
 
-    --primary: 215 90% 58%;
-    --primary-foreground: 230 25% 6%;
-    --primary-glow: 215 95% 68%;
+    /* Bright Navy Primary */
+    --primary: 220 85% 60%;
+    --primary-foreground: 235 25% 6%;
+    --primary-glow: 220 90% 68%;
 
-    --secondary: 230 20% 16%;
-    --secondary-foreground: 220 12% 88%;
+    --secondary: 235 20% 17%;
+    --secondary-foreground: 215 12% 88%;
 
-    --muted: 230 18% 20%;
-    --muted-foreground: 220 12% 55%;
+    --muted: 235 18% 21%;
+    --muted-foreground: 215 12% 55%;
 
-    --accent: 175 65% 50%;
-    --accent-foreground: 230 25% 6%;
+    /* Precision Cyan Accent — brighter for dark mode */
+    --accent: 187 78% 48%;
+    --accent-foreground: 235 25% 6%;
 
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
@@ -158,40 +162,40 @@
     --warning: 38 90% 55%;
     --warning-foreground: 38 100% 8%;
 
-    --border: 230 20% 20%;
-    --input: 230 20% 20%;
-    --ring: 215 90% 58%;
+    --border: 235 20% 20%;
+    --input: 235 20% 20%;
+    --ring: 220 85% 60%;
 
-    --panel-bg: 230 22% 8%;
-    --panel-header: 230 22% 12%;
-    --panel-border: 230 20% 16%;
-    --tree-hover: 230 22% 14%;
-    --tree-selected: 215 45% 16%;
-    --canvas-bg: 230 30% 4%;
-    --canvas-grid: 230 24% 10%;
-    --toolbar-bg: 230 22% 12%;
+    --panel-bg: 235 22% 10%;
+    --panel-header: 235 22% 13%;
+    --panel-border: 235 20% 18%;
+    --tree-hover: 235 22% 15%;
+    --tree-selected: 220 40% 17%;
+    --canvas-bg: 235 30% 5%;
+    --canvas-grid: 235 24% 10%;
+    --toolbar-bg: 235 22% 13%;
 
-    --sidebar-background: 230 25% 6%;
-    --sidebar-foreground: 220 12% 94%;
-    --sidebar-primary: 215 90% 58%;
-    --sidebar-primary-foreground: 230 25% 6%;
-    --sidebar-accent: 175 65% 50%;
-    --sidebar-accent-foreground: 230 25% 6%;
-    --sidebar-border: 230 20% 15%;
-    --sidebar-ring: 215 90% 58%;
+    --sidebar-background: 235 25% 7%;
+    --sidebar-foreground: 215 12% 94%;
+    --sidebar-primary: 220 85% 60%;
+    --sidebar-primary-foreground: 235 25% 6%;
+    --sidebar-accent: 187 78% 48%;
+    --sidebar-accent-foreground: 235 25% 6%;
+    --sidebar-border: 235 20% 16%;
+    --sidebar-ring: 220 85% 60%;
 
-    --slot-empty: 230 22% 12%;
-    --slot-empty-border: 230 20% 22%;
-    --slot-filled: 215 40% 14%;
-    --slot-filled-border: 215 80% 55%;
-    --slot-hover: 215 35% 16%;
+    --slot-empty: 235 22% 13%;
+    --slot-empty-border: 235 20% 22%;
+    --slot-filled: 220 38% 15%;
+    --slot-filled-border: 220 80% 55%;
+    --slot-hover: 220 35% 17%;
 
-    --chart-1: 215 90% 58%;
-    --chart-2: 175 65% 50%;
+    --chart-1: 220 85% 60%;
+    --chart-2: 187 78% 48%;
     --chart-3: 155 60% 48%;
     --chart-4: 38 90% 55%;
     --chart-5: 0 70% 55%;
-    --sidebar: 230 22% 10%;
+    --sidebar: 235 22% 10%;
 
     --shadow-2xs: 0 1px 2px 0 hsl(0 0% 0% / 0.25);
     --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.30);
@@ -201,8 +205,8 @@
     --shadow-lg: 0 16px 32px -6px hsl(0 0% 0% / 0.50), 0 8px 16px -4px hsl(0 0% 0% / 0.40);
     --shadow-xl: 0 24px 48px -8px hsl(0 0% 0% / 0.55), 0 12px 24px -6px hsl(0 0% 0% / 0.45);
     --shadow-2xl: 0 32px 64px -12px hsl(0 0% 0% / 0.65);
-    --shadow-glow: 0 0 28px hsl(215 90% 58% / 0.4);
-    --shadow-glow-accent: 0 0 28px hsl(175 65% 50% / 0.4);
+    --shadow-glow: 0 0 28px hsl(187 78% 48% / 0.35);
+    --shadow-glow-accent: 0 0 28px hsl(187 78% 48% / 0.4);
   }
 }
 
