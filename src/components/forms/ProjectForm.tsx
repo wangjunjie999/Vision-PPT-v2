@@ -226,7 +226,7 @@ const [formData, setFormData] = useState({
         {/* Required Fields */}
         <div className="form-section">
           <h3 className="form-section-title">
-            <span className="w-1 h-4 bg-destructive rounded-full" />
+            <span className="w-1 h-4 bg-accent rounded-full" />
             必填信息
           </h3>
           

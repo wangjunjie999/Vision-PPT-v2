@@ -233,18 +233,28 @@
 }
 
 @layer components {
-  /* Industrial Panel Styles */
+  /* Systematic Cartography — Panel Styles */
   .panel {
     @apply bg-card border border-border rounded-md shadow-sm;
     border-color: hsl(var(--panel-border));
   }
 
   .panel-header {
-    @apply px-4 py-2.5 border-b font-semibold text-sm tracking-wide uppercase;
+    @apply px-4 py-2.5 border-b font-semibold text-xs tracking-[0.12em] uppercase;
     background: hsl(var(--panel-header));
     border-color: hsl(var(--panel-border));
     font-family: var(--font-heading);
-    letter-spacing: 0.05em;
+    position: relative;
+  }
+
+  .panel-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(var(--accent) / 0.3), transparent);
   }
 
   .panel-divider {
@@ -252,7 +262,7 @@
     border-color: hsl(var(--panel-border));
   }
 
-  /* Tree Navigation */
+  /* Tree Navigation — Cartography */
   .tree-node {
     @apply flex items-center gap-2 px-3 py-2 cursor-pointer rounded transition-all duration-150;
     @apply border border-transparent;
@@ -268,7 +278,7 @@
 
   .tree-node.selected {
     @apply bg-primary/10 text-primary border-primary/30;
-    box-shadow: inset 3px 0 0 hsl(var(--primary));
+    box-shadow: inset 3px 0 0 hsl(var(--accent));
   }
 
   /* Canvas Container */
@@ -280,15 +290,15 @@
     background-size: 20px 20px;
   }
 
-  /* Form Sections */
+  /* Form Sections — Systematic precision */
   .form-section {
     @apply space-y-4 p-4 border-b last:border-b-0;
     border-color: hsl(var(--panel-border));
   }
 
   .form-section-title {
-    @apply text-xs font-bold text-muted-foreground mb-3 pb-2 flex items-center gap-2 uppercase tracking-widest border-b border-border/40;
-    font-family: var(--font-heading);
+    @apply text-[10px] font-bold text-muted-foreground mb-3 pb-2 flex items-center gap-2 uppercase tracking-[0.15em] border-b border-border/30;
+    font-family: var(--font-mono);
   }
 
   /* Status Badges */
