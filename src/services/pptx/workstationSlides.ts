@@ -1186,10 +1186,12 @@ export function generateBasicInfoAndRequirementsSlide(
     row([ctx.isZh ? '工序阶段' : 'Process', processLabel]),
     row([ctx.isZh ? '节拍' : 'Cycle Time', ws.cycle_time ? `${ws.cycle_time} s/pcs` : '-']),
     row([ctx.isZh ? '兼容尺寸' : 'Product Dims', dimsText]),
+    row([ctx.isZh ? '安装空间' : 'Install Space', ws.install_space ? `${ws.install_space.length}×${ws.install_space.width}×${ws.install_space.height} mm` : (ws.install_space_label || '-')]),
+    row([ctx.isZh ? '是否封闭' : 'Enclosed', ws.enclosed === true ? (ctx.isZh ? '是' : 'Yes') : ws.enclosed === false ? (ctx.isZh ? '否' : 'No') : '-']),
   ];
 
   slide.addTable(basicInfoRows, {
-    x: 0.4, y: startY, w: 4.5, h: 1.8,
+    x: 0.4, y: startY, w: 4.5, h: 2.2,
     fontFace: FONTS.body,
     fontSize: 8,
     colW: [1.2, 3.3],
