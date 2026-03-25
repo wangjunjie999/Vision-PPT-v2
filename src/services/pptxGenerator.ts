@@ -12,6 +12,7 @@ import {
   generateModuleOpticalSlide,
   generateLightingPhotosSlide,
   generateBOMSlide,
+  generateModuleDetailSlide,
 } from './pptx/workstationSlides';
 import {
   COLORS,
@@ -54,11 +55,18 @@ interface ProjectData {
   customer: string;
   date: string | null;
   responsible: string | null;
+  sales_responsible?: string | null;
+  vision_responsible?: string | null;
   product_process: string | null;
   quality_strategy: string | null;
   environment: string[] | null;
   notes: string | null;
   revision_history?: RevisionHistoryItem[];
+  spec_version?: string | null;
+  production_line?: string | null;
+  main_camera_brand?: string | null;
+  cycle_time_target?: number | null;
+  description?: string | null;
 }
 
 interface WorkstationData {
@@ -76,6 +84,9 @@ interface WorkstationData {
   shot_count?: number | null;
   risk_notes?: string | null;
   action_script?: string | null;
+  description?: string | null;
+  install_space?: { length: number; width: number; height: number } | null;
+  install_space_label?: string;
 }
 
 interface LayoutData {
@@ -756,39 +767,56 @@ export async function generatePPTX(
     row([isZh ? '客户名称' : 'Customer', project.customer]),
     row([isZh ? '产线名称' : 'Production Line', projectExt.production_line || '-']),
     row([isZh ? '负责人' : 'Responsible', project.responsible || '-']),
+    row([isZh ? '销售负责人' : 'Sales', project.sales_responsible || '-']),
+    row([isZh ? '视觉负责人' : 'Vision Lead', project.vision_responsible || '-']),
     row([isZh ? '项目日期' : 'Date', project.date || '-']),
+    row([isZh ? '方案版本' : 'Spec Version', project.spec_version || 'V1.0']),
+    row([isZh ? '主力相机品牌' : 'Main Camera', project.main_camera_brand || '-']),
+    row([isZh ? '目标节拍' : 'Target Cycle', project.cycle_time_target ? `${project.cycle_time_target} s` : '-']),
+    row([isZh ? '质量策略' : 'Quality Strategy', (() => {
+      const qsLabels: Record<string, string> = { no_miss: isZh ? '零漏检' : 'No Miss', balanced: isZh ? '均衡' : 'Balanced', allow_pass: isZh ? '允许放行' : 'Allow Pass' };
+      return qsLabels[project.quality_strategy || ''] || project.quality_strategy || '-';
+    })()]),
   ];
 
   descSlide.addTable(projectInfoRows, {
     x: SLIDE_LAYOUT.contentLeft, y: SLIDE_LAYOUT.contentTop + 0.45, w: SLIDE_LAYOUT.contentWidth,
     fontFace: FONTS.body,
     fontSize: 9,
-    colW: [1.5, 7.7],
+    colW: [1.8, 7.4],
     border: { pt: 0.5, color: COLORS.border },
     fill: { color: COLORS.white },
     valign: 'middle',
   });
 
-  // Project description
+  // Project description + notes
   const projectDesc = projectExt.description || '';
+  const projectNotes = project.notes || '';
+  let nextY = 4.2; // After the larger table
+
   if (projectDesc) {
     descSlide.addText(isZh ? '【项目简介】' : '[Project Overview]', {
-      x: SLIDE_LAYOUT.contentLeft, y: 2.55, w: SLIDE_LAYOUT.contentWidth, h: 0.28,
-      fontSize: 11, fontFace: FONTS.body, color: COLORS.primary, bold: true,
-    });
-    descSlide.addShape('rect', {
-      x: SLIDE_LAYOUT.contentLeft, y: 2.88, w: SLIDE_LAYOUT.contentWidth, h: 0.9,
-      fill: { color: 'F5F5F5' },
-      line: { color: COLORS.border, width: 0.5 },
+      x: SLIDE_LAYOUT.contentLeft, y: nextY, w: SLIDE_LAYOUT.contentWidth / 2 - 0.1, h: 0.25,
+      fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
     });
     descSlide.addText(projectDesc, {
-      x: SLIDE_LAYOUT.contentLeft + 0.1, y: 2.95, w: SLIDE_LAYOUT.contentWidth - 0.2, h: 0.75,
-      fontSize: 9, fontFace: FONTS.body, color: COLORS.dark,
+      x: SLIDE_LAYOUT.contentLeft, y: nextY + 0.28, w: SLIDE_LAYOUT.contentWidth / 2 - 0.1, h: 0.6,
+      fontSize: 8, fontFace: FONTS.body, color: COLORS.dark,
+    });
+  }
+  if (projectNotes) {
+    descSlide.addText(isZh ? '【项目备注】' : '[Notes]', {
+      x: SLIDE_LAYOUT.contentLeft + SLIDE_LAYOUT.contentWidth / 2 + 0.1, y: nextY, w: SLIDE_LAYOUT.contentWidth / 2 - 0.1, h: 0.25,
+      fontSize: 10, fontFace: FONTS.body, color: COLORS.warning, bold: true,
+    });
+    descSlide.addText(projectNotes, {
+      x: SLIDE_LAYOUT.contentLeft + SLIDE_LAYOUT.contentWidth / 2 + 0.1, y: nextY + 0.28, w: SLIDE_LAYOUT.contentWidth / 2 - 0.1, h: 0.6,
+      fontSize: 8, fontFace: FONTS.body, color: COLORS.dark,
     });
   }
 
-  // Workstation overview table (merged from former Project Overview slide)
-  const wsOverviewY = projectDesc ? 4.0 : 2.55;
+  // Workstation overview table
+  const wsOverviewY = (projectDesc || projectNotes) ? 5.1 : nextY;
   descSlide.addText(isZh ? '工位清单' : 'Workstation List', {
     x: SLIDE_LAYOUT.contentLeft, y: wsOverviewY, w: SLIDE_LAYOUT.contentWidth, h: 0.28,
     fontSize: 11, fontFace: FONTS.body, color: COLORS.dark, bold: true,
@@ -954,6 +982,8 @@ export async function generatePPTX(
         risk_notes: ws.risk_notes,
         action_script: ws.action_script,
         description: (ws as unknown as Record<string, unknown>).description as string | null,
+        install_space: (ws as any).install_space || null,
+        install_space_label: (ws as any).install_space_label || '',
       },
       layout: wsLayout ? {
         workstation_id: wsLayout.workstation_id,
@@ -1041,6 +1071,11 @@ export async function generatePPTX(
         onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '打光照片' : 'Lighting'}: ${modName}`, `[SLIDE:${ws.name}:e${mi + 1}] ${isZh ? '打光照片' : 'Lighting photos'}: ${modName}`);
         await generateLightingPhotosSlide(ctx, slideData, mi);
       }
+
+      // 模块详细参数页
+      step++;
+      onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '详细参数' : 'Details'}: ${modName}`, `[SLIDE:${ws.name}:f${mi + 1}] ${isZh ? '详细参数' : 'Detail params'}: ${modName}`);
+      generateModuleDetailSlide(ctx, slideData, mi);
     }
 
     // f. BOM清单+审核
