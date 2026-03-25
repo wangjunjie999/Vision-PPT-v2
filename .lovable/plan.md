@@ -1,68 +1,76 @@
 
 
-# 光学方案图背景改为白色
+# Systematic Cartography — Design Philosophy & Visual Artifact
 
-## 概述
+## Phase 1: Design Philosophy (.md file)
 
-将 `VisionSystemDiagram` 的背景从深色（`#1a1a2e`）改为白色，同时调整所有文字和图形颜色以保持可读性。
+**Movement Name**: "Systematic Cartography"
 
-## 修改文件
+A philosophy rooted in the visual language of scientific instrumentation, technical blueprints, and precision measurement — where every element serves as evidence of rigorous methodology. The aesthetic draws from industrial control panels, optical calibration charts, and aerospace documentation.
 
-### `src/components/canvas/VisionSystemDiagram.tsx`
+The philosophy will emphasize:
+- **Grid as gospel**: Every element anchored to a visible or implied coordinate system
+- **Monospaced data as texture**: Dense numeric grids and reference markers that build visual rhythm
+- **Restrained palette**: Navy/slate/white with a single accent color (cyan or teal) used only for critical markers
+- **Systematic repetition**: Repeated geometric modules suggesting calibration, measurement, tolerance
+- **Clinical typography**: Thin, precise fonts (Jura, GeistMono, InstrumentSans) used sparingly as labels, never as prose
 
-**1. 背景色** (line 207)
-- `backgroundColor: '#1a1a2e'` → `backgroundColor: '#ffffff'`
+Output: `/mnt/documents/systematic-cartography.md`
 
-**2. SVG 网格线** (line 313-316)
-- 网格线颜色从 `#ffffff` opacity 0.06 → `#000000` opacity 0.06
+---
 
-**3. 所有 `fill="#ffffff"` 文字改为深色**
-涉及约 15 处白色文字，统一改为 `#333333` 或 `#1a1a2e`：
-- FOV 角度文字 (line 338)
-- 产品文字 (line 372)
-- 工作距离标注 (line 391)
-- 视野宽度标注 (line 408)
-- Cam1 文字保持白色（在紫色相机体上）
-- IPC 文字保持白色（在深色工控机上）
+## Phase 2: Deduce the Subtle Reference
 
-**4. 标注卡片颜色调整**（右侧信息面板）
+The conceptual DNA: **Industrial machine vision** — the act of a system seeing, measuring, and judging with inhuman precision. The composition will subtly encode optical paths, field-of-view cones, calibration grids, and inspection zones without literally depicting cameras or products. Someone in the vision industry will feel it; others will see a masterful abstract systematic composition.
 
-交互模式 (line 618-727 foreignObject)：
-- 卡片背景 `hsl(220, 15%, 18%)` → `hsl(220, 10%, 96%)` (浅灰白)
-- 卡片边框 `hsl(220, 15%, 28%)` → `hsl(220, 15%, 82%)` (浅灰边框)
-- 卡片内所有 `color: '#ffffff'` → `color: '#333333'`
-- 输入框背景/边框也做相应浅色化
+---
 
-非交互/导出模式 (line 730-830 纯 SVG)：
-- `cardBg` → `hsl(220, 10%, 96%)`
-- `cardBorder` → `hsl(220, 15%, 82%)`
-- `textColor` → `#333333`
-- `textSecondary` → `#666666`
+## Phase 3: Canvas Creation (single-page PDF)
 
-**5. SVG defs 渐变调整**
-- FOV 锥体渐变保持紫色（在白色背景上更明显，降低 opacity）
-- 尺寸线/箭头保持蓝色 `hsl(220, 80%, 50%)`（白底上清晰）
-- 连接线保持蓝色
+**Canvas**: A4 landscape (297×210mm), white background.
 
-**6. 产品区域调整**
-- 产品矩形 `hsl(0, 0%, 40%)` → `hsl(220, 10%, 85%)` 浅灰
-- 产品文字 `#ffffff` → `#333333`
-- ROI 边框保持绿色
+**Composition concept** — "Optical Topology":
+- A central circular calibration target pattern (concentric rings with precise tick marks) suggesting lens calibration
+- Radiating grid lines emanating from center, reminiscent of FOV projection
+- Dense monospaced numeric columns along edges (like coordinate readouts or measurement logs)
+- Small geometric inspection zones (rectangles with crosshairs) placed systematically
+- A single thin cyan line tracing an optical path diagonally across the composition
+- Minimal text: movement name "SYSTEMATIC CARTOGRAPHY" in thin Jura at bottom margin, plus scattered clinical labels like "REF.001", "Ø 0.05", "TOLERANCE ±0.02"
 
-### `src/components/canvas/BatchImageSaveButton.tsx`
+**Fonts used**:
+- `Jura-Light.ttf` — movement title and accent labels
+- `GeistMono-Regular.ttf` — numeric data grids and reference markers
+- `InstrumentSans-Regular.ttf` — sparse descriptive labels
 
-**1 处** (line 384)：
-- `backgroundColor: '#1a1a2e'` → `backgroundColor: '#ffffff'`
+**Color palette**:
+- `#FFFFFF` — background
+- `#1A1A2E` — primary marks, grids, text
+- `#334155` — secondary lines, data columns
+- `#0891B2` — single accent (cyan), used for one optical path line and key markers
+- `#94A3B8` — tertiary grid lines at low opacity
 
-### `src/components/canvas/ModuleSchematic.tsx`
+**Technical approach**:
+- Python script using `reportlab` for precise vector PDF generation
+- All geometry computed mathematically (concentric circles, radial lines, grid intersections)
+- Font files copied from knowledge directory to /tmp for embedding
 
-检查是否有硬编码的深色背景设置，同步修改。
+Output: `/mnt/documents/systematic-cartography.pdf`
 
-## 不变的元素
+---
 
-以下元素颜色不变（它们本身是彩色/深色背景上的白字）：
-- 相机体上的 "Cam1" 白字（紫色背景）
-- 工控机上的 "IPC" 白字（深色背景）
-- 光源红色 LED 区域
-- 相机绿色指示灯
+## Phase 4: QA
+
+- Render PDF → convert pages to PNG via `pdf2image` or `ghostscript`
+- Inspect for: overlapping text, elements bleeding off canvas, spacing issues, font rendering
+- Fix and re-render until clean
+- Report findings
+
+---
+
+## Files Produced
+
+| File | Description |
+|------|-------------|
+| `/mnt/documents/systematic-cartography.md` | Design philosophy manifesto |
+| `/mnt/documents/systematic-cartography.pdf` | Visual expression artifact |
 
