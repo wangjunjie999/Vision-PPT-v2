@@ -791,6 +791,9 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         // If currently in isometric (3D) mode, switch to first 2D view and wait for render
         const wasIsometric = originalView === 'isometric';
         if (wasIsometric) {
+          // Clear stale refs before switching away from isometric — the 3D component will unmount
+          isometricScreenshotFnRef.current = null;
+          fitAllFnRef.current = null;
           setCurrentView('front');
           await new Promise(r => setTimeout(r, 400));
         }
@@ -826,8 +829,8 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
             }
           }
           fitAllFnRef.current?.();
-          await new Promise(r => setTimeout(r, 1500));
-          await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+          await new Promise(r => setTimeout(r, 2000));
+          await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(r))));
         }
         if (isometricScreenshotFnRef.current) {
           try {
