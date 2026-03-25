@@ -184,10 +184,10 @@ export function ModuleSchematic() {
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
       const imgWidth = 280;
       const imgHeight = (1100 / 1200) * imgWidth;
-      pdf.setFillColor(26, 26, 46);
+      pdf.setFillColor(255, 255, 255);
       pdf.rect(0, 0, 297, 210, 'F');
       pdf.addImage(dataUrl, 'PNG', 8, 10, imgWidth, imgHeight);
-      pdf.setTextColor(255, 255, 255);
+      pdf.setTextColor(51, 51, 51);
       pdf.setFontSize(12);
       pdf.text(`${module.name} - 视觉系统示意图`, 148, 200, { align: 'center' });
       pdf.save(`${module.name}-视觉系统示意图.pdf`);

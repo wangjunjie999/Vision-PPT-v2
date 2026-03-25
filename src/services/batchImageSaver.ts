@@ -281,7 +281,7 @@ export async function generateImageFromElement(
 export async function generateSchematicImage(
   element: HTMLElement,
 ): Promise<Blob> {
-  const backgroundColor = '#1a1a2e';
+  const backgroundColor = '#ffffff';
 
   // Wait for render
   await new Promise<void>((resolve) => {
