@@ -12,6 +12,7 @@ import {
   generateModuleOpticalSlide,
   generateLightingPhotosSlide,
   generateBOMSlide,
+  generateModuleDetailSlide,
 } from './pptx/workstationSlides';
 import {
   COLORS,
@@ -1070,6 +1071,11 @@ export async function generatePPTX(
         onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '打光照片' : 'Lighting'}: ${modName}`, `[SLIDE:${ws.name}:e${mi + 1}] ${isZh ? '打光照片' : 'Lighting photos'}: ${modName}`);
         await generateLightingPhotosSlide(ctx, slideData, mi);
       }
+
+      // 模块详细参数页
+      step++;
+      onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '详细参数' : 'Details'}: ${modName}`, `[SLIDE:${ws.name}:f${mi + 1}] ${isZh ? '详细参数' : 'Detail params'}: ${modName}`);
+      generateModuleDetailSlide(ctx, slideData, mi);
     }
 
     // f. BOM清单+审核
