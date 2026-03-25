@@ -1861,5 +1861,3 @@ export function generateModuleDetailSlide(
     });
   }
 }
-  }
-}
