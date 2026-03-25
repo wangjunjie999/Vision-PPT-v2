@@ -2,7 +2,8 @@ import { memo, useRef, useCallback, useState, useMemo, useEffect, Suspense } fro
 import { Canvas, useThree, useFrame, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Box, Cone, Line, Text, Grid, Plane, Sphere, Cylinder, useGLTF, Billboard } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, X, Magnet, Eye, EyeOff, Save, Lock, Unlock, Maximize2 } from 'lucide-react';
+import { RotateCcw, X, Magnet, Eye, EyeOff, Save, Lock, Unlock, Maximize2, Download } from 'lucide-react';
+import RobotArmGLBExporter from './RobotArmGLBExporter';
 import type { LayoutObject } from './ObjectPropertyPanel';
 import { CAMERA_INTERACTION_TYPES, PRODUCT_INTERACTION_TYPES } from './MechanismSVG';
 import * as THREE from 'three';
