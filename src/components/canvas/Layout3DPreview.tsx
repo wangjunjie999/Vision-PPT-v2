@@ -2460,13 +2460,13 @@ export const Layout3DPreview = memo(function Layout3DPreview({
           </>
         )}
         {/* Robot arm GLB export */}
-        {objects.some(o => o.mechType === 'robot_arm') && (
+        {objects.some(o => o.mechanismType === 'robot_arm') && (
           <>
             <div className="h-px bg-slate-600/50 my-0.5" />
             <RobotArmGLBExporter
-              w={objects.find(o => o.mechType === 'robot_arm')?.w ?? 200}
-              h={objects.find(o => o.mechType === 'robot_arm')?.h ?? 600}
-              d={objects.find(o => o.mechType === 'robot_arm')?.d ?? 200}
+              w={objects.find(o => o.mechanismType === 'robot_arm')?.width ?? 200}
+              h={objects.find(o => o.mechanismType === 'robot_arm')?.height ?? 600}
+              d={(objects.find(o => o.mechanismType === 'robot_arm') as any)?.depth ?? 200}
             />
           </>
         )}
