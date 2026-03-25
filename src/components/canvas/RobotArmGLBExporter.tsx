@@ -30,230 +30,173 @@ function rubberMat(color: string) {
 // ---- Standalone RobotArm geometry (no selection/xray) ----
 function RobotArmGeometry({ w, h, d }: { w: number; h: number; d: number }) {
   const groupRef = useRef<THREE.Group>(null);
+  // KUKA-style proportions
   const baseR = Math.min(w, d) * 0.5;
-  const jointR = w * 0.12;
-  const armR = w * 0.08;
-  const arm1L = h * 0.30;
-  const arm2L = h * 0.25;
-  const arm3L = h * 0.18;
-  const waistH = h * 0.12;
-  const ribCount = 6;
-  const boltCount = 6;
-  const flangeR = w * 0.09;
-  const flangeBoltCount = 8;
+  const baseH = h * 0.18;
+  const shoulderH = h * 0.08;
+  const arm1L = h * 0.35;
+  const arm2L = h * 0.30;
+  const arm3L = h * 0.15;
+  const jointR = w * 0.13;
+  const armW = w * 0.22;
+  const armD = w * 0.14;
+  const flangeR = w * 0.08;
 
   const bodyColor = '#f97316';
   const jointColor = '#ff6b00';
-  const baseColor = '#e2e8f0';
+  const baseColor = '#64748b';
   const darkAccent = '#1e293b';
   const flangeColor = '#facc15';
-  const motorColor = '#64748b';
-  const scaleRingColor = '#94a3b8';
-  const ventColor = '#0f172a';
-  const cableColors = ['#1a1a1a', '#292524', '#44403c'];
-  const clipColor = '#a8a29e';
+  const cableColor = '#1a1a1a';
 
-  const BoltRing = ({ radius, y, count, size }: { radius: number; y: number; count: number; size: number }) => (
-    <>
-      {Array.from({ length: count }).map((_, i) => {
-        const angle = (i / count) * Math.PI * 2;
-        return (
-          <Cylinder key={i} args={[size, size, size * 2, 6]}
-            position={[Math.cos(angle) * radius, y, Math.sin(angle) * radius]}>
-            <meshStandardMaterial {...mechMat(darkAccent, 0.8, 0.2)} />
-          </Cylinder>
-        );
-      })}
-    </>
-  );
-
-  const MotorHousing = ({ r, length }: { r: number; length: number }) => (
-    <group>
-      <Cylinder args={[r, r, length, 12]} rotation={[0, 0, Math.PI / 2]} position={[length / 2, 0, 0]}>
-        <meshStandardMaterial {...mechMat(motorColor, 0.7, 0.25)} />
-      </Cylinder>
-      <Cylinder args={[r, r, length, 12]} rotation={[0, 0, Math.PI / 2]} position={[-length / 2, 0, 0]}>
-        <meshStandardMaterial {...mechMat(motorColor, 0.7, 0.25)} />
-      </Cylinder>
-    </group>
-  );
-
-  const JointAssembly = ({ r, motorR, motorL }: { r: number; motorR: number; motorL: number }) => (
-    <group>
-      <Cylinder args={[r * 1.05, r * 1.05, r * 0.15, 16]} position={[0, r * 0.25, 0]}>
-        <meshStandardMaterial {...mechMat(darkAccent, 0.7, 0.3)} />
-      </Cylinder>
-      <Cylinder args={[r * 1.05, r * 1.05, r * 0.15, 16]} position={[0, -r * 0.25, 0]}>
-        <meshStandardMaterial {...mechMat(darkAccent, 0.7, 0.3)} />
-      </Cylinder>
-      <Sphere args={[r, 16, 16]}>
-        <meshStandardMaterial {...mechMat(jointColor, 0.5, 0.4)} />
-      </Sphere>
-      <MotorHousing r={motorR} length={motorL} />
-      <Cylinder args={[r * 1.15, r * 1.15, r * 0.08, 20]}>
-        <meshStandardMaterial {...mechMat(scaleRingColor, 0.4, 0.5)} />
-      </Cylinder>
-      <Cylinder args={[r * 0.3, r * 0.3, r * 0.15, 8]}
-        rotation={[Math.PI / 2, 0, 0]} position={[r * 1.3, 0, 0]}>
-        <meshStandardMaterial {...mechMat(clipColor, 0.3, 0.6)} />
-      </Cylinder>
-    </group>
-  );
+  const IndustrialJoint = ({ r, thickness }: { r: number; thickness?: number }) => {
+    const t = thickness || r * 0.5;
+    return (
+      <group>
+        <Cylinder args={[r * 1.08, r * 1.08, t * 0.15, 20]} position={[0, t * 0.45, 0]}>
+          <meshStandardMaterial {...mechMat(darkAccent, 0.7, 0.3)} />
+        </Cylinder>
+        <Cylinder args={[r * 1.08, r * 1.08, t * 0.15, 20]} position={[0, -t * 0.45, 0]}>
+          <meshStandardMaterial {...mechMat(darkAccent, 0.7, 0.3)} />
+        </Cylinder>
+        <Cylinder args={[r, r, t, 20]}>
+          <meshStandardMaterial {...mechMat(jointColor, 0.55, 0.35)} />
+        </Cylinder>
+      </group>
+    );
+  };
 
   return (
     <group ref={groupRef} name="robot-arm-export">
       {/* BASE */}
-      <Cylinder args={[baseR * 1.05, baseR * 1.15, h * 0.04, 24]} position={[0, h * 0.02, 0]}>
-        <meshStandardMaterial {...mechMat(baseColor, 0.7, 0.25)} />
+      <Cylinder args={[baseR * 1.08, baseR * 1.15, h * 0.03, 24]} position={[0, h * 0.015, 0]}>
+        <meshStandardMaterial {...mechMat(darkAccent, 0.7, 0.25)} />
       </Cylinder>
-      <BoltRing radius={baseR * 1.0} y={h * 0.045} count={boltCount} size={baseR * 0.06} />
-      <Cylinder args={[baseR, baseR * 1.05, h * 0.05, 24]} position={[0, h * 0.065, 0]}>
-        <meshStandardMaterial {...mechMat(baseColor, 0.7, 0.25)} />
-      </Cylinder>
-      <Box args={[baseR * 0.6, h * 0.035, baseR * 0.04]} position={[0, h * 0.065, baseR * 0.95]}>
-        <meshStandardMaterial {...mechMat(darkAccent, 0.3, 0.7)} />
-      </Box>
-      {Array.from({ length: ribCount }).map((_, i) => {
-        const angle = (i / ribCount) * Math.PI * 2;
+      {Array.from({ length: 8 }).map((_, i) => {
+        const angle = (i / 8) * Math.PI * 2;
         return (
-          <Box key={i} args={[baseR * 0.08, h * 0.04, baseR * 0.5]}
-            position={[Math.cos(angle) * baseR * 0.75, h * 0.065, Math.sin(angle) * baseR * 0.75]}
-            rotation={[0, -angle, 0]}>
-            <meshStandardMaterial {...mechMat(darkAccent, 0.7, 0.3)} />
-          </Box>
+          <Cylinder key={i} args={[baseR * 0.04, baseR * 0.04, h * 0.015, 6]}
+            position={[Math.cos(angle) * baseR * 1.05, h * 0.035, Math.sin(angle) * baseR * 1.05]}>
+            <meshStandardMaterial {...mechMat('#94a3b8', 0.8, 0.2)} />
+          </Cylinder>
         );
       })}
-
-      {/* WAIST */}
-      <Cylinder args={[baseR * 0.6, baseR * 0.65, waistH, 20]} position={[0, h * 0.09 + waistH / 2, 0]}>
-        <meshStandardMaterial {...mechMat(darkAccent, 0.6, 0.35)} />
+      <Cylinder args={[baseR, baseR * 1.02, baseH, 24]} position={[0, h * 0.03 + baseH / 2, 0]}>
+        <meshStandardMaterial {...mechMat(baseColor, 0.6, 0.35)} />
       </Cylinder>
-      <Cylinder args={[baseR * 0.67, baseR * 0.67, waistH * 0.06, 20]}
-        position={[0, h * 0.09 + waistH * 0.85, 0]}>
-        <meshStandardMaterial {...mechMat(scaleRingColor, 0.4, 0.5)} />
+      <Cylinder args={[baseR * 1.02, baseR * 1.02, h * 0.012, 24]} position={[0, h * 0.03 + baseH, 0]}>
+        <meshStandardMaterial {...mechMat(darkAccent, 0.7, 0.3)} />
       </Cylinder>
 
-      {/* SHOULDER */}
-      <group position={[0, h * 0.09 + waistH, 0]}>
-        <JointAssembly r={jointR} motorR={jointR * 0.35} motorL={jointR * 1.8} />
+      {/* SHOULDER TURRET */}
+      <Cylinder args={[baseR * 0.55, baseR * 0.62, shoulderH, 20]}
+        position={[0, h * 0.03 + baseH + shoulderH / 2, 0]}>
+        <meshStandardMaterial {...mechMat(bodyColor, 0.5, 0.4)} />
+      </Cylinder>
+
+      {/* SHOULDER JOINT */}
+      <group position={[0, h * 0.03 + baseH + shoulderH, 0]}>
+        <IndustrialJoint r={jointR} thickness={jointR * 0.55} />
+        <Cylinder args={[jointR * 0.35, jointR * 0.35, jointR * 1.6, 12]}
+          rotation={[0, 0, Math.PI / 2]} position={[jointR * 0.9, 0, 0]}>
+          <meshStandardMaterial {...mechMat(baseColor, 0.65, 0.3)} />
+        </Cylinder>
+        <Cylinder args={[jointR * 0.35, jointR * 0.35, jointR * 1.6, 12]}
+          rotation={[0, 0, Math.PI / 2]} position={[-jointR * 0.9, 0, 0]}>
+          <meshStandardMaterial {...mechMat(baseColor, 0.65, 0.3)} />
+        </Cylinder>
       </group>
 
       {/* ARM1 */}
-      <group position={[0, h * 0.09 + waistH, 0]} rotation={[0, 0, 0.5]}>
-        <Cylinder args={[armR * 1.1, armR * 0.95, arm1L, 14]} position={[0, arm1L / 2, 0]}>
+      <group position={[0, h * 0.03 + baseH + shoulderH, 0]} rotation={[0, 0, 0.25]}>
+        <Box args={[armW, arm1L, armD]} position={[0, arm1L / 2, 0]}>
           <meshStandardMaterial {...mechMat(bodyColor, 0.5, 0.4)} />
-        </Cylinder>
+        </Box>
         {[1, -1].map(side => (
-          <Box key={side} args={[armR * 0.12, arm1L * 0.7, armR * 1.8]}
-            position={[side * armR * 1.05, arm1L * 0.5, 0]}>
-            <meshStandardMaterial {...mechMat(bodyColor, 0.5, 0.45)} />
+          <Box key={side} args={[armW * 0.06, arm1L * 0.85, armD * 1.15]}
+            position={[side * armW * 0.53, arm1L * 0.5, 0]}>
+            <meshStandardMaterial {...mechMat(bodyColor, 0.45, 0.5)} />
           </Box>
         ))}
-        {Array.from({ length: 4 }).map((_, i) => {
-          const yOff = arm1L * 0.2 + (i / 3) * arm1L * 0.6;
-          return (
-            <Box key={i} args={[armR * 2.2, arm1L * 0.015, armR * 0.4]}
-              position={[0, yOff, armR * 0.95]}>
-              <meshStandardMaterial {...mechMat(ventColor, 0.3, 0.7)} />
-            </Box>
-          );
-        })}
-        <group position={[armR * 1.4, 0, 0]}>
-          {cableColors.map((color, i) => {
-            const r = armR * (0.12 - i * 0.02);
-            const zOff = (i - 1) * armR * 0.25;
-            return (
-              <Cylinder key={i} args={[r, r, arm1L * 0.85, 6]}
-                position={[0, arm1L / 2, zOff]}>
-                <meshStandardMaterial {...rubberMat(color)} />
-              </Cylinder>
-            );
-          })}
-        </group>
+        <Cylinder args={[armW * 0.06, armW * 0.06, arm1L * 0.8, 6]}
+          position={[armW * 0.4, arm1L * 0.5, -armD * 0.5]}>
+          <meshStandardMaterial {...rubberMat(cableColor)} />
+        </Cylinder>
 
         {/* ELBOW */}
         <group position={[0, arm1L, 0]}>
-          <JointAssembly r={jointR * 0.85} motorR={jointR * 0.3} motorL={jointR * 1.5} />
+          <IndustrialJoint r={jointR * 0.85} thickness={jointR * 0.5} />
+          <Cylinder args={[jointR * 0.3, jointR * 0.3, jointR * 1.3, 12]}
+            rotation={[0, 0, Math.PI / 2]} position={[jointR * 0.75, 0, 0]}>
+            <meshStandardMaterial {...mechMat(baseColor, 0.65, 0.3)} />
+          </Cylinder>
         </group>
 
         {/* ARM2 */}
-        <group position={[0, arm1L, 0]} rotation={[0, 0, -1.2]}>
-          <Cylinder args={[armR * 0.95, armR * 0.8, arm2L, 14]} position={[0, arm2L / 2, 0]}>
+        <group position={[0, arm1L, 0]} rotation={[0, 0, -1.0]}>
+          <Box args={[armW * 0.85, arm2L, armD * 0.85]} position={[0, arm2L / 2, 0]}>
             <meshStandardMaterial {...mechMat(bodyColor, 0.5, 0.4)} />
-          </Cylinder>
+          </Box>
           {[1, -1].map(side => (
-            <Box key={side} args={[armR * 0.9 * 0.12, arm2L * 0.7, armR * 0.9 * 1.8]}
-              position={[side * armR * 0.9 * 1.05, arm2L * 0.5, 0]}>
-              <meshStandardMaterial {...mechMat(bodyColor, 0.5, 0.45)} />
+            <Box key={side} args={[armW * 0.85 * 0.06, arm2L * 0.8, armD * 0.85 * 1.1]}
+              position={[side * armW * 0.85 * 0.53, arm2L * 0.5, 0]}>
+              <meshStandardMaterial {...mechMat(bodyColor, 0.45, 0.5)} />
             </Box>
           ))}
-          <group position={[armR * 1.2, 0, 0]}>
-            {cableColors.map((color, i) => {
-              const r = armR * (0.12 - i * 0.02);
-              const zOff = (i - 1) * armR * 0.25;
-              return (
-                <Cylinder key={i} args={[r, r, arm2L * 0.85, 6]}
-                  position={[0, arm2L / 2, zOff]}>
-                  <meshStandardMaterial {...rubberMat(color)} />
-                </Cylinder>
-              );
-            })}
-          </group>
+          <Cylinder args={[armW * 0.05, armW * 0.05, arm2L * 0.75, 6]}
+            position={[armW * 0.35, arm2L * 0.5, -armD * 0.4]}>
+            <meshStandardMaterial {...rubberMat(cableColor)} />
+          </Cylinder>
 
           {/* WRIST */}
           <group position={[0, arm2L, 0]}>
-            <JointAssembly r={jointR * 0.7} motorR={jointR * 0.22} motorL={jointR * 1.2} />
+            <IndustrialJoint r={jointR * 0.65} thickness={jointR * 0.4} />
           </group>
 
           {/* ARM3 */}
-          <group position={[0, arm2L, 0]} rotation={[0, 0, -0.6]}>
-            <Cylinder args={[armR * 0.8, armR * 0.65, arm3L, 12]} position={[0, arm3L / 2, 0]}>
+          <group position={[0, arm2L, 0]} rotation={[0, 0, -0.8]}>
+            <Cylinder args={[armW * 0.3, armW * 0.25, arm3L, 14]} position={[0, arm3L / 2, 0]}>
               <meshStandardMaterial {...mechMat(bodyColor, 0.5, 0.4)} />
             </Cylinder>
-            <Cylinder args={[armR * 0.06, armR * 0.06, arm3L * 0.6, 6]}
-              position={[armR * 0.9, arm3L * 0.5, armR * 0.4]}>
+            <Cylinder args={[armW * 0.04, armW * 0.04, arm3L * 0.65, 6]}
+              position={[armW * 0.28, arm3L * 0.5, armW * 0.1]}>
               <meshStandardMaterial {...rubberMat('#3f3f46')} />
-            </Cylinder>
-            <Cylinder args={[armR * 0.05, armR * 0.05, arm3L * 0.5, 6]}
-              position={[-armR * 0.7, arm3L * 0.5, armR * 0.3]}>
-              <meshStandardMaterial {...rubberMat('#1c1917')} />
             </Cylinder>
 
             {/* END JOINT */}
             <group position={[0, arm3L, 0]}>
-              <Cylinder args={[jointR * 0.55, jointR * 0.55, jointR * 0.1, 14]} position={[0, jointR * 0.15, 0]}>
+              <Cylinder args={[jointR * 0.5, jointR * 0.5, jointR * 0.12, 16]} position={[0, jointR * 0.1, 0]}>
                 <meshStandardMaterial {...mechMat(darkAccent, 0.7, 0.3)} />
               </Cylinder>
-              <Cylinder args={[jointR * 0.55, jointR * 0.55, jointR * 0.1, 14]} position={[0, -jointR * 0.15, 0]}>
-                <meshStandardMaterial {...mechMat(darkAccent, 0.7, 0.3)} />
+              <Cylinder args={[jointR * 0.45, jointR * 0.45, jointR * 0.3, 16]}>
+                <meshStandardMaterial {...mechMat(jointColor, 0.55, 0.35)} />
               </Cylinder>
-              <Sphere args={[jointR * 0.5, 12, 12]}>
-                <meshStandardMaterial {...mechMat(jointColor, 0.65, 0.25)} />
-              </Sphere>
             </group>
 
             {/* FLANGE */}
-            <Cylinder args={[jointR * 0.4, jointR * 0.35, h * 0.04, 12]}
-              position={[0, arm3L + h * 0.03, 0]}>
+            <Cylinder args={[jointR * 0.35, jointR * 0.3, h * 0.03, 12]}
+              position={[0, arm3L + h * 0.025, 0]}>
               <meshStandardMaterial {...mechMat(darkAccent, 0.6, 0.3)} />
             </Cylinder>
-            {[0, Math.PI].map((angle, i) => (
-              <Cylinder key={i} args={[jointR * 0.06, jointR * 0.06, h * 0.02, 6]}
-                position={[Math.cos(angle) * jointR * 0.3, arm3L + h * 0.055, Math.sin(angle) * jointR * 0.3]}>
-                <meshStandardMaterial {...mechMat(baseColor, 0.8, 0.2)} />
-              </Cylinder>
-            ))}
-            <Cylinder args={[flangeR, flangeR, h * 0.03, 20]}
-              position={[0, arm3L + h * 0.06, 0]}>
+            <Cylinder args={[flangeR, flangeR, h * 0.025, 20]}
+              position={[0, arm3L + h * 0.05, 0]}>
               <meshStandardMaterial {...mechMat(flangeColor, 0.5, 0.35)} />
             </Cylinder>
-            <BoltRing radius={flangeR * 0.75} y={arm3L + h * 0.078} count={flangeBoltCount} size={flangeR * 0.08} />
-            <Box args={[flangeR * 1.6, h * 0.002, flangeR * 0.03]}
-              position={[0, arm3L + h * 0.077, 0]}>
+            {Array.from({ length: 6 }).map((_, i) => {
+              const angle = (i / 6) * Math.PI * 2;
+              return (
+                <Cylinder key={i} args={[flangeR * 0.1, flangeR * 0.1, h * 0.01, 6]}
+                  position={[Math.cos(angle) * flangeR * 0.72, arm3L + h * 0.065, Math.sin(angle) * flangeR * 0.72]}>
+                  <meshStandardMaterial {...mechMat(darkAccent, 0.8, 0.2)} />
+                </Cylinder>
+              );
+            })}
+            <Box args={[flangeR * 1.4, h * 0.002, flangeR * 0.025]}
+              position={[0, arm3L + h * 0.064, 0]}>
               <meshStandardMaterial color="#dc2626" metalness={0.3} roughness={0.7} />
             </Box>
-            <Box args={[flangeR * 0.03, h * 0.002, flangeR * 1.6]}
-              position={[0, arm3L + h * 0.077, 0]}>
+            <Box args={[flangeR * 0.025, h * 0.002, flangeR * 1.4]}
+              position={[0, arm3L + h * 0.064, 0]}>
               <meshStandardMaterial color="#dc2626" metalness={0.3} roughness={0.7} />
             </Box>
           </group>
