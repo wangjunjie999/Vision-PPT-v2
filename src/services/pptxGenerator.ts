@@ -766,14 +766,23 @@ export async function generatePPTX(
     row([isZh ? '客户名称' : 'Customer', project.customer]),
     row([isZh ? '产线名称' : 'Production Line', projectExt.production_line || '-']),
     row([isZh ? '负责人' : 'Responsible', project.responsible || '-']),
+    row([isZh ? '销售负责人' : 'Sales', project.sales_responsible || '-']),
+    row([isZh ? '视觉负责人' : 'Vision Lead', project.vision_responsible || '-']),
     row([isZh ? '项目日期' : 'Date', project.date || '-']),
+    row([isZh ? '方案版本' : 'Spec Version', project.spec_version || 'V1.0']),
+    row([isZh ? '主力相机品牌' : 'Main Camera', project.main_camera_brand || '-']),
+    row([isZh ? '目标节拍' : 'Target Cycle', project.cycle_time_target ? `${project.cycle_time_target} s` : '-']),
+    row([isZh ? '质量策略' : 'Quality Strategy', (() => {
+      const qsLabels: Record<string, string> = { no_miss: isZh ? '零漏检' : 'No Miss', balanced: isZh ? '均衡' : 'Balanced', allow_pass: isZh ? '允许放行' : 'Allow Pass' };
+      return qsLabels[project.quality_strategy || ''] || project.quality_strategy || '-';
+    })()]),
   ];
 
   descSlide.addTable(projectInfoRows, {
     x: SLIDE_LAYOUT.contentLeft, y: SLIDE_LAYOUT.contentTop + 0.45, w: SLIDE_LAYOUT.contentWidth,
     fontFace: FONTS.body,
     fontSize: 9,
-    colW: [1.5, 7.7],
+    colW: [1.8, 7.4],
     border: { pt: 0.5, color: COLORS.border },
     fill: { color: COLORS.white },
     valign: 'middle',
