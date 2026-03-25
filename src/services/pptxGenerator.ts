@@ -788,26 +788,34 @@ export async function generatePPTX(
     valign: 'middle',
   });
 
-  // Project description
+  // Project description + notes
   const projectDesc = projectExt.description || '';
+  const projectNotes = project.notes || '';
+  let nextY = 4.2; // After the larger table
+
   if (projectDesc) {
     descSlide.addText(isZh ? '【项目简介】' : '[Project Overview]', {
-      x: SLIDE_LAYOUT.contentLeft, y: 2.55, w: SLIDE_LAYOUT.contentWidth, h: 0.28,
-      fontSize: 11, fontFace: FONTS.body, color: COLORS.primary, bold: true,
-    });
-    descSlide.addShape('rect', {
-      x: SLIDE_LAYOUT.contentLeft, y: 2.88, w: SLIDE_LAYOUT.contentWidth, h: 0.9,
-      fill: { color: 'F5F5F5' },
-      line: { color: COLORS.border, width: 0.5 },
+      x: SLIDE_LAYOUT.contentLeft, y: nextY, w: SLIDE_LAYOUT.contentWidth / 2 - 0.1, h: 0.25,
+      fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
     });
     descSlide.addText(projectDesc, {
-      x: SLIDE_LAYOUT.contentLeft + 0.1, y: 2.95, w: SLIDE_LAYOUT.contentWidth - 0.2, h: 0.75,
-      fontSize: 9, fontFace: FONTS.body, color: COLORS.dark,
+      x: SLIDE_LAYOUT.contentLeft, y: nextY + 0.28, w: SLIDE_LAYOUT.contentWidth / 2 - 0.1, h: 0.6,
+      fontSize: 8, fontFace: FONTS.body, color: COLORS.dark,
+    });
+  }
+  if (projectNotes) {
+    descSlide.addText(isZh ? '【项目备注】' : '[Notes]', {
+      x: SLIDE_LAYOUT.contentLeft + SLIDE_LAYOUT.contentWidth / 2 + 0.1, y: nextY, w: SLIDE_LAYOUT.contentWidth / 2 - 0.1, h: 0.25,
+      fontSize: 10, fontFace: FONTS.body, color: COLORS.warning, bold: true,
+    });
+    descSlide.addText(projectNotes, {
+      x: SLIDE_LAYOUT.contentLeft + SLIDE_LAYOUT.contentWidth / 2 + 0.1, y: nextY + 0.28, w: SLIDE_LAYOUT.contentWidth / 2 - 0.1, h: 0.6,
+      fontSize: 8, fontFace: FONTS.body, color: COLORS.dark,
     });
   }
 
-  // Workstation overview table (merged from former Project Overview slide)
-  const wsOverviewY = projectDesc ? 4.0 : 2.55;
+  // Workstation overview table
+  const wsOverviewY = (projectDesc || projectNotes) ? 5.1 : nextY;
   descSlide.addText(isZh ? '工位清单' : 'Workstation List', {
     x: SLIDE_LAYOUT.contentLeft, y: wsOverviewY, w: SLIDE_LAYOUT.contentWidth, h: 0.28,
     fontSize: 11, fontFace: FONTS.body, color: COLORS.dark, bold: true,
