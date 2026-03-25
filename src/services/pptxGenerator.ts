@@ -981,6 +981,8 @@ export async function generatePPTX(
         risk_notes: ws.risk_notes,
         action_script: ws.action_script,
         description: (ws as unknown as Record<string, unknown>).description as string | null,
+        install_space: (ws as any).install_space || null,
+        install_space_label: (ws as any).install_space_label || '',
       },
       layout: wsLayout ? {
         workstation_id: wsLayout.workstation_id,

@@ -1233,7 +1233,7 @@ export function generateBasicInfoAndRequirementsSlide(
   });
 
   // === BOTTOM HALF: Detection Requirements ===
-  const bottomY = 3.1;
+  const bottomY = 3.5;
 
   slide.addText(ctx.isZh ? '【检测项/缺陷项】' : '[Detection/Defect Items]', {
     x: 0.4, y: bottomY, w: 4.5, h: 0.25,
