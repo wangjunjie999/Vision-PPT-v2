@@ -6,6 +6,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 import { Check } from 'lucide-react';
 import { useState, useCallback } from 'react';
 
@@ -145,100 +146,6 @@ function HardwareSelectPopover({
   );
 }
 
-// --- Systematic Cartography: Constants ---
-const SC = {
-  navy: '#1A1A2E',
-  slate: '#334155',
-  cyan: '#0891B2',
-  cyanLight: '#06B6D4',
-  gridTertiary: '#94A3B8',
-  textPrimary: '#1A1A2E',
-  textSecondary: '#475569',
-  textTertiary: '#94A3B8',
-  cardBg: '#F8FAFC',
-  cardBorder: '#CBD5E1',
-  white: '#FFFFFF',
-  mono: "'Geist Mono', 'JetBrains Mono', 'SF Mono', 'Consolas', monospace",
-  sans: "'Inter', 'Jura', sans-serif",
-};
-
-// Registration corner marks
-function RegistrationMarks({ x, y, w, h, size = 12 }: { x: number; y: number; w: number; h: number; size?: number }) {
-  const s = size;
-  return (
-    <g stroke={SC.navy} strokeWidth="1.5" fill="none" opacity="0.4">
-      {/* Top-left */}
-      <path d={`M${x},${y + s} L${x},${y} L${x + s},${y}`} />
-      {/* Top-right */}
-      <path d={`M${x + w - s},${y} L${x + w},${y} L${x + w},${y + s}`} />
-      {/* Bottom-left */}
-      <path d={`M${x},${y + h - s} L${x},${y + h} L${x + s},${y + h}`} />
-      {/* Bottom-right */}
-      <path d={`M${x + w - s},${y + h} L${x + w},${y + h} L${x + w},${y + h - s}`} />
-    </g>
-  );
-}
-
-// Precision tick ruler along edge
-function TickRuler({ x1, y1, x2, y2, count, tickLen = 4, label = true }: { x1: number; y1: number; x2: number; y2: number; count: number; tickLen?: number; label?: boolean }) {
-  const isHorizontal = y1 === y2;
-  const ticks = [];
-  for (let i = 0; i <= count; i++) {
-    const t = i / count;
-    const isMajor = i % 5 === 0;
-    const len = isMajor ? tickLen * 2 : tickLen;
-    if (isHorizontal) {
-      const cx = x1 + (x2 - x1) * t;
-      ticks.push(
-        <g key={i}>
-          <line x1={cx} y1={y1} x2={cx} y2={y1 - len} stroke={SC.gridTertiary} strokeWidth={isMajor ? 0.8 : 0.4} opacity={isMajor ? 0.5 : 0.3} />
-          {label && isMajor && (
-            <text x={cx} y={y1 - len - 2} textAnchor="middle" fill={SC.textTertiary} style={{ fontSize: '6px', fontFamily: SC.mono }}>{Math.round(cx)}</text>
-          )}
-        </g>
-      );
-    } else {
-      const cy = y1 + (y2 - y1) * t;
-      ticks.push(
-        <g key={i}>
-          <line x1={x1} y1={cy} x2={x1 - len} y2={cy} stroke={SC.gridTertiary} strokeWidth={isMajor ? 0.8 : 0.4} opacity={isMajor ? 0.5 : 0.3} />
-          {label && isMajor && (
-            <text x={x1 - len - 2} y={cy + 2} textAnchor="end" fill={SC.textTertiary} style={{ fontSize: '6px', fontFamily: SC.mono }}>{Math.round(cy)}</text>
-          )}
-        </g>
-      );
-    }
-  }
-  return <g>{ticks}</g>;
-}
-
-// Annotation card for export mode (pure SVG)
-function AnnotationCard({ x, y, w, h, refId, title, lines, accentLine = false }: {
-  x: number; y: number; w: number; h: number;
-  refId: string; title: string;
-  lines: { text: string; secondary?: boolean }[];
-  accentLine?: boolean;
-}) {
-  return (
-    <g transform={`translate(${x}, ${y})`}>
-      <rect width={w} height={h} rx="2" fill={SC.cardBg} stroke={SC.cardBorder} strokeWidth="0.5" />
-      {accentLine && <line x1="0" y1="0" x2="0" y2={h} stroke={SC.cyan} strokeWidth="2" />}
-      {/* REF ID */}
-      <text x={w - 8} y="12" textAnchor="end" fill={SC.textTertiary} style={{ fontSize: '7px', fontFamily: SC.mono, letterSpacing: '0.08em' }}>{refId}</text>
-      {/* Title */}
-      <text x="10" y="14" fill={SC.textPrimary} style={{ fontSize: '10px', fontFamily: SC.mono, fontWeight: 600, letterSpacing: '0.1em' }}>{title}</text>
-      {/* Separator */}
-      <line x1="10" y1="19" x2={w - 10} y2="19" stroke={SC.cardBorder} strokeWidth="0.5" />
-      {/* Data lines */}
-      {lines.map((line, i) => (
-        <text key={i} x="10" y={30 + i * 12} fill={line.secondary ? SC.textSecondary : SC.textPrimary} style={{ fontSize: '9px', fontFamily: SC.mono }}>
-          {line.text}
-        </text>
-      ))}
-    </g>
-  );
-}
-
 interface VisionSystemDiagramProps {
   camera: Camera | null;
   lens: Lens | null;
@@ -289,6 +196,7 @@ export function VisionSystemDiagram({
   const hasLight = !!light;
   const hasController = !!controller;
 
+  // Calculate FOV line endpoints based on angle
   const fovRadians = (fovAngle / 2) * (Math.PI / 180);
   const fovLength = 250;
   const fovOffsetX = Math.tan(fovRadians) * fovLength;
@@ -296,7 +204,7 @@ export function VisionSystemDiagram({
   const interactiveClass = interactive ? "cursor-pointer hover:opacity-80 transition-opacity" : "";
 
   return (
-    <div className={cn("relative w-full h-full min-h-[700px]", className)} style={{ backgroundColor: SC.white, contain: 'layout style paint', ...(interactive ? { willChange: 'transform' } : {}) }}>
+    <div className={cn("relative w-full h-full min-h-[700px]", className)} style={{ backgroundColor: '#ffffff', contain: 'layout style paint', ...(interactive ? { willChange: 'transform' } : {}) }}>
       <svg 
         viewBox="0 0 800 750"
         className="w-full h-full"
@@ -305,202 +213,208 @@ export function VisionSystemDiagram({
         style={{ maxHeight: '100%', ...(interactive ? { transform: 'translateZ(0)' } : {}) }}
       >
         <defs>
-          {/* FOV gradient — precision cyan */}
+          {/* Camera FOV gradient - lens to product fade */}
           <linearGradient id="fovGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={SC.cyan} stopOpacity="0.20" />
-            <stop offset="40%" stopColor={SC.cyan} stopOpacity="0.10" />
-            <stop offset="100%" stopColor={SC.cyan} stopOpacity="0.02" />
+            <stop offset="0%" stopColor="hsl(270, 60%, 55%)" stopOpacity="0.35" />
+            <stop offset="40%" stopColor="hsl(270, 55%, 50%)" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="hsl(270, 50%, 45%)" stopOpacity="0.04" />
           </linearGradient>
 
-          {/* Camera body gradient — navy instrument */}
+          {/* Light cone gradient */}
+          <linearGradient id="lightCone" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="hsl(270, 50%, 70%)" stopOpacity="0.5" />
+            <stop offset="50%" stopColor="hsl(270, 50%, 70%)" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="hsl(270, 50%, 70%)" stopOpacity="0.05" />
+          </linearGradient>
+
+          {/* Light illumination zone */}
+          <radialGradient id="lightZone" cx="50%" cy="0%" r="100%" fx="50%" fy="0%">
+            <stop offset="0%" stopColor="hsl(45, 100%, 70%)" stopOpacity="0.4" />
+            <stop offset="40%" stopColor="hsl(45, 100%, 60%)" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="hsl(45, 100%, 50%)" stopOpacity="0" />
+          </radialGradient>
+          
+          {/* Camera body gradient */}
           <linearGradient id="cameraBody" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="hsl(220, 40%, 32%)" />
-            <stop offset="50%" stopColor="hsl(220, 40%, 24%)" />
-            <stop offset="100%" stopColor="hsl(220, 40%, 18%)" />
-          </linearGradient>
-          <linearGradient id="cameraBodyHover" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="hsl(220, 45%, 40%)" />
-            <stop offset="100%" stopColor="hsl(220, 45%, 28%)" />
+            <stop offset="0%" stopColor="hsl(270, 40%, 55%)" />
+            <stop offset="50%" stopColor="hsl(270, 40%, 45%)" />
+            <stop offset="100%" stopColor="hsl(270, 40%, 35%)" />
           </linearGradient>
 
-          {/* Lens gradient — dark instrument */}
-          <linearGradient id="lensBody" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="hsl(220, 15%, 35%)" />
-            <stop offset="50%" stopColor="hsl(220, 15%, 25%)" />
-            <stop offset="100%" stopColor="hsl(220, 15%, 18%)" />
+          {/* Camera hover gradient */}
+          <linearGradient id="cameraBodyHover" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="hsl(270, 50%, 65%)" />
+            <stop offset="50%" stopColor="hsl(270, 50%, 55%)" />
+            <stop offset="100%" stopColor="hsl(270, 50%, 45%)" />
           </linearGradient>
+
+          {/* Lens gradient */}
+          <linearGradient id="lensBody" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="hsl(30, 20%, 40%)" />
+            <stop offset="50%" stopColor="hsl(30, 20%, 30%)" />
+            <stop offset="100%" stopColor="hsl(30, 20%, 20%)" />
+          </linearGradient>
+
+          {/* Lens glass gradient */}
           <radialGradient id="lensGlass" cx="50%" cy="30%" r="60%">
-            <stop offset="0%" stopColor={SC.cyanLight} stopOpacity="0.6" />
-            <stop offset="100%" stopColor={SC.cyan} stopOpacity="0.25" />
+            <stop offset="0%" stopColor="hsl(200, 50%, 70%)" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="hsl(200, 50%, 40%)" stopOpacity="0.4" />
           </radialGradient>
 
-          {/* Product — light slate */}
+          {/* Product gradient */}
           <linearGradient id="productBody" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="hsl(220, 15%, 88%)" />
-            <stop offset="100%" stopColor="hsl(220, 15%, 82%)" />
+            <stop offset="0%" stopColor="hsl(220, 60%, 40%)" />
+            <stop offset="100%" stopColor="hsl(220, 60%, 25%)" />
           </linearGradient>
 
-          {/* Glow filters */}
+          {/* Ring light glow */}
           <filter id="lightGlow" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-          <filter id="selectGlow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
           </filter>
 
-          {/* Arrow markers — cyan */}
+          {/* Selection highlight */}
+          <filter id="selectGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+
+          {/* Arrow markers */}
           <marker id="arrowUp" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
-            <path d="M1,7 L4,1 L7,7" fill="none" stroke={SC.cyan} strokeWidth="1.5" />
+            <path d="M1,7 L4,1 L7,7" fill="none" stroke="hsl(220, 80%, 50%)" strokeWidth="1.5" />
           </marker>
           <marker id="arrowDown" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
-            <path d="M1,1 L4,7 L7,1" fill="none" stroke={SC.cyan} strokeWidth="1.5" />
+            <path d="M1,1 L4,7 L7,1" fill="none" stroke="hsl(220, 80%, 50%)" strokeWidth="1.5" />
           </marker>
           <marker id="arrowLeft" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
-            <path d="M7,1 L1,4 L7,7" fill="none" stroke={SC.cyan} strokeWidth="1.5" />
+            <path d="M7,1 L1,4 L7,7" fill="none" stroke="hsl(220, 80%, 50%)" strokeWidth="1.5" />
           </marker>
           <marker id="arrowRight" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
-            <path d="M1,1 L7,4 L1,7" fill="none" stroke={SC.cyan} strokeWidth="1.5" />
+            <path d="M1,1 L7,4 L1,7" fill="none" stroke="hsl(220, 80%, 50%)" strokeWidth="1.5" />
           </marker>
         </defs>
 
-        {/* ===== SYSTEMATIC CARTOGRAPHY FRAME ===== */}
-        
-        {/* Outer border — thin precision line */}
-        <rect x="40" y="10" width="450" height="510" fill="none" stroke={SC.navy} strokeWidth="0.8" opacity="0.25" />
+        {/* Blue dashed outer border */}
+        <rect 
+          x="60" y="20" width="430" height="490" rx="8"
+          fill="none" stroke="hsl(220, 80%, 55%)" strokeWidth="1.5" strokeDasharray="8,4"
+          opacity="0.5"
+        />
 
-        {/* Registration corner marks */}
-        <RegistrationMarks x={40} y={10} w={450} h={510} size={14} />
-
-        {/* Tick rulers along diagram edge */}
-        <TickRuler x1={40} y1={520} x2={490} y2={520} count={45} tickLen={3} label={false} />
-        <TickRuler x1={40} y1={10} x2={40} y2={520} count={50} tickLen={3} label={false} />
-
-        {/* Coordinate reference labels */}
-        <text x="44" y="8" fill={SC.textTertiary} style={{ fontSize: '6px', fontFamily: SC.mono, letterSpacing: '0.15em' }}>X:040</text>
-        <text x="484" y="8" fill={SC.textTertiary} style={{ fontSize: '6px', fontFamily: SC.mono, letterSpacing: '0.15em' }} textAnchor="end">X:490</text>
-        <text x="36" y="16" fill={SC.textTertiary} style={{ fontSize: '6px', fontFamily: SC.mono, letterSpacing: '0.15em' }} textAnchor="end" transform="rotate(-90, 36, 16)">Y:010</text>
-
-        {/* Precision grid — fine instrument lines */}
-        <g opacity="0.04">
-          {Array.from({ length: 26 }).map((_, i) => (
-            <line key={`h${i}`} x1="40" y1={10 + i * 20} x2="490" y2={10 + i * 20} stroke={SC.navy} strokeWidth="0.5" />
+        {/* Background grid - subtle */}
+        <g opacity="0.06">
+          {Array.from({ length: 13 }).map((_, i) => (
+            <line key={`h${i}`} x1="60" y1={20 + i * 40} x2="490" y2={20 + i * 40} stroke="#000000" strokeWidth="0.5" />
           ))}
-          {Array.from({ length: 23 }).map((_, i) => (
-            <line key={`v${i}`} x1={40 + i * 20} y1="10" x2={40 + i * 20} y2="520" stroke={SC.navy} strokeWidth="0.5" />
-          ))}
-        </g>
-        {/* Major grid — every 100px */}
-        <g opacity="0.08">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <line key={`mh${i}`} x1="40" y1={10 + i * 100} x2="490" y2={10 + i * 100} stroke={SC.navy} strokeWidth="0.8" />
-          ))}
-          {Array.from({ length: 5 }).map((_, i) => (
-            <line key={`mv${i}`} x1={40 + i * 100} y1="10" x2={40 + i * 100} y2="520" stroke={SC.navy} strokeWidth="0.8" />
+          {Array.from({ length: 12 }).map((_, i) => (
+            <line key={`v${i}`} x1={60 + i * 40} y1="20" x2={60 + i * 40} y2="510" stroke="#000000" strokeWidth="0.5" />
           ))}
         </g>
 
-        {/* Center crosshair — calibration reference */}
-        <g opacity="0.12" stroke={SC.cyan} strokeWidth="0.5">
-          <line x1="265" y1="255" x2="265" y2="275" />
-          <line x1="255" y1="265" x2="275" y2="265" />
-          <circle cx="265" cy="265" r="6" fill="none" />
-        </g>
-
-        {/* Title block — bottom-left engineering ref */}
-        <g>
-          <line x1="40" y1="530" x2="490" y2="530" stroke={SC.navy} strokeWidth="0.5" opacity="0.15" />
-          <text x="44" y="542" fill={SC.textTertiary} style={{ fontSize: '7px', fontFamily: SC.mono, letterSpacing: '0.15em' }}>OPTICAL CONFIGURATION · SYSTEMATIC CARTOGRAPHY</text>
-          <text x="486" y="542" textAnchor="end" fill={SC.textTertiary} style={{ fontSize: '6px', fontFamily: SC.mono, letterSpacing: '0.1em' }}>REF.OPT-001</text>
-        </g>
-
-        {/* ===== FOV Cone — cyan optical path ===== */}
+        {/* ===== FOV Cone - saturated purple, from lens bottom through light & bracket to product ===== */}
         <polygon 
           points={`275,175 ${275 - fovOffsetX},420 ${275 + fovOffsetX},420`}
           fill="url(#fovGradient)"
         />
         <line 
           x1="275" y1="175" x2={275 - fovOffsetX} y2="420" 
-          stroke={SC.cyan} strokeWidth="1" strokeDasharray="6,4" opacity="0.45"
+          stroke="hsl(270, 50%, 60%)" strokeWidth="1.5" strokeDasharray="6,3" opacity="0.6"
         />
         <line 
           x1="275" y1="175" x2={275 + fovOffsetX} y2="420" 
-          stroke={SC.cyan} strokeWidth="1" strokeDasharray="6,4" opacity="0.45"
+          stroke="hsl(270, 50%, 60%)" strokeWidth="1.5" strokeDasharray="6,3" opacity="0.6"
         />
         {/* FOV angle arc */}
         <path 
           d={`M ${275 - 15} 190 A 20 20 0 0 1 ${275 + 15} 190`}
-          fill="none" stroke={SC.cyan} strokeWidth="1"
+          fill="none" stroke="hsl(270, 50%, 60%)" strokeWidth="1.5"
         />
-        <text x="300" y="187" textAnchor="start" fill={SC.textPrimary} style={{ fontSize: '10px', fontFamily: SC.mono, fontWeight: 500 }}>
+        <text x="300" y="187" textAnchor="start" fill="#333333" style={{ fontSize: '11px', fontWeight: 500 }}>
           {fovAngle}°
         </text>
 
-        {/* ===== Camera Mounting Bracket ===== */}
+        {/* ===== Camera Mounting Bracket - gray cross shape ===== */}
         <g>
-          <rect x="195" y="260" width="160" height="10" rx="1" fill="hsl(220, 15%, 55%)" />
-          <rect x="265" y="253" width="20" height="24" rx="1" fill="hsl(220, 15%, 55%)" />
-          {/* Mounting holes — precision circles */}
-          <circle cx="215" cy="265" r="3" fill="none" stroke={SC.slate} strokeWidth="0.8" />
-          <circle cx="215" cy="265" r="1" fill={SC.slate} />
-          <circle cx="335" cy="265" r="3" fill="none" stroke={SC.slate} strokeWidth="0.8" />
-          <circle cx="335" cy="265" r="1" fill={SC.slate} />
+          {/* Horizontal bar */}
+          <rect x="195" y="260" width="160" height="10" rx="2" fill="hsl(0, 0%, 50%)" />
+          {/* Vertical bar */}
+          <rect x="265" y="253" width="20" height="24" rx="2" fill="hsl(0, 0%, 50%)" />
+          {/* Mounting holes */}
+          <circle cx="215" cy="265" r="3" fill="hsl(0, 0%, 35%)" />
+          <circle cx="335" cy="265" r="3" fill="hsl(0, 0%, 35%)" />
         </g>
 
-        {/* ===== Detection point — cyan crosshair ===== */}
+        {/* ===== Detection point on product surface ===== */}
         <g>
-          <circle cx="275" cy="435" r="5" fill={SC.cyan} opacity="0.8" />
-          <circle cx="275" cy="435" r="9" fill="none" stroke={SC.cyan} strokeWidth="0.8" opacity="0.4" />
-          <circle cx="275" cy="435" r="13" fill="none" stroke={SC.cyan} strokeWidth="0.5" strokeDasharray="2,2" opacity="0.25" />
+          <circle cx="275" cy="435" r="5" fill="hsl(220, 80%, 55%)" />
+          <circle cx="275" cy="435" r="8" fill="none" stroke="hsl(220, 80%, 55%)" strokeWidth="1" opacity="0.5" />
           {/* Leader line */}
-          <line x1="288" y1="435" x2="340" y2="435" stroke={SC.cyan} strokeWidth="0.8" strokeDasharray="3,2" opacity="0.5" />
-          <text x="345" y="438" fill={SC.cyan} style={{ fontSize: '8px', fontFamily: SC.mono, letterSpacing: '0.1em' }}>DET.POINT</text>
+          <line x1="283" y1="435" x2="340" y2="435" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
+          <text x="345" y="438" fill="hsl(220, 80%, 45%)" style={{ fontSize: '10px' }}>检测点</text>
         </g>
 
-        {/* ===== Product ===== */}
+        {/* ===== Product - gray rectangle ===== */}
         <g>
-          <rect x="200" y="420" width="150" height="40" rx="2" fill="url(#productBody)" stroke={SC.cardBorder} strokeWidth="0.5" />
+          <rect x="200" y="420" width="150" height="40" rx="3" fill="hsl(220, 10%, 85%)" />
+          <rect x="200" y="420" width="150" height="40" rx="3" fill="none" stroke="hsl(220, 10%, 70%)" strokeWidth="1" />
           {/* ROI indicator */}
           <rect 
             x={roiStrategy === 'full' ? 205 : 225} y="424" 
-            width={roiStrategy === 'full' ? 140 : 100} height="32" rx="1"
-            fill="none" stroke="hsl(160, 70%, 45%)" strokeWidth="1.2" strokeDasharray="4,2" opacity="0.6"
+            width={roiStrategy === 'full' ? 140 : 100} height="32" rx="2"
+            fill="none" stroke="hsl(120, 70%, 50%)" strokeWidth="1.5" strokeDasharray="4,2" opacity="0.7"
           />
-          <text x="275" y="443" textAnchor="middle" fill={SC.textPrimary} style={{ fontSize: '9px', fontFamily: SC.mono, fontWeight: 500, letterSpacing: '0.1em' }}>
-            SPECIMEN
+          <text x="275" y="443" textAnchor="middle" fill="#333333" style={{ fontSize: '10px', fontWeight: 500 }}>
+            产品
           </text>
         </g>
 
-        {/* ===== Dimension line — vertical (working distance) ===== */}
+        {/* ===== Dimension line - vertical (working distance) ===== */}
         <g>
-          <line x1="100" y1="175" x2="125" y2="175" stroke={SC.cyan} strokeWidth="0.8" strokeDasharray="3,2" opacity="0.5" />
-          <line x1="100" y1="420" x2="125" y2="420" stroke={SC.cyan} strokeWidth="0.8" strokeDasharray="3,2" opacity="0.5" />
-          <line x1="112" y1="185" x2="112" y2="410" stroke={SC.cyan} strokeWidth="1" markerStart="url(#arrowUp)" markerEnd="url(#arrowDown)" />
-          <text x="98" y="310" textAnchor="middle" fill={SC.textPrimary} style={{ fontSize: '9px', fontFamily: SC.mono, fontWeight: 500 }} transform="rotate(-90, 98, 310)">
-            WD {lightDistance}±20mm
+          {/* Top tick at lens bottom level */}
+          <line x1="120" y1="175" x2="150" y2="175" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
+          {/* Bottom tick at product top */}
+          <line x1="120" y1="420" x2="150" y2="420" stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
+          {/* Vertical line with arrows */}
+          <line 
+            x1="135" y1="185" x2="135" y2="410" 
+            stroke="hsl(220, 80%, 55%)" strokeWidth="1.5"
+            markerStart="url(#arrowUp)" markerEnd="url(#arrowDown)"
+          />
+          {/* Distance label */}
+          <text 
+            x="118" y="350" textAnchor="middle" fill="#333333"
+            style={{ fontSize: '11px', fontWeight: 500 }}
+            transform="rotate(-90, 118, 350)"
+          >
+            {lightDistance}±20mm
           </text>
         </g>
 
         {/* ===== FOV width dimension ===== */}
         <g>
-          <line x1={275 - fovOffsetX} y1="465" x2={275 - fovOffsetX} y2="478" stroke={SC.cyan} strokeWidth="0.8" />
-          <line x1={275 + fovOffsetX} y1="465" x2={275 + fovOffsetX} y2="478" stroke={SC.cyan} strokeWidth="0.8" />
+          <line x1={275 - fovOffsetX} y1="465" x2={275 - fovOffsetX} y2="478" stroke="hsl(220, 80%, 55%)" strokeWidth="1" />
+          <line x1={275 + fovOffsetX} y1="465" x2={275 + fovOffsetX} y2="478" stroke="hsl(220, 80%, 55%)" strokeWidth="1" />
           <line 
             x1={275 - fovOffsetX + 8} y1="473" x2={275 + fovOffsetX - 8} y2="473"
-            stroke={SC.cyan} strokeWidth="1"
+            stroke="hsl(220, 80%, 55%)" strokeWidth="1.5"
             markerStart="url(#arrowLeft)" markerEnd="url(#arrowRight)"
           />
-          <text x="275" y="490" textAnchor="middle" fill={SC.textPrimary} style={{ fontSize: '8px', fontFamily: SC.mono, letterSpacing: '0.05em' }}>
-            FOV ≈{Math.round(fovOffsetX * 2)}mm
+          <text x="275" y="492" textAnchor="middle" fill="#333333" style={{ fontSize: '10px' }}>
+            视野宽度 ~{Math.round(fovOffsetX * 2)}mm
           </text>
         </g>
 
-        {/* Connection lines to annotation panel — thin cyan dashes */}
-        <g stroke={SC.cyan} strokeWidth="0.6" strokeDasharray="4,3" opacity="0.3">
-          <line x1="320" y1="77" x2="500" y2="55" />
-          <line x1="323" y1="151" x2="500" y2="140" />
-          <line x1="360" y1="231" x2="500" y2="215" />
+        {/* Connection lines to annotation panel */}
+        <g stroke="hsl(220, 80%, 50%)" strokeWidth="1" strokeDasharray="4,2" opacity="0.5">
+          <line x1="320" y1="77" x2="495" y2="55" />
+          <line x1="323" y1="151" x2="495" y2="140" />
+          <line x1="360" y1="231" x2="495" y2="210" />
         </g>
 
         {/* ===== Camera Element ===== */}
@@ -516,11 +430,11 @@ export function VisionSystemDiagram({
               >
                 <button className={cn("relative w-full h-full cursor-pointer group bg-transparent border-0 p-0")}>
                   <svg width="90" height="85" viewBox="0 0 90 85">
-                    <rect x="0" y="0" width="90" height="72" rx="4" fill="url(#cameraBody)" />
-                    <rect x="8" y="5" width="28" height="6" rx="1" fill="hsl(220, 30%, 40%)" opacity="0.5" />
-                    <circle cx="76" cy="11" r="3" fill={SC.cyan} />
-                    <text x="45" y="48" textAnchor="middle" fill={SC.white} style={{ fontSize: '11px', fontFamily: SC.mono, fontWeight: 600, letterSpacing: '0.15em' }}>CAM-1</text>
-                    <rect x="32" y="72" width="26" height="13" fill="hsl(220, 15%, 18%)" />
+                    <rect x="0" y="0" width="90" height="72" rx="6" fill="url(#cameraBody)" />
+                    <rect x="8" y="5" width="28" height="8" rx="2" fill="hsl(270, 30%, 60%)" opacity="0.5" />
+                    <circle cx="76" cy="11" r="4" fill="hsl(120, 70%, 50%)" />
+                    <text x="45" y="48" textAnchor="middle" fill="white" style={{ fontSize: '14px', fontWeight: 600 }}>Cam1</text>
+                    <rect x="32" y="72" width="26" height="13" fill="hsl(0, 0%, 22%)" />
                   </svg>
                   {onCameraSelect && (
                     <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -529,7 +443,7 @@ export function VisionSystemDiagram({
                   )}
                   {!hasCamera && (
                     <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded">
-                      <span className="text-xs text-muted-foreground font-mono">SELECT</span>
+                      <span className="text-xs text-muted-foreground">点击选择</span>
                     </div>
                   )}
                 </button>
@@ -538,11 +452,11 @@ export function VisionSystemDiagram({
           </foreignObject>
         ) : (
           <g transform="translate(230, 35)">
-            <rect x="0" y="0" width="90" height="72" rx="4" fill="url(#cameraBody)" />
-            <rect x="8" y="5" width="28" height="6" rx="1" fill="hsl(220, 30%, 40%)" opacity="0.5" />
-            <circle cx="76" cy="11" r="3" fill={SC.cyan} />
-            <text x="45" y="48" textAnchor="middle" fill={SC.white} style={{ fontSize: '11px', fontFamily: SC.mono, fontWeight: 600, letterSpacing: '0.15em' }}>CAM-1</text>
-            <rect x="32" y="72" width="26" height="13" fill="hsl(220, 15%, 18%)" />
+            <rect x="0" y="0" width="90" height="72" rx="6" fill="url(#cameraBody)" />
+            <rect x="8" y="5" width="28" height="8" rx="2" fill="hsl(270, 30%, 60%)" opacity="0.5" />
+            <circle cx="76" cy="11" r="4" fill="hsl(120, 70%, 50%)" />
+            <text x="45" y="48" textAnchor="middle" fill="white" style={{ fontSize: '14px', fontWeight: 600 }}>Cam1</text>
+            <rect x="32" y="72" width="26" height="13" fill="hsl(0, 0%, 22%)" />
           </g>
         )}
 
@@ -559,11 +473,11 @@ export function VisionSystemDiagram({
               >
                 <button className={cn("relative w-full h-full cursor-pointer group bg-transparent border-0 p-0")}>
                   <svg width="96" height="62" viewBox="0 0 96 62">
-                    <rect x="8" y="0" width="80" height="48" rx="2" fill="url(#lensBody)" />
+                    <rect x="8" y="0" width="80" height="48" rx="3" fill="url(#lensBody)" />
                     <ellipse cx="48" cy="38" rx="22" ry="7" fill="url(#lensGlass)" />
-                    <rect x="0" y="44" width="96" height="12" rx="1" fill="hsl(220, 15%, 15%)" />
-                    <rect x="13" y="12" width="70" height="2" fill="hsl(220, 10%, 38%)" rx="1" />
-                    <rect x="13" y="26" width="70" height="2" fill="hsl(220, 10%, 38%)" rx="1" />
+                    <rect x="0" y="44" width="96" height="12" rx="2" fill="hsl(0, 0%, 18%)" />
+                    <rect x="13" y="12" width="70" height="2.5" fill="hsl(30, 15%, 45%)" rx="1" />
+                    <rect x="13" y="26" width="70" height="2.5" fill="hsl(30, 15%, 45%)" rx="1" />
                   </svg>
                   {onLensSelect && (
                     <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -572,7 +486,7 @@ export function VisionSystemDiagram({
                   )}
                   {!hasLens && (
                     <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded">
-                      <span className="text-xs text-muted-foreground font-mono">SELECT</span>
+                      <span className="text-xs text-muted-foreground">点击选择</span>
                     </div>
                   )}
                 </button>
@@ -581,11 +495,11 @@ export function VisionSystemDiagram({
           </foreignObject>
         ) : (
           <g transform="translate(227, 120)">
-            <rect x="8" y="0" width="80" height="48" rx="2" fill="url(#lensBody)" />
+            <rect x="8" y="0" width="80" height="48" rx="3" fill="url(#lensBody)" />
             <ellipse cx="48" cy="38" rx="22" ry="7" fill="url(#lensGlass)" />
-            <rect x="0" y="44" width="96" height="12" rx="1" fill="hsl(220, 15%, 15%)" />
-            <rect x="13" y="12" width="70" height="2" fill="hsl(220, 10%, 38%)" rx="1" />
-            <rect x="13" y="26" width="70" height="2" fill="hsl(220, 10%, 38%)" rx="1" />
+            <rect x="0" y="44" width="96" height="12" rx="2" fill="hsl(0, 0%, 18%)" />
+            <rect x="13" y="12" width="70" height="2.5" fill="hsl(30, 15%, 45%)" rx="1" />
+            <rect x="13" y="26" width="70" height="2.5" fill="hsl(30, 15%, 45%)" rx="1" />
           </g>
         )}
 
@@ -602,11 +516,11 @@ export function VisionSystemDiagram({
               >
                 <button className={cn("relative w-full h-full cursor-pointer group bg-transparent border-0 p-0")}>
                   <svg width="160" height="32" viewBox="0 0 160 32">
-                    <rect x="0" y="0" width="160" height="32" rx="2" fill="hsl(220, 15%, 40%)" />
-                    <rect x="3" y="3" width="154" height="26" rx="2" fill="hsl(220, 15%, 30%)" />
-                    <rect x="45" y="6" width="70" height="20" rx="2" fill="hsl(220, 15%, 12%)" />
-                    <rect x="8" y="8" width="32" height="16" rx="1" fill="hsl(0, 65%, 45%)" />
-                    <rect x="120" y="8" width="32" height="16" rx="1" fill="hsl(0, 65%, 45%)" />
+                    <rect x="0" y="0" width="160" height="32" rx="4" fill="hsl(0, 0%, 45%)" />
+                    <rect x="3" y="3" width="154" height="26" rx="3" fill="hsl(0, 0%, 35%)" />
+                    <rect x="45" y="6" width="70" height="20" rx="3" fill="hsl(0, 0%, 12%)" />
+                    <rect x="8" y="8" width="32" height="16" rx="2" fill="hsl(0, 80%, 50%)" />
+                    <rect x="120" y="8" width="32" height="16" rx="2" fill="hsl(0, 80%, 50%)" />
                   </svg>
                   {onLightSelect && (
                     <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -615,7 +529,7 @@ export function VisionSystemDiagram({
                   )}
                   {!hasLight && (
                     <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded">
-                      <span className="text-xs text-muted-foreground font-mono">SELECT</span>
+                      <span className="text-xs text-muted-foreground">点击选择</span>
                     </div>
                   )}
                 </button>
@@ -624,11 +538,11 @@ export function VisionSystemDiagram({
           </foreignObject>
         ) : (
           <g transform="translate(195, 215)">
-            <rect x="0" y="0" width="160" height="32" rx="2" fill="hsl(220, 15%, 40%)" />
-            <rect x="3" y="3" width="154" height="26" rx="2" fill="hsl(220, 15%, 30%)" />
-            <rect x="45" y="6" width="70" height="20" rx="2" fill="hsl(220, 15%, 12%)" />
-            <rect x="8" y="8" width="32" height="16" rx="1" fill="hsl(0, 65%, 45%)" />
-            <rect x="120" y="8" width="32" height="16" rx="1" fill="hsl(0, 65%, 45%)" />
+            <rect x="0" y="0" width="160" height="32" rx="4" fill="hsl(0, 0%, 45%)" />
+            <rect x="3" y="3" width="154" height="26" rx="3" fill="hsl(0, 0%, 35%)" />
+            <rect x="45" y="6" width="70" height="20" rx="3" fill="hsl(0, 0%, 12%)" />
+            <rect x="8" y="8" width="32" height="16" rx="2" fill="hsl(0, 80%, 50%)" />
+            <rect x="120" y="8" width="32" height="16" rx="2" fill="hsl(0, 80%, 50%)" />
           </g>
         )}
 
@@ -645,24 +559,24 @@ export function VisionSystemDiagram({
               >
                 <div className="relative w-full h-full cursor-pointer group">
                   <svg width="140" height="80" viewBox="0 0 140 80">
-                    <rect x="0" y="5" width="140" height="70" rx="2" fill="hsl(220, 20%, 22%)" />
-                    <rect x="4" y="9" width="132" height="62" rx="1" fill="hsl(220, 20%, 17%)" />
-                    <rect x="8" y="13" width="124" height="54" rx="1" fill="hsl(220, 20%, 13%)" />
-                    <circle cx="20" cy="28" r="5" fill="hsl(220, 15%, 25%)" />
-                    <circle cx="20" cy="28" r="3" fill={SC.cyan} />
-                    <rect x="32" y="20" width="45" height="12" rx="1" fill="hsl(220, 15%, 20%)" />
-                    <circle cx="85" cy="26" r="2" fill={SC.cyan} />
-                    <circle cx="93" cy="26" r="2" fill="hsl(40, 70%, 50%)" />
-                    <g fill="hsl(220, 15%, 10%)">
+                    <rect x="0" y="5" width="140" height="70" rx="3" fill="hsl(220, 15%, 25%)" />
+                    <rect x="4" y="9" width="132" height="62" rx="2" fill="hsl(220, 15%, 20%)" />
+                    <rect x="8" y="13" width="124" height="54" rx="2" fill="hsl(220, 15%, 15%)" />
+                    <circle cx="20" cy="28" r="5" fill="hsl(220, 10%, 30%)" />
+                    <circle cx="20" cy="28" r="3" fill="hsl(120, 70%, 50%)" />
+                    <rect x="32" y="20" width="45" height="12" rx="1" fill="hsl(220, 10%, 25%)" />
+                    <circle cx="85" cy="26" r="2" fill="hsl(220, 80%, 50%)" />
+                    <circle cx="93" cy="26" r="2" fill="hsl(40, 80%, 50%)" />
+                    <g fill="hsl(220, 10%, 10%)">
                       <rect x="105" y="18" width="22" height="2" rx="1" />
                       <rect x="105" y="23" width="22" height="2" rx="1" />
                       <rect x="105" y="28" width="22" height="2" rx="1" />
                       <rect x="105" y="33" width="22" height="2" rx="1" />
                     </g>
-                    <rect x="16" y="50" width="10" height="5" rx="1" fill="hsl(220, 15%, 12%)" stroke="hsl(220, 10%, 35%)" strokeWidth="0.5" />
-                    <rect x="30" y="50" width="10" height="5" rx="1" fill="hsl(220, 15%, 12%)" stroke="hsl(220, 10%, 35%)" strokeWidth="0.5" />
-                    <rect x="46" y="49" width="16" height="7" rx="1" fill="hsl(220, 15%, 12%)" stroke={SC.cyan} strokeWidth="0.5" />
-                    <text x="100" y="58" textAnchor="middle" fill={SC.white} style={{ fontSize: '8px', fontFamily: SC.mono, fontWeight: 500, letterSpacing: '0.15em' }}>IPC</text>
+                    <rect x="16" y="50" width="10" height="5" rx="1" fill="hsl(0, 0%, 15%)" stroke="hsl(0, 0%, 40%)" strokeWidth="0.5" />
+                    <rect x="30" y="50" width="10" height="5" rx="1" fill="hsl(0, 0%, 15%)" stroke="hsl(0, 0%, 40%)" strokeWidth="0.5" />
+                    <rect x="46" y="49" width="16" height="7" rx="1" fill="hsl(0, 0%, 15%)" stroke="hsl(220, 80%, 50%)" strokeWidth="0.5" />
+                    <text x="100" y="58" textAnchor="middle" fill="#ffffff" style={{ fontSize: '9px', fontWeight: 500 }}>IPC</text>
                   </svg>
                   {onControllerSelect && (
                     <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -675,214 +589,239 @@ export function VisionSystemDiagram({
           </foreignObject>
         ) : (
           <g transform="translate(370, 385)">
-            <rect x="0" y="5" width="140" height="70" rx="2" fill="hsl(220, 20%, 22%)" />
-            <rect x="4" y="9" width="132" height="62" rx="1" fill="hsl(220, 20%, 17%)" />
-            <rect x="8" y="13" width="124" height="54" rx="1" fill="hsl(220, 20%, 13%)" />
-            <circle cx="20" cy="28" r="5" fill="hsl(220, 15%, 25%)" />
-            <circle cx="20" cy="28" r="3" fill={SC.cyan} />
-            <rect x="32" y="20" width="45" height="12" rx="1" fill="hsl(220, 15%, 20%)" />
-            <circle cx="85" cy="26" r="2" fill={SC.cyan} />
-            <circle cx="93" cy="26" r="2" fill="hsl(40, 70%, 50%)" />
-            <g fill="hsl(220, 15%, 10%)">
+            <rect x="0" y="5" width="140" height="70" rx="3" fill="hsl(220, 15%, 25%)" />
+            <rect x="4" y="9" width="132" height="62" rx="2" fill="hsl(220, 15%, 20%)" />
+            <rect x="8" y="13" width="124" height="54" rx="2" fill="hsl(220, 15%, 15%)" />
+            <circle cx="20" cy="28" r="5" fill="hsl(220, 10%, 30%)" />
+            <circle cx="20" cy="28" r="3" fill="hsl(120, 70%, 50%)" />
+            <rect x="32" y="20" width="45" height="12" rx="1" fill="hsl(220, 10%, 25%)" />
+            <circle cx="85" cy="26" r="2" fill="hsl(220, 80%, 50%)" />
+            <circle cx="93" cy="26" r="2" fill="hsl(40, 80%, 50%)" />
+            <g fill="hsl(220, 10%, 10%)">
               <rect x="105" y="18" width="22" height="2" rx="1" />
               <rect x="105" y="23" width="22" height="2" rx="1" />
               <rect x="105" y="28" width="22" height="2" rx="1" />
               <rect x="105" y="33" width="22" height="2" rx="1" />
             </g>
-            <rect x="16" y="50" width="10" height="5" rx="1" fill="hsl(220, 15%, 12%)" stroke="hsl(220, 10%, 35%)" strokeWidth="0.5" />
-            <rect x="30" y="50" width="10" height="5" rx="1" fill="hsl(220, 15%, 12%)" stroke="hsl(220, 10%, 35%)" strokeWidth="0.5" />
-            <rect x="46" y="49" width="16" height="7" rx="1" fill="hsl(220, 15%, 12%)" stroke={SC.cyan} strokeWidth="0.5" />
-            <text x="100" y="58" textAnchor="middle" fill={SC.white} style={{ fontSize: '8px', fontFamily: SC.mono, fontWeight: 500, letterSpacing: '0.15em' }}>IPC</text>
+            <rect x="16" y="50" width="10" height="5" rx="1" fill="hsl(0, 0%, 15%)" stroke="hsl(0, 0%, 40%)" strokeWidth="0.5" />
+            <rect x="30" y="50" width="10" height="5" rx="1" fill="hsl(0, 0%, 15%)" stroke="hsl(0, 0%, 40%)" strokeWidth="0.5" />
+            <rect x="46" y="49" width="16" height="7" rx="1" fill="hsl(0, 0%, 15%)" stroke="hsl(220, 80%, 50%)" strokeWidth="0.5" />
+            <text x="100" y="58" textAnchor="middle" fill="#ffffff" style={{ fontSize: '9px', fontWeight: 500 }}>IPC</text>
           </g>
         ))}
 
-        {/* ===== ANNOTATION PANEL ===== */}
+        {/* Annotations panel - pure SVG for export, foreignObject for interactive */}
         {interactive ? (
           <foreignObject x="500" y="20" width="290" height="680">
-            <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {/* Camera specs */}
-              <div style={{ backgroundColor: SC.cardBg, borderRadius: '3px', padding: '8px 10px', border: `0.5px solid ${SC.cardBorder}`, borderLeft: `2px solid ${SC.cyan}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <span style={{ fontWeight: 600, fontSize: '10px', color: SC.textPrimary, fontFamily: SC.mono, letterSpacing: '0.12em' }}>CAMERA</span>
-                  <span style={{ fontSize: '7px', color: SC.textTertiary, fontFamily: SC.mono, letterSpacing: '0.1em' }}>REF.CAM</span>
+              <div style={{ backgroundColor: 'hsl(220, 10%, 96%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 82%)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                  <span style={{ fontSize: '14px' }}>📷</span>
+                  <span style={{ fontWeight: 600, fontSize: '12px', color: '#333333' }}>工业相机</span>
                 </div>
-                <div style={{ height: '0.5px', background: SC.cardBorder, margin: '0 0 4px 0' }} />
                 {hasCamera ? (
                   <>
-                     <p style={{ fontSize: '10px', color: SC.textPrimary, margin: 0, fontFamily: SC.mono }}>{camera.resolution} · {camera.sensor_size}</p>
-                     <p style={{ fontSize: '9px', color: SC.textSecondary, margin: 0, fontFamily: SC.mono }}>{camera.brand} {camera.model} @ {camera.frame_rate}fps</p>
+                     <p style={{ fontSize: '11px', color: '#333333', margin: 0 }}>{camera.resolution} · 靶面{camera.sensor_size}</p>
+                     <p style={{ fontSize: '10px', color: '#666666', margin: 0 }}>{camera.brand} {camera.model} @ {camera.frame_rate}fps</p>
                   </>
                 ) : (
-                  <p style={{ fontSize: '9px', color: SC.textTertiary, margin: 0, fontFamily: SC.mono }}>— NOT CONFIGURED —</p>
+                  <p style={{ fontSize: '10px', color: '#666666', margin: 0 }}>点击左侧相机图标选择</p>
                 )}
               </div>
 
               {/* Lens specs */}
-              <div style={{ backgroundColor: SC.cardBg, borderRadius: '3px', padding: '8px 10px', border: `0.5px solid ${SC.cardBorder}`, borderLeft: `2px solid ${SC.cyan}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <span style={{ fontWeight: 600, fontSize: '10px', color: SC.textPrimary, fontFamily: SC.mono, letterSpacing: '0.12em' }}>LENS</span>
-                  <span style={{ fontSize: '7px', color: SC.textTertiary, fontFamily: SC.mono, letterSpacing: '0.1em' }}>REF.LNS</span>
+              <div style={{ backgroundColor: 'hsl(220, 10%, 96%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 82%)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                  <span style={{ fontSize: '14px' }}>🔭</span>
+                  <span style={{ fontWeight: 600, fontSize: '12px', color: '#333333' }}>工业镜头</span>
                 </div>
-                <div style={{ height: '0.5px', background: SC.cardBorder, margin: '0 0 4px 0' }} />
                 {hasLens ? (
                   <>
-                     <p style={{ fontSize: '10px', color: SC.textPrimary, margin: 0, fontFamily: SC.mono }}>f={lens.focal_length} · {lens.aperture}</p>
-                     <p style={{ fontSize: '9px', color: SC.textSecondary, margin: 0, fontFamily: SC.mono }}>{lens.brand} {lens.model}</p>
+                     <p style={{ fontSize: '11px', color: '#333333', margin: 0 }}>焦距 {lens.focal_length} · 光圈 {lens.aperture}</p>
+                     <p style={{ fontSize: '10px', color: '#666666', margin: 0 }}>{lens.brand} {lens.model}</p>
                   </>
                 ) : (
-                  <p style={{ fontSize: '9px', color: SC.textTertiary, margin: 0, fontFamily: SC.mono }}>— NOT CONFIGURED —</p>
+                  <p style={{ fontSize: '10px', color: '#666666', margin: 0 }}>点击左侧镜头图标选择</p>
                 )}
               </div>
 
               {/* Light specs */}
-              <div style={{ backgroundColor: SC.cardBg, borderRadius: '3px', padding: '8px 10px', border: `0.5px solid ${SC.cardBorder}`, borderLeft: `2px solid ${SC.cyan}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <span style={{ fontWeight: 600, fontSize: '10px', color: SC.textPrimary, fontFamily: SC.mono, letterSpacing: '0.12em' }}>ILLUMINATION</span>
-                  <span style={{ fontSize: '7px', color: SC.textTertiary, fontFamily: SC.mono, letterSpacing: '0.1em' }}>REF.ILL</span>
+              <div style={{ backgroundColor: 'hsl(220, 10%, 96%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 82%)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                  <span style={{ fontSize: '14px' }}>💡</span>
+                  <span style={{ fontWeight: 600, fontSize: '12px', color: '#333333' }}>光源</span>
                 </div>
-                <div style={{ height: '0.5px', background: SC.cardBorder, margin: '0 0 4px 0' }} />
                 {hasLight ? (
                   <>
-                     <p style={{ fontSize: '10px', color: SC.textPrimary, margin: 0, fontFamily: SC.mono }}>{light.color}{light.type} · {light.power}</p>
-                     <p style={{ fontSize: '9px', color: SC.textSecondary, margin: 0, fontFamily: SC.mono }}>{light.brand} {light.model}</p>
-                     <p style={{ fontSize: '9px', color: SC.textSecondary, margin: '2px 0 0 0', fontFamily: SC.mono }}>WD: {lightDistance}±20mm</p>
+                     <p style={{ fontSize: '11px', color: '#333333', margin: 0 }}>{light.color}{light.type} · {light.power}</p>
+                     <p style={{ fontSize: '10px', color: '#666666', margin: 0 }}>{light.brand} {light.model}</p>
+                     <p style={{ fontSize: '10px', color: '#666666', margin: '2px 0 0 0' }}>光源距离产品：{lightDistance}±20mm</p>
                   </>
                 ) : (
-                  <p style={{ fontSize: '9px', color: SC.textTertiary, margin: 0, fontFamily: SC.mono }}>— NOT CONFIGURED —</p>
+                  <p style={{ fontSize: '10px', color: '#666666', margin: 0 }}>点击左侧光源图标选择</p>
                 )}
               </div>
 
-              {/* FOV info */}
-              <div style={{ backgroundColor: SC.cardBg, borderRadius: '3px', padding: '8px 10px', border: `0.5px solid ${SC.cardBorder}`, borderLeft: `2px solid ${SC.cyan}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <span style={{ fontWeight: 600, fontSize: '10px', color: SC.textPrimary, fontFamily: SC.mono, letterSpacing: '0.12em' }}>FIELD OF VIEW</span>
-                  <span style={{ fontSize: '7px', color: SC.textTertiary, fontFamily: SC.mono, letterSpacing: '0.1em' }}>REF.FOV</span>
+              {/* FOV info - editable */}
+              <div style={{ backgroundColor: 'hsl(220, 10%, 96%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 82%)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                  <span style={{ fontSize: '14px' }}>📐</span>
+                  <span style={{ fontWeight: 600, fontSize: '12px', color: '#333333' }}>视野参数</span>
+                  {(onFovAngleChange || onLightDistanceChange) && (
+                    <span style={{ fontSize: '9px', color: '#666666', marginLeft: 'auto' }}>可编辑</span>
+                  )}
                 </div>
-                <div style={{ height: '0.5px', background: SC.cardBorder, margin: '0 0 4px 0' }} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '9px', color: SC.textSecondary, width: '64px', fontFamily: SC.mono }}>ANGLE:</span>
+                    <span style={{ fontSize: '10px', color: '#333333', width: '56px' }}>视角:</span>
                     {onFovAngleChange ? (
                       <input
                         type="number"
                         value={fovAngle}
                         onChange={(e) => onFovAngleChange(parseFloat(e.target.value) || 45)}
-                        style={{ width: '56px', height: '22px', fontSize: '10px', padding: '0 6px', borderRadius: '2px', border: `1px solid ${SC.cardBorder}`, backgroundColor: SC.white, color: SC.textPrimary, fontFamily: SC.mono, outline: 'none' }}
-                        min="10" max="120"
+                        style={{ width: '56px', height: '24px', fontSize: '11px', padding: '0 6px', borderRadius: '4px', border: '1px solid hsl(220, 15%, 78%)', backgroundColor: 'hsl(220, 10%, 98%)', color: '#333', outline: 'none' }}
+                        min="10"
+                        max="120"
                       />
                     ) : (
-                      <span style={{ fontSize: '10px', color: SC.textPrimary, fontFamily: SC.mono }}>{fovAngle}</span>
+                      <span style={{ fontSize: '11px', color: '#333333' }}>{fovAngle}</span>
                     )}
-                    <span style={{ fontSize: '9px', color: SC.textSecondary, fontFamily: SC.mono }}>°</span>
+                    <span style={{ fontSize: '10px', color: '#333333' }}>°</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '9px', color: SC.textSecondary, width: '64px', fontFamily: SC.mono }}>WD:</span>
+                    <span style={{ fontSize: '10px', color: '#333333', width: '56px' }}>工作距离:</span>
                     {onLightDistanceChange ? (
                       <input
                         type="number"
                         value={lightDistance}
                         onChange={(e) => onLightDistanceChange(parseFloat(e.target.value) || 335)}
-                        style={{ width: '56px', height: '22px', fontSize: '10px', padding: '0 6px', borderRadius: '2px', border: `1px solid ${SC.cardBorder}`, backgroundColor: SC.white, color: SC.textPrimary, fontFamily: SC.mono, outline: 'none' }}
-                        min="50" max="1000"
+                        style={{ width: '56px', height: '24px', fontSize: '11px', padding: '0 6px', borderRadius: '4px', border: '1px solid hsl(220, 15%, 78%)', backgroundColor: 'hsl(220, 10%, 98%)', color: '#333', outline: 'none' }}
+                        min="50"
+                        max="1000"
                       />
                     ) : (
-                      <span style={{ fontSize: '10px', color: SC.textPrimary, fontFamily: SC.mono }}>{lightDistance}</span>
+                      <span style={{ fontSize: '11px', color: '#333333' }}>{lightDistance}</span>
                     )}
-                    <span style={{ fontSize: '9px', color: SC.textSecondary, fontFamily: SC.mono }}>mm</span>
+                    <span style={{ fontSize: '10px', color: '#333333' }}>mm</span>
                   </div>
-                  <p style={{ fontSize: '9px', color: SC.textSecondary, margin: 0, fontFamily: SC.mono }}>FOV ≈{Math.round(fovOffsetX * 2)}mm</p>
+                  <p style={{ fontSize: '10px', color: '#666666', margin: 0 }}>视野宽度约 {Math.round(fovOffsetX * 2)}mm</p>
                 </div>
               </div>
 
               {/* Controller specs */}
               {hasController && (
-                <div style={{ backgroundColor: SC.cardBg, borderRadius: '3px', padding: '8px 10px', border: `0.5px solid ${SC.cardBorder}`, borderLeft: `2px solid ${SC.cyan}` }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <span style={{ fontWeight: 600, fontSize: '10px', color: SC.textPrimary, fontFamily: SC.mono, letterSpacing: '0.12em' }}>CONTROLLER</span>
-                    <span style={{ fontSize: '7px', color: SC.textTertiary, fontFamily: SC.mono, letterSpacing: '0.1em' }}>REF.IPC</span>
-                  </div>
-                  <div style={{ height: '0.5px', background: SC.cardBorder, margin: '0 0 4px 0' }} />
-                  <p style={{ fontSize: '10px', color: SC.textPrimary, margin: 0, fontFamily: SC.mono }}>{controller.cpu}</p>
-                  <p style={{ fontSize: '10px', color: SC.textPrimary, margin: 0, fontFamily: SC.mono }}>{controller.memory} · {controller.storage}</p>
-                  <p style={{ fontSize: '9px', color: SC.textSecondary, margin: 0, fontFamily: SC.mono }}>{controller.brand} {controller.model}</p>
+                <div style={{ backgroundColor: 'hsl(220, 10%, 96%)', borderRadius: '8px', padding: '6px 8px', border: '1px solid hsl(220, 15%, 82%)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                    <span style={{ fontSize: '14px' }}>🖥️</span>
+                     <span style={{ fontWeight: 600, fontSize: '12px', color: '#333333' }}>工控机</span>
+                   </div>
+                   <p style={{ fontSize: '11px', color: '#333333', margin: 0 }}>{controller.cpu}</p>
+                   <p style={{ fontSize: '11px', color: '#333333', margin: 0 }}>{controller.memory} · {controller.storage}</p>
+                   <p style={{ fontSize: '10px', color: '#666666', margin: 0 }}>{controller.brand} {controller.model}</p>
                   {controller.gpu && (
-                    <p style={{ fontSize: '9px', color: SC.textSecondary, margin: '2px 0 0 0', fontFamily: SC.mono }}>GPU: {controller.gpu}</p>
+                    <p style={{ fontSize: '10px', color: '#666666', margin: '2px 0 0 0' }}>GPU: {controller.gpu}</p>
                   )}
                 </div>
               )}
             </div>
           </foreignObject>
         ) : (
-          /* Export mode: pure SVG annotation cards */
+          /* Export mode: pure SVG annotation cards - no foreignObject, no HTML */
           <g>
             {(() => {
               const cardX = 508;
               const cardW = 274;
-              const cardH = 56;
-              const cardGap = 8;
+              const cardH = 52;
+              const cardGap = 6;
+              const cardBg = 'hsl(220, 10%, 96%)';
+              const cardBorder = 'hsl(220, 15%, 82%)';
+              const textColor = '#333333';
+              const textSecondary = '#666666';
               let yOffset = 28;
+
               const cards: React.ReactNode[] = [];
 
               // Camera card
               cards.push(
-                <AnnotationCard key="cam" x={cardX} y={yOffset} w={cardW} h={cardH} refId="REF.CAM" title="CAMERA" accentLine
-                  lines={hasCamera ? [
-                    { text: `${camera.resolution} · ${camera.sensor_size}` },
-                    { text: `${camera.brand} ${camera.model} @ ${camera.frame_rate}fps`, secondary: true },
-                  ] : [{ text: '— NOT CONFIGURED —', secondary: true }]}
-                />
+                <g key="camera-card" transform={`translate(${cardX}, ${yOffset})`}>
+                  <rect width={cardW} height={cardH} rx="8" fill={cardBg} stroke={cardBorder} strokeWidth="1" />
+                  <text x="12" y="18" fill={textColor} style={{ fontSize: '12px', fontWeight: 600 }}>📷 工业相机</text>
+                  {hasCamera ? (
+                    <>
+                      <text x="12" y="32" fill={textColor} style={{ fontSize: '11px' }}>{camera.resolution} · 靶面{camera.sensor_size}</text>
+                      <text x="12" y="45" fill={textSecondary} style={{ fontSize: '10px' }}>{camera.brand} {camera.model} @ {camera.frame_rate}fps</text>
+                    </>
+                  ) : (
+                    <text x="12" y="35" fill={textSecondary} style={{ fontSize: '10px' }}>未选择相机</text>
+                  )}
+                </g>
               );
               yOffset += cardH + cardGap;
 
               // Lens card
               cards.push(
-                <AnnotationCard key="lens" x={cardX} y={yOffset} w={cardW} h={cardH} refId="REF.LNS" title="LENS" accentLine
-                  lines={hasLens ? [
-                    { text: `f=${lens.focal_length} · ${lens.aperture}` },
-                    { text: `${lens.brand} ${lens.model}`, secondary: true },
-                  ] : [{ text: '— NOT CONFIGURED —', secondary: true }]}
-                />
+                <g key="lens-card" transform={`translate(${cardX}, ${yOffset})`}>
+                  <rect width={cardW} height={cardH} rx="8" fill={cardBg} stroke={cardBorder} strokeWidth="1" />
+                  <text x="12" y="18" fill={textColor} style={{ fontSize: '12px', fontWeight: 600 }}>🔭 工业镜头</text>
+                  {hasLens ? (
+                    <>
+                      <text x="12" y="32" fill={textColor} style={{ fontSize: '11px' }}>焦距 {lens.focal_length} · 光圈 {lens.aperture}</text>
+                      <text x="12" y="45" fill={textSecondary} style={{ fontSize: '10px' }}>{lens.brand} {lens.model}</text>
+                    </>
+                  ) : (
+                    <text x="12" y="35" fill={textSecondary} style={{ fontSize: '10px' }}>未选择镜头</text>
+                  )}
+                </g>
               );
               yOffset += cardH + cardGap;
 
               // Light card
-              const lightCardH = hasLight ? 68 : cardH;
+              const lightCardH = hasLight ? 62 : cardH;
               cards.push(
-                <AnnotationCard key="light" x={cardX} y={yOffset} w={cardW} h={lightCardH} refId="REF.ILL" title="ILLUMINATION" accentLine
-                  lines={hasLight ? [
-                    { text: `${light.color}${light.type} · ${light.power}` },
-                    { text: `${light.brand} ${light.model}`, secondary: true },
-                    { text: `WD: ${lightDistance}±20mm`, secondary: true },
-                  ] : [{ text: '— NOT CONFIGURED —', secondary: true }]}
-                />
+                <g key="light-card" transform={`translate(${cardX}, ${yOffset})`}>
+                  <rect width={cardW} height={lightCardH} rx="8" fill={cardBg} stroke={cardBorder} strokeWidth="1" />
+                  <text x="12" y="18" fill={textColor} style={{ fontSize: '12px', fontWeight: 600 }}>💡 光源</text>
+                  {hasLight ? (
+                    <>
+                      <text x="12" y="32" fill={textColor} style={{ fontSize: '11px' }}>{light.color}{light.type} · {light.power}</text>
+                      <text x="12" y="45" fill={textSecondary} style={{ fontSize: '10px' }}>{light.brand} {light.model}</text>
+                      <text x="12" y="57" fill={textSecondary} style={{ fontSize: '10px' }}>光源距离产品：{lightDistance}±20mm</text>
+                    </>
+                  ) : (
+                    <text x="12" y="35" fill={textSecondary} style={{ fontSize: '10px' }}>未选择光源</text>
+                  )}
+                </g>
               );
               yOffset += lightCardH + cardGap;
 
               // FOV card
-              const fovCardH = 68;
+              const fovCardH = 62;
               cards.push(
-                <AnnotationCard key="fov" x={cardX} y={yOffset} w={cardW} h={fovCardH} refId="REF.FOV" title="FIELD OF VIEW" accentLine
-                  lines={[
-                    { text: `ANGLE: ${fovAngle}°` },
-                    { text: `WD: ${lightDistance}mm` },
-                    { text: `FOV ≈${Math.round(fovOffsetX * 2)}mm`, secondary: true },
-                  ]}
-                />
+                <g key="fov-card" transform={`translate(${cardX}, ${yOffset})`}>
+                  <rect width={cardW} height={fovCardH} rx="8" fill={cardBg} stroke={cardBorder} strokeWidth="1" />
+                  <text x="12" y="18" fill={textColor} style={{ fontSize: '12px', fontWeight: 600 }}>📐 视野参数</text>
+                  <text x="12" y="34" fill={textColor} style={{ fontSize: '11px' }}>视角: {fovAngle}°</text>
+                  <text x="12" y="47" fill={textColor} style={{ fontSize: '11px' }}>工作距离: {lightDistance}mm</text>
+                  <text x="12" y="58" fill={textSecondary} style={{ fontSize: '10px' }}>视野宽度约 {Math.round(fovOffsetX * 2)}mm</text>
+                </g>
               );
               yOffset += fovCardH + cardGap;
 
               // Controller card
               if (hasController) {
-                const ctrlCardH = controller.gpu ? 80 : 68;
+                const ctrlCardH = controller.gpu ? 72 : 62;
                 cards.push(
-                  <AnnotationCard key="ctrl" x={cardX} y={yOffset} w={cardW} h={ctrlCardH} refId="REF.IPC" title="CONTROLLER" accentLine
-                    lines={[
-                      { text: controller.cpu },
-                      { text: `${controller.memory} · ${controller.storage}` },
-                      { text: `${controller.brand} ${controller.model}`, secondary: true },
-                      ...(controller.gpu ? [{ text: `GPU: ${controller.gpu}`, secondary: true }] : []),
-                    ]}
-                  />
+                  <g key="ctrl-card" transform={`translate(${cardX}, ${yOffset})`}>
+                    <rect width={cardW} height={ctrlCardH} rx="8" fill={cardBg} stroke={cardBorder} strokeWidth="1" />
+                    <text x="12" y="18" fill={textColor} style={{ fontSize: '12px', fontWeight: 600 }}>🖥️ 工控机</text>
+                    <text x="12" y="32" fill={textColor} style={{ fontSize: '11px' }}>{controller.cpu}</text>
+                    <text x="12" y="45" fill={textColor} style={{ fontSize: '11px' }}>{controller.memory} · {controller.storage}</text>
+                    <text x="12" y="57" fill={textSecondary} style={{ fontSize: '10px' }}>{controller.brand} {controller.model}</text>
+                    {controller.gpu && (
+                      <text x="12" y="68" fill={textSecondary} style={{ fontSize: '10px' }}>GPU: {controller.gpu}</text>
+                    )}
+                  </g>
                 );
               }
 
