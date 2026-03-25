@@ -174,6 +174,8 @@ interface WorkstationSlideData {
     risk_notes?: string | null;
     action_script?: string | null;
     description?: string | null;
+    install_space?: { length: number; width: number; height: number } | null;
+    install_space_label?: string;
   };
   layout: {
     workstation_id: string;
