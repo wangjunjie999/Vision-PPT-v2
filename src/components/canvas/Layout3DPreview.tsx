@@ -2,8 +2,7 @@ import { memo, useRef, useCallback, useState, useMemo, useEffect, Suspense } fro
 import { Canvas, useThree, useFrame, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Box, Cone, Line, Text, Grid, Plane, Sphere, Cylinder, useGLTF, Billboard } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, X, Magnet, Eye, EyeOff, Save, Lock, Unlock, Maximize2, Download } from 'lucide-react';
-import RobotArmGLBExporter from './RobotArmGLBExporter';
+import { RotateCcw, X, Magnet, Eye, EyeOff, Save, Lock, Unlock, Maximize2 } from 'lucide-react';
 import type { LayoutObject } from './ObjectPropertyPanel';
 import { CAMERA_INTERACTION_TYPES, PRODUCT_INTERACTION_TYPES } from './MechanismSVG';
 import * as THREE from 'three';
@@ -2530,17 +2529,6 @@ export const Layout3DPreview = memo(function Layout3DPreview({
               <Save className="h-3 w-3" />
               暂存布局
             </Button>
-          </>
-        )}
-        {/* Robot arm GLB export */}
-        {objects.some(o => o.mechanismType === 'robot_arm') && (
-          <>
-            <div className="h-px bg-slate-600/50 my-0.5" />
-            <RobotArmGLBExporter
-              w={objects.find(o => o.mechanismType === 'robot_arm')?.width ?? 200}
-              h={objects.find(o => o.mechanismType === 'robot_arm')?.height ?? 600}
-              d={(objects.find(o => o.mechanismType === 'robot_arm') as any)?.depth ?? 200}
-            />
           </>
         )}
       </div>
