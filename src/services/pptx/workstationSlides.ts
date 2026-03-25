@@ -1210,6 +1210,8 @@ export function generateBasicInfoAndRequirementsSlide(
   const rightInfoRows: TableRow[] = [
     row([ctx.isZh ? '检测方式' : 'Detection', `${cameraCount}${ctx.isZh ? '相机' : ' cam'} - ${detectionMethods.join('/')}`]),
     row([ctx.isZh ? '精度要求' : 'Accuracy', ws.acceptance_criteria?.accuracy || '±0.1mm']),
+    row([ctx.isZh ? '验收节拍' : 'Acc. Cycle', ws.acceptance_criteria?.cycle_time || (ws.cycle_time ? `${ws.cycle_time} s` : '-')]),
+    row([ctx.isZh ? '兼容规格' : 'Compat. Sizes', ws.acceptance_criteria?.compatible_sizes || '-']),
     row([ctx.isZh ? '拍照次数' : 'Shots', `${ws.shot_count || modules.length || '-'}`]),
     row([ctx.isZh ? '观测对象' : 'Target', ws.observation_target || '-']),
   ];
@@ -1220,8 +1222,8 @@ export function generateBasicInfoAndRequirementsSlide(
     rightInfoRows.push(row([typeLabel, mod.name]));
   });
 
-  slide.addTable(rightInfoRows.slice(0, 8), {
-    x: 5.1, y: startY, w: 4.5, h: 1.8,
+  slide.addTable(rightInfoRows.slice(0, 10), {
+    x: 5.1, y: startY, w: 4.5, h: 2.2,
     fontFace: FONTS.body,
     fontSize: 8,
     colW: [1.4, 3.1],
