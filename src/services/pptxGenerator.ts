@@ -54,11 +54,18 @@ interface ProjectData {
   customer: string;
   date: string | null;
   responsible: string | null;
+  sales_responsible?: string | null;
+  vision_responsible?: string | null;
   product_process: string | null;
   quality_strategy: string | null;
   environment: string[] | null;
   notes: string | null;
   revision_history?: RevisionHistoryItem[];
+  spec_version?: string | null;
+  production_line?: string | null;
+  main_camera_brand?: string | null;
+  cycle_time_target?: number | null;
+  description?: string | null;
 }
 
 interface WorkstationData {
@@ -76,6 +83,9 @@ interface WorkstationData {
   shot_count?: number | null;
   risk_notes?: string | null;
   action_script?: string | null;
+  description?: string | null;
+  install_space?: { length: number; width: number; height: number } | null;
+  install_space_label?: string;
 }
 
 interface LayoutData {
