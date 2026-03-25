@@ -1570,6 +1570,8 @@ export async function generateLightingPhotosSlide(
         x: pos.x, y: remarkY, w: pos.width, h: 0.2,
         fontSize: 8, fontFace: FONTS.body, color: COLORS.secondary, align: 'center',
       });
+    }
+  }
 }
 
 // ==================== Label maps for detail slide ====================
