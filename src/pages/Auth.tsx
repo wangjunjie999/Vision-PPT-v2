@@ -107,12 +107,19 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 relative overflow-hidden">
-      {/* Animated gradient orbs */}
+    <div className="min-h-screen flex items-center justify-center bg-[hsl(235,25%,9%)] p-4 relative overflow-hidden">
+      {/* Systematic Cartography grid background */}
+      <div className="absolute inset-0" style={{
+        backgroundImage: `
+          linear-gradient(hsl(235 22% 14%) 1px, transparent 1px),
+          linear-gradient(90deg, hsl(235 22% 14%) 1px, transparent 1px)
+        `,
+        backgroundSize: '40px 40px',
+      }} />
+      {/* Subtle radial glow */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[hsl(187,82%,37%)] rounded-full blur-[200px] opacity-[0.06]" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-[hsl(220,75%,48%)] rounded-full blur-[120px] opacity-[0.08]" />
       </div>
 
       {/* Particle Background */}
@@ -128,9 +135,10 @@ export default function Auth() {
         className="w-full max-w-md relative z-10"
       >
         {/* Glass Card */}
-        <div className="relative backdrop-blur-xl bg-white/[0.08] border border-white/[0.12] rounded-3xl shadow-2xl overflow-hidden">
-          {/* Decorative top gradient line */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
+        <div className="relative backdrop-blur-xl bg-white/[0.04] border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden">
+          {/* Precision top line — cyan accent */}
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[hsl(187,82%,37%)] to-transparent opacity-60" />
+          <div className="absolute top-[1px] left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[hsl(220,75%,48%)] to-transparent opacity-30" />
           
           {/* Header */}
           <div className="text-center pt-10 pb-6 px-8">
@@ -166,9 +174,9 @@ export default function Auth() {
 
           {/* Tab Switcher */}
           <div className="px-8 mb-6">
-            <div className="relative flex bg-white/[0.05] rounded-xl p-1">
+            <div className="relative flex bg-white/[0.03] rounded-lg p-1 border border-white/[0.06]">
               <motion.div
-                className="absolute top-1 bottom-1 rounded-lg bg-gradient-to-r from-primary/80 to-blue-600/80 shadow-lg"
+                className="absolute top-1 bottom-1 rounded-md bg-gradient-to-r from-[hsl(220,75%,48%)] to-[hsl(187,82%,37%)] shadow-lg"
                 initial={false}
                 animate={{
                   left: activeTab === 'signin' ? '4px' : '50%',
@@ -257,12 +265,12 @@ export default function Auth() {
                     </div>
                   </div>
                   
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full h-12 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 text-white font-medium rounded-xl shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5"
-                    style={{ fontFamily: "'Outfit', sans-serif" }}
-                  >
+                   <Button
+                     type="submit"
+                     disabled={loading}
+                     className="w-full h-12 bg-gradient-to-r from-[hsl(220,75%,48%)] to-[hsl(187,82%,37%)] hover:from-[hsl(220,75%,42%)] hover:to-[hsl(187,82%,32%)] text-white font-medium rounded-lg shadow-lg shadow-[hsl(187,82%,37%)]/20 transition-all hover:shadow-xl hover:shadow-[hsl(187,82%,37%)]/25 hover:-translate-y-0.5 tracking-wide"
+                     style={{ fontFamily: "'Outfit', sans-serif" }}
+                   >
                     {loading ? (
                       <Loader2 className="h-5 w-5 animate-spin" />
                     ) : (
@@ -348,12 +356,12 @@ export default function Auth() {
                     </div>
                   </div>
                   
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full h-12 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 text-white font-medium rounded-xl shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5"
-                    style={{ fontFamily: "'Outfit', sans-serif" }}
-                  >
+                   <Button
+                     type="submit"
+                     disabled={loading}
+                     className="w-full h-12 bg-gradient-to-r from-[hsl(220,75%,48%)] to-[hsl(187,82%,37%)] hover:from-[hsl(220,75%,42%)] hover:to-[hsl(187,82%,37%,0.9)] text-white font-medium rounded-lg shadow-lg shadow-[hsl(187,82%,37%)]/20 transition-all hover:shadow-xl hover:shadow-[hsl(187,82%,37%)]/25 hover:-translate-y-0.5 tracking-wide"
+                     style={{ fontFamily: "'Outfit', sans-serif" }}
+                   >
                     {loading ? (
                       <Loader2 className="h-5 w-5 animate-spin" />
                     ) : (
