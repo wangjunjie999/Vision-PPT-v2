@@ -1,4 +1,3 @@
-import pptxgen from 'pptxgenjs';
 import type PptxGenJS from 'pptxgenjs';
 import { 
   fetchImageAsDataUri, 
