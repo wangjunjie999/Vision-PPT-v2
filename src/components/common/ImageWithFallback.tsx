@@ -102,6 +102,8 @@ export const ImageWithFallback = memo(function ImageWithFallback({
       alt={alt}
       className={className}
       onError={handleError}
+      loading="lazy"
+      decoding="async"
       {...props}
     />
   );
