@@ -4,7 +4,7 @@
  * 支持中文通过Canvas渲染，保证无乱码
  */
 
-// jsPDF is dynamically imported in generatePDF()
+import type { jsPDF } from 'jspdf';
 
 // ==================== DATA INTERFACES ====================
 
@@ -705,7 +705,8 @@ export async function generatePDF(
   onProgress?.(5, isZh ? '初始化PDF文档' : 'Initializing PDF document', '');
 
   // Create PDF with A4 size
-  const pdf = new jsPDF({
+  const { default: JsPDF } = await import('jspdf');
+  const pdf = new JsPDF({
     orientation: 'portrait',
     unit: 'mm',
     format: 'a4',
