@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Loader2, Sparkles, ArrowRight } from 'lucide-react';
 import { z } from 'zod';
-import { lazy, Suspense } from 'react';
+
 const ParticleBackground = lazy(() => import('@/components/effects/ParticleBackground').then(m => ({ default: m.ParticleBackground })));
 import { motion, AnimatePresence } from 'framer-motion';
 
