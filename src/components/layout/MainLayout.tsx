@@ -5,8 +5,18 @@ import { TopToolbar } from './TopToolbar';
 import { ProjectTree } from './ProjectTree';
 import { CanvasArea } from './CanvasArea';
 import { FormPanel } from './FormPanel';
-import { AdminCenter } from './AdminCenter';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, lazy, Suspense } from 'react';
+import { Loader2 } from 'lucide-react';
+
+const AdminCenter = lazy(() => import('./AdminCenter').then(m => ({ default: m.AdminCenter })));
+
+function PanelLoading() {
+  return (
+    <div className="flex-1 flex items-center justify-center">
+      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
 import { AnimatePresence } from 'framer-motion';
 import { useBreakpoint } from '@/hooks/use-mobile';
 import { Menu, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -55,7 +65,7 @@ export function MainLayout() {
         <AnimatePresence mode="wait">
           {showAdmin && currentRole === 'admin' ? (
             <div key="admin" className="flex-1 overflow-hidden">
-              <AdminCenter />
+              <Suspense fallback={<PanelLoading />}><AdminCenter /></Suspense>
             </div>
           ) : (
             <div key="main" className="flex-1 overflow-hidden">
@@ -115,7 +125,7 @@ export function MainLayout() {
         <AnimatePresence mode="wait">
           {showAdmin && currentRole === 'admin' ? (
             <div key="admin" className="flex-1 overflow-hidden">
-              <AdminCenter />
+              <Suspense fallback={<PanelLoading />}><AdminCenter /></Suspense>
             </div>
           ) : (
             <div key="main" className="flex-1 overflow-hidden flex">
@@ -206,7 +216,7 @@ export function MainLayout() {
       <AnimatePresence mode="wait">
         {showAdmin && currentRole === 'admin' ? (
           <div key="admin" className="flex-1 overflow-hidden">
-            <AdminCenter />
+            <Suspense fallback={<PanelLoading />}><AdminCenter /></Suspense>
           </div>
         ) : (
           <div key="main" className="flex-1 overflow-hidden">

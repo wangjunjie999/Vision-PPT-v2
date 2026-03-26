@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Loader2, Sparkles, ArrowRight } from 'lucide-react';
 import { z } from 'zod';
-import { ParticleBackground } from '@/components/effects/ParticleBackground';
+
+const ParticleBackground = lazy(() => import('@/components/effects/ParticleBackground').then(m => ({ default: m.ParticleBackground })));
 import { motion, AnimatePresence } from 'framer-motion';
 
 const authSchema = z.object({
@@ -124,7 +125,9 @@ export default function Auth() {
 
       {/* Particle Background */}
       <div className="absolute inset-0">
-        <ParticleBackground particleCount={100} interactive />
+        <Suspense fallback={null}>
+          <ParticleBackground particleCount={100} interactive />
+        </Suspense>
       </div>
       
       {/* Content */}

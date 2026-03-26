@@ -15,4 +15,15 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
+          'report-vendor': ['pptxgenjs', 'jspdf', 'docx', 'xlsx'],
+          'chart-vendor': ['recharts'],
+        },
+      },
+    },
+  },
 }));

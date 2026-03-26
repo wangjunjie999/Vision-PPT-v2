@@ -1,4 +1,3 @@
-import pptxgen from 'pptxgenjs';
 import type PptxGenJS from 'pptxgenjs';
 import { 
   fetchImageAsDataUri, 
@@ -651,6 +650,7 @@ export async function generatePPTX(
   annotations?: AnnotationData[],
   productAssets?: ProductAssetData[]
 ): Promise<Blob> {
+  const pptxgen = (await import('pptxgenjs')).default;
   const pptx = new pptxgen();
   const isZh = options.language === 'zh';
 
