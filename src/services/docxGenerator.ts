@@ -1,6 +1,18 @@
-import type {
-  Document as DocxDocument,
-  Paragraph as DocxParagraph,
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  AlignmentType,
+  HeadingLevel,
+  BorderStyle,
+  ShadingType,
+  convertInchesToTwip,
+  ImageRun,
 } from 'docx';
 
 // ==================== DATA INTERFACES ====================
