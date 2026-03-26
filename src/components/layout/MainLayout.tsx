@@ -65,7 +65,7 @@ export function MainLayout() {
         <AnimatePresence mode="wait">
           {showAdmin && currentRole === 'admin' ? (
             <div key="admin" className="flex-1 overflow-hidden">
-              <AdminCenter />
+              <Suspense fallback={<PanelLoading />}><AdminCenter /></Suspense>
             </div>
           ) : (
             <div key="main" className="flex-1 overflow-hidden">
@@ -125,7 +125,7 @@ export function MainLayout() {
         <AnimatePresence mode="wait">
           {showAdmin && currentRole === 'admin' ? (
             <div key="admin" className="flex-1 overflow-hidden">
-              <AdminCenter />
+              <Suspense fallback={<PanelLoading />}><AdminCenter /></Suspense>
             </div>
           ) : (
             <div key="main" className="flex-1 overflow-hidden flex">
@@ -216,7 +216,7 @@ export function MainLayout() {
       <AnimatePresence mode="wait">
         {showAdmin && currentRole === 'admin' ? (
           <div key="admin" className="flex-1 overflow-hidden">
-            <AdminCenter />
+            <Suspense fallback={<PanelLoading />}><AdminCenter /></Suspense>
           </div>
         ) : (
           <div key="main" className="flex-1 overflow-hidden">
