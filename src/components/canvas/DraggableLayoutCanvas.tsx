@@ -782,21 +782,22 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       }
       setSaveProgress(10);
 
+      // If currently in isometric (3D) mode, switch to 2D first so SVG renders
+      const wasIsometric = originalView === 'isometric';
+      if (wasIsometric) {
+        // Clear stale refs before switching away from isometric — the 3D component will unmount
+        isometricScreenshotFnRef.current = null;
+        fitAllFnRef.current = null;
+        setCurrentView('front');
+        await new Promise(r => setTimeout(r, 400));
+      }
+
+      // Capture canvasRef AFTER switching to 2D so SVG is mounted
       const svg = canvasRef.current;
       if (svg && layoutId) {
         const views: ViewType[] = ['front', 'side', 'top'];
         const preset = QUALITY_PRESETS[saveQuality];
         const viewImages: { view: ViewType; blob: Blob }[] = [];
-
-        // If currently in isometric (3D) mode, switch to first 2D view and wait for render
-        const wasIsometric = originalView === 'isometric';
-        if (wasIsometric) {
-          // Clear stale refs before switching away from isometric — the 3D component will unmount
-          isometricScreenshotFnRef.current = null;
-          fitAllFnRef.current = null;
-          setCurrentView('front');
-          await new Promise(r => setTimeout(r, 400));
-        }
 
         for (let i = 0; i < views.length; i++) {
           const view = views[i];
