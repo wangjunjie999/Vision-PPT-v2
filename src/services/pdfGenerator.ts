@@ -4,7 +4,7 @@
  * 支持中文通过Canvas渲染，保证无乱码
  */
 
-import jsPDF from 'jspdf';
+// jsPDF is dynamically imported in generatePDF()
 
 // ==================== DATA INTERFACES ====================
 
