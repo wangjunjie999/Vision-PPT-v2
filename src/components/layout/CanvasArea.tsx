@@ -1,13 +1,27 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, lazy, Suspense } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useAppStore } from '@/store/useAppStore';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { EmptyState } from '../canvas/EmptyState';
-import { ProjectDashboard } from '../canvas/ProjectDashboard';
-import { WorkstationCanvas } from '../canvas/WorkstationCanvas';
-import { ModuleSchematic } from '../canvas/ModuleSchematic';
-import { AnnotationEditor } from '../canvas/AnnotationEditor';
-import { ProductViewerCanvas } from '../canvas/ProductViewerCanvas';
+import { Loader2 } from 'lucide-react';
+
+// Lazy load heavy canvas components
+const ProjectDashboard = lazy(() => import('../canvas/ProjectDashboard').then(m => ({ default: m.ProjectDashboard })));
+const WorkstationCanvas = lazy(() => import('../canvas/WorkstationCanvas').then(m => ({ default: m.WorkstationCanvas })));
+const ModuleSchematic = lazy(() => import('../canvas/ModuleSchematic').then(m => ({ default: m.ModuleSchematic })));
+const AnnotationEditor = lazy(() => import('../canvas/AnnotationEditor').then(m => ({ default: m.AnnotationEditor })));
+const ProductViewerCanvas = lazy(() => import('../canvas/ProductViewerCanvas').then(m => ({ default: m.ProductViewerCanvas })));
+
+function CanvasLoading() {
+  return (
+    <div className="flex-1 flex items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-3 text-muted-foreground">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="text-sm">加载中...</span>
+      </div>
+    </div>
+  );
+}
 
 export function CanvasArea() {
   const { selectedProjectId, selectedWorkstationId, selectedModuleId } = useData();
@@ -34,7 +48,9 @@ export function CanvasArea() {
   if (viewerMode) {
     return (
       <ErrorBoundary fallbackTitle="产品查看器加载失败">
-        <ProductViewerCanvas />
+        <Suspense fallback={<CanvasLoading />}>
+          <ProductViewerCanvas />
+        </Suspense>
       </ErrorBoundary>
     );
   }
@@ -43,7 +59,9 @@ export function CanvasArea() {
   if (annotationMode) {
     return (
       <ErrorBoundary fallbackTitle="标注编辑器加载失败">
-        <AnnotationEditor />
+        <Suspense fallback={<CanvasLoading />}>
+          <AnnotationEditor />
+        </Suspense>
       </ErrorBoundary>
     );
   }
@@ -55,7 +73,9 @@ export function CanvasArea() {
         fallbackTitle="视觉系统示意图加载失败"
         context={{ moduleId: selectedModuleId, workstationId: selectedWorkstationId || undefined }}
       >
-        <ModuleSchematic />
+        <Suspense fallback={<CanvasLoading />}>
+          <ModuleSchematic />
+        </Suspense>
       </ErrorBoundary>
     );
   }
@@ -66,7 +86,9 @@ export function CanvasArea() {
         fallbackTitle="工位布局画布加载失败"
         context={{ workstationId: selectedWorkstationId }}
       >
-        <WorkstationCanvas />
+        <Suspense fallback={<CanvasLoading />}>
+          <WorkstationCanvas />
+        </Suspense>
       </ErrorBoundary>
     );
   }
@@ -77,7 +99,9 @@ export function CanvasArea() {
         fallbackTitle="项目仪表盘加载失败"
         context={{ projectId: selectedProjectId }}
       >
-        <ProjectDashboard />
+        <Suspense fallback={<CanvasLoading />}>
+          <ProjectDashboard />
+        </Suspense>
       </ErrorBoundary>
     );
   }
