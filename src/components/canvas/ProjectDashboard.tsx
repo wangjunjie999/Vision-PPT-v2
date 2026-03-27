@@ -29,6 +29,16 @@ import { motion } from 'framer-motion';
 import { StaggerList, StaggerItem } from '@/components/transitions/AnimatedLayout';
 import { BatchImageSaveButton } from './BatchImageSaveButton';
 import { ConfigHealthCard } from './ConfigHealthCard';
+import { ActivityTimeline } from './ActivityTimeline';
+import { useProjectTemplates } from '@/hooks/useProjectTemplates';
+import { useActivityLog } from '@/hooks/useActivityLog';
+import { 
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter 
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Bookmark } from 'lucide-react';
 
 export function ProjectDashboard() {
   const { 
@@ -43,9 +53,15 @@ export function ProjectDashboard() {
   } = useData();
 
   const { templates, isLoading: templatesLoading } = usePPTTemplates();
+  const { templates: projectTemplatesData, saveAsTemplate } = useProjectTemplates();
+  const { logActivity } = useActivityLog();
   
   const [showNewWorkstation, setShowNewWorkstation] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [templateDesc, setTemplateDesc] = useState('');
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
   const project = projects.find(p => p.id === selectedProjectId);
   if (!project) return null;
