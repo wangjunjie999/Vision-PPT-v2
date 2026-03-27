@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action_type: string
+          created_at: string
+          description: string
+          entity_id: string | null
+          entity_name: string | null
+          entity_type: string
+          id: string
+          metadata: Json | null
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          description: string
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          description?: string
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_settings: {
         Row: {
           id: string
@@ -837,6 +876,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      project_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean | null
+          module_count: number | null
+          name: string
+          preview_image_url: string | null
+          template_data: Json
+          updated_at: string
+          user_id: string
+          workstation_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          module_count?: number | null
+          name: string
+          preview_image_url?: string | null
+          template_data?: Json
+          updated_at?: string
+          user_id: string
+          workstation_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          module_count?: number | null
+          name?: string
+          preview_image_url?: string | null
+          template_data?: Json
+          updated_at?: string
+          user_id?: string
+          workstation_count?: number | null
+        }
+        Relationships: []
       }
       projects: {
         Row: {
