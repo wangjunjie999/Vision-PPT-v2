@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import {
   Save, RotateCcw, Plus, Camera, Loader2, Check,
   ChevronDown, ChevronUp, Settings2, Zap, Layers, LayoutGrid, GripVertical,
+  Undo2, Redo2,
 } from 'lucide-react';
 import type { ViewType, LayerType, StandardViewType, ObjectOrderMap } from './canvasTypes';
 import type { LayoutObject } from './ObjectPropertyPanel';
@@ -72,6 +73,11 @@ interface CanvasToolbarProps {
   // Object-level ordering
   objectOrder: ObjectOrderMap;
   onObjectReorder: (id: string, direction: 'up' | 'down') => void;
+  // Undo/Redo
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }
 
 export const CanvasToolbar = memo(function CanvasToolbar({
@@ -84,6 +90,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
   layerOrder, draggedLayer, dragOverLayer, onLayerDragStart, onLayerDragOver, onLayerDrop, onLayerDragEnd, onSaveLayerOrder,
   objects, selectedId, selectedObj, mechanisms, enabledMechanisms, mechanismCounts,
   objectOrder, onObjectReorder,
+  canUndo, canRedo, onUndo, onRedo,
 }: CanvasToolbarProps) {
   const [expandedLayers, setExpandedLayers] = useState<Set<LayerType>>(new Set());
   const toggleLayerExpand = (type: LayerType) => {
@@ -126,6 +133,29 @@ export const CanvasToolbar = memo(function CanvasToolbar({
           >
             🧊 3D 预览
           </button>
+          
+          {/* Undo/Redo */}
+          <div className="h-6 w-px bg-border self-center mx-1" />
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={!canUndo} onClick={onUndo}>
+                  <Undo2 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">撤销 (Ctrl+Z)</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={!canRedo} onClick={onRedo}>
+                  <Redo2 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">重做 (Ctrl+Shift+Z)</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
         {/* Right: Quality + Save + Settings toggle */}

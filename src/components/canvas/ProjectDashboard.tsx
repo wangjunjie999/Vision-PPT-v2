@@ -28,6 +28,17 @@ import { CircularProgress } from '@/components/ui/circular-progress';
 import { motion } from 'framer-motion';
 import { StaggerList, StaggerItem } from '@/components/transitions/AnimatedLayout';
 import { BatchImageSaveButton } from './BatchImageSaveButton';
+import { ConfigHealthCard } from './ConfigHealthCard';
+import { ActivityTimeline } from './ActivityTimeline';
+import { useProjectTemplates } from '@/hooks/useProjectTemplates';
+import { useActivityLog } from '@/hooks/useActivityLog';
+import { 
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter 
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Bookmark } from 'lucide-react';
 
 export function ProjectDashboard() {
   const { 
@@ -42,9 +53,15 @@ export function ProjectDashboard() {
   } = useData();
 
   const { templates, isLoading: templatesLoading } = usePPTTemplates();
+  const { templates: projectTemplatesData, saveAsTemplate } = useProjectTemplates();
+  const { logActivity } = useActivityLog();
   
   const [showNewWorkstation, setShowNewWorkstation] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [templateDesc, setTemplateDesc] = useState('');
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
   const project = projects.find(p => p.id === selectedProjectId);
   if (!project) return null;
@@ -316,6 +333,15 @@ export function ProjectDashboard() {
           </StaggerItem>
         </StaggerList>
 
+        {/* Config Health Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+        >
+          <ConfigHealthCard projectId={selectedProjectId!} />
+        </motion.div>
+
         {/* Generation Readiness */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -454,6 +480,42 @@ export function ProjectDashboard() {
           </CardContent>
         </Card>
       </div>
+
+        {/* Activity Timeline & Save as Template */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ActivityTimeline projectId={selectedProjectId!} />
+          
+          <Card variant="elevated">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bookmark className="h-4 w-4" />
+                项目模板
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground mb-3">
+                将当前项目结构保存为模板，方便未来快速创建类似项目
+              </p>
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => {
+                  setTemplateName(`${project.name} - 模板`);
+                  setTemplateDesc('');
+                  setShowSaveTemplate(true);
+                }}
+              >
+                <Bookmark className="h-4 w-4" />
+                保存为模板
+              </Button>
+              {projectTemplatesData.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  已有 {projectTemplatesData.length} 个模板
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       
       <NewWorkstationDialog 
         open={showNewWorkstation} 
@@ -466,6 +528,57 @@ export function ProjectDashboard() {
         onOpenChange={setShowHistory}
         projectId={selectedProjectId!}
       />
+
+      {/* Save as Template Dialog */}
+      <Dialog open={showSaveTemplate} onOpenChange={setShowSaveTemplate}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>保存为项目模板</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label>模板名称</Label>
+              <Input
+                value={templateName}
+                onChange={e => setTemplateName(e.target.value)}
+                placeholder="输入模板名称"
+              />
+            </div>
+            <div>
+              <Label>描述（可选）</Label>
+              <Textarea
+                value={templateDesc}
+                onChange={e => setTemplateDesc(e.target.value)}
+                placeholder="简要描述模板用途"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSaveTemplate(false)}>
+              取消
+            </Button>
+            <Button
+              disabled={!templateName.trim() || savingTemplate}
+              onClick={async () => {
+                setSavingTemplate(true);
+                await saveAsTemplate(selectedProjectId!, templateName.trim(), templateDesc.trim());
+                await logActivity({
+                  projectId: selectedProjectId!,
+                  actionType: 'create',
+                  entityType: 'project',
+                  entityName: templateName.trim(),
+                  description: `保存了项目模板「${templateName.trim()}」`,
+                });
+                setSavingTemplate(false);
+                setShowSaveTemplate(false);
+              }}
+            >
+              {savingTemplate ? '保存中...' : '保存模板'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

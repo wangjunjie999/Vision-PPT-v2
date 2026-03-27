@@ -11,6 +11,7 @@ import { GuideProvider } from "@/contexts/GuideContext";
 import { AnimatePresence, motion } from "framer-motion";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { WelcomeGuide } from "@/components/guide";
+import { CommandPalette } from "@/components/CommandPalette";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -133,7 +134,8 @@ const App = () => (
                 <GuideProvider>
                   <Toaster />
                   <Sonner />
-                  <WelcomeGuide />
+                   <WelcomeGuide />
+                   <CommandPalette />
                   <BrowserRouter>
                     <ErrorBoundary 
                       fallbackTitle="页面加载失败"

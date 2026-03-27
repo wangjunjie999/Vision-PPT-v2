@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { useCanvasHistory } from '@/hooks/useCanvasHistory';
 import { toPng } from 'html-to-image';
 import { useData } from '@/contexts/DataContext';
 import { useMechanisms, type Mechanism } from '@/hooks/useMechanisms';
@@ -95,6 +96,9 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   const isometricScreenshotFnRef = useRef<(() => string | null) | null>(null);
   const fitAllFnRef = useRef<(() => void) | null>(null);
   const [cameraPickerOpen, setCameraPickerOpen] = useState(false);
+
+  // Undo/Redo history
+  const { pushState: pushHistory, undo: undoHistory, redo: redoHistory, canUndo, canRedo, reset: resetHistory } = useCanvasHistory<LayoutObject[]>([]);
 
   // Layer order
   const [layerOrder, setLayerOrder] = useState<LayerType[]>(() => {
@@ -453,13 +457,24 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       };
 
       switch (e.key) {
-        case 'Delete': case 'Backspace': deleteObject(selectedId); break;
+        case 'Delete': case 'Backspace': pushHistory(objects, 'delete'); deleteObject(selectedId); break;
         case 'ArrowUp': e.preventDefault(); updateObject(selectedId, { y: selectedObj.y - nudgeAmount * scale, ...getNudge3D('up') }); break;
         case 'ArrowDown': e.preventDefault(); updateObject(selectedId, { y: selectedObj.y + nudgeAmount * scale, ...getNudge3D('down') }); break;
         case 'ArrowLeft': e.preventDefault(); updateObject(selectedId, { x: selectedObj.x - nudgeAmount * scale, ...getNudge3D('left') }); break;
         case 'ArrowRight': e.preventDefault(); updateObject(selectedId, { x: selectedObj.x + nudgeAmount * scale, ...getNudge3D('right') }); break;
         case 'd': case 'D':
-          if (e.ctrlKey || e.metaKey) { e.preventDefault(); duplicateObject(selectedId); }
+          if (e.ctrlKey || e.metaKey) { e.preventDefault(); pushHistory(objects, 'duplicate'); duplicateObject(selectedId); }
+          break;
+        case 'z': case 'Z':
+          if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+            e.preventDefault();
+            const redoState = redoHistory();
+            if (redoState) setObjects(redoState);
+          } else if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            const undoState = undoHistory();
+            if (undoState) setObjects(undoState);
+          }
           break;
         case 'Escape': setSelectedIds([]); setShowPropertyPanel(false); break;
       }
@@ -468,7 +483,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     return () => { window.removeEventListener('keydown', handleKeyDown); window.removeEventListener('keyup', handleKeyUp); };
-  }, [selectedId, objects, deleteObject, updateObject, duplicateObject, scale]);
+  }, [selectedId, objects, deleteObject, updateObject, duplicateObject, scale, pushHistory, undoHistory, redoHistory]);
 
   // ========== Mouse handlers ==========
   const screenToSvg = useCallback((clientX: number, clientY: number) => {
@@ -646,6 +661,10 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
           if (mechObj) toast.info(`产品已从 ${mechObj.name} 解除吸附`);
         }
       }
+    }
+    // Push history after drag completes
+    if (isDragging) {
+      pushHistory(objects, 'drag');
     }
     setIsDragging(false);
     setIsPanning(false);
@@ -1012,6 +1031,9 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         objects={objects} selectedId={selectedId} selectedObj={selectedObj}
         mechanisms={mechanisms} enabledMechanisms={enabledMechanisms} mechanismCounts={mechanismCounts}
         objectOrder={objectOrder} onObjectReorder={handleObjectReorder}
+        canUndo={canUndo} canRedo={canRedo}
+        onUndo={() => { const s = undoHistory(); if (s) setObjects(s); }}
+        onRedo={() => { const s = redoHistory(); if (s) setObjects(s); }}
       />
 
       {/* Canvas Container */}
