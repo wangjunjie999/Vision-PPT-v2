@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useData } from '@/contexts/DataContext';
-import { useHardwareContext } from '@/contexts/HardwareContext';
+import { useHardware } from '@/contexts/HardwareContext';
 
 export interface ValidationIssue {
   severity: 'error' | 'warning' | 'info';

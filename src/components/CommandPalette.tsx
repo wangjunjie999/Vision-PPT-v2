@@ -13,7 +13,7 @@ import {
   Settings, Palette, Command as CommandIcon, Zap
 } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
-import { useHardwareContext } from '@/contexts/HardwareContext';
+import { useHardware } from '@/contexts/HardwareContext';
 import { useAppStore } from '@/store/useAppStore';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
@@ -21,7 +21,7 @@ import { toast } from 'sonner';
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const { projects, workstations, modules, selectProject, selectWorkstation, selectModule } = useData();
-  const { cameras, lenses, lights } = useHardwareContext();
+  const { cameras, lenses, lights } = useHardware();
   const { setCurrentRole, currentRole } = useAppStore();
   const { theme, setTheme } = useTheme();
 
