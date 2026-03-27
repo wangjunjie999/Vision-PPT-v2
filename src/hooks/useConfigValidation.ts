@@ -13,7 +13,7 @@ export interface ValidationIssue {
 
 export function useConfigValidation(projectId: string | null) {
   const { workstations, modules, layouts, getProjectWorkstations, getWorkstationModules } = useData();
-  const { cameras, lenses, lights } = useHardwareContext();
+  const { cameras, lenses, lights } = useHardware();
 
   const issues = useMemo<ValidationIssue[]>(() => {
     if (!projectId) return [];
