@@ -1,85 +1,88 @@
 
 
-# 性能优化方案
+# 自检报告：令人眼前一亮的功能改进建议
 
-## 当前性能瓶颈分析
+经过全面审查代码库，以下是当前缺失的、能带来重大用户体验提升的功能：
 
-1. **零代码分割**：所有组件同步导入，首次加载需要下载全部代码（Three.js、pptxgenjs、jspdf、docx、xlsx 等大型库全部打包在初始 bundle 中）
-2. **Layout3DPreview.tsx 有 2564 行**：这个巨大的 3D 组件始终被打包
-3. **ParticleBackground 持续动画**：登录页 300 粒子 + 连线计算每帧运行（低端机 CPU 压力大）
-4. **Three.js 全量导入**：`@react-three/fiber` + `@react-three/drei` + `three` 约 500KB+ gzipped
+---
 
-## 优化策略（不改变功能和效果）
+## 1. 全局命令面板（Command Palette）⌘K — 影响力：★★★★★
 
-### 1. React.lazy 代码分割（影响最大）
+**现状**：用户必须通过鼠标在项目树、工具栏、表单之间逐个点击导航，效率低。
 
-将重型组件改为懒加载，首屏只加载必要代码：
+**改进**：按 `Ctrl+K` / `⌘K` 弹出搜索面板，可以：
+- 模糊搜索项目/工位/模块，直接跳转
+- 快速执行操作：「新建项目」「生成PPT」「切换暗色模式」「打开管理中心」
+- 搜索硬件库（相机/镜头/光源）
+- 最近操作历史
 
-**文件：`src/components/layout/CanvasArea.tsx`**
-- 将 `Layout3DPreview`（通过 `WorkstationCanvas`）、`ModuleSchematic`、`AnnotationEditor`、`ProductViewerCanvas`、`ProjectDashboard` 改为 `React.lazy` 导入
-- 用 `<Suspense fallback={<Loading />}>` 包裹
+**技术方案**：基于已有的 `cmdk`（Command 组件已安装），创建 `CommandPalette.tsx`，注册全局 `keydown` 监听。
 
-**文件：`src/pages/Auth.tsx`**
-- `ParticleBackground` 改为 `React.lazy` 导入
+---
 
-**文件：`src/components/layout/MainLayout.tsx`**
-- `AdminCenter` 改为 `React.lazy` 导入
+## 2. 画布操作撤销/重做系统 — 影响力：★★★★★
 
-### 2. 动态导入重型生成库
+**现状**：拖拽布局中的相机、产品、机构位置后无法撤销，误操作只能手动恢复。
 
-**文件：`src/services/pptxGenerator.ts`、`pdfGenerator.ts`、`docxGenerator.ts`**
-- 将 `import pptxgen from 'pptxgenjs'` 改为函数内 `const pptxgen = (await import('pptxgenjs')).default`
-- 同理处理 `jspdf`、`docx`、`xlsx`
-- 这些库只在用户点击"生成报告"时才加载，不影响首屏
+**改进**：
+- `Ctrl+Z` 撤销、`Ctrl+Shift+Z` 重做
+- 工具栏显示撤销/重做按钮
+- 支持画布对象移动、添加、删除的完整操作历史（最近 50 步）
 
-### 3. ParticleBackground 性能优化
+**技术方案**：在 `DraggableLayoutCanvas` 中实现操作栈（`useReducer` + history array），每次 `onUpdateObject` 时推入历史。
 
-**文件：`src/components/effects/ParticleBackground.tsx`**
-- 降低默认粒子数从 300 → 150
-- 鼠标未激活时降低帧率：使用 `setTimeout` 替代 `requestAnimationFrame`（约 15fps idle vs 60fps active）
-- 移除鼠标未激活时的连线计算（O(n²) 复杂度）
-- 添加 `devicePixelRatio` 限制（低端机限制为 1）
+---
 
-### 4. Vite 构建优化
+## 3. 项目活动时间线 — 影响力：★★★★
 
-**文件：`vite.config.ts`**
-- 配置 `build.rollupOptions.output.manualChunks` 将 three.js 和报告生成库分离到独立 chunk
-- 这样结合 lazy loading，未使用的 chunk 不会被加载
+**现状**：无法追踪谁在什么时候修改了什么。项目仪表盘只有静态统计。
 
-```typescript
-manualChunks: {
-  'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
-  'report-vendor': ['pptxgenjs', 'jspdf', 'docx', 'xlsx'],
-  'chart-vendor': ['recharts'],
-}
-```
+**改进**：项目仪表盘新增「活动时间线」卡片，显示：
+- 「创建了工位 WS-001」
+- 「更新了模块 M-001 的缺陷配置」
+- 「生成了 PPT 报告」
+- 时间戳 + 操作类型图标
 
-### 5. 图片和资源优化
+**技术方案**：新建 `activity_logs` 表，在 DataContext 的 CRUD 操作中自动写入日志。ProjectDashboard 展示最近活动。
 
-**文件：`src/components/common/ImageWithFallback.tsx`**
-- 添加 `loading="lazy"` 属性
-- 添加 `decoding="async"` 属性
+---
 
-## 预期效果
+## 4. 项目模板一键复用系统 — 影响力：★★★★
 
-| 指标 | 优化前 | 优化后 |
-|------|--------|--------|
-| 初始 JS bundle | ~2MB+ | ~500KB（主 chunk） |
-| 首屏加载时间 | 慢（全量加载） | 快（仅加载认证页必要代码） |
-| 低端机 3D 页面 | 同步阻塞 | 按需加载，带 loading 提示 |
-| 空闲 CPU（登录页） | 粒子60fps持续 | 15fps idle，60fps hover |
+**现状**：`duplicateProject` 只能克隆已有项目，没有「项目模板」概念。
 
-## 涉及文件
+**改进**：
+- 将完成的项目「保存为模板」（含工位结构、模块配置、硬件选型）
+- 新建项目时可选「从模板创建」，一键生成完整项目骨架
+- 模板库管理界面（预览、编辑、删除）
 
-| 文件 | 操作 |
-|------|------|
-| `src/components/layout/CanvasArea.tsx` | React.lazy 懒加载子组件 |
-| `src/pages/Auth.tsx` | 懒加载 ParticleBackground |
-| `src/components/layout/MainLayout.tsx` | 懒加载 AdminCenter |
-| `src/components/effects/ParticleBackground.tsx` | 降低空闲帧率和粒子数 |
-| `src/services/pptxGenerator.ts` | 动态导入 pptxgenjs |
-| `src/services/pdfGenerator.ts` | 动态导入 jspdf |
-| `src/services/docxGenerator.ts` | 动态导入 docx |
-| `vite.config.ts` | manualChunks 分包 |
-| `src/components/common/ImageWithFallback.tsx` | lazy loading 属性 |
+**技术方案**：新建 `project_templates` 表存储序列化的项目结构 JSON。新建项目对话框增加模板选择步骤。
+
+---
+
+## 5. 智能配置校验与冲突检测 — 影响力：★★★★
+
+**现状**：用户可以选择不兼容的硬件组合（如镜头接口与相机不匹配），系统不会报警。
+
+**改进**：
+- 实时校验硬件兼容性（镜头卡口 vs 相机接口、光源推荐匹配）
+- 工位维度的节拍时间校验（模块处理时间总和 vs 目标节拍）
+- 项目仪表盘显示「配置健康度」评分卡
+- 问题项用黄色/红色高亮，点击直接跳转修复
+
+**技术方案**：创建 `useConfigValidation` hook，基于已有的硬件 `compatibleCameras`、`recommendedCameras` 字段进行交叉校验。
+
+---
+
+## 推荐实施顺序
+
+| 优先级 | 功能 | 工作量 | 用户感知 |
+|--------|------|--------|----------|
+| 1 | 全局命令面板 | 小（1-2个文件） | 极高 — 专业感拉满 |
+| 2 | 撤销/重做 | 中（画布核心逻辑） | 极高 — 消除焦虑 |
+| 3 | 智能配置校验 | 中（新 hook + UI） | 高 — 减少返工 |
+| 4 | 活动时间线 | 中（需建表 + UI） | 中高 — 团队协作 |
+| 5 | 项目模板系统 | 大（建表 + 序列化） | 高 — 效率飞跃 |
+
+建议从 **命令面板** 和 **撤销/重做** 开始，这两个功能投入产出比最高，用户第一次使用就能感受到专业级工具的体验。
 
