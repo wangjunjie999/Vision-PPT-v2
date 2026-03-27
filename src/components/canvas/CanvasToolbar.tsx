@@ -133,6 +133,29 @@ export const CanvasToolbar = memo(function CanvasToolbar({
           >
             🧊 3D 预览
           </button>
+          
+          {/* Undo/Redo */}
+          <div className="h-6 w-px bg-border self-center mx-1" />
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={!canUndo} onClick={onUndo}>
+                  <Undo2 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">撤销 (Ctrl+Z)</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={!canRedo} onClick={onRedo}>
+                  <Redo2 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">重做 (Ctrl+Shift+Z)</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
         {/* Right: Quality + Save + Settings toggle */}
