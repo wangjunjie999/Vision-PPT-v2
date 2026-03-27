@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import {
   Save, RotateCcw, Plus, Camera, Loader2, Check,
   ChevronDown, ChevronUp, Settings2, Zap, Layers, LayoutGrid, GripVertical,
+  Undo2, Redo2,
 } from 'lucide-react';
 import type { ViewType, LayerType, StandardViewType, ObjectOrderMap } from './canvasTypes';
 import type { LayoutObject } from './ObjectPropertyPanel';
@@ -72,6 +73,11 @@ interface CanvasToolbarProps {
   // Object-level ordering
   objectOrder: ObjectOrderMap;
   onObjectReorder: (id: string, direction: 'up' | 'down') => void;
+  // Undo/Redo
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }
 
 export const CanvasToolbar = memo(function CanvasToolbar({
@@ -84,6 +90,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
   layerOrder, draggedLayer, dragOverLayer, onLayerDragStart, onLayerDragOver, onLayerDrop, onLayerDragEnd, onSaveLayerOrder,
   objects, selectedId, selectedObj, mechanisms, enabledMechanisms, mechanismCounts,
   objectOrder, onObjectReorder,
+  canUndo, canRedo, onUndo, onRedo,
 }: CanvasToolbarProps) {
   const [expandedLayers, setExpandedLayers] = useState<Set<LayerType>>(new Set());
   const toggleLayerExpand = (type: LayerType) => {
