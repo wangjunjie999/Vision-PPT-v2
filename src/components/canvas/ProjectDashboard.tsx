@@ -28,6 +28,7 @@ import { CircularProgress } from '@/components/ui/circular-progress';
 import { motion } from 'framer-motion';
 import { StaggerList, StaggerItem } from '@/components/transitions/AnimatedLayout';
 import { BatchImageSaveButton } from './BatchImageSaveButton';
+import { ConfigHealthCard } from './ConfigHealthCard';
 
 export function ProjectDashboard() {
   const { 
@@ -315,6 +316,15 @@ export function ProjectDashboard() {
             </Card>
           </StaggerItem>
         </StaggerList>
+
+        {/* Config Health Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+        >
+          <ConfigHealthCard projectId={selectedProjectId!} />
+        </motion.div>
 
         {/* Generation Readiness */}
         <motion.div
