@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { useCanvasHistory } from '@/hooks/useCanvasHistory';
 import { toPng } from 'html-to-image';
 import { useData } from '@/contexts/DataContext';
 import { useMechanisms, type Mechanism } from '@/hooks/useMechanisms';
