@@ -651,6 +651,10 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         }
       }
     }
+    // Push history after drag completes
+    if (isDragging) {
+      pushHistory(objects, 'drag');
+    }
     setIsDragging(false);
     setIsPanning(false);
     setDraggingObject(null);
