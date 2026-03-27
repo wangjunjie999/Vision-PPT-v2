@@ -97,6 +97,9 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
   const fitAllFnRef = useRef<(() => void) | null>(null);
   const [cameraPickerOpen, setCameraPickerOpen] = useState(false);
 
+  // Undo/Redo history
+  const { pushState: pushHistory, undo: undoHistory, redo: redoHistory, canUndo, canRedo, reset: resetHistory } = useCanvasHistory<LayoutObject[]>([]);
+
   // Layer order
   const [layerOrder, setLayerOrder] = useState<LayerType[]>(() => {
     try {
