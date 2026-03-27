@@ -457,13 +457,24 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       };
 
       switch (e.key) {
-        case 'Delete': case 'Backspace': deleteObject(selectedId); break;
+        case 'Delete': case 'Backspace': pushHistory(objects, 'delete'); deleteObject(selectedId); break;
         case 'ArrowUp': e.preventDefault(); updateObject(selectedId, { y: selectedObj.y - nudgeAmount * scale, ...getNudge3D('up') }); break;
         case 'ArrowDown': e.preventDefault(); updateObject(selectedId, { y: selectedObj.y + nudgeAmount * scale, ...getNudge3D('down') }); break;
         case 'ArrowLeft': e.preventDefault(); updateObject(selectedId, { x: selectedObj.x - nudgeAmount * scale, ...getNudge3D('left') }); break;
         case 'ArrowRight': e.preventDefault(); updateObject(selectedId, { x: selectedObj.x + nudgeAmount * scale, ...getNudge3D('right') }); break;
         case 'd': case 'D':
-          if (e.ctrlKey || e.metaKey) { e.preventDefault(); duplicateObject(selectedId); }
+          if (e.ctrlKey || e.metaKey) { e.preventDefault(); pushHistory(objects, 'duplicate'); duplicateObject(selectedId); }
+          break;
+        case 'z': case 'Z':
+          if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+            e.preventDefault();
+            const redoState = redoHistory();
+            if (redoState) setObjects(redoState);
+          } else if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            const undoState = undoHistory();
+            if (undoState) setObjects(undoState);
+          }
           break;
         case 'Escape': setSelectedIds([]); setShowPropertyPanel(false); break;
       }
@@ -472,7 +483,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     return () => { window.removeEventListener('keydown', handleKeyDown); window.removeEventListener('keyup', handleKeyUp); };
-  }, [selectedId, objects, deleteObject, updateObject, duplicateObject, scale]);
+  }, [selectedId, objects, deleteObject, updateObject, duplicateObject, scale, pushHistory, undoHistory, redoHistory]);
 
   // ========== Mouse handlers ==========
   const screenToSvg = useCallback((clientX: number, clientY: number) => {
