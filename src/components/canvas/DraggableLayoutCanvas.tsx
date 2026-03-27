@@ -1031,6 +1031,9 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         objects={objects} selectedId={selectedId} selectedObj={selectedObj}
         mechanisms={mechanisms} enabledMechanisms={enabledMechanisms} mechanismCounts={mechanismCounts}
         objectOrder={objectOrder} onObjectReorder={handleObjectReorder}
+        canUndo={canUndo} canRedo={canRedo}
+        onUndo={() => { const s = undoHistory(); if (s) setObjects(s); }}
+        onRedo={() => { const s = redoHistory(); if (s) setObjects(s); }}
       />
 
       {/* Canvas Container */}
