@@ -1217,6 +1217,12 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
             scale={scale} canvasCenter={{ x: centerX, y: centerY }}
             currentView={currentView as StandardViewType} allObjects={objects}
             isIsometric={isIsometric}
+            productDimensions={productDimensions}
+            onUpdateProductDimensions={(dims) => {
+              updateWorkstation(workstationId, { product_dimensions: dims as any });
+            }}
+            productPosition={localProductPosition}
+            onUpdateProductPosition={setLocalProductPosition}
           />
         )}
 
