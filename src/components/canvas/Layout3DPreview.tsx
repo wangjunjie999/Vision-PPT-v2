@@ -7,6 +7,36 @@ import type { LayoutObject } from './ObjectPropertyPanel';
 import { CAMERA_INTERACTION_TYPES, PRODUCT_INTERACTION_TYPES } from './MechanismSVG';
 import * as THREE from 'three';
 
+// Compute world-space rotation using quaternions to avoid Euler gimbal lock.
+// Each slider always rotates around the fixed world axis regardless of other axes' values.
+// Mapping: rotX → world X, rotY → world Z (Three.js Z = user depth), rotZ → world Y (Three.js Y = user height)
+function computeWorldRotation(rotXDeg: number, rotYDeg: number, rotZDeg: number): THREE.Euler {
+  const rx = (rotXDeg * Math.PI) / 180;
+  const ry = (rotYDeg * Math.PI) / 180;
+  const rz = (rotZDeg * Math.PI) / 180;
+
+  const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), rx);
+  const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), ry); // user Y = Three.js Z
+  const qZ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rz); // user Z = Three.js Y
+
+  const combined = new THREE.Quaternion().multiply(qZ).multiply(qY).multiply(qX);
+  return new THREE.Euler().setFromQuaternion(combined);
+}
+
+// Apply world rotation to a vector (for connection endpoint calculations)
+function applyWorldRotation(v: THREE.Vector3, rotXDeg: number, rotYDeg: number, rotZDeg: number): THREE.Vector3 {
+  const rx = (rotXDeg * Math.PI) / 180;
+  const ry = (rotYDeg * Math.PI) / 180;
+  const rz = (rotZDeg * Math.PI) / 180;
+
+  const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), rx);
+  const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), ry);
+  const qZ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rz);
+
+  const combined = new THREE.Quaternion().multiply(qZ).multiply(qY).multiply(qX);
+  return v.clone().applyQuaternion(combined);
+}
+
 interface Layout3DPreviewProps {
   objects: LayoutObject[];
   productDimensions: { length: number; width: number; height: number };
@@ -160,7 +190,7 @@ function DraggableGroup({
   children: React.ReactNode;
   objectId: string;
   position: [number, number, number];
-  rotation?: [number, number, number];
+  rotation?: THREE.Euler | [number, number, number];
   dragState: React.MutableRefObject<DragState>;
   onDragStart: (id: string, point: THREE.Vector3) => void;
   onClick: (id: string) => void;
@@ -1412,10 +1442,7 @@ function getRobotArmFlangePosition(parent: LayoutObject): [number, number, numbe
   const flangeY = wristY + flangeLen * Math.cos(theta3);
 
   const localFlange = new THREE.Vector3(flangeX, flangeY, 0);
-  const rx = ((parent.rotX ?? 0) * Math.PI) / 180;
-  const ry = ((parent.rotY ?? 0) * Math.PI) / 180;
-  const rz = ((parent.rotZ ?? 0) * Math.PI) / 180;
-  const rotatedFlange = localFlange.applyEuler(new THREE.Euler(rx, rz, ry));
+  const rotatedFlange = applyWorldRotation(localFlange, parent.rotX ?? 0, parent.rotY ?? 0, parent.rotZ ?? 0);
 
   const parentX = (parent.posX ?? 0) * SCALE;
   const parentYWorld = (parent.posZ ?? 0) * SCALE;
@@ -1463,10 +1490,7 @@ function getConnectionEndpoint3D(
   const cy = (obj.posZ ?? 0) * SCALE;
   const cz = (obj.posY ?? 0) * SCALE;
 
-  const rx = ((obj.rotX ?? 0) * Math.PI) / 180;
-  const ry = ((obj.rotY ?? 0) * Math.PI) / 180;
-  const rz = ((obj.rotZ ?? 0) * Math.PI) / 180;
-  const rotatedOffset = localOffset.clone().applyEuler(new THREE.Euler(rx, rz, ry));
+  const rotatedOffset = applyWorldRotation(localOffset, obj.rotX ?? 0, obj.rotY ?? 0, obj.rotZ ?? 0);
 
   return [cx + rotatedOffset.x, cy + rotatedOffset.y, cz + rotatedOffset.z];
 }
@@ -2371,11 +2395,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 key={obj.id}
                 objectId={obj.id}
                 position={[(obj.posX ?? 0) * SCALE, (obj.posZ ?? 0) * SCALE, (obj.posY ?? 0) * SCALE]}
-                rotation={[
-                  ((obj.rotX ?? 0) * Math.PI) / 180,
-                  ((obj.rotZ ?? 0) * Math.PI) / 180,
-                  ((obj.rotY ?? 0) * Math.PI) / 180,
-                ]}
+                rotation={computeWorldRotation(obj.rotX ?? 0, obj.rotY ?? 0, obj.rotZ ?? 0)}
                 dragState={dragStateRef}
                 onDragStart={handleDragStart}
                 onClick={(id) => { handleSelect(id); }}
@@ -2406,11 +2426,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 key={obj.id}
                 objectId={obj.id}
                 position={[(obj.posX ?? 0) * SCALE, (obj.posZ ?? 0) * SCALE, (obj.posY ?? 0) * SCALE]}
-                rotation={[
-                  ((obj.rotX ?? 0) * Math.PI) / 180,
-                  ((obj.rotZ ?? 0) * Math.PI) / 180,
-                  ((obj.rotY ?? 0) * Math.PI) / 180,
-                ]}
+                rotation={computeWorldRotation(obj.rotX ?? 0, obj.rotY ?? 0, obj.rotZ ?? 0)}
                 dragState={dragStateRef}
                 onDragStart={handleDragStart}
                 onClick={(id) => { handleSelect(id); }}
