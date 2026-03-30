@@ -115,6 +115,7 @@ export function ObjectPropertyPanel({
   canvasCenter,
   currentView = 'front',
   allObjects = [],
+  isIsometric = false,
 }: ObjectPropertyPanelProps) {
   const [localValues, setLocalValues] = useState({
     x: 0,
