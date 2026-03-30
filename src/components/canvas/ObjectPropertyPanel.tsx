@@ -9,10 +9,11 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Trash2, Lock, Unlock, X, RotateCcw, Move, 
   Copy, ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
-  Maximize2, Minimize2, Box, Loader2
+  Maximize2, Minimize2, Box, Loader2, Camera, Package
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { CAMERA_INTERACTION_TYPES, PRODUCT_INTERACTION_TYPES } from './MechanismSVG';
 
 type ViewType = 'front' | 'side' | 'top';
 
@@ -58,6 +59,10 @@ interface ObjectPropertyPanelProps {
   currentView?: ViewType;
   allObjects?: LayoutObject[];
   isIsometric?: boolean;
+  productDimensions?: { length: number; width: number; height: number };
+  onUpdateProductDimensions?: (dims: { length: number; width: number; height: number }) => void;
+  productPosition?: { posX: number; posY: number; posZ: number };
+  onUpdateProductPosition?: (pos: { posX: number; posY: number; posZ: number }) => void;
 }
 // Inline GLB upload field for property panel
 function GLBUploadField({ currentUrl, onUpdate }: { currentUrl?: string; onUpdate: (url: string | undefined) => void }) {
@@ -116,6 +121,10 @@ export function ObjectPropertyPanel({
   currentView = 'front',
   allObjects = [],
   isIsometric = false,
+  productDimensions,
+  onUpdateProductDimensions,
+  productPosition,
+  onUpdateProductPosition,
 }: ObjectPropertyPanelProps) {
   const [localValues, setLocalValues] = useState({
     x: 0,
