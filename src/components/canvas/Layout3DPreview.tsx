@@ -36,6 +36,32 @@ function ScreenshotHelper({ onScreenshotReady }: { onScreenshotReady: (fn: () =>
   return null;
 }
 
+// Labeled axis indicator with user coordinate mapping
+function AxisLabels() {
+  const axisLength = 3;
+  return (
+    <group>
+      {/* X axis (Red) — Left/Right */}
+      <Line points={[[0,0,0],[axisLength,0,0]]} color="red" lineWidth={2} />
+      <Billboard position={[axisLength + 0.3, 0, 0]}>
+        <Text fontSize={0.3} color="red" anchorX="center" anchorY="middle" font={undefined}>X</Text>
+      </Billboard>
+
+      {/* Three.js Y axis → User Z (Height, Blue) */}
+      <Line points={[[0,0,0],[0,axisLength,0]]} color="#3b82f6" lineWidth={2} />
+      <Billboard position={[0, axisLength + 0.3, 0]}>
+        <Text fontSize={0.3} color="#3b82f6" anchorX="center" anchorY="middle" font={undefined}>Z（高度）</Text>
+      </Billboard>
+
+      {/* Three.js Z axis → User Y (Depth, Green) */}
+      <Line points={[[0,0,0],[0,0,axisLength]]} color="#22c55e" lineWidth={2} />
+      <Billboard position={[0, 0, axisLength + 0.3]}>
+        <Text fontSize={0.3} color="#22c55e" anchorX="center" anchorY="middle" font={undefined}>Y（深度）</Text>
+      </Billboard>
+    </group>
+  );
+}
+
 const SCALE = 0.01;
 const INV_SCALE = 100; // 1 / SCALE
 
@@ -1847,17 +1873,7 @@ function SelectedInfoPanel({ obj, objects, onDeselect, onUpdateObject, productDi
           </div>
         </div>
       )}
-      {/* 3D Rotation for mechanism/camera */}
-      {(obj.type === 'mechanism' || obj.type === 'camera') && onUpdateObject && (
-        <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
-          <div className="text-[10px] text-slate-400 mb-1">3D 旋转 (°)</div>
-          <div className="flex flex-col gap-1">
-            <DimInput label="Rx" value={obj.rotX ?? 0} onChange={v => onUpdateObject(obj.id, { rotX: v })} allowNegative />
-            <DimInput label="Ry" value={obj.rotY ?? 0} onChange={v => onUpdateObject(obj.id, { rotY: v })} allowNegative />
-            <DimInput label="Rz" value={obj.rotZ ?? 0} onChange={v => onUpdateObject(obj.id, { rotZ: v })} allowNegative />
-          </div>
-        </div>
-      )}
+      {/* 3D 旋转已移至侧边栏 ObjectPropertyPanel */}
       {/* Editable dimensions for product */}
       {obj.id === '__product__' && onUpdateProductDimensions && productDimensions && (
         <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
@@ -2315,7 +2331,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
             position={[0, -0.01, 0]}
           />
 
-          <axesHelper args={[3]} />
+          <AxisLabels />
 
           <DragPlane
             dragStateRef={dragStateRef}

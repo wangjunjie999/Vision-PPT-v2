@@ -545,7 +545,7 @@ export function ObjectPropertyPanel({
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">3D 旋转 (X/Y/Z)</Label>
             {(['rotX', 'rotY', 'rotZ'] as const).map((axis) => {
-              const label = axis === 'rotX' ? 'X轴' : axis === 'rotY' ? 'Y轴' : 'Z轴';
+              const label = axis === 'rotX' ? 'X轴（俯仰）' : axis === 'rotY' ? 'Y轴（翻滚）' : 'Z轴（偏航）';
               const color = axis === 'rotX' ? 'text-red-400' : axis === 'rotY' ? 'text-green-400' : 'text-blue-400';
               const val = object[axis] ?? 0;
               return (
