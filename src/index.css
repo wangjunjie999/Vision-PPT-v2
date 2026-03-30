@@ -20,13 +20,13 @@
 @layer base {
   :root {
     /* Systematic Cartography — Clinical Precision Palette */
-    --background: 220 15% 98%;
+    --background: 220 14% 95%;
     --foreground: 230 25% 14%;
 
-    --card: 0 0% 100%;
+    --card: 220 13% 97%;
     --card-foreground: 230 25% 14%;
 
-    --popover: 0 0% 100%;
+    --popover: 220 13% 97%;
     --popover-foreground: 230 25% 14%;
 
     /* Navy-Blue Primary — Cartographic precision */
@@ -35,7 +35,7 @@
     --primary-glow: 220 80% 58%;
 
     /* Slate Secondary */
-    --secondary: 215 15% 93%;
+    --secondary: 215 14% 90%;
     --secondary-foreground: 215 25% 25%;
 
     --muted: 215 12% 86%;
@@ -55,20 +55,20 @@
     --warning-foreground: 38 100% 12%;
 
     --border: 215 18% 86%;
-    --input: 215 15% 89%;
+    --input: 215 14% 87%;
     --ring: 220 75% 48%;
 
     --radius: 0.5rem;
 
     /* Enhanced custom tokens — Cartography */
-    --panel-bg: 215 15% 99%;
-    --panel-header: 215 18% 96%;
+    --panel-bg: 215 14% 96%;
+    --panel-header: 215 16% 93%;
     --panel-border: 215 18% 88%;
-    --tree-hover: 215 20% 95%;
-    --tree-selected: 220 45% 94%;
+    --tree-hover: 215 18% 92%;
+    --tree-selected: 220 40% 91%;
     --canvas-bg: 230 28% 10%;
     --canvas-grid: 230 22% 15%;
-    --toolbar-bg: 0 0% 100%;
+    --toolbar-bg: 220 13% 97%;
     --status-incomplete: 38 92% 50%;
     --status-complete: 155 65% 42%;
     --status-draft: 215 15% 60%;
@@ -83,15 +83,15 @@
     --sidebar-ring: 220 75% 55%;
 
     /* Slot tokens */
-    --slot-empty: 215 15% 97%;
+    --slot-empty: 215 14% 94%;
     --slot-empty-border: 215 15% 82%;
-    --slot-filled: 220 40% 95%;
+    --slot-filled: 220 35% 92%;
     --slot-filled-border: 220 70% 52%;
-    --slot-hover: 220 30% 93%;
+    --slot-hover: 220 28% 90%;
 
     /* Rich gradients — Cartography */
     --gradient-primary: linear-gradient(135deg, hsl(220 75% 48%), hsl(220 80% 58%));
-    --gradient-steel: linear-gradient(180deg, hsl(215 15% 97%), hsl(215 18% 92%));
+    --gradient-steel: linear-gradient(180deg, hsl(215 14% 94%), hsl(215 16% 89%));
     --gradient-dark: linear-gradient(180deg, hsl(230 28% 11%), hsl(230 30% 5%));
     --gradient-header: linear-gradient(90deg, hsl(230 25% 12%), hsl(230 28% 8%));
     --gradient-glow: radial-gradient(ellipse at center, hsl(187 82% 37% / 0.12), transparent 70%);
