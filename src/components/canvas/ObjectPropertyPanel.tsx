@@ -57,6 +57,7 @@ interface ObjectPropertyPanelProps {
   canvasCenter: { x: number; y: number };
   currentView?: ViewType;
   allObjects?: LayoutObject[];
+  isIsometric?: boolean;
 }
 // Inline GLB upload field for property panel
 function GLBUploadField({ currentUrl, onUpdate }: { currentUrl?: string; onUpdate: (url: string | undefined) => void }) {
