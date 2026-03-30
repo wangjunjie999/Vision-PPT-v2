@@ -493,7 +493,8 @@ export function ObjectPropertyPanel({
 
           <Separator className="my-3" />
 
-          {/* 2D Rotation */}
+          {/* 2D Rotation - only in 2D mode */}
+          {!isIsometric && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs text-muted-foreground">2D 旋转角度</Label>
@@ -540,6 +541,7 @@ export function ObjectPropertyPanel({
               ))}
             </div>
           </div>
+          )}
 
           <Separator className="my-3" />
 
