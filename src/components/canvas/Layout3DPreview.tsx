@@ -36,6 +36,32 @@ function ScreenshotHelper({ onScreenshotReady }: { onScreenshotReady: (fn: () =>
   return null;
 }
 
+// Labeled axis indicator with user coordinate mapping
+function AxisLabels() {
+  const axisLength = 3;
+  return (
+    <group>
+      {/* X axis (Red) — Left/Right */}
+      <Line points={[[0,0,0],[axisLength,0,0]]} color="red" lineWidth={2} />
+      <Billboard position={[axisLength + 0.3, 0, 0]}>
+        <Text fontSize={0.3} color="red" anchorX="center" anchorY="middle" font={undefined}>X</Text>
+      </Billboard>
+
+      {/* Three.js Y axis → User Z (Height, Blue) */}
+      <Line points={[[0,0,0],[0,axisLength,0]]} color="#3b82f6" lineWidth={2} />
+      <Billboard position={[0, axisLength + 0.3, 0]}>
+        <Text fontSize={0.3} color="#3b82f6" anchorX="center" anchorY="middle" font={undefined}>Z（高度）</Text>
+      </Billboard>
+
+      {/* Three.js Z axis → User Y (Depth, Green) */}
+      <Line points={[[0,0,0],[0,0,axisLength]]} color="#22c55e" lineWidth={2} />
+      <Billboard position={[0, 0, axisLength + 0.3]}>
+        <Text fontSize={0.3} color="#22c55e" anchorX="center" anchorY="middle" font={undefined}>Y（深度）</Text>
+      </Billboard>
+    </group>
+  );
+}
+
 const SCALE = 0.01;
 const INV_SCALE = 100; // 1 / SCALE
 
