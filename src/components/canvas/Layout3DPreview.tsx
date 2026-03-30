@@ -1389,7 +1389,7 @@ function getRobotArmFlangePosition(parent: LayoutObject): [number, number, numbe
   const rx = ((parent.rotX ?? 0) * Math.PI) / 180;
   const ry = ((parent.rotY ?? 0) * Math.PI) / 180;
   const rz = ((parent.rotZ ?? 0) * Math.PI) / 180;
-  const rotatedFlange = localFlange.applyEuler(new THREE.Euler(rx, ry, rz));
+  const rotatedFlange = localFlange.applyEuler(new THREE.Euler(rx, rz, ry));
 
   const parentX = (parent.posX ?? 0) * SCALE;
   const parentYWorld = (parent.posZ ?? 0) * SCALE;
@@ -1440,7 +1440,7 @@ function getConnectionEndpoint3D(
   const rx = ((obj.rotX ?? 0) * Math.PI) / 180;
   const ry = ((obj.rotY ?? 0) * Math.PI) / 180;
   const rz = ((obj.rotZ ?? 0) * Math.PI) / 180;
-  const rotatedOffset = localOffset.clone().applyEuler(new THREE.Euler(rx, ry, rz));
+  const rotatedOffset = localOffset.clone().applyEuler(new THREE.Euler(rx, rz, ry));
 
   return [cx + rotatedOffset.x, cy + rotatedOffset.y, cz + rotatedOffset.z];
 }
@@ -2357,8 +2357,8 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 position={[(obj.posX ?? 0) * SCALE, (obj.posZ ?? 0) * SCALE, (obj.posY ?? 0) * SCALE]}
                 rotation={[
                   ((obj.rotX ?? 0) * Math.PI) / 180,
-                  ((obj.rotY ?? 0) * Math.PI) / 180,
                   ((obj.rotZ ?? 0) * Math.PI) / 180,
+                  ((obj.rotY ?? 0) * Math.PI) / 180,
                 ]}
                 dragState={dragStateRef}
                 onDragStart={handleDragStart}
@@ -2392,8 +2392,8 @@ export const Layout3DPreview = memo(function Layout3DPreview({
                 position={[(obj.posX ?? 0) * SCALE, (obj.posZ ?? 0) * SCALE, (obj.posY ?? 0) * SCALE]}
                 rotation={[
                   ((obj.rotX ?? 0) * Math.PI) / 180,
-                  ((obj.rotY ?? 0) * Math.PI) / 180,
                   ((obj.rotZ ?? 0) * Math.PI) / 180,
+                  ((obj.rotY ?? 0) * Math.PI) / 180,
                 ]}
                 dragState={dragStateRef}
                 onDragStart={handleDragStart}
