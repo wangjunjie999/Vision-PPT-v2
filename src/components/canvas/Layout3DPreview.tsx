@@ -1847,17 +1847,7 @@ function SelectedInfoPanel({ obj, objects, onDeselect, onUpdateObject, productDi
           </div>
         </div>
       )}
-      {/* 3D Rotation for mechanism/camera */}
-      {(obj.type === 'mechanism' || obj.type === 'camera') && onUpdateObject && (
-        <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
-          <div className="text-[10px] text-slate-400 mb-1">3D 旋转 (°)</div>
-          <div className="flex flex-col gap-1">
-            <DimInput label="Rx" value={obj.rotX ?? 0} onChange={v => onUpdateObject(obj.id, { rotX: v })} allowNegative />
-            <DimInput label="Ry" value={obj.rotY ?? 0} onChange={v => onUpdateObject(obj.id, { rotY: v })} allowNegative />
-            <DimInput label="Rz" value={obj.rotZ ?? 0} onChange={v => onUpdateObject(obj.id, { rotZ: v })} allowNegative />
-          </div>
-        </div>
-      )}
+      {/* 3D 旋转已移至侧边栏 ObjectPropertyPanel */}
       {/* Editable dimensions for product */}
       {obj.id === '__product__' && onUpdateProductDimensions && productDimensions && (
         <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
@@ -2315,7 +2305,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
             position={[0, -0.01, 0]}
           />
 
-          <axesHelper args={[3]} />
+          <AxisLabels />
 
           <DragPlane
             dragStateRef={dragStateRef}
