@@ -1,39 +1,46 @@
 
 
-# 3D旋转轴映射修复
+# 统一仪表盘圆形进度条颜色
 
-## 问题根因
+## 问题
 
-坐标系统中，位置做了 Y↔Z 轴交换（用户的 Y=深度 映射到 Three.js Z，用户的 Z=高度 映射到 Three.js Y）：
-```text
-position={[posX * SCALE, posZ * SCALE, posY * SCALE]}
-                         ^^^            ^^^  已交换
-```
+项目仪表盘中的圆形进度条颜色不统一：
+- 工位数量：**accent（青色）**
+- 功能模块：**success（绿色）**
+- 布局图：**primary/success（蓝/绿混用）**
+- 示意图：**warning/success（橙/绿混用）**
+- 配置健康度：**success（绿色）**
 
-但旋转没有做同样的交换：
-```text
-rotation={[rotX, rotY, rotZ]}  // 未交换，物理错误
-```
-
-导致：
-- rotX 绕 Three.js X 轴旋转 → 正确（X 轴不变）
-- rotY 绕 Three.js Y 轴（垂直轴）旋转 → 错误，用户期望绕深度轴旋转
-- rotZ 绕 Three.js Z 轴（深度轴）旋转 → 错误，用户期望绕垂直轴旋转
-- X 轴和 Z 轴表现一致（都在水平面内倾斜），Y 轴行为不符合直觉
+截图中可以看到青色和绿色混在一起，视觉上杂乱。
 
 ## 修复方案
 
-**文件：`src/components/canvas/Layout3DPreview.tsx`**
+统一使用 **primary（主色调/精准青色）** 作为所有统计卡片的默认圆环颜色，仅在完成状态时切换为 `success`（绿色），形成清晰的"进行中 → 已完成"视觉语义。
 
-将所有 `rotation={[rotX, rotY, rotZ]}` 改为 `rotation={[rotX, rotZ, rotY]}`，与位置的 Y↔Z 交换保持一致。
+**文件：`src/components/canvas/ProjectDashboard.tsx`**
 
-需修改的位置：
-1. **~L2358-2361** — 机构渲染的 rotation
-2. **~L2393-2396** — 相机渲染的 rotation
-3. **~L1440-1443** — `getConnectionEndpoint3D` 中的 Euler 旋转（连接线端点计算），改为 `new THREE.Euler(rx, rz, ry)`
+| 卡片 | 当前 color | 修改后 |
+|------|-----------|--------|
+| 工位数量 | `accent` | `primary` |
+| 功能模块 | `success` | `primary` |
+| 布局图 | `primary` / 完成时 `success` | 保持不变（已正确） |
+| 示意图 | `warning` / 完成时 `success` | `primary` / 完成时 `success` |
 
-修复后：
-- rotX = 绕用户X轴（左右）旋转 → 俯仰
-- rotY = 绕用户Y轴（前后深度）旋转 → 翻滚
-- rotZ = 绕用户Z轴（上下垂直）旋转 → 偏航
+同时统一图标颜色：
+- 工位数量图标：`text-accent` → `text-primary`
+- 功能模块图标：`text-success` → `text-primary`
+- 示意图图标：`text-warning` → `text-primary`
+
+**文件：`src/components/canvas/ConfigHealthCard.tsx`**
+
+配置健康度的 `CircularProgress` 的 `color` 逻辑调整为：
+- 健康分 ≥ 80：`success`（绿色 — 表示健康）
+- 50-79：`warning`（黄色）
+- < 50：`destructive`（红色）
+
+这个逻辑已存在但使用 `as any` 强转，需确认类型正确。
+
+## 效果
+
+所有统计环统一为主色调青色，只有"已完成"状态才变绿色，形成一致的视觉节奏。
 
