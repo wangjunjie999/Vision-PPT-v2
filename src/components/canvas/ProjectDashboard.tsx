@@ -211,10 +211,10 @@ export function ProjectDashboard() {
                       value={workstationCount}
                       max={Math.max(workstationCount, 1)}
                       size="md"
-                      color="accent"
+                      color="primary"
                       showValue={false}
                     >
-                      <Cpu className="h-5 w-5 text-accent" />
+                      <Cpu className="h-5 w-5 text-primary" />
                     </CircularProgress>
                   </div>
                   <div>
@@ -242,10 +242,10 @@ export function ProjectDashboard() {
                       value={moduleCount}
                       max={Math.max(moduleCount, 1)}
                       size="md"
-                      color="success"
+                      color="primary"
                       showValue={false}
                     >
-                      <Box className="h-5 w-5 text-success" />
+                      <Box className="h-5 w-5 text-primary" />
                     </CircularProgress>
                   </div>
                   <div>
@@ -306,12 +306,12 @@ export function ProjectDashboard() {
                     value={schematicsComplete}
                     max={Math.max(moduleCount, 1)}
                     size="md"
-                    color={schematicsComplete === moduleCount && moduleCount > 0 ? 'success' : 'warning'}
+                    color={schematicsComplete === moduleCount && moduleCount > 0 ? 'success' : 'primary'}
                     valueFormat="fraction"
                   />
                   <div>
                     <div className="flex items-center gap-2">
-                      <FileCheck className="h-4 w-4 text-warning" />
+                      <FileCheck className="h-4 w-4 text-primary" />
                       <p className="text-xs text-muted-foreground">示意图</p>
                     </div>
                     <p className="text-sm font-medium mt-1">
