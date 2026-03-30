@@ -57,6 +57,7 @@ interface ObjectPropertyPanelProps {
   canvasCenter: { x: number; y: number };
   currentView?: ViewType;
   allObjects?: LayoutObject[];
+  isIsometric?: boolean;
 }
 // Inline GLB upload field for property panel
 function GLBUploadField({ currentUrl, onUpdate }: { currentUrl?: string; onUpdate: (url: string | undefined) => void }) {
@@ -114,6 +115,7 @@ export function ObjectPropertyPanel({
   canvasCenter,
   currentView = 'front',
   allObjects = [],
+  isIsometric = false,
 }: ObjectPropertyPanelProps) {
   const [localValues, setLocalValues] = useState({
     x: 0,
@@ -491,7 +493,8 @@ export function ObjectPropertyPanel({
 
           <Separator className="my-3" />
 
-          {/* 2D Rotation */}
+          {/* 2D Rotation - only in 2D mode */}
+          {!isIsometric && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs text-muted-foreground">2D 旋转角度</Label>
@@ -538,10 +541,12 @@ export function ObjectPropertyPanel({
               ))}
             </div>
           </div>
+          )}
 
+          {/* 3D Rotation (X/Y/Z) - only in 3D mode */}
+          {isIsometric && (
+          <>
           <Separator className="my-3" />
-
-          {/* 3D Rotation (X/Y/Z) */}
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">3D 旋转 (X/Y/Z)</Label>
             {(['rotX', 'rotY', 'rotZ'] as const).map((axis) => {
@@ -581,6 +586,8 @@ export function ObjectPropertyPanel({
               );
             })}
           </div>
+          </>
+          )}
 
           <Separator className="my-3" />
 

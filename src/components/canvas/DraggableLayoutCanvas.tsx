@@ -1216,6 +1216,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
             onClose={() => { setShowPropertyPanel(false); setSelectedIds([]); }}
             scale={scale} canvasCenter={{ x: centerX, y: centerY }}
             currentView={currentView as StandardViewType} allObjects={objects}
+            isIsometric={isIsometric}
           />
         )}
 
