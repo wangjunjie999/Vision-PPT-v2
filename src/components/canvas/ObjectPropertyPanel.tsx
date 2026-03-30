@@ -627,9 +627,146 @@ export function ObjectPropertyPanel({
             </div>
           </div>
 
-          <Separator className="my-3" />
+          {/* 3D Depth dimension - only in isometric mode */}
+          {isIsometric && object.type === 'mechanism' && (
+            <div className="space-y-1 mt-2">
+              <Label className="text-[10px] text-muted-foreground">深度 (D)</Label>
+              <Input
+                type="number"
+                value={(object as any).depth || 200}
+                onChange={(e) => {
+                  const v = Math.max(10, Math.round(parseFloat(e.target.value) || 200));
+                  onUpdate(object.id, { depth: v } as any);
+                }}
+                className="h-8 text-sm font-mono"
+                disabled={object.locked}
+              />
+            </div>
+          )}
 
-          {/* Camera Mount Status */}
+          {/* 3D Mount status for cameras */}
+          {isIsometric && object.type === 'camera' && (
+            <>
+              <Separator className="my-3" />
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">挂载状态</Label>
+                {object.mountedToMechanismId ? (() => {
+                  const parent = allObjects.find(o => o.id === object.mountedToMechanismId);
+                  const parentType = parent?.mechanismType || '';
+                  const isLegal = CAMERA_INTERACTION_TYPES.includes(parentType);
+                  return (
+                    <div className="p-2 rounded-lg bg-muted/40 border border-border space-y-1">
+                      <div className="text-xs text-muted-foreground">
+                        挂载到: <span className="text-foreground font-medium">{parent?.name || '未知'}</span>
+                      </div>
+                      <div className={cn("text-xs font-medium", isLegal ? 'text-emerald-500' : 'text-destructive')}>
+                        {isLegal ? '✅ 合法挂载' : '⚠️ 非法挂载 — 该机构不支持相机'}
+                      </div>
+                    </div>
+                  );
+                })() : (
+                  <div className="p-2 rounded-lg bg-muted/30 border border-border text-xs text-muted-foreground">
+                    未挂载到任何机构
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* 3D Mechanism interaction type */}
+          {isIsometric && object.type === 'mechanism' && (() => {
+            const mechType = object.mechanismType || '';
+            const isCamType = CAMERA_INTERACTION_TYPES.includes(mechType);
+            const isProdType = PRODUCT_INTERACTION_TYPES.includes(mechType);
+            const mountedChildren = allObjects.filter(o => o.mountedToMechanismId === object.id);
+            const illegalCameras = mountedChildren.filter(o => o.type === 'camera' && !isCamType);
+            return (
+              <>
+                <Separator className="my-3" />
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">机构交互类型</Label>
+                  <div className="p-2 rounded-lg bg-muted/40 border border-border space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      {isCamType ? <Camera className="h-3.5 w-3.5 text-blue-400" /> : isProdType ? <Package className="h-3.5 w-3.5 text-emerald-400" /> : null}
+                      <span className={cn("text-xs font-medium", isCamType ? 'text-blue-400' : isProdType ? 'text-emerald-400' : 'text-muted-foreground')}>
+                        {isCamType ? '相机交互类' : isProdType ? '产品交互类' : '未分类'}
+                      </span>
+                    </div>
+                    {isCamType && <div className="text-[10px] text-muted-foreground">支持安装相机</div>}
+                    {isProdType && <div className="text-[10px] text-muted-foreground">承载/传递产品 · 不支持安装相机</div>}
+                    {mountedChildren.length > 0 && (
+                      <div className="text-[10px] text-foreground">
+                        已挂载: {mountedChildren.map(c => c.name || c.id.slice(0, 6)).join(', ')}
+                      </div>
+                    )}
+                    {illegalCameras.length > 0 && (
+                      <div className="text-[10px] text-destructive font-medium">
+                        ⚠ {illegalCameras.length} 台相机非法挂载!
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            );
+          })()}
+
+          {/* 3D Product dimensions & position editing */}
+          {isIsometric && object.id === '__product__' && (
+            <>
+              {onUpdateProductDimensions && productDimensions && (
+                <>
+                  <Separator className="my-3" />
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">产品尺寸 (mm)</Label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {(['length', 'width', 'height'] as const).map(dim => (
+                        <div key={dim} className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">{dim === 'length' ? 'L' : dim === 'width' ? 'W' : 'H'}</Label>
+                          <Input
+                            type="number"
+                            value={productDimensions[dim]}
+                            onChange={(e) => {
+                              const v = Math.max(1, Math.round(parseFloat(e.target.value) || 1));
+                              onUpdateProductDimensions({ ...productDimensions, [dim]: v });
+                            }}
+                            className="h-7 text-xs font-mono px-1.5"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+              {onUpdateProductPosition && productPosition && (
+                <>
+                  <Separator className="my-3" />
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">产品位置 (mm)</Label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {(['posX', 'posY', 'posZ'] as const).map(axis => (
+                        <div key={axis} className="space-y-1">
+                          <Label className={cn("text-[10px] font-semibold", axis === 'posX' ? 'text-red-400' : axis === 'posY' ? 'text-green-400' : 'text-blue-400')}>
+                            {axis === 'posX' ? 'X' : axis === 'posY' ? 'Y' : 'Z'}
+                          </Label>
+                          <Input
+                            type="number"
+                            value={productPosition[axis]}
+                            onChange={(e) => {
+                              const v = Math.round(parseFloat(e.target.value) || 0);
+                              onUpdateProductPosition({ ...productPosition, [axis]: v });
+                            }}
+                            className="h-7 text-xs font-mono px-1.5"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          <Separator className="my-3" />
           {object.type === 'camera' && object.mountedToMechanismId && (
             <>
               <div className="p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/30">
