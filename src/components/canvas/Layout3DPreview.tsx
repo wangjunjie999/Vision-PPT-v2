@@ -1799,138 +1799,7 @@ function DimInput({ label, value, onChange, allowNegative }: { label: string; va
   );
 }
 
-// --- Enhanced info panel with mount info ---
-function SelectedInfoPanel({ obj, objects, onDeselect, onUpdateObject, productDimensions, onUpdateProductDimensions, productPosition, onUpdateProductPosition }: {
-  obj: LayoutObject | null;
-  objects: LayoutObject[];
-  onDeselect: () => void;
-  onUpdateObject?: (id: string, updates: Partial<LayoutObject>) => void;
-  productDimensions?: { length: number; width: number; height: number };
-  onUpdateProductDimensions?: (dims: { length: number; width: number; height: number }) => void;
-  productPosition?: { posX: number; posY: number; posZ: number };
-  onUpdateProductPosition?: (pos: { posX: number; posY: number; posZ: number }) => void;
-}) {
-  if (!obj) return null;
-  const typeLabel = obj.type === 'camera' ? '相机' : obj.type === 'mechanism' ? '机构' : '产品';
-  const mechType = obj.mechanismType || '';
-
-  let mountInfo: React.ReactNode = null;
-  if (obj.type === 'camera') {
-    if (obj.mountedToMechanismId) {
-      const parent = objects.find(o => o.id === obj.mountedToMechanismId);
-      const parentType = parent?.mechanismType || '';
-      const isLegal = isCameraMountable(parentType);
-      mountInfo = (
-        <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
-          <div className="text-[10px] text-slate-400">
-            挂载到: <span className="text-slate-200">{parent?.name || '未知'}</span>
-          </div>
-          <div className={`text-[10px] font-medium ${isLegal ? 'text-green-400' : 'text-red-400'}`}>
-            {isLegal ? '✅ 合法挂载' : '⚠️ 非法挂载 — 该机构不支持相机'}
-          </div>
-        </div>
-      );
-    } else {
-      mountInfo = (
-        <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
-          <div className="text-[10px] text-slate-400">未挂载到任何机构</div>
-        </div>
-      );
-    }
-  }
-
-  let mechInfo: React.ReactNode = null;
-  if (obj.type === 'mechanism') {
-    const isCamType = isCameraMountable(mechType);
-    const isProdType = isProductInteraction(mechType);
-    const mountedChildren = objects.filter(o => o.mountedToMechanismId === obj.id);
-    const illegalCameras = mountedChildren.filter(o => o.type === 'camera' && !isCamType);
-
-    mechInfo = (
-      <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
-        <div className="text-[10px]">
-          <span className={isCamType ? 'text-blue-400' : isProdType ? 'text-emerald-400' : 'text-slate-400'}>
-            {isCamType ? '📷 相机交互类' : isProdType ? '📦 产品交互类' : '未分类'}
-          </span>
-        </div>
-        {isCamType && (
-          <div className="text-[10px] text-slate-400 mt-0.5">支持安装相机</div>
-        )}
-        {isProdType && (
-          <div className="text-[10px] text-slate-400 mt-0.5">承载/传递产品 · 不支持安装相机</div>
-        )}
-        {mountedChildren.length > 0 && (
-          <div className="text-[10px] text-slate-300 mt-1">
-            已挂载: {mountedChildren.map(c => c.name || c.id.slice(0, 6)).join(', ')}
-          </div>
-        )}
-        {illegalCameras.length > 0 && (
-          <div className="text-[10px] text-red-400 mt-0.5">
-            ⚠ {illegalCameras.length} 台相机非法挂载!
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="absolute top-3 left-3 bg-slate-800/90 backdrop-blur-sm rounded-lg border border-yellow-500/50 p-3 z-10 min-w-[180px] max-w-[240px]">
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="text-xs font-semibold text-yellow-400">已选中</span>
-        <button onClick={onDeselect} className="text-slate-400 hover:text-slate-200 transition-colors">
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </div>
-      <div className="text-sm font-medium text-slate-100 truncate">{obj.name || '未命名'}</div>
-      <div className="text-[10px] text-slate-400 mt-1">类型: {typeLabel}</div>
-      <div className="text-[10px] text-slate-400">
-        位置: ({obj.posX ?? 0}, {obj.posY ?? 0}, {obj.posZ ?? 0})
-      </div>
-      {/* Editable dimensions for mechanisms */}
-      {obj.type === 'mechanism' && onUpdateObject && obj.width && obj.height && (
-        <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
-          <div className="text-[10px] text-slate-400 mb-1">尺寸 (mm)</div>
-          <div className="flex flex-col gap-1">
-            <DimInput label="W" value={obj.width} onChange={v => onUpdateObject(obj.id, { width: v })} />
-            <DimInput label="H" value={obj.height} onChange={v => onUpdateObject(obj.id, { height: v })} />
-            <DimInput label="D" value={(obj as any).depth || 200} onChange={v => onUpdateObject(obj.id, { depth: v } as any)} />
-          </div>
-        </div>
-      )}
-      {/* 3D 旋转已移至侧边栏 ObjectPropertyPanel */}
-      {/* Editable dimensions for product */}
-      {obj.id === '__product__' && onUpdateProductDimensions && productDimensions && (
-        <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
-          <div className="text-[10px] text-slate-400 mb-1">产品尺寸 (mm)</div>
-          <div className="flex flex-col gap-1">
-            <DimInput label="L" value={productDimensions.length} onChange={v => onUpdateProductDimensions({ ...productDimensions, length: v })} />
-            <DimInput label="W" value={productDimensions.width} onChange={v => onUpdateProductDimensions({ ...productDimensions, width: v })} />
-            <DimInput label="H" value={productDimensions.height} onChange={v => onUpdateProductDimensions({ ...productDimensions, height: v })} />
-          </div>
-        </div>
-      )}
-      {/* Editable position for product */}
-      {obj.id === '__product__' && onUpdateProductPosition && productPosition && (
-        <div className="mt-1.5 pt-1.5 border-t border-slate-600/50">
-          <div className="text-[10px] text-slate-400 mb-1">产品位置 (mm)</div>
-          <div className="flex flex-col gap-1">
-            <DimInput label="X" value={productPosition.posX} onChange={v => onUpdateProductPosition({ ...productPosition, posX: v })} allowNegative />
-            <DimInput label="Y" value={productPosition.posY} onChange={v => onUpdateProductPosition({ ...productPosition, posY: v })} allowNegative />
-            <DimInput label="Z" value={productPosition.posZ} onChange={v => onUpdateProductPosition({ ...productPosition, posZ: v })} allowNegative />
-          </div>
-        </div>
-      )}
-      {/* Fallback: read-only dimensions for cameras */}
-      {obj.type === 'camera' && obj.width && obj.height && (
-        <div className="text-[10px] text-slate-400">
-          尺寸: {obj.width}×{obj.height}
-        </div>
-      )}
-      {mountInfo}
-      {mechInfo}
-    </div>
-  );
-}
+// SelectedInfoPanel removed — all info now shown in ObjectPropertyPanel sidebar
 
 // --- FitAll helper: calculates scene bounding box and moves camera ---
 function FitAllHelper({
@@ -2457,17 +2326,7 @@ export const Layout3DPreview = memo(function Layout3DPreview({
         </Suspense>
       </Canvas>
 
-      {/* Selected object info */}
-      <SelectedInfoPanel
-        obj={selectedObj}
-        objects={objects}
-        onDeselect={handleDeselect}
-        onUpdateObject={onUpdateObject}
-        productDimensions={productDimensions}
-        onUpdateProductDimensions={onUpdateProductDimensions}
-        productPosition={productPosition}
-        onUpdateProductPosition={onUpdateProductPosition}
-      />
+      {/* SelectedInfoPanel removed — info now in ObjectPropertyPanel */}
 
       {/* Toolbar: xray + snap */}
       {onUpdateObject && (
