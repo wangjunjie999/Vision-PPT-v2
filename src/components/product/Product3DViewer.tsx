@@ -114,7 +114,7 @@ function CameraController({
       minDistance={2}
       maxDistance={20}
       mouseButtons={{
-        LEFT: shiftHeld ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
+        LEFT: spaceHeld ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
         MIDDLE: THREE.MOUSE.DOLLY,
         RIGHT: undefined as any,
       }}
