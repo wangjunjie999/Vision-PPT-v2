@@ -81,11 +81,11 @@ function CameraController({
 }) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
-  const [shiftHeld, setShiftHeld] = useState(false);
+  const [spaceHeld, setSpaceHeld] = useState(false);
 
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Shift') setShiftHeld(true); };
-    const onKeyUp = (e: KeyboardEvent) => { if (e.key === 'Shift') setShiftHeld(false); };
+    const onKeyDown = (e: KeyboardEvent) => { if (e.code === 'Space') { e.preventDefault(); setSpaceHeld(true); } };
+    const onKeyUp = (e: KeyboardEvent) => { if (e.code === 'Space') setSpaceHeld(false); };
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
     return () => { window.removeEventListener('keydown', onKeyDown); window.removeEventListener('keyup', onKeyUp); };
@@ -114,7 +114,7 @@ function CameraController({
       minDistance={2}
       maxDistance={20}
       mouseButtons={{
-        LEFT: shiftHeld ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
+        LEFT: spaceHeld ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
         MIDDLE: THREE.MOUSE.DOLLY,
         RIGHT: undefined as any,
       }}
@@ -268,7 +268,7 @@ export function Product3DViewer({ modelUrl, imageUrls = [], onReady, fillContain
 
         {/* Controls hint */}
         <div className="absolute bottom-2 right-2 text-[10px] text-muted-foreground bg-background/80 px-2 py-1 rounded">
-          鼠标拖拽旋转 | 滚轮缩放 | Shift+拖拽平移
+          鼠标拖拽旋转 | 滚轮缩放 | 空格+拖拽平移
         </div>
       </div>
     </div>
