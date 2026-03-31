@@ -244,9 +244,12 @@ export function Product3DViewer({ modelUrl, imageUrls = [], onReady, fillContain
           <PerspectiveCamera makeDefault position={[5, 5, 5]} fov={50} />
           <CameraController viewPreset={viewPreset} />
           
-          <ambientLight intensity={0.5} />
+          <ambientLight intensity={0.8} />
           <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
           <directionalLight position={[-10, 10, -5]} intensity={0.5} />
+          <directionalLight position={[0, -8, 0]} intensity={0.3} />
+          <directionalLight position={[0, 2, 10]} intensity={0.4} />
+          <directionalLight position={[0, 2, -10]} intensity={0.3} />
           
           <Suspense fallback={<LoadingFallback />}>
             {hasModel && <Model url={modelUrl} />}
