@@ -23,7 +23,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { AnnotationCanvas, Annotation } from '@/components/product/AnnotationCanvas';
+import { AnnotationCanvas, Annotation, ImageTransform } from '@/components/product/AnnotationCanvas';
 import {
   ArrowLeft,
   ArrowRight,
@@ -60,6 +60,7 @@ export function AnnotationEditor() {
   const [currentEditIndex, setCurrentEditIndex] = useState(0);
   const [editingAnnotations, setEditingAnnotations] = useState<Annotation[]>([]);
   const [highlightId, setHighlightId] = useState<string | null>(null);
+  const [imageTransform, setImageTransform] = useState<ImageTransform>({ rotation: 0, flipH: false, flipV: false });
 
   // Load existing data if viewing a record
   useState(() => {
@@ -127,7 +128,7 @@ export function AnnotationEditor() {
     setSaving(true);
     try {
       // Render annotations onto image using Canvas compositing
-      const blob = await renderAnnotationsToCanvas(annotationSnapshot, annotations);
+      const blob = await renderAnnotationsToCanvas(annotationSnapshot, annotations, imageTransform);
       const path = `annotations/${annotationAssetId}/${Date.now()}.png`;
       const { error: uploadError } = await supabase.storage
         .from('product-snapshots')
@@ -253,6 +254,7 @@ export function AnnotationEditor() {
             readOnly={sequentialMode || readOnly}
             fillContainer
             highlightId={highlightId}
+            onTransformChange={setImageTransform}
           />
         </div>
 
