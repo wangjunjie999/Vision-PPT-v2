@@ -254,6 +254,7 @@ export function AnnotationEditor() {
             readOnly={sequentialMode || readOnly}
             fillContainer
             highlightId={highlightId}
+            onTransformChange={setImageTransform}
           />
         </div>
 
