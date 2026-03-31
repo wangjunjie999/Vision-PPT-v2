@@ -128,8 +128,16 @@ function ScreenshotHelper({ onReady }: { onReady: (fn: () => string | null) => v
 
   useEffect(() => {
     onReady(() => {
+      // Force render current frame before capture
       gl.render(scene, camera);
-      return gl.domElement.toDataURL('image/png');
+      const dataUrl = gl.domElement.toDataURL('image/png');
+      // Validate: a very short data URL likely means empty/black frame
+      if (dataUrl.length < 1000) {
+        console.warn('Screenshot appears to be empty, retrying render...');
+        gl.render(scene, camera);
+        return gl.domElement.toDataURL('image/png');
+      }
+      return dataUrl;
     });
   }, [gl, scene, camera, onReady]);
 

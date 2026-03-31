@@ -785,10 +785,10 @@ export function AnnotationCanvas({
             src={imageUrl}
             alt="标注图片"
             className="max-w-full max-h-full object-contain pointer-events-none"
-            style={{
+            style={imageBounds.renderWidth > 0 ? {
               width: `${imageBounds.renderWidth}px`,
               height: `${imageBounds.renderHeight}px`,
-            }}
+            } : undefined}
             onLoad={(e) => {
               const img = e.target as HTMLImageElement;
               setImageSize({ width: img.naturalWidth, height: img.naturalHeight });

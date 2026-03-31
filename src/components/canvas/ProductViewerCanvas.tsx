@@ -27,11 +27,17 @@ export function ProductViewerCanvas() {
     }
 
     if (dataUrl) {
+      // Validate screenshot is not an empty/black frame (data URL too short)
+      const isValidScreenshot = dataUrl.startsWith('data:image') && dataUrl.length > 1000;
+      if (!isValidScreenshot && viewerAssetData.imageUrls.length > 0) {
+        // Fallback to original image URL
+        dataUrl = viewerAssetData.imageUrls[0];
+      }
       exitViewerMode();
       enterAnnotationMode(dataUrl, viewerAssetData.assetId, viewerAssetData.scope, selectedWorkstationId || undefined);
       toast.success('已进入标注模式');
     } else {
-      toast.error('截图失败');
+      toast.error('截图失败，请稍后重试');
     }
   }, [viewerRef, viewerAssetData, exitViewerMode, enterAnnotationMode]);
 
