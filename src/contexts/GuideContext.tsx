@@ -74,6 +74,14 @@ export function GuideProvider({ children }: { children: React.ReactNode }) {
     return 'complete';
   }, [projects, workstations, modules, showWelcome]);
 
+  // Auto-dismiss guide once all steps are complete (project + workstation + module exist)
+  useEffect(() => {
+    if (currentStep === 'complete' && !dismissed) {
+      setDismissed(true);
+      setShowWelcome(false);
+    }
+  }, [currentStep, dismissed]);
+
   const isGuideActive = !dismissed;
 
   const dismissGuide = useCallback(() => {
