@@ -42,8 +42,8 @@ function Model({ url }: { url: string }) {
       const maxDim = Math.max(size.x, size.y, size.z);
       const scale = 4 / maxDim;
       
-      modelRef.current.position.sub(center);
       modelRef.current.scale.setScalar(scale);
+      modelRef.current.position.copy(center).multiplyScalar(-scale);
     }
   }, [scene]);
 
