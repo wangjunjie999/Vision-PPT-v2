@@ -27,7 +27,15 @@ import {
   Trash2,
   Edit3,
   MousePointer,
+  RotateCw,
+  RotateCcw,
+  FlipHorizontal,
+  FlipVertical,
+  ZoomIn,
+  ZoomOut,
+  Maximize,
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export interface Annotation {
   id: string;
@@ -46,6 +54,12 @@ export interface Annotation {
   tolerance?: string;
 }
 
+export interface ImageTransform {
+  rotation: number; // 0, 90, 180, 270
+  flipH: boolean;
+  flipV: boolean;
+}
+
 interface AnnotationCanvasProps {
   imageUrl: string;
   annotations: Annotation[];
@@ -53,6 +67,7 @@ interface AnnotationCanvasProps {
   readOnly?: boolean;
   fillContainer?: boolean;
   highlightId?: string | null;
+  onTransformChange?: (transform: ImageTransform) => void;
 }
 
 type Tool = 'select' | 'point' | 'rect' | 'arrow' | 'text' | 'number';
@@ -84,6 +99,10 @@ interface ImageBounds {
   offsetY: number;
 }
 
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 5;
+const ZOOM_STEP = 0.15;
+
 export function AnnotationCanvas({
   imageUrl,
   annotations,
@@ -91,6 +110,7 @@ export function AnnotationCanvas({
   readOnly = false,
   fillContainer = false,
   highlightId = null,
+  onTransformChange,
 }: AnnotationCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<Tool>('point');
@@ -105,6 +125,22 @@ export function AnnotationCanvas({
   const [imageBounds, setImageBounds] = useState<ImageBounds>({ renderWidth: 0, renderHeight: 0, offsetX: 0, offsetY: 0 });
   const [dragging, setDragging] = useState<{ id: string; offsetX: number; offsetY: number; origAnnotation: Annotation } | null>(null);
 
+  // Image transform state
+  const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState(0); // 0, 90, 180, 270
+  const [flipH, setFlipH] = useState(false);
+  const [flipV, setFlipV] = useState(false);
+  const [panX, setPanX] = useState(0);
+  const [panY, setPanY] = useState(0);
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState<{ x: number; y: number; panX: number; panY: number } | null>(null);
+  const [spaceHeld, setSpaceHeld] = useState(false);
+
+  // Notify parent of transform changes
+  useEffect(() => {
+    onTransformChange?.({ rotation, flipH, flipV });
+  }, [rotation, flipH, flipV, onTransformChange]);
+
   // Calculate next number
   useEffect(() => {
     const maxNumber = annotations
@@ -113,12 +149,44 @@ export function AnnotationCanvas({
     setNextNumber(maxNumber + 1);
   }, [annotations]);
 
+  // Space key for panning mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && !e.repeat) {
+        e.preventDefault();
+        setSpaceHeld(true);
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        setSpaceHeld(false);
+        setIsPanning(false);
+        setPanStart(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  // Effective image dimensions after rotation (for bounds calc)
+  const effectiveImageSize = useCallback(() => {
+    if (rotation === 90 || rotation === 270) {
+      return { width: imageSize.height, height: imageSize.width };
+    }
+    return imageSize;
+  }, [imageSize, rotation]);
+
   // Calculate image bounds for object-contain alignment
   const calcImageBounds = useCallback(() => {
     if (!containerRef.current || !imageSize.width || !imageSize.height) return;
     const container = containerRef.current.getBoundingClientRect();
+    const effSize = effectiveImageSize();
     const containerAspect = container.width / container.height;
-    const imageAspect = imageSize.width / imageSize.height;
+    const imageAspect = effSize.width / effSize.height;
 
     let renderWidth: number, renderHeight: number, offsetX: number, offsetY: number;
     if (imageAspect > containerAspect) {
@@ -133,7 +201,7 @@ export function AnnotationCanvas({
       offsetY = 0;
     }
     setImageBounds({ renderWidth, renderHeight, offsetX, offsetY });
-  }, [imageSize]);
+  }, [imageSize, effectiveImageSize]);
 
   useEffect(() => {
     calcImageBounds();
@@ -141,21 +209,52 @@ export function AnnotationCanvas({
     return () => window.removeEventListener('resize', calcImageBounds);
   }, [calcImageBounds]);
 
-  // Get coordinates relative to the actual rendered image area
+  // Get coordinates relative to the actual rendered image area, accounting for transforms
   const getRelativeCoords = useCallback((e: React.MouseEvent): { x: number; y: number } => {
     if (!containerRef.current || !imageBounds.renderWidth || !imageBounds.renderHeight) return { x: 0, y: 0 };
     const container = containerRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - container.left - imageBounds.offsetX;
-    const mouseY = e.clientY - container.top - imageBounds.offsetY;
+
+    // Mouse position relative to the container center
+    const cx = container.width / 2;
+    const cy = container.height / 2;
+    let mx = e.clientX - container.left - cx;
+    let my = e.clientY - container.top - cy;
+
+    // Reverse pan
+    mx -= panX;
+    my -= panY;
+
+    // Reverse zoom
+    mx /= zoom;
+    my /= zoom;
+
+    // Reverse rotation
+    const rad = -(rotation * Math.PI) / 180;
+    const rmx = mx * Math.cos(rad) - my * Math.sin(rad);
+    const rmy = mx * Math.sin(rad) + my * Math.cos(rad);
+    mx = rmx;
+    my = rmy;
+
+    // Reverse flip
+    if (flipH) mx = -mx;
+    if (flipV) my = -my;
+
+    // Back to container-relative
+    mx += cx;
+    my += cy;
+
+    // Now relative to image bounds
+    const mouseX = mx - imageBounds.offsetX;
+    const mouseY = my - imageBounds.offsetY;
+
     return {
       x: (mouseX / imageBounds.renderWidth) * 100,
       y: (mouseY / imageBounds.renderHeight) * 100,
     };
-  }, [imageBounds]);
+  }, [imageBounds, zoom, rotation, flipH, flipV, panX, panY]);
 
   // Hit-test: find annotation under cursor
   const hitTest = useCallback((coords: { x: number; y: number }) => {
-    // Search in reverse so top-most (last drawn) annotations are found first
     for (let i = annotations.length - 1; i >= 0; i--) {
       const a = annotations[i];
       if (a.type === 'point' || a.type === 'number') {
@@ -170,12 +269,26 @@ export function AnnotationCanvas({
     return null;
   }, [annotations]);
 
-  // Handle mouse down — any tool can select/drag existing annotations
+  // Wheel zoom
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+    setZoom(prev => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev + delta)));
+  }, []);
+
+  // Handle mouse down — panning or annotation
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Middle button or space+left → pan
+    if (e.button === 1 || (spaceHeld && e.button === 0)) {
+      e.preventDefault();
+      setIsPanning(true);
+      setPanStart({ x: e.clientX, y: e.clientY, panX, panY });
+      return;
+    }
+
     if (readOnly) return;
     const coords = getRelativeCoords(e);
 
-    // Try to hit-test existing annotations first (works in any tool)
     const clicked = hitTest(coords);
 
     if (tool === 'select') {
@@ -193,7 +306,6 @@ export function AnnotationCanvas({
       return;
     }
 
-    // For drawing tools: if clicking on an existing annotation, select it instead of drawing
     if (clicked) {
       setSelectedId(clicked.id);
       setDragging({
@@ -205,12 +317,10 @@ export function AnnotationCanvas({
       return;
     }
 
-    // Not clicking on annotation — start drawing
     setSelectedId(null);
     setIsDrawing(true);
     setDrawStart(coords);
 
-    // For point-based tools: add immediately without opening dialog
     if (tool === 'point' || tool === 'text' || tool === 'number') {
       const newAnnotation: Annotation = {
         id: `ann_${Date.now()}`,
@@ -225,10 +335,17 @@ export function AnnotationCanvas({
       onChange([...annotations, newAnnotation]);
       setIsDrawing(false);
     }
-  }, [tool, annotations, readOnly, getRelativeCoords, nextNumber, onChange, hitTest]);
+  }, [tool, annotations, readOnly, getRelativeCoords, nextNumber, onChange, hitTest, spaceHeld, panX, panY]);
 
   // Handle mouse move
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    // Panning
+    if (isPanning && panStart) {
+      setPanX(panStart.panX + e.clientX - panStart.x);
+      setPanY(panStart.panY + e.clientY - panStart.y);
+      return;
+    }
+
     if (readOnly) return;
     const coords = getRelativeCoords(e);
 
@@ -269,10 +386,16 @@ export function AnnotationCanvas({
         endY: coords.y,
       });
     }
-  }, [isDrawing, drawStart, tool, readOnly, getRelativeCoords, dragging, annotations, onChange]);
+  }, [isDrawing, drawStart, tool, readOnly, getRelativeCoords, dragging, annotations, onChange, isPanning, panStart]);
 
   // Handle mouse up
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
+    if (isPanning) {
+      setIsPanning(false);
+      setPanStart(null);
+      return;
+    }
+
     if (dragging) {
       setDragging(null);
       return;
@@ -281,7 +404,6 @@ export function AnnotationCanvas({
     const coords = getRelativeCoords(e);
     setIsDrawing(false);
 
-    // For rect/arrow: add immediately without opening dialog
     if (tool === 'rect' || tool === 'arrow') {
       const newAnnotation: Annotation = {
         id: `ann_${Date.now()}`,
@@ -301,7 +423,7 @@ export function AnnotationCanvas({
 
     setTempAnnotation(null);
     setDrawStart(null);
-  }, [isDrawing, drawStart, tool, readOnly, getRelativeCoords, dragging, annotations, onChange]);
+  }, [isDrawing, drawStart, tool, readOnly, getRelativeCoords, dragging, annotations, onChange, isPanning]);
 
   // Save annotation from dialog
   const handleSaveAnnotation = () => {
@@ -326,11 +448,11 @@ export function AnnotationCanvas({
     }
   }, [selectedId, annotations, onChange]);
 
-  // Keyboard shortcuts: Delete/Backspace to remove selected annotation
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (readOnly || !selectedId) return;
-      if (editDialogOpen) return; // Don't delete while editing
+      if (editDialogOpen) return;
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
         handleDelete();
@@ -340,7 +462,6 @@ export function AnnotationCanvas({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [readOnly, selectedId, editDialogOpen, handleDelete]);
 
-  // Edit selected annotation (manual trigger only)
   const handleEdit = () => {
     const selected = annotations.find(a => a.id === selectedId);
     if (selected) {
@@ -349,7 +470,6 @@ export function AnnotationCanvas({
     }
   };
 
-  // Double-click to edit
   const handleDoubleClick = useCallback((annId: string) => {
     const ann = annotations.find(a => a.id === annId);
     if (ann && !readOnly) {
@@ -358,6 +478,25 @@ export function AnnotationCanvas({
       setEditDialogOpen(true);
     }
   }, [annotations, readOnly]);
+
+  // Transform actions
+  const handleRotateCW = () => setRotation(prev => (prev + 90) % 360);
+  const handleRotateCCW = () => setRotation(prev => (prev - 90 + 360) % 360);
+  const handleFlipH = () => setFlipH(prev => !prev);
+  const handleFlipV = () => setFlipV(prev => !prev);
+  const handleZoomIn = () => setZoom(prev => Math.min(MAX_ZOOM, prev + 0.25));
+  const handleZoomOut = () => setZoom(prev => Math.max(MIN_ZOOM, prev - 0.25));
+  const handleFitReset = () => {
+    setZoom(1);
+    setPanX(0);
+    setPanY(0);
+    setRotation(0);
+    setFlipH(false);
+    setFlipV(false);
+  };
+
+  // Build CSS transform for image + annotation layer
+  const layerTransform = `translate(${panX}px, ${panY}px) rotate(${rotation}deg) scale(${zoom}) scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`;
 
   // Render annotation
   const renderAnnotation = (ann: Annotation) => {
@@ -368,6 +507,9 @@ export function AnnotationCanvas({
       isSelected && "ring-2 ring-primary ring-offset-1",
       isHighlighted && "ring-2 ring-primary ring-offset-1 animate-pulse"
     );
+
+    // Counter-transform for text so it remains readable after flip/rotation
+    const textCounterTransform = `rotate(${-rotation}deg) scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`;
 
     switch (ann.type) {
       case 'point':
@@ -387,7 +529,7 @@ export function AnnotationCanvas({
           <div
             key={ann.id}
             className={cn(baseClass, "w-6 h-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold border-2 border-white shadow-lg")}
-            style={{ left: `${ann.x}%`, top: `${ann.y}%` }}
+            style={{ left: `${ann.x}%`, top: `${ann.y}%`, transform: `translate(-50%, -50%) ${textCounterTransform}` }}
             onClick={() => setSelectedId(ann.id)}
             onDoubleClick={() => handleDoubleClick(ann.id)}
             title={ann.name || `标注${ann.number}`}
@@ -445,7 +587,7 @@ export function AnnotationCanvas({
           <div
             key={ann.id}
             className={cn(baseClass, "px-2 py-1 bg-background/90 border border-primary rounded text-xs whitespace-nowrap")}
-            style={{ left: `${ann.x}%`, top: `${ann.y}%` }}
+            style={{ left: `${ann.x}%`, top: `${ann.y}%`, transform: textCounterTransform }}
             onClick={() => setSelectedId(ann.id)}
             onDoubleClick={() => handleDoubleClick(ann.id)}
           >
@@ -503,6 +645,7 @@ export function AnnotationCanvas({
       {/* Toolbar */}
       {!readOnly && (
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Annotation tools */}
           <div className="flex gap-1 p-1 bg-muted rounded-lg">
             {TOOLS.map(t => (
               <Button
@@ -516,6 +659,74 @@ export function AnnotationCanvas({
                 {t.icon}
               </Button>
             ))}
+          </div>
+
+          {/* Separator */}
+          <div className="w-px h-6 bg-border" />
+
+          {/* Image transform tools */}
+          <div className="flex gap-1 p-1 bg-muted rounded-lg">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleRotateCCW}>
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>逆时针旋转90°</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleRotateCW}>
+                  <RotateCw className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>顺时针旋转90°</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant={flipH ? 'default' : 'ghost'} size="sm" className="h-8 w-8 p-0" onClick={handleFlipH}>
+                  <FlipHorizontal className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>水平翻转</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant={flipV ? 'default' : 'ghost'} size="sm" className="h-8 w-8 p-0" onClick={handleFlipV}>
+                  <FlipVertical className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>垂直翻转</TooltipContent>
+            </Tooltip>
+          </div>
+
+          {/* Zoom controls */}
+          <div className="flex gap-1 p-1 bg-muted rounded-lg items-center">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleZoomOut}>
+                  <ZoomOut className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>缩小</TooltipContent>
+            </Tooltip>
+            <span className="text-xs font-mono w-10 text-center text-muted-foreground">{Math.round(zoom * 100)}%</span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleZoomIn}>
+                  <ZoomIn className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>放大</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleFitReset}>
+                  <Maximize className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>重置视图</TooltipContent>
+            </Tooltip>
           </div>
 
           {selectedId && (
@@ -537,12 +748,15 @@ export function AnnotationCanvas({
       <div
         ref={containerRef}
         className={cn(
-          "relative bg-muted rounded-lg overflow-hidden cursor-crosshair select-none",
+          "relative bg-muted rounded-lg overflow-hidden select-none",
+          (spaceHeld || isPanning) ? "cursor-grab" : "cursor-crosshair",
+          isPanning && "cursor-grabbing",
           fillContainer ? "h-full" : "aspect-video"
         )}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
+        onWheel={handleWheel}
         onMouseLeave={() => {
           if (isDrawing) {
             setIsDrawing(false);
@@ -552,34 +766,64 @@ export function AnnotationCanvas({
           if (dragging) {
             setDragging(null);
           }
+          if (isPanning) {
+            setIsPanning(false);
+            setPanStart(null);
+          }
         }}
       >
-        <img
-          src={imageUrl}
-          alt="标注图片"
-          className="w-full h-full object-contain pointer-events-none"
-          onLoad={(e) => {
-            const img = e.target as HTMLImageElement;
-            setImageSize({ width: img.naturalWidth, height: img.naturalHeight });
-          }}
-        />
-
-        {/* Annotations layer — aligned to actual rendered image area */}
+        {/* Transformed image + annotations wrapper */}
         <div
-          className="absolute pointer-events-none"
+          className="absolute inset-0 flex items-center justify-center"
           style={{
-            left: `${imageBounds.offsetX}px`,
-            top: `${imageBounds.offsetY}px`,
-            width: `${imageBounds.renderWidth}px`,
-            height: `${imageBounds.renderHeight}px`,
+            transform: layerTransform,
+            transformOrigin: 'center center',
+            transition: isPanning ? 'none' : 'transform 0.2s ease',
           }}
         >
-          {annotations.map(renderAnnotation)}
-          {renderTempAnnotation()}
+          <img
+            src={imageUrl}
+            alt="标注图片"
+            className="max-w-full max-h-full object-contain pointer-events-none"
+            style={{
+              width: `${imageBounds.renderWidth}px`,
+              height: `${imageBounds.renderHeight}px`,
+            }}
+            onLoad={(e) => {
+              const img = e.target as HTMLImageElement;
+              setImageSize({ width: img.naturalWidth, height: img.naturalHeight });
+            }}
+          />
+
+          {/* Annotations layer — overlaid on image */}
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              width: `${imageBounds.renderWidth}px`,
+              height: `${imageBounds.renderHeight}px`,
+            }}
+          >
+            {annotations.map(renderAnnotation)}
+            {renderTempAnnotation()}
+          </div>
         </div>
+
+        {/* Zoom indicator (bottom-right) */}
+        {zoom !== 1 && (
+          <div className="absolute bottom-2 right-2 bg-background/80 text-foreground text-xs px-2 py-1 rounded-md pointer-events-none">
+            {Math.round(zoom * 100)}%
+          </div>
+        )}
+
+        {/* Pan hint */}
+        {spaceHeld && !isPanning && (
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-background/80 text-foreground text-xs px-3 py-1 rounded-md pointer-events-none">
+            拖拽平移图片
+          </div>
+        )}
       </div>
 
-      {/* Edit Dialog — only opened manually via edit button or double-click */}
+      {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
