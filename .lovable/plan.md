@@ -1,41 +1,28 @@
 
 
-# 修复3D查看器：产品居中 + 全方位照明
+# 修复截图进入标注页面黑屏问题
 
 ## 问题分析
 
-### 1. 产品不居中
-当前 `Model` 组件的居中逻辑有 bug：
-```js
-modelRef.current.position.sub(center);  // 先设偏移
-modelRef.current.scale.setScalar(scale); // 再缩放 → 偏移也被缩放了
-```
-缩放会作用于 position，导致最终偏移 = `-center × scale`，不是 `-center`。产品偏离原点。
+两个原因导致黑屏：
 
-### 2. 照明不足
-目前只有 1 个环境光 (0.5) + 2 个方向光，背面和侧面偏暗，截图时细节不清晰。
+1. **AnnotationCanvas 图片初始尺寸为 0×0**：`imageBounds` 初始值为 `{renderWidth: 0, renderHeight: 0}`，图片元素被设置为 `width: 0px; height: 0px`，即使图片加载成功也可能因为 0 尺寸无法正常显示或触发布局。
 
-## 方案
+2. **3D 截图可能捕获黑帧**：`ScreenshotHelper` 在组件挂载时就注册截图函数，但模型可能尚未完全加载到场景中。点击截图时如果模型渲染未完成，WebGL canvas 输出的是黑色图像。
 
-**文件：`src/components/product/Product3DViewer.tsx`**
+## 修复方案
 
-### 修复居中
-```typescript
-// 正确的居中逻辑：先缩放center，再取反
-modelRef.current.scale.setScalar(scale);
-modelRef.current.position.copy(center).multiplyScalar(-scale);
-```
+### 文件：`src/components/product/AnnotationCanvas.tsx`
 
-### 增强照明（6 光源全方位打光）
-- 提升环境光强度：0.5 → 0.8
-- 保留主光源 `[10,10,5]` 强度 1.0
-- 保留副光源 `[-10,10,-5]` 强度 0.5
-- 新增底部补光 `[0,-8,0]` 强度 0.3（照亮底面）
-- 新增正面补光 `[0,2,10]` 强度 0.4（照亮正面细节）
-- 新增背面补光 `[0,2,-10]` 强度 0.3（照亮背面）
+- 当 `imageBounds.renderWidth === 0` 时，不设置显式的 `width/height` 样式，让图片用 `max-w-full max-h-full object-contain` 自然渲染
+- 这样图片加载后立即可见，`onLoad` 触发后再切换到精确尺寸
 
-这样产品每一面都有充足光照，截图时细节清晰。
+### 文件：`src/components/product/Product3DViewer.tsx`
 
-### 改动范围
-仅修改 `Product3DViewer.tsx`，约 10 行代码。
+- 在 `ScreenshotHelper` 中，截图前先等待一帧（`requestAnimationFrame`）再执行 `gl.render` + `toDataURL`，确保场景已完成渲染
+- 对 3D 模式截图增加一个 fallback：如果截图结果全黑（检查像素），尝试延迟再截一次
+
+### 文件：`src/components/canvas/ProductViewerCanvas.tsx`
+
+- `handleScreenshot` 中对 3D 截图结果做简单验证，如果是 null 或极小的 data URL（表示空白），给用户提示"模型尚未加载完成"
 
