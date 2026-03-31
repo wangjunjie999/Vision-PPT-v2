@@ -128,7 +128,7 @@ export function AnnotationEditor() {
     setSaving(true);
     try {
       // Render annotations onto image using Canvas compositing
-      const blob = await renderAnnotationsToCanvas(annotationSnapshot, annotations);
+      const blob = await renderAnnotationsToCanvas(annotationSnapshot, annotations, imageTransform);
       const path = `annotations/${annotationAssetId}/${Date.now()}.png`;
       const { error: uploadError } = await supabase.storage
         .from('product-snapshots')
