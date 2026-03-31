@@ -23,7 +23,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { AnnotationCanvas, Annotation } from '@/components/product/AnnotationCanvas';
+import { AnnotationCanvas, Annotation, ImageTransform } from '@/components/product/AnnotationCanvas';
 import {
   ArrowLeft,
   ArrowRight,
