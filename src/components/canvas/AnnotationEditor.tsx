@@ -60,6 +60,7 @@ export function AnnotationEditor() {
   const [currentEditIndex, setCurrentEditIndex] = useState(0);
   const [editingAnnotations, setEditingAnnotations] = useState<Annotation[]>([]);
   const [highlightId, setHighlightId] = useState<string | null>(null);
+  const [imageTransform, setImageTransform] = useState<ImageTransform>({ rotation: 0, flipH: false, flipV: false });
 
   // Load existing data if viewing a record
   useState(() => {
