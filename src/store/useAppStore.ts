@@ -76,6 +76,7 @@ export const useAppStore = create<Store>()(
       // Annotation mode
       annotationMode: false,
       annotationSnapshot: null,
+      annotationSnapshotIsObjectUrl: false,
       annotationAssetId: null,
       annotationScope: 'workstation',
       annotationWorkstationId: null,
@@ -88,18 +89,47 @@ export const useAppStore = create<Store>()(
       enterAnnotationMode: (snapshot, assetId, scope, workstationId, existingData) => set({
         annotationMode: true,
         annotationSnapshot: snapshot,
+        annotationSnapshotIsObjectUrl: false,
         annotationAssetId: assetId,
         annotationScope: scope,
         annotationWorkstationId: workstationId || null,
         annotationExistingData: existingData || null,
       }),
-      exitAnnotationMode: () => set({
-        annotationMode: false,
-        annotationSnapshot: null,
-        annotationAssetId: null,
-        annotationWorkstationId: null,
-        annotationExistingData: null,
-      }),
+      exitAnnotationMode: () => {
+        const state = get();
+        // Revoke objectURL if we own it
+        if (state.annotationSnapshotIsObjectUrl && state.annotationSnapshot) {
+          URL.revokeObjectURL(state.annotationSnapshot);
+        }
+        set({
+          annotationMode: false,
+          annotationSnapshot: null,
+          annotationSnapshotIsObjectUrl: false,
+          annotationAssetId: null,
+          annotationWorkstationId: null,
+          annotationExistingData: null,
+        });
+      },
+
+      // Atomic switch: viewer → annotation without unmount race
+      switchViewerToAnnotation: (snapshot, isObjectUrl, assetId, scope, workstationId) => {
+        const state = get();
+        // Revoke previous annotation objectURL if any
+        if (state.annotationSnapshotIsObjectUrl && state.annotationSnapshot) {
+          URL.revokeObjectURL(state.annotationSnapshot);
+        }
+        set({
+          viewerMode: false,
+          viewerAssetData: null,
+          annotationMode: true,
+          annotationSnapshot: snapshot,
+          annotationSnapshotIsObjectUrl: isObjectUrl,
+          annotationAssetId: assetId,
+          annotationScope: scope,
+          annotationWorkstationId: workstationId || null,
+          annotationExistingData: null,
+        });
+      },
       
       // Viewer mode
       viewerMode: false,
