@@ -122,6 +122,7 @@ export function AnnotationCanvas({
   const [tempAnnotation, setTempAnnotation] = useState<Partial<Annotation> | null>(null);
   const [nextNumber, setNextNumber] = useState(1);
   const [imageSize, setImageSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [imageLoadError, setImageLoadError] = useState(false);
   const [imageBounds, setImageBounds] = useState<ImageBounds>({ renderWidth: 0, renderHeight: 0, offsetX: 0, offsetY: 0 });
   const [dragging, setDragging] = useState<{ id: string; offsetX: number; offsetY: number; origAnnotation: Annotation } | null>(null);
 
