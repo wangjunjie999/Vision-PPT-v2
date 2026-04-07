@@ -1,26 +1,17 @@
-import { useRef, useState, useEffect, Suspense, useImperativeHandle } from 'react';
-import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls, useGLTF, Environment, Center, Html, PerspectiveCamera } from '@react-three/drei';
+import { useState, useEffect, Suspense } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
+import { OrbitControls, useGLTF, Environment, PerspectiveCamera, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { 
-  RotateCcw, 
-  Eye, 
-  ArrowUp, 
-  ArrowRight, 
-  Maximize2,
-  Loader2,
-} from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 interface Product3DViewerProps {
   modelUrl: string | null;
   imageUrls?: string[];
-  onReady?: (ref: { takeScreenshot: () => string | null; takeScreenshotBlob: () => Promise<Blob | null> }) => void;
   fillContainer?: boolean;
 }
 
-// View presets
 const VIEW_PRESETS = {
   isometric: { position: [5, 5, 5] as [number, number, number], name: '等轴测' },
   front: { position: [0, 0, 8] as [number, number, number], name: '正视' },
@@ -28,20 +19,17 @@ const VIEW_PRESETS = {
   top: { position: [0, 8, 0] as [number, number, number], name: '俯视' },
 };
 
-// Model component
 function Model({ url }: { url: string }) {
   const { scene } = useGLTF(url);
   const modelRef = useRef<THREE.Group>(null);
 
   useEffect(() => {
     if (modelRef.current) {
-      // Center and scale the model
       const box = new THREE.Box3().setFromObject(modelRef.current);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
       const maxDim = Math.max(size.x, size.y, size.z);
       const scale = 4 / maxDim;
-      
       modelRef.current.scale.setScalar(scale);
       modelRef.current.position.copy(center).multiplyScalar(-scale);
     }
@@ -54,14 +42,12 @@ function Model({ url }: { url: string }) {
   );
 }
 
-// Image plane component for displaying images in 3D
 function ImagePlane({ url, index, total }: { url: string; index: number; total: number }) {
   const texture = new THREE.TextureLoader().load(url);
   const angle = (index / total) * Math.PI * 2;
   const radius = 3;
-  
   return (
-    <mesh 
+    <mesh
       position={[Math.cos(angle) * radius, 0, Math.sin(angle) * radius]}
       rotation={[0, -angle - Math.PI / 2, 0]}
     >
@@ -71,14 +57,7 @@ function ImagePlane({ url, index, total }: { url: string; index: number; total: 
   );
 }
 
-// Camera controller component
-function CameraController({ 
-  viewPreset,
-  onControlsReady,
-}: { 
-  viewPreset: keyof typeof VIEW_PRESETS | null;
-  onControlsReady?: (controls: any) => void;
-}) {
+function CameraController({ viewPreset }: { viewPreset: keyof typeof VIEW_PRESETS | null }) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
   const [spaceHeld, setSpaceHeld] = useState(false);
@@ -100,16 +79,10 @@ function CameraController({
     }
   }, [viewPreset, camera]);
 
-  useEffect(() => {
-    if (controlsRef.current && onControlsReady) {
-      onControlsReady(controlsRef.current);
-    }
-  }, [onControlsReady]);
-
   return (
-    <OrbitControls 
+    <OrbitControls
       ref={controlsRef}
-      enableDamping 
+      enableDamping
       dampingFactor={0.1}
       minDistance={2}
       maxDistance={20}
@@ -122,87 +95,6 @@ function CameraController({
   );
 }
 
-// Screenshot helper component — keeps renderer refs fresh via useFrame
-function ScreenshotHelper({ onReady }: { onReady: (fns: { sync: () => string | null; blob: () => Promise<Blob | null> }) => void }) {
-  const glRef = useRef<THREE.WebGLRenderer>(null!);
-  const sceneRef = useRef<THREE.Scene>(null!);
-  const cameraRef = useRef<THREE.Camera>(null!);
-  const { gl, scene, camera } = useThree();
-
-  // Keep refs up-to-date every frame
-  useFrame(() => {
-    glRef.current = gl;
-    sceneRef.current = scene;
-    cameraRef.current = camera;
-  });
-
-  useEffect(() => {
-    const renderOnce = () => {
-      const r = glRef.current || gl;
-      const s = sceneRef.current || scene;
-      const c = cameraRef.current || camera;
-      r.render(s, c);
-      r.render(s, c);
-      return { canvas: r.domElement, renderer: r };
-    };
-
-    /** Check if the rendered frame is non-black by sampling center pixel */
-    const isNonBlackFrame = (renderer: THREE.WebGLRenderer): boolean => {
-      try {
-        const w = renderer.domElement.width;
-        const h = renderer.domElement.height;
-        const px = new Uint8Array(4);
-        renderer.getContext().readPixels(
-          Math.floor(w / 2), Math.floor(h / 2), 1, 1,
-          renderer.getContext().RGBA, renderer.getContext().UNSIGNED_BYTE, px
-        );
-        // If any channel > 0, it's not a pure-black frame
-        return px[0] > 0 || px[1] > 0 || px[2] > 0 || px[3] > 0;
-      } catch {
-        return true; // If readPixels fails, assume frame is OK
-      }
-    };
-
-    onReady({
-      sync: () => {
-        const { canvas } = renderOnce();
-        return canvas.toDataURL('image/png');
-      },
-      blob: () => new Promise<Blob | null>((resolve) => {
-        let attempts = 0;
-        const maxAttempts = 4;
-
-        const tryCapture = () => {
-          const { canvas, renderer } = renderOnce();
-          attempts++;
-          console.log(`[Screenshot] attempt ${attempts}, canvas ${canvas.width}x${canvas.height}`);
-
-          if (isNonBlackFrame(renderer) || attempts >= maxAttempts) {
-            // Wait one rAF for GPU compositing to finish
-            requestAnimationFrame(() => {
-              // Re-render once more for safety
-              renderer.render(sceneRef.current || scene, cameraRef.current || camera);
-              canvas.toBlob((b) => {
-                console.log(`[Screenshot] blob size: ${b?.size ?? 0}`);
-                resolve(b);
-              }, 'image/png');
-            });
-          } else {
-            console.log('[Screenshot] black frame detected, retrying...');
-            requestAnimationFrame(tryCapture);
-          }
-        };
-
-        // Start after one frame to let the scene settle
-        requestAnimationFrame(tryCapture);
-      }),
-    });
-  }, [gl, scene, camera, onReady]);
-
-  return null;
-}
-
-// Loading fallback
 function LoadingFallback() {
   return (
     <Html center>
@@ -214,47 +106,16 @@ function LoadingFallback() {
   );
 }
 
-export function Product3DViewer({ modelUrl, imageUrls = [], onReady, fillContainer }: Product3DViewerProps) {
+import { useRef } from 'react';
+
+export function Product3DViewer({ modelUrl, imageUrls = [], fillContainer }: Product3DViewerProps) {
   const [viewPreset, setViewPreset] = useState<keyof typeof VIEW_PRESETS | null>('isometric');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const screenshotFnRef = useRef<{ sync: () => string | null; blob: () => Promise<Blob | null> } | null>(null);
 
   const hasModel = !!modelUrl;
   const hasImages = imageUrls.length > 0;
 
-  // Expose screenshot functions to parent
-  useEffect(() => {
-    if (!onReady) return;
-    if (!hasModel && hasImages) {
-      onReady({
-        takeScreenshot: () => imageUrls[currentImageIndex] || null,
-        takeScreenshotBlob: async () => {
-          // For image mode, fetch the image as blob
-          try {
-            const resp = await fetch(imageUrls[currentImageIndex]);
-            return await resp.blob();
-          } catch { return null; }
-        },
-      });
-    } else {
-      onReady({
-        takeScreenshot: () => {
-          if (screenshotFnRef.current) {
-            try { return screenshotFnRef.current.sync(); } catch (e) { console.warn('3D screenshot failed:', e); return null; }
-          }
-          return null;
-        },
-        takeScreenshotBlob: async () => {
-          if (screenshotFnRef.current) {
-            try { return await screenshotFnRef.current.blob(); } catch (e) { console.warn('3D screenshot blob failed:', e); return null; }
-          }
-          return null;
-        },
-      });
-    }
-  }, [onReady, hasModel, hasImages, currentImageIndex, imageUrls]);
-
-  // If only images and no model, show image gallery
+  // Image-only mode
   if (!hasModel && hasImages) {
     return (
       <div className={fillContainer ? "h-full w-full flex items-center justify-center bg-muted" : "space-y-2"}>
@@ -288,7 +149,6 @@ export function Product3DViewer({ modelUrl, imageUrls = [], onReady, fillContain
 
   return (
     <div className={fillContainer ? "h-full w-full flex flex-col" : "space-y-2"}>
-      {/* View Preset Buttons */}
       <div className={cn("flex gap-1 justify-center", fillContainer ? "py-2 shrink-0" : "")}>
         {(Object.keys(VIEW_PRESETS) as (keyof typeof VIEW_PRESETS)[]).map((key) => (
           <Button
@@ -303,7 +163,6 @@ export function Product3DViewer({ modelUrl, imageUrls = [], onReady, fillContain
         ))}
       </div>
 
-      {/* 3D Canvas */}
       <div className={cn(
         "relative bg-gradient-to-b from-background to-muted overflow-hidden border",
         fillContainer ? "flex-1 min-h-0" : "aspect-video rounded-lg"
@@ -312,46 +171,25 @@ export function Product3DViewer({ modelUrl, imageUrls = [], onReady, fillContain
           gl={{ preserveDrawingBuffer: true }}
           shadows
           dpr={[1, 2]}
-          onCreated={({ gl }) => {
-            const canvas = gl.domElement;
-            canvas.addEventListener('webglcontextlost', (e) => {
-              e.preventDefault();
-              console.warn('WebGL context lost, attempting restore...');
-            });
-            canvas.addEventListener('webglcontextrestored', () => {
-              console.log('WebGL context restored');
-            });
-          }}
         >
           <PerspectiveCamera makeDefault position={[5, 5, 5]} fov={50} />
           <CameraController viewPreset={viewPreset} />
-          
+
           <ambientLight intensity={0.8} />
           <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
           <directionalLight position={[-10, 10, -5]} intensity={0.5} />
           <directionalLight position={[0, -8, 0]} intensity={0.3} />
           <directionalLight position={[0, 2, 10]} intensity={0.4} />
           <directionalLight position={[0, 2, -10]} intensity={0.3} />
-          
+
           <Suspense fallback={<LoadingFallback />}>
             {hasModel && <Model url={modelUrl} />}
-            {!hasModel && hasImages && (
-              <Center>
-                {imageUrls.map((url, i) => (
-                  <ImagePlane key={i} url={url} index={i} total={imageUrls.length} />
-                ))}
-              </Center>
-            )}
             <Environment preset="studio" />
           </Suspense>
 
-          <ScreenshotHelper onReady={(fns) => { screenshotFnRef.current = fns; }} />
-          
-          {/* Grid helper */}
           <gridHelper args={[10, 10, '#666', '#444']} />
         </Canvas>
 
-        {/* Controls hint */}
         <div className="absolute bottom-2 right-2 text-[10px] text-muted-foreground bg-background/80 px-2 py-1 rounded">
           鼠标拖拽旋转 | 滚轮缩放 | 空格+拖拽平移
         </div>
