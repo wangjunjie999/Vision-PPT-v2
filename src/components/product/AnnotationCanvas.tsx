@@ -793,7 +793,9 @@ export function AnnotationCanvas({
             onLoad={(e) => {
               const img = e.target as HTMLImageElement;
               setImageSize({ width: img.naturalWidth, height: img.naturalHeight });
+              setImageLoadError(false);
             }}
+            onError={() => setImageLoadError(true)}
           />
 
           {/* Annotations layer — overlaid on image */}
