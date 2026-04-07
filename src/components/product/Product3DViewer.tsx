@@ -16,7 +16,7 @@ import {
 interface Product3DViewerProps {
   modelUrl: string | null;
   imageUrls?: string[];
-  onReady?: (ref: { takeScreenshot: () => string | null }) => void;
+  onReady?: (ref: { takeScreenshot: () => string | null; takeScreenshotBlob: () => Promise<Blob | null> }) => void;
   fillContainer?: boolean;
 }
 
