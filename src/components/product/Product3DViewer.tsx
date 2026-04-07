@@ -181,25 +181,31 @@ export function Product3DViewer({ modelUrl, imageUrls = [], onReady, fillContain
   const hasModel = !!modelUrl;
   const hasImages = imageUrls.length > 0;
 
-  // Expose screenshot function to parent
+  // Expose screenshot functions to parent
   useEffect(() => {
     if (!onReady) return;
     if (!hasModel && hasImages) {
-      // Image mode: return image URL directly (avoids CORS toDataURL issues)
       onReady({
         takeScreenshot: () => imageUrls[currentImageIndex] || null,
+        takeScreenshotBlob: async () => {
+          // For image mode, fetch the image as blob
+          try {
+            const resp = await fetch(imageUrls[currentImageIndex]);
+            return await resp.blob();
+          } catch { return null; }
+        },
       });
     } else {
-      // 3D mode: use screenshotFnRef from ScreenshotHelper
       onReady({
         takeScreenshot: () => {
           if (screenshotFnRef.current) {
-            try {
-              return screenshotFnRef.current();
-            } catch (e) {
-              console.warn('3D screenshot failed:', e);
-              return null;
-            }
+            try { return screenshotFnRef.current.sync(); } catch (e) { console.warn('3D screenshot failed:', e); return null; }
+          }
+          return null;
+        },
+        takeScreenshotBlob: async () => {
+          if (screenshotFnRef.current) {
+            try { return await screenshotFnRef.current.blob(); } catch (e) { console.warn('3D screenshot blob failed:', e); return null; }
           }
           return null;
         },
