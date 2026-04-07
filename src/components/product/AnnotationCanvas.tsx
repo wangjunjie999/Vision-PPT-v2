@@ -782,20 +782,37 @@ export function AnnotationCanvas({
             transition: isPanning ? 'none' : 'transform 0.2s ease',
           }}
         >
+        {imageLoadError && (
+            <div className="flex items-center justify-center w-full h-full text-destructive text-sm">
+              截图加载失败，请返回重新截图
+            </div>
+          )}
+          {!imageLoadError && imageSize.width === 0 && (
+            <div className="flex items-center justify-center w-full h-full text-muted-foreground text-sm">
+              加载中...
+            </div>
+          )}
           <img
             src={imageUrl}
             alt="标注图片"
             className="max-w-full max-h-full object-contain pointer-events-none"
-            style={imageBounds.renderWidth > 0 ? {
-              width: `${imageBounds.renderWidth}px`,
-              height: `${imageBounds.renderHeight}px`,
-            } : undefined}
+            style={{
+              ...(imageBounds.renderWidth > 0 ? {
+                width: `${imageBounds.renderWidth}px`,
+                height: `${imageBounds.renderHeight}px`,
+              } : undefined),
+              display: imageLoadError ? 'none' : undefined,
+            }}
             onLoad={(e) => {
               const img = e.target as HTMLImageElement;
+              console.log('[AnnotationCanvas] image loaded:', img.naturalWidth, 'x', img.naturalHeight, 'src:', imageUrl.substring(0, 60));
               setImageSize({ width: img.naturalWidth, height: img.naturalHeight });
               setImageLoadError(false);
             }}
-            onError={() => setImageLoadError(true)}
+            onError={() => {
+              console.error('[AnnotationCanvas] image load error, src:', imageUrl.substring(0, 80));
+              setImageLoadError(true);
+            }}
           />
 
           {/* Annotations layer — overlaid on image */}

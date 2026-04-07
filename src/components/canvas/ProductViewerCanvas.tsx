@@ -28,14 +28,19 @@ export function ProductViewerCanvas() {
     setCapturing(true);
 
     try {
+      // Wait 500ms so the WebGL scene has rendered several frames
+      await new Promise(r => setTimeout(r, 500));
+
       let imageUrl: string | null = null;
       let isObjectUrl = false;
 
-      // Attempt 1: blob capture
+      // Attempt 1: blob capture (now waits for rAF internally + black-frame retry)
       const blob = await viewerRef.takeScreenshotBlob();
-      if (blob && blob.size > 100) {
+      console.log('[ViewerCanvas] blob attempt 1, size:', blob?.size);
+      if (blob && blob.size > 500) {
         const objUrl = URL.createObjectURL(blob);
         const valid = await validateImageUrl(objUrl);
+        console.log('[ViewerCanvas] blob valid:', valid);
         if (valid) {
           imageUrl = objUrl;
           isObjectUrl = true;
@@ -44,11 +49,13 @@ export function ProductViewerCanvas() {
         }
       }
 
-      // Attempt 2: retry with delay
+      // Attempt 2: retry after 1s delay
       if (!imageUrl) {
-        await new Promise(r => setTimeout(r, 800));
+        console.log('[ViewerCanvas] retrying after 1s...');
+        await new Promise(r => setTimeout(r, 1000));
         const blob2 = await viewerRef.takeScreenshotBlob();
-        if (blob2 && blob2.size > 100) {
+        console.log('[ViewerCanvas] blob attempt 2, size:', blob2?.size);
+        if (blob2 && blob2.size > 500) {
           const objUrl2 = URL.createObjectURL(blob2);
           const valid2 = await validateImageUrl(objUrl2);
           if (valid2) {
@@ -74,13 +81,13 @@ export function ProductViewerCanvas() {
 
       // Attempt 4: fallback to first product image
       if (!imageUrl && viewerAssetData.imageUrls.length > 0) {
+        console.log('[ViewerCanvas] falling back to product image');
         imageUrl = viewerAssetData.imageUrls[0];
         isObjectUrl = false;
       }
 
       if (imageUrl) {
-        // Use atomic switch — store takes ownership of the objectURL
-        // No revoking here; store will revoke on exitAnnotationMode
+        console.log('[ViewerCanvas] switching to annotation, isObjectUrl:', isObjectUrl, 'url length:', imageUrl.length);
         switchViewerToAnnotation(
           imageUrl,
           isObjectUrl,
