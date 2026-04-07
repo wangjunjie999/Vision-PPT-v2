@@ -304,7 +304,7 @@ export function Product3DViewer({ modelUrl, imageUrls = [], onReady, fillContain
             <Environment preset="studio" />
           </Suspense>
 
-          <ScreenshotHelper onReady={(fn) => { screenshotFnRef.current = fn; }} />
+          <ScreenshotHelper onReady={(fns) => { screenshotFnRef.current = fns; }} />
           
           {/* Grid helper */}
           <gridHelper args={[10, 10, '#666', '#444']} />
