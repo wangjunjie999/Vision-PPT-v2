@@ -809,6 +809,16 @@ export function AnnotationCanvas({
             {annotations.map(renderAnnotation)}
             {renderTempAnnotation()}
           </div>
+
+          {/* Image load error overlay */}
+          {imageLoadError && (
+            <div className="absolute inset-0 flex items-center justify-center bg-muted/80 z-10">
+              <div className="text-center space-y-2">
+                <p className="text-sm text-destructive font-medium">截图加载失败</p>
+                <p className="text-xs text-muted-foreground">请返回重新截图</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Zoom indicator (bottom-right) */}

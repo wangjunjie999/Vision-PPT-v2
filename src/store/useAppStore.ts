@@ -148,6 +148,21 @@ export const useAppStore = create<Store>()(
     }),
     {
       name: 'vision-config-storage',
+      partialize: (state) => {
+        const {
+          annotationMode,
+          annotationSnapshot,
+          annotationAssetId,
+          annotationScope,
+          annotationWorkstationId,
+          annotationExistingData,
+          viewerMode,
+          viewerAssetData,
+          pendingAIFill,
+          ...rest
+        } = state;
+        return rest;
+      },
     }
   )
 );
