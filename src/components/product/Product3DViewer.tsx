@@ -248,6 +248,16 @@ export function Product3DViewer({ modelUrl, imageUrls = [], onReady, fillContain
           gl={{ preserveDrawingBuffer: true }}
           shadows
           dpr={fillContainer ? [2, 3] : [1, 2]}
+          onCreated={({ gl }) => {
+            const canvas = gl.domElement;
+            canvas.addEventListener('webglcontextlost', (e) => {
+              e.preventDefault();
+              console.warn('WebGL context lost, attempting restore...');
+            });
+            canvas.addEventListener('webglcontextrestored', () => {
+              console.log('WebGL context restored');
+            });
+          }}
         >
           <PerspectiveCamera makeDefault position={[5, 5, 5]} fov={50} />
           <CameraController viewPreset={viewPreset} />
