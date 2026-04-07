@@ -21,6 +21,7 @@ interface Store {
   // Annotation mode
   annotationMode: boolean;
   annotationSnapshot: string | null;
+  annotationSnapshotIsObjectUrl: boolean;
   annotationAssetId: string | null;
   annotationScope: 'workstation' | 'module';
   annotationWorkstationId: string | null;
@@ -32,6 +33,9 @@ interface Store {
   
   enterAnnotationMode: (snapshot: string, assetId: string, scope: 'workstation' | 'module', workstationId?: string, existingData?: { annotations: any[]; remark: string | null; recordId: string }) => void;
   exitAnnotationMode: () => void;
+  
+  // Atomic switch from viewer to annotation (prevents objectURL revocation race)
+  switchViewerToAnnotation: (snapshot: string, isObjectUrl: boolean, assetId: string, scope: 'workstation' | 'module', workstationId?: string) => void;
   
   // Viewer mode (3D/image in central canvas)
   viewerMode: boolean;
@@ -72,6 +76,7 @@ export const useAppStore = create<Store>()(
       // Annotation mode
       annotationMode: false,
       annotationSnapshot: null,
+      annotationSnapshotIsObjectUrl: false,
       annotationAssetId: null,
       annotationScope: 'workstation',
       annotationWorkstationId: null,
@@ -84,18 +89,47 @@ export const useAppStore = create<Store>()(
       enterAnnotationMode: (snapshot, assetId, scope, workstationId, existingData) => set({
         annotationMode: true,
         annotationSnapshot: snapshot,
+        annotationSnapshotIsObjectUrl: false,
         annotationAssetId: assetId,
         annotationScope: scope,
         annotationWorkstationId: workstationId || null,
         annotationExistingData: existingData || null,
       }),
-      exitAnnotationMode: () => set({
-        annotationMode: false,
-        annotationSnapshot: null,
-        annotationAssetId: null,
-        annotationWorkstationId: null,
-        annotationExistingData: null,
-      }),
+      exitAnnotationMode: () => {
+        const state = get();
+        // Revoke objectURL if we own it
+        if (state.annotationSnapshotIsObjectUrl && state.annotationSnapshot) {
+          URL.revokeObjectURL(state.annotationSnapshot);
+        }
+        set({
+          annotationMode: false,
+          annotationSnapshot: null,
+          annotationSnapshotIsObjectUrl: false,
+          annotationAssetId: null,
+          annotationWorkstationId: null,
+          annotationExistingData: null,
+        });
+      },
+
+      // Atomic switch: viewer → annotation without unmount race
+      switchViewerToAnnotation: (snapshot, isObjectUrl, assetId, scope, workstationId) => {
+        const state = get();
+        // Revoke previous annotation objectURL if any
+        if (state.annotationSnapshotIsObjectUrl && state.annotationSnapshot) {
+          URL.revokeObjectURL(state.annotationSnapshot);
+        }
+        set({
+          viewerMode: false,
+          viewerAssetData: null,
+          annotationMode: true,
+          annotationSnapshot: snapshot,
+          annotationSnapshotIsObjectUrl: isObjectUrl,
+          annotationAssetId: assetId,
+          annotationScope: scope,
+          annotationWorkstationId: workstationId || null,
+          annotationExistingData: null,
+        });
+      },
       
       // Viewer mode
       viewerMode: false,
@@ -152,6 +186,7 @@ export const useAppStore = create<Store>()(
         const {
           annotationMode,
           annotationSnapshot,
+          annotationSnapshotIsObjectUrl,
           annotationAssetId,
           annotationScope,
           annotationWorkstationId,
