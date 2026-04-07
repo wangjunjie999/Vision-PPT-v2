@@ -9,7 +9,7 @@ export function ProductViewerCanvas() {
   const { viewerAssetData, exitViewerMode, enterAnnotationMode, selectedWorkstationId } = useAppStore();
   const [viewerRef, setViewerRef] = useState<{ takeScreenshot: () => string | null } | null>(null);
 
-  const handleScreenshot = useCallback(() => {
+  const handleScreenshot = useCallback(async () => {
     if (!viewerAssetData) return;
 
     let dataUrl: string | null = null;
@@ -21,25 +21,26 @@ export function ProductViewerCanvas() {
       }
     }
 
-    // Fallback: use image URL
-    if (!dataUrl && viewerAssetData.imageUrls.length > 0) {
+    // If screenshot looks invalid, retry after a short delay
+    const isValid = (url: string | null) => !!url && url.startsWith('data:image');
+    if (!isValid(dataUrl) && viewerRef) {
+      await new Promise(r => setTimeout(r, 500));
+      try { dataUrl = viewerRef.takeScreenshot(); } catch {}
+    }
+
+    // Fallback: use image URL if available
+    if (!isValid(dataUrl) && viewerAssetData.imageUrls.length > 0) {
       dataUrl = viewerAssetData.imageUrls[0];
     }
 
     if (dataUrl) {
-      // Validate screenshot is not an empty/black frame (data URL too short)
-      const isValidScreenshot = dataUrl.startsWith('data:image') && dataUrl.length > 1000;
-      if (!isValidScreenshot && viewerAssetData.imageUrls.length > 0) {
-        // Fallback to original image URL
-        dataUrl = viewerAssetData.imageUrls[0];
-      }
       exitViewerMode();
       enterAnnotationMode(dataUrl, viewerAssetData.assetId, viewerAssetData.scope, selectedWorkstationId || undefined);
       toast.success('已进入标注模式');
     } else {
       toast.error('截图失败，请稍后重试');
     }
-  }, [viewerRef, viewerAssetData, exitViewerMode, enterAnnotationMode]);
+  }, [viewerRef, viewerAssetData, exitViewerMode, enterAnnotationMode, selectedWorkstationId]);
 
   if (!viewerAssetData) return null;
 
