@@ -16,7 +16,7 @@ import {
 interface Product3DViewerProps {
   modelUrl: string | null;
   imageUrls?: string[];
-  onReady?: (ref: { takeScreenshot: () => string | null }) => void;
+  onReady?: (ref: { takeScreenshot: () => string | null; takeScreenshotBlob: () => Promise<Blob | null> }) => void;
   fillContainer?: boolean;
 }
 
@@ -123,7 +123,7 @@ function CameraController({
 }
 
 // Screenshot helper component — keeps renderer refs fresh via useFrame
-function ScreenshotHelper({ onReady }: { onReady: (fn: () => string | null) => void }) {
+function ScreenshotHelper({ onReady }: { onReady: (fns: { sync: () => string | null; blob: () => Promise<Blob | null> }) => void }) {
   const glRef = useRef<THREE.WebGLRenderer>(null!);
   const sceneRef = useRef<THREE.Scene>(null!);
   const cameraRef = useRef<THREE.Camera>(null!);
@@ -137,14 +137,24 @@ function ScreenshotHelper({ onReady }: { onReady: (fn: () => string | null) => v
   });
 
   useEffect(() => {
-    onReady(() => {
+    const renderOnce = () => {
       const r = glRef.current || gl;
       const s = sceneRef.current || scene;
       const c = cameraRef.current || camera;
-      // Double render to ensure buffers are populated
       r.render(s, c);
       r.render(s, c);
-      return r.domElement.toDataURL('image/png');
+      return r.domElement;
+    };
+
+    onReady({
+      sync: () => {
+        const canvas = renderOnce();
+        return canvas.toDataURL('image/png');
+      },
+      blob: () => new Promise<Blob | null>((resolve) => {
+        const canvas = renderOnce();
+        canvas.toBlob((b) => resolve(b), 'image/png');
+      }),
     });
   }, [gl, scene, camera, onReady]);
 
@@ -166,30 +176,36 @@ function LoadingFallback() {
 export function Product3DViewer({ modelUrl, imageUrls = [], onReady, fillContainer }: Product3DViewerProps) {
   const [viewPreset, setViewPreset] = useState<keyof typeof VIEW_PRESETS | null>('isometric');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const screenshotFnRef = useRef<(() => string | null) | null>(null);
+  const screenshotFnRef = useRef<{ sync: () => string | null; blob: () => Promise<Blob | null> } | null>(null);
 
   const hasModel = !!modelUrl;
   const hasImages = imageUrls.length > 0;
 
-  // Expose screenshot function to parent
+  // Expose screenshot functions to parent
   useEffect(() => {
     if (!onReady) return;
     if (!hasModel && hasImages) {
-      // Image mode: return image URL directly (avoids CORS toDataURL issues)
       onReady({
         takeScreenshot: () => imageUrls[currentImageIndex] || null,
+        takeScreenshotBlob: async () => {
+          // For image mode, fetch the image as blob
+          try {
+            const resp = await fetch(imageUrls[currentImageIndex]);
+            return await resp.blob();
+          } catch { return null; }
+        },
       });
     } else {
-      // 3D mode: use screenshotFnRef from ScreenshotHelper
       onReady({
         takeScreenshot: () => {
           if (screenshotFnRef.current) {
-            try {
-              return screenshotFnRef.current();
-            } catch (e) {
-              console.warn('3D screenshot failed:', e);
-              return null;
-            }
+            try { return screenshotFnRef.current.sync(); } catch (e) { console.warn('3D screenshot failed:', e); return null; }
+          }
+          return null;
+        },
+        takeScreenshotBlob: async () => {
+          if (screenshotFnRef.current) {
+            try { return await screenshotFnRef.current.blob(); } catch (e) { console.warn('3D screenshot blob failed:', e); return null; }
           }
           return null;
         },
@@ -288,7 +304,7 @@ export function Product3DViewer({ modelUrl, imageUrls = [], onReady, fillContain
             <Environment preset="studio" />
           </Suspense>
 
-          <ScreenshotHelper onReady={(fn) => { screenshotFnRef.current = fn; }} />
+          <ScreenshotHelper onReady={(fns) => { screenshotFnRef.current = fns; }} />
           
           {/* Grid helper */}
           <gridHelper args={[10, 10, '#666', '#444']} />
