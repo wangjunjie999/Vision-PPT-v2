@@ -21,10 +21,10 @@ export function ProductViewerCanvas() {
       }
     }
 
-    // If screenshot looks invalid, retry after a short delay
+    // If screenshot looks invalid, retry after a longer delay
     const isValid = (url: string | null) => !!url && url.startsWith('data:image');
     if (!isValid(dataUrl) && viewerRef) {
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 800));
       try { dataUrl = viewerRef.takeScreenshot(); } catch {}
     }
 
@@ -33,10 +33,15 @@ export function ProductViewerCanvas() {
       dataUrl = viewerAssetData.imageUrls[0];
     }
 
-    if (dataUrl) {
+    if (isValid(dataUrl)) {
+      exitViewerMode();
+      enterAnnotationMode(dataUrl!, viewerAssetData.assetId, viewerAssetData.scope, selectedWorkstationId || undefined);
+      toast.success('已进入标注模式');
+    } else if (dataUrl) {
+      // Even a potentially bad frame — let user enter annotation mode
       exitViewerMode();
       enterAnnotationMode(dataUrl, viewerAssetData.assetId, viewerAssetData.scope, selectedWorkstationId || undefined);
-      toast.success('已进入标注模式');
+      toast.warning('截图质量可能不佳，建议返回重试');
     } else {
       toast.error('截图失败，请稍后重试');
     }

@@ -254,7 +254,7 @@ export function Product3DViewer({ modelUrl, imageUrls = [], onReady, fillContain
         <Canvas
           gl={{ preserveDrawingBuffer: true }}
           shadows
-          dpr={fillContainer ? [2, 3] : [1, 2]}
+          dpr={[1, 2]}
           onCreated={({ gl }) => {
             const canvas = gl.domElement;
             canvas.addEventListener('webglcontextlost', (e) => {
