@@ -1,28 +1,28 @@
 
 
-# 修复 GLB 模型截图后不显示标注页面
+# 修复 GLB 截图后标注页面不显示图片
 
-## 问题分析
+## 问题根因
 
-当只上传 GLB 文件（无预览图片）时，点击"截图并标注"后无法进入标注页面。原因：
+从截图看，标注页面已进入但画布区域全黑。分析代码发现两个关键问题：
 
-1. **WebGL Context Lost**：控制台显示 `THREE.WebGLRenderer: Context Lost.`，此时 `gl.domElement.toDataURL()` 返回空白/黑色图像
-2. **验证逻辑过严**：`handleScreenshot` 验证 `dataUrl.length > 1000`，黑帧被判定为无效
-3. **无 fallback**：GLB 模式下 `imageUrls` 为空数组，验证失败后没有备用图片，直接 toast 报错，不进入标注页面
+1. **DPR 过高导致 WebGL 上下文丢失**：`fillContainer` 模式下 DPR 设为 `[2, 3]`，在 1610px 宽的视口中，Canvas 实际像素宽度可达 ~4830px。如此大的 WebGL 缓冲区容易触发 GPU 内存不足 → context lost → `toDataURL()` 输出全黑帧。
+
+2. **截图函数闭包问题**：`ScreenshotHelper` 通过 `useEffect` 在组件挂载时注册截图函数，但 `onReady` 回调（即 `setViewerRef`）每次调用都创建新的 ref 对象。而 `Product3DViewer` 中的 `useEffect` 依赖 `[onReady, hasModel, ...]`，`onReady` 是 `setViewerRef`（稳定引用），所以 `screenshotFnRef.current` 只在首次设置。如果 `ScreenshotHelper` 的 `onReady` prop 变化（比如 re-render），可能导致引用丢失。
 
 ## 修复方案
 
 ### 文件：`src/components/product/Product3DViewer.tsx`
 
-1. **防止 WebGL Context Lost**：在 Canvas 上添加 `onCreated` 回调，监听 `webglcontextlost` 事件并尝试恢复
-2. **放宽截图验证**：即使 data URL 较短（可能是简单模型），只要是合法的 `data:image` 格式就接受
+1. **降低 DPR**：将 `fillContainer` 模式的 DPR 从 `[2, 3]` 改为 `[1, 2]`，避免超大缓冲区导致 context lost
+2. **ScreenshotHelper 使用 useRef 而非闭包**：改用 `useFrame` 钩子在每帧更新 `gl/scene/camera` 引用到 ref 中，确保截图时总是使用最新的渲染器引用
+3. **截图前多帧渲染**：在 `takeScreenshot` 中调用 `gl.render` 两次（确保双缓冲都有内容），再执行 `toDataURL`
 
 ### 文件：`src/components/canvas/ProductViewerCanvas.tsx`
 
-3. **GLB 无图片时仍允许进入标注**：当截图验证失败且无 fallback 图片时，不直接报错。改为：
-   - 先尝试延迟 500ms 重新截图（等待渲染恢复）
-   - 如果仍然失败，使用画布导出的任何结果（即使是黑帧）进入标注模式，让用户至少能看到界面
-   - 提示用户"截图质量可能不佳，建议返回重试"
+4. **增加重试间隔**：将重试等待从 500ms 增加到 800ms，给 WebGL 上下文恢复更多时间
+5. **最终兜底**：如果两次截图都失败，toast 提示但仍然用黑帧进入标注模式（总比卡住好）
 
-### 改动约 20 行，涉及 2 个文件
+### 改动范围
+约 15 行代码，涉及 2 个文件。
 
