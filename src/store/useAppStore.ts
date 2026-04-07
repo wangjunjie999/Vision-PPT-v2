@@ -21,6 +21,7 @@ interface Store {
   // Annotation mode
   annotationMode: boolean;
   annotationSnapshot: string | null;
+  annotationSnapshotIsObjectUrl: boolean;
   annotationAssetId: string | null;
   annotationScope: 'workstation' | 'module';
   annotationWorkstationId: string | null;
@@ -32,6 +33,9 @@ interface Store {
   
   enterAnnotationMode: (snapshot: string, assetId: string, scope: 'workstation' | 'module', workstationId?: string, existingData?: { annotations: any[]; remark: string | null; recordId: string }) => void;
   exitAnnotationMode: () => void;
+  
+  // Atomic switch from viewer to annotation (prevents objectURL revocation race)
+  switchViewerToAnnotation: (snapshot: string, isObjectUrl: boolean, assetId: string, scope: 'workstation' | 'module', workstationId?: string) => void;
   
   // Viewer mode (3D/image in central canvas)
   viewerMode: boolean;
