@@ -186,6 +186,7 @@ export const useAppStore = create<Store>()(
         const {
           annotationMode,
           annotationSnapshot,
+          annotationSnapshotIsObjectUrl,
           annotationAssetId,
           annotationScope,
           annotationWorkstationId,

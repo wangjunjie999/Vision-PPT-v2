@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { Product3DViewer } from '@/components/product/Product3DViewer';
 import { Button } from '@/components/ui/button';
@@ -16,48 +16,31 @@ function validateImageUrl(url: string): Promise<boolean> {
 }
 
 export function ProductViewerCanvas() {
-  const { viewerAssetData, exitViewerMode, enterAnnotationMode, selectedWorkstationId } = useAppStore();
+  const { viewerAssetData, exitViewerMode, switchViewerToAnnotation, selectedWorkstationId } = useAppStore();
   const [viewerRef, setViewerRef] = useState<{
     takeScreenshot: () => string | null;
     takeScreenshotBlob: () => Promise<Blob | null>;
   } | null>(null);
   const [capturing, setCapturing] = useState(false);
-  const objectUrlRef = useRef<string | null>(null);
-
-  // Cleanup object URL on unmount or when exiting
-  useEffect(() => {
-    return () => {
-      if (objectUrlRef.current) {
-        URL.revokeObjectURL(objectUrlRef.current);
-        objectUrlRef.current = null;
-      }
-    };
-  }, []);
 
   const handleScreenshot = useCallback(async () => {
     if (!viewerAssetData || !viewerRef) return;
     setCapturing(true);
 
     try {
-      // Attempt 1: use toBlob for memory-efficient capture
       let imageUrl: string | null = null;
+      let isObjectUrl = false;
 
+      // Attempt 1: blob capture
       const blob = await viewerRef.takeScreenshotBlob();
       if (blob && blob.size > 100) {
-        // Revoke previous object URL if any
-        if (objectUrlRef.current) {
-          URL.revokeObjectURL(objectUrlRef.current);
-        }
         const objUrl = URL.createObjectURL(blob);
-        objectUrlRef.current = objUrl;
-
-        // Validate the object URL is decodable
         const valid = await validateImageUrl(objUrl);
         if (valid) {
           imageUrl = objUrl;
+          isObjectUrl = true;
         } else {
           URL.revokeObjectURL(objUrl);
-          objectUrlRef.current = null;
         }
       }
 
@@ -66,36 +49,45 @@ export function ProductViewerCanvas() {
         await new Promise(r => setTimeout(r, 800));
         const blob2 = await viewerRef.takeScreenshotBlob();
         if (blob2 && blob2.size > 100) {
-          if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
           const objUrl2 = URL.createObjectURL(blob2);
-          objectUrlRef.current = objUrl2;
           const valid2 = await validateImageUrl(objUrl2);
           if (valid2) {
             imageUrl = objUrl2;
+            isObjectUrl = true;
           } else {
             URL.revokeObjectURL(objUrl2);
-            objectUrlRef.current = null;
           }
         }
       }
 
-      // Attempt 3: fallback to sync data URL
+      // Attempt 3: sync data URL fallback
       if (!imageUrl) {
         const dataUrl = viewerRef.takeScreenshot();
         if (dataUrl && dataUrl.startsWith('data:image')) {
           const valid3 = await validateImageUrl(dataUrl);
-          if (valid3) imageUrl = dataUrl;
+          if (valid3) {
+            imageUrl = dataUrl;
+            isObjectUrl = false;
+          }
         }
       }
 
       // Attempt 4: fallback to first product image
       if (!imageUrl && viewerAssetData.imageUrls.length > 0) {
         imageUrl = viewerAssetData.imageUrls[0];
+        isObjectUrl = false;
       }
 
       if (imageUrl) {
-        exitViewerMode();
-        enterAnnotationMode(imageUrl, viewerAssetData.assetId, viewerAssetData.scope, selectedWorkstationId || undefined);
+        // Use atomic switch — store takes ownership of the objectURL
+        // No revoking here; store will revoke on exitAnnotationMode
+        switchViewerToAnnotation(
+          imageUrl,
+          isObjectUrl,
+          viewerAssetData.assetId,
+          viewerAssetData.scope,
+          selectedWorkstationId || undefined,
+        );
         toast.success('已进入标注模式');
       } else {
         toast.error('截图失败，请稍后重试');
@@ -106,7 +98,7 @@ export function ProductViewerCanvas() {
     } finally {
       setCapturing(false);
     }
-  }, [viewerRef, viewerAssetData, exitViewerMode, enterAnnotationMode, selectedWorkstationId]);
+  }, [viewerRef, viewerAssetData, switchViewerToAnnotation, selectedWorkstationId]);
 
   if (!viewerAssetData) return null;
 
