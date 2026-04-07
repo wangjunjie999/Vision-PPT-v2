@@ -123,7 +123,7 @@ function CameraController({
 }
 
 // Screenshot helper component — keeps renderer refs fresh via useFrame
-function ScreenshotHelper({ onReady }: { onReady: (fn: () => string | null) => void }) {
+function ScreenshotHelper({ onReady }: { onReady: (fns: { sync: () => string | null; blob: () => Promise<Blob | null> }) => void }) {
   const glRef = useRef<THREE.WebGLRenderer>(null!);
   const sceneRef = useRef<THREE.Scene>(null!);
   const cameraRef = useRef<THREE.Camera>(null!);
@@ -137,14 +137,24 @@ function ScreenshotHelper({ onReady }: { onReady: (fn: () => string | null) => v
   });
 
   useEffect(() => {
-    onReady(() => {
+    const renderOnce = () => {
       const r = glRef.current || gl;
       const s = sceneRef.current || scene;
       const c = cameraRef.current || camera;
-      // Double render to ensure buffers are populated
       r.render(s, c);
       r.render(s, c);
-      return r.domElement.toDataURL('image/png');
+      return r.domElement;
+    };
+
+    onReady({
+      sync: () => {
+        const canvas = renderOnce();
+        return canvas.toDataURL('image/png');
+      },
+      blob: () => new Promise<Blob | null>((resolve) => {
+        const canvas = renderOnce();
+        canvas.toBlob((b) => resolve(b), 'image/png');
+      }),
     });
   }, [gl, scene, camera, onReady]);
 
