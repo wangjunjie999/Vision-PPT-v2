@@ -122,22 +122,29 @@ function CameraController({
   );
 }
 
-// Screenshot helper component
+// Screenshot helper component — keeps renderer refs fresh via useFrame
 function ScreenshotHelper({ onReady }: { onReady: (fn: () => string | null) => void }) {
+  const glRef = useRef<THREE.WebGLRenderer>(null!);
+  const sceneRef = useRef<THREE.Scene>(null!);
+  const cameraRef = useRef<THREE.Camera>(null!);
   const { gl, scene, camera } = useThree();
+
+  // Keep refs up-to-date every frame
+  useFrame(() => {
+    glRef.current = gl;
+    sceneRef.current = scene;
+    cameraRef.current = camera;
+  });
 
   useEffect(() => {
     onReady(() => {
-      // Force render current frame before capture
-      gl.render(scene, camera);
-      const dataUrl = gl.domElement.toDataURL('image/png');
-      // Validate: a very short data URL likely means empty/black frame
-      if (dataUrl.length < 1000) {
-        console.warn('Screenshot appears to be empty, retrying render...');
-        gl.render(scene, camera);
-        return gl.domElement.toDataURL('image/png');
-      }
-      return dataUrl;
+      const r = glRef.current || gl;
+      const s = sceneRef.current || scene;
+      const c = cameraRef.current || camera;
+      // Double render to ensure buffers are populated
+      r.render(s, c);
+      r.render(s, c);
+      return r.domElement.toDataURL('image/png');
     });
   }, [gl, scene, camera, onReady]);
 
