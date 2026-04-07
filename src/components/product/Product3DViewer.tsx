@@ -143,17 +143,58 @@ function ScreenshotHelper({ onReady }: { onReady: (fns: { sync: () => string | n
       const c = cameraRef.current || camera;
       r.render(s, c);
       r.render(s, c);
-      return r.domElement;
+      return { canvas: r.domElement, renderer: r };
+    };
+
+    /** Check if the rendered frame is non-black by sampling center pixel */
+    const isNonBlackFrame = (renderer: THREE.WebGLRenderer): boolean => {
+      try {
+        const w = renderer.domElement.width;
+        const h = renderer.domElement.height;
+        const px = new Uint8Array(4);
+        renderer.getContext().readPixels(
+          Math.floor(w / 2), Math.floor(h / 2), 1, 1,
+          renderer.getContext().RGBA, renderer.getContext().UNSIGNED_BYTE, px
+        );
+        // If any channel > 0, it's not a pure-black frame
+        return px[0] > 0 || px[1] > 0 || px[2] > 0 || px[3] > 0;
+      } catch {
+        return true; // If readPixels fails, assume frame is OK
+      }
     };
 
     onReady({
       sync: () => {
-        const canvas = renderOnce();
+        const { canvas } = renderOnce();
         return canvas.toDataURL('image/png');
       },
       blob: () => new Promise<Blob | null>((resolve) => {
-        const canvas = renderOnce();
-        canvas.toBlob((b) => resolve(b), 'image/png');
+        let attempts = 0;
+        const maxAttempts = 4;
+
+        const tryCapture = () => {
+          const { canvas, renderer } = renderOnce();
+          attempts++;
+          console.log(`[Screenshot] attempt ${attempts}, canvas ${canvas.width}x${canvas.height}`);
+
+          if (isNonBlackFrame(renderer) || attempts >= maxAttempts) {
+            // Wait one rAF for GPU compositing to finish
+            requestAnimationFrame(() => {
+              // Re-render once more for safety
+              renderer.render(sceneRef.current || scene, cameraRef.current || camera);
+              canvas.toBlob((b) => {
+                console.log(`[Screenshot] blob size: ${b?.size ?? 0}`);
+                resolve(b);
+              }, 'image/png');
+            });
+          } else {
+            console.log('[Screenshot] black frame detected, retrying...');
+            requestAnimationFrame(tryCapture);
+          }
+        };
+
+        // Start after one frame to let the scene settle
+        requestAnimationFrame(tryCapture);
       }),
     });
   }, [gl, scene, camera, onReady]);
