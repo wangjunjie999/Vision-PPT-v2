@@ -1,7 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { Product3DViewer } from '@/components/product/Product3DViewer';
-import { captureModelSnapshot, captureImageSnapshot } from '@/components/product/ProductSnapshotRenderer';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Camera, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,36 +8,32 @@ import { toast } from 'sonner';
 export function ProductViewerCanvas() {
   const { viewerAssetData, exitViewerMode, switchViewerToAnnotation, selectedWorkstationId } = useAppStore();
   const [capturing, setCapturing] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleScreenshot = useCallback(async () => {
     if (!viewerAssetData) return;
     setCapturing(true);
 
     try {
-      let result: { url: string; width: number; height: number } | null = null;
+      let dataUrl: string | null = null;
 
-      // Try model capture first
-      if (viewerAssetData.modelUrl) {
-        try {
-          result = await captureModelSnapshot(viewerAssetData.modelUrl);
-        } catch (e) {
-          console.warn('[ViewerCanvas] model capture failed:', e);
+      // For 3D models: grab the visible canvas directly
+      if (viewerAssetData.modelUrl && containerRef.current) {
+        const canvas = containerRef.current.querySelector('canvas');
+        if (canvas && canvas.width > 0 && canvas.height > 0) {
+          dataUrl = canvas.toDataURL('image/png');
         }
       }
 
-      // Fallback to first image
-      if (!result && viewerAssetData.imageUrls.length > 0) {
-        try {
-          result = await captureImageSnapshot(viewerAssetData.imageUrls[0]);
-        } catch (e) {
-          console.warn('[ViewerCanvas] image capture failed:', e);
-        }
+      // For plain images (no model): use the image URL directly
+      if (!dataUrl && viewerAssetData.imageUrls.length > 0) {
+        dataUrl = viewerAssetData.imageUrls[0];
       }
 
-      if (result) {
+      if (dataUrl && dataUrl.length > 100) {
         switchViewerToAnnotation(
-          result.url,
-          true, // always objectURL
+          dataUrl,
+          false, // data URL, no need to revoke
           viewerAssetData.assetId,
           viewerAssetData.scope,
           selectedWorkstationId || undefined,
@@ -58,7 +53,7 @@ export function ProductViewerCanvas() {
   if (!viewerAssetData) return null;
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden">
+    <div className="flex-1 flex flex-col h-full overflow-hidden" ref={containerRef}>
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-2 border-b bg-background/80 backdrop-blur-sm shrink-0">
         <Button variant="ghost" size="sm" onClick={exitViewerMode} className="gap-1">
