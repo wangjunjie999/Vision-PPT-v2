@@ -176,7 +176,7 @@ function LoadingFallback() {
 export function Product3DViewer({ modelUrl, imageUrls = [], onReady, fillContainer }: Product3DViewerProps) {
   const [viewPreset, setViewPreset] = useState<keyof typeof VIEW_PRESETS | null>('isometric');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const screenshotFnRef = useRef<(() => string | null) | null>(null);
+  const screenshotFnRef = useRef<{ sync: () => string | null; blob: () => Promise<Blob | null> } | null>(null);
 
   const hasModel = !!modelUrl;
   const hasImages = imageUrls.length > 0;
