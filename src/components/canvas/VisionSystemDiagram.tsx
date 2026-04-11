@@ -280,15 +280,46 @@ export function VisionSystemDiagram({
   const [camRotation, setCamRotation] = useState(0);
   const [lightRotation, setLightRotation] = useState(0);
 
-  // Derived measurements
-  const lensBottomY = camLensDrag.pos.y + 105; // camera height ~85 + lens ~20
-  const workingDistance = Math.max(0, Math.round(productY - lensBottomY));
-  const workingDistanceMM = Math.max(50, Math.round(workingDistance * (lightDistance / (productY - 175)))); // scale to real mm based on initial ratio
+  // Derived measurements (rotation-aware)
+  const rotRad = camRotation * Math.PI / 180;
+  const lensOffsetFromCenter = 105; // camera height ~85 + lens ~20
+
+  // Rotated lens exit point (rotation pivot = camLensDrag.pos which is group top-left, rotation center at (45,55) inside group)
+  // The lens bottom in local coords is at (45, 110) relative to group origin; rotation center is (45, 55)
+  // Local offset from rotation center to lens bottom: (0, 55)
+  const localLensX = 0;
+  const localLensY = 55;
+  const rotatedLensLocalX = localLensX * Math.cos(rotRad) - localLensY * Math.sin(rotRad);
+  const rotatedLensLocalY = localLensX * Math.sin(rotRad) + localLensY * Math.cos(rotRad);
+  // Rotation center in SVG coords: camLensDrag.pos.x - 45 + 45 = camLensDrag.pos.x, camLensDrag.pos.y + 55
+  const rotCenterX = camLensDrag.pos.x;
+  const rotCenterY = camLensDrag.pos.y + 55;
+  const lensExitX = rotCenterX + rotatedLensLocalX;
+  const lensExitY = rotCenterY + rotatedLensLocalY;
+
+  // For backward compat: unrotated values
+  const lensBottomY = camLensDrag.pos.y + lensOffsetFromCenter;
+  const workingDistance = Math.max(0, Math.round(productY - lensExitY));
+  const workingDistanceMM = Math.max(50, Math.round(workingDistance * (lightDistance / (productY - 175))));
 
   const fovRadians = (fovAngle / 2) * (Math.PI / 180);
-  const fovPixelHeight = productY - lensBottomY;
-  const fovOffsetX = Math.tan(fovRadians) * Math.max(fovPixelHeight, 50);
+  const fovPixelHeight = Math.max(productY - lensExitY, 50);
+  const fovOffsetX = Math.tan(fovRadians) * fovPixelHeight;
   const fovWidthMM = Math.round(2 * Math.tan(fovRadians) * workingDistanceMM);
+
+  // FOV direction vector (rotated downward direction)
+  const fovDirX = Math.sin(rotRad);
+  const fovDirY = Math.cos(rotRad);
+  // FOV perpendicular vector
+  const fovPerpX = Math.cos(rotRad);
+  const fovPerpY = -Math.sin(rotRad);
+  // FOV end points: extend along direction by fovPixelHeight, then offset perpendicular by fovOffsetX
+  const fovEndCenterX = lensExitX + fovDirX * fovPixelHeight;
+  const fovEndCenterY = lensExitY + fovDirY * fovPixelHeight;
+  const fovEndLeftX = fovEndCenterX - fovPerpX * fovOffsetX;
+  const fovEndLeftY = fovEndCenterY - fovPerpY * fovOffsetX;
+  const fovEndRightX = fovEndCenterX + fovPerpX * fovOffsetX;
+  const fovEndRightY = fovEndCenterY + fovPerpY * fovOffsetX;
 
   const hasCamera = !!camera;
   const hasLens = !!lens;
@@ -298,7 +329,7 @@ export function VisionSystemDiagram({
   // Camera+lens group center for drawing connections
   const camCenterX = camLensDrag.pos.x;
   const camTopY = camLensDrag.pos.y;
-  const lensCenterY = camTopY + 85 + 24; // mid-lens
+  const lensCenterY = camTopY + 85 + 24;
 
   const lightCenterX = lightDrag.pos.x;
   const lightCenterY = lightDrag.pos.y;
@@ -360,21 +391,33 @@ export function VisionSystemDiagram({
           ))}
         </g>
 
-        {/* ===== FOV Cone - follows camera/lens position ===== */}
+        {/* ===== FOV Cone - follows camera/lens rotation ===== */}
         <polygon 
-          points={`${camCenterX},${lensBottomY} ${camCenterX - fovOffsetX},${productY} ${camCenterX + fovOffsetX},${productY}`}
+          points={`${lensExitX},${lensExitY} ${fovEndLeftX},${fovEndLeftY} ${fovEndRightX},${fovEndRightY}`}
           fill="url(#fovGradient)"
         />
-        <line x1={camCenterX} y1={lensBottomY} x2={camCenterX - fovOffsetX} y2={productY} 
+        <line x1={lensExitX} y1={lensExitY} x2={fovEndLeftX} y2={fovEndLeftY} 
           stroke="hsl(270, 50%, 60%)" strokeWidth="1.5" strokeDasharray="6,3" opacity="0.6" />
-        <line x1={camCenterX} y1={lensBottomY} x2={camCenterX + fovOffsetX} y2={productY} 
+        <line x1={lensExitX} y1={lensExitY} x2={fovEndRightX} y2={fovEndRightY} 
           stroke="hsl(270, 50%, 60%)" strokeWidth="1.5" strokeDasharray="6,3" opacity="0.6" />
         {/* FOV angle arc */}
-        <path d={`M ${camCenterX - 15} ${lensBottomY + 15} A 20 20 0 0 1 ${camCenterX + 15} ${lensBottomY + 15}`}
-          fill="none" stroke="hsl(270, 50%, 60%)" strokeWidth="1.5" />
-        <text x={camCenterX + 20} y={lensBottomY + 13} textAnchor="start" fill="#333333" style={{ fontSize: '11px', fontWeight: 500 }}>
-          {fovAngle}°
-        </text>
+        {(() => {
+          const arcR = 20;
+          const arcStartX = lensExitX + (-fovPerpX * arcR + fovDirX * arcR) * 0.7;
+          const arcStartY = lensExitY + (-fovPerpY * arcR + fovDirY * arcR) * 0.7;
+          const arcEndX = lensExitX + (fovPerpX * arcR + fovDirX * arcR) * 0.7;
+          const arcEndY = lensExitY + (fovPerpY * arcR + fovDirY * arcR) * 0.7;
+          return (
+            <>
+              <path d={`M ${arcStartX} ${arcStartY} A ${arcR} ${arcR} 0 0 1 ${arcEndX} ${arcEndY}`}
+                fill="none" stroke="hsl(270, 50%, 60%)" strokeWidth="1.5" />
+              <text x={lensExitX + fovPerpX * 25 + fovDirX * 8} y={lensExitY + fovPerpY * 25 + fovDirY * 8} 
+                textAnchor="start" fill="#333333" style={{ fontSize: '11px', fontWeight: 500 }}>
+                {fovAngle}°
+              </text>
+            </>
+          );
+        })()}
 
         {/* ===== Product (fixed) ===== */}
         <g>
@@ -391,33 +434,33 @@ export function VisionSystemDiagram({
           <circle cx="275" cy={productY + 15} r="8" fill="none" stroke="hsl(220, 80%, 55%)" strokeWidth="1" opacity="0.5" />
         </g>
 
-        {/* ===== Working distance dimension line (dynamic) ===== */}
+        {/* ===== Working distance dimension line (dynamic, rotation-aware) ===== */}
         <g>
-          <line x1="100" y1={lensBottomY} x2="130" y2={lensBottomY} stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
+          <line x1="100" y1={lensExitY} x2="130" y2={lensExitY} stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
           <line x1="100" y1={productY} x2="130" y2={productY} stroke="hsl(220, 80%, 55%)" strokeWidth="1" strokeDasharray="3,2" />
-          <line x1="115" y1={lensBottomY + 10} x2="115" y2={productY - 10} 
+          <line x1="115" y1={lensExitY + 10} x2="115" y2={productY - 10} 
             stroke="hsl(220, 80%, 55%)" strokeWidth="1.5" markerStart="url(#arrowUp)" markerEnd="url(#arrowDown)" />
-          <text x="98" y={(lensBottomY + productY) / 2} textAnchor="middle" fill="#333333"
-            style={{ fontSize: '11px', fontWeight: 500 }} transform={`rotate(-90, 98, ${(lensBottomY + productY) / 2})`}>
+          <text x="98" y={(lensExitY + productY) / 2} textAnchor="middle" fill="#333333"
+            style={{ fontSize: '11px', fontWeight: 500 }} transform={`rotate(-90, 98, ${(lensExitY + productY) / 2})`}>
             {workingDistanceMM}±20mm
           </text>
         </g>
 
-        {/* ===== FOV width dimension (dynamic) ===== */}
+        {/* ===== FOV width dimension (dynamic, rotation-aware) ===== */}
         <g>
-          <line x1={productCenterX - fovOffsetX} y1={productY + 45} x2={productCenterX - fovOffsetX} y2={productY + 58} stroke="hsl(220, 80%, 55%)" strokeWidth="1" />
-          <line x1={productCenterX + fovOffsetX} y1={productY + 45} x2={productCenterX + fovOffsetX} y2={productY + 58} stroke="hsl(220, 80%, 55%)" strokeWidth="1" />
-          <line x1={productCenterX - fovOffsetX + 8} y1={productY + 53} x2={productCenterX + fovOffsetX - 8} y2={productY + 53}
+          <line x1={fovEndLeftX} y1={productY + 45} x2={fovEndLeftX} y2={productY + 58} stroke="hsl(220, 80%, 55%)" strokeWidth="1" />
+          <line x1={fovEndRightX} y1={productY + 45} x2={fovEndRightX} y2={productY + 58} stroke="hsl(220, 80%, 55%)" strokeWidth="1" />
+          <line x1={fovEndLeftX + 8} y1={productY + 53} x2={fovEndRightX - 8} y2={productY + 53}
             stroke="hsl(220, 80%, 55%)" strokeWidth="1.5" markerStart="url(#arrowLeft)" markerEnd="url(#arrowRight)" />
-          <text x="275" y={productY + 72} textAnchor="middle" fill="#333333" style={{ fontSize: '10px' }}>
+          <text x={(fovEndLeftX + fovEndRightX) / 2} y={productY + 72} textAnchor="middle" fill="#333333" style={{ fontSize: '10px' }}>
             视野宽度 ~{fovWidthMM}mm
           </text>
         </g>
 
         {/* ===== Connection lines to annotation panel (dynamic) ===== */}
         <g stroke="hsl(220, 80%, 50%)" strokeWidth="1" strokeDasharray="4,2" opacity="0.5">
-          <line x1={camCenterX + 45} y1={camTopY + 36} x2="495" y2="55" />
-          <line x1={camCenterX + 48} y1={lensCenterY} x2="495" y2="140" />
+          <line x1={rotCenterX + 45} y1={rotCenterY - 19} x2="495" y2="55" />
+          <line x1={lensExitX + 10} y1={lensExitY - 10} x2="495" y2="140" />
           <line x1={lightCenterX + 80} y1={lightCenterY} x2="495" y2="210" />
         </g>
 
