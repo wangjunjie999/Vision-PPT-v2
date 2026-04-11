@@ -307,7 +307,7 @@ function ProductViewerCanvasInner({
 
       <ScreenshotHelper onReady={registerScreenshot} controlsRef={controlsRef} />
 
-      <gridHelper args={[10, 10, '#666', '#444']} />
+      
     </>
   );
 }

@@ -200,7 +200,7 @@ export function HardwareDetailView({ type, item, open, onOpenChange }: HardwareD
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 max-h-[calc(90vh-120px)]">
           <div className="space-y-6 pr-4">
             {/* Product Image */}
             {item.image_url && (
