@@ -289,9 +289,9 @@ export function VisionSystemDiagram({
   // Local offset from rotation center to lens bottom: (0, 55)
   const localLensX = 0;
   const localLensY = 55;
-  // SVG rotate is clockwise: x' = x*cos + y*sin, y' = -x*sin + y*cos
-  const rotatedLensLocalX = localLensX * Math.cos(rotRad) + localLensY * Math.sin(rotRad);
-  const rotatedLensLocalY = -localLensX * Math.sin(rotRad) + localLensY * Math.cos(rotRad);
+  // Standard 2D rotation: x' = x*cos - y*sin, y' = x*sin + y*cos
+  const rotatedLensLocalX = localLensX * Math.cos(rotRad) - localLensY * Math.sin(rotRad);
+  const rotatedLensLocalY = localLensX * Math.sin(rotRad) + localLensY * Math.cos(rotRad);
   // Rotation center in SVG coords: camLensDrag.pos.x - 45 + 45 = camLensDrag.pos.x, camLensDrag.pos.y + 55
   const rotCenterX = camLensDrag.pos.x;
   const rotCenterY = camLensDrag.pos.y + 55;
@@ -308,12 +308,12 @@ export function VisionSystemDiagram({
   const fovOffsetX = Math.tan(fovRadians) * fovPixelHeight;
   const fovWidthMM = Math.round(2 * Math.tan(fovRadians) * workingDistanceMM);
 
-  // FOV direction vector (SVG clockwise rotation of downward (0,1))
-  const fovDirX = Math.sin(rotRad);
+  // FOV direction vector (rotation of downward (0,1) by camRotation)
+  const fovDirX = -Math.sin(rotRad);
   const fovDirY = Math.cos(rotRad);
-  // FOV perpendicular vector (clockwise 90° of direction)
+  // FOV perpendicular vector (90° of direction)
   const fovPerpX = Math.cos(rotRad);
-  const fovPerpY = -Math.sin(rotRad);
+  const fovPerpY = Math.sin(rotRad);
   // FOV end points: extend along direction by fovPixelHeight, then offset perpendicular by fovOffsetX
   const fovEndCenterX = lensExitX + fovDirX * fovPixelHeight;
   const fovEndCenterY = lensExitY + fovDirY * fovPixelHeight;
