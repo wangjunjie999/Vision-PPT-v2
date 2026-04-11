@@ -1,23 +1,22 @@
 
 
-## 硬件详情滚动条 + 删除 3D 网格
+## 删除光学方案图中的安装支架
 
-### 改动 1：硬件详情面板滚动优化
+### 改动
 
-**文件**: `src/components/admin/HardwareDetailView.tsx`
+**文件**: `src/components/canvas/VisionSystemDiagram.tsx`
 
-当前 `DialogContent` 已有 `max-h-[90vh]` 和 `ScrollArea`，但 `ScrollArea` 没有明确的最大高度约束，在部分情况下内容超出后无法正常滚动。
+删除第 538-542 行的「Mounting Bracket」SVG 元素组：
+```
+{/* ===== Mounting Bracket (follows camera) ===== */}
+<g>
+  <rect x={...} y={...} width="160" height="10" ... />
+  <rect x={...} y={...} width="20" height="24" ... />
+</g>
+```
 
-修复方式：给 `ScrollArea` 添加明确的 `max-h` 限制（如 `max-h-[calc(90vh-120px)]`），确保内容区域在对话框头部之下正确滚动。同时优化 `overflow` 样式确保滚动条始终可见。
+这是相机下方跟随移动的灰色横杆和连接柱，删除后画面更简洁。
 
-### 改动 2：删除 3D 预览中的网格
-
-**文件**: `src/components/product/Product3DViewer.tsx`
-
-删除第 310 行的 `<gridHelper args={[10, 10, '#666', '#444']} />`，使 3D 预览背景干净，只显示模型本身。
-
-### 改动范围
-
-- `src/components/admin/HardwareDetailView.tsx` — ScrollArea 高度约束
-- `src/components/product/Product3DViewer.tsx` — 删除 gridHelper
+### 影响范围
+- 仅 `VisionSystemDiagram.tsx` 一个文件，删除 5 行代码
 
