@@ -137,6 +137,7 @@ export type Database = {
           created_at: string
           enabled: boolean | null
           frame_rate: number
+          front_view_url: string | null
           id: string
           image_url: string | null
           interface: string
@@ -152,6 +153,7 @@ export type Database = {
           created_at?: string
           enabled?: boolean | null
           frame_rate: number
+          front_view_url?: string | null
           id?: string
           image_url?: string | null
           interface: string
@@ -167,6 +169,7 @@ export type Database = {
           created_at?: string
           enabled?: boolean | null
           frame_rate?: number
+          front_view_url?: string | null
           id?: string
           image_url?: string | null
           interface?: string
@@ -452,6 +455,7 @@ export type Database = {
           created_at: string
           enabled: boolean | null
           focal_length: string
+          front_view_url: string | null
           id: string
           image_url: string | null
           model: string
@@ -466,6 +470,7 @@ export type Database = {
           created_at?: string
           enabled?: boolean | null
           focal_length: string
+          front_view_url?: string | null
           id?: string
           image_url?: string | null
           model: string
@@ -480,6 +485,7 @@ export type Database = {
           created_at?: string
           enabled?: boolean | null
           focal_length?: string
+          front_view_url?: string | null
           id?: string
           image_url?: string | null
           model?: string
@@ -495,12 +501,14 @@ export type Database = {
           color: string
           created_at: string
           enabled: boolean | null
+          front_view_url: string | null
           id: string
           image_url: string | null
           model: string
           power: string
           recommended_cameras: string[] | null
           tags: string[] | null
+          top_view_url: string | null
           type: string
           updated_at: string
         }
@@ -509,12 +517,14 @@ export type Database = {
           color: string
           created_at?: string
           enabled?: boolean | null
+          front_view_url?: string | null
           id?: string
           image_url?: string | null
           model: string
           power: string
           recommended_cameras?: string[] | null
           tags?: string[] | null
+          top_view_url?: string | null
           type: string
           updated_at?: string
         }
@@ -523,12 +533,14 @@ export type Database = {
           color?: string
           created_at?: string
           enabled?: boolean | null
+          front_view_url?: string | null
           id?: string
           image_url?: string | null
           model?: string
           power?: string
           recommended_cameras?: string[] | null
           tags?: string[] | null
+          top_view_url?: string | null
           type?: string
           updated_at?: string
         }
