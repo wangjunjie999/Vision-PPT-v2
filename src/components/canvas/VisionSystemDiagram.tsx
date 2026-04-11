@@ -280,15 +280,46 @@ export function VisionSystemDiagram({
   const [camRotation, setCamRotation] = useState(0);
   const [lightRotation, setLightRotation] = useState(0);
 
-  // Derived measurements
-  const lensBottomY = camLensDrag.pos.y + 105; // camera height ~85 + lens ~20
-  const workingDistance = Math.max(0, Math.round(productY - lensBottomY));
-  const workingDistanceMM = Math.max(50, Math.round(workingDistance * (lightDistance / (productY - 175)))); // scale to real mm based on initial ratio
+  // Derived measurements (rotation-aware)
+  const rotRad = camRotation * Math.PI / 180;
+  const lensOffsetFromCenter = 105; // camera height ~85 + lens ~20
+
+  // Rotated lens exit point (rotation pivot = camLensDrag.pos which is group top-left, rotation center at (45,55) inside group)
+  // The lens bottom in local coords is at (45, 110) relative to group origin; rotation center is (45, 55)
+  // Local offset from rotation center to lens bottom: (0, 55)
+  const localLensX = 0;
+  const localLensY = 55;
+  const rotatedLensLocalX = localLensX * Math.cos(rotRad) - localLensY * Math.sin(rotRad);
+  const rotatedLensLocalY = localLensX * Math.sin(rotRad) + localLensY * Math.cos(rotRad);
+  // Rotation center in SVG coords: camLensDrag.pos.x - 45 + 45 = camLensDrag.pos.x, camLensDrag.pos.y + 55
+  const rotCenterX = camLensDrag.pos.x;
+  const rotCenterY = camLensDrag.pos.y + 55;
+  const lensExitX = rotCenterX + rotatedLensLocalX;
+  const lensExitY = rotCenterY + rotatedLensLocalY;
+
+  // For backward compat: unrotated values
+  const lensBottomY = camLensDrag.pos.y + lensOffsetFromCenter;
+  const workingDistance = Math.max(0, Math.round(productY - lensExitY));
+  const workingDistanceMM = Math.max(50, Math.round(workingDistance * (lightDistance / (productY - 175))));
 
   const fovRadians = (fovAngle / 2) * (Math.PI / 180);
-  const fovPixelHeight = productY - lensBottomY;
-  const fovOffsetX = Math.tan(fovRadians) * Math.max(fovPixelHeight, 50);
+  const fovPixelHeight = Math.max(productY - lensExitY, 50);
+  const fovOffsetX = Math.tan(fovRadians) * fovPixelHeight;
   const fovWidthMM = Math.round(2 * Math.tan(fovRadians) * workingDistanceMM);
+
+  // FOV direction vector (rotated downward direction)
+  const fovDirX = Math.sin(rotRad);
+  const fovDirY = Math.cos(rotRad);
+  // FOV perpendicular vector
+  const fovPerpX = Math.cos(rotRad);
+  const fovPerpY = -Math.sin(rotRad);
+  // FOV end points: extend along direction by fovPixelHeight, then offset perpendicular by fovOffsetX
+  const fovEndCenterX = lensExitX + fovDirX * fovPixelHeight;
+  const fovEndCenterY = lensExitY + fovDirY * fovPixelHeight;
+  const fovEndLeftX = fovEndCenterX - fovPerpX * fovOffsetX;
+  const fovEndLeftY = fovEndCenterY - fovPerpY * fovOffsetX;
+  const fovEndRightX = fovEndCenterX + fovPerpX * fovOffsetX;
+  const fovEndRightY = fovEndCenterY + fovPerpY * fovOffsetX;
 
   const hasCamera = !!camera;
   const hasLens = !!lens;
@@ -298,7 +329,7 @@ export function VisionSystemDiagram({
   // Camera+lens group center for drawing connections
   const camCenterX = camLensDrag.pos.x;
   const camTopY = camLensDrag.pos.y;
-  const lensCenterY = camTopY + 85 + 24; // mid-lens
+  const lensCenterY = camTopY + 85 + 24;
 
   const lightCenterX = lightDrag.pos.x;
   const lightCenterY = lightDrag.pos.y;
