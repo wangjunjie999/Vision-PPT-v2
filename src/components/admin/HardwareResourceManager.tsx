@@ -104,6 +104,10 @@ export function HardwareResourceManager({ type }: Props) {
   const [saving, setSaving] = useState(false);
   const [glbUrl, setGlbUrl] = useState<string | null>(null);
   const [glbUploading, setGlbUploading] = useState(false);
+  const [frontViewUrl, setFrontViewUrl] = useState<string | null>(null);
+  const [frontViewUploading, setFrontViewUploading] = useState(false);
+  const [topViewUrl, setTopViewUrl] = useState<string | null>(null);
+  const [topViewUploading, setTopViewUploading] = useState(false);
 
   const config = typeConfig[type];
   const Icon = config.icon;
@@ -143,6 +147,8 @@ export function HardwareResourceManager({ type }: Props) {
     setFormData({ enabled: true, tags: [] });
     setImageUrl(null);
     setGlbUrl(null);
+    setFrontViewUrl(null);
+    setTopViewUrl(null);
     setEditDialogOpen(true);
   };
 
@@ -151,6 +157,8 @@ export function HardwareResourceManager({ type }: Props) {
     setFormData({ ...item });
     setImageUrl(item.image_url);
     setGlbUrl((item as any).model_3d_url || null);
+    setFrontViewUrl((item as any).front_view_url || null);
+    setTopViewUrl((item as any).top_view_url || null);
     setEditDialogOpen(true);
   };
 
@@ -191,6 +199,14 @@ export function HardwareResourceManager({ type }: Props) {
       // Add model_3d_url for cameras
       if (type === 'cameras') {
         data.model_3d_url = glbUrl;
+        data.front_view_url = frontViewUrl;
+      }
+      if (type === 'lenses') {
+        data.front_view_url = frontViewUrl;
+      }
+      if (type === 'lights') {
+        data.front_view_url = frontViewUrl;
+        data.top_view_url = topViewUrl;
       }
 
       if (selectedItem) {
