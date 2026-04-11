@@ -160,10 +160,123 @@ interface VisionSystemDiagramProps {
 }
 
 // ─── SVG hardware shape renderers ───
-function CameraSVGShape({ hasImage, imageUrl }: { hasImage: boolean; imageUrl?: string | null }) {
+function CameraSVGShape({ hasImage, imageUrl, brand, model }: { hasImage: boolean; imageUrl?: string | null; brand?: string; model?: string }) {
   if (hasImage && imageUrl) {
     return <image href={imageUrl} x="0" y="0" width="90" height="72" preserveAspectRatio="xMidYMid meet" />;
   }
+  const b = (brand || '').toLowerCase();
+
+  // Hikvision — 紫色方体、绿色指示灯、散热格栅
+  if (b.includes('hikvision') || b.includes('海康')) {
+    return (
+      <>
+        <rect x="0" y="0" width="90" height="72" rx="4" fill="#3d2066" />
+        <rect x="3" y="3" width="84" height="66" rx="3" fill="#4a2878" />
+        {/* 散热格栅 */}
+        {[12, 18, 24, 30, 36].map(yy => (
+          <rect key={yy} x="6" y={yy} width="30" height="2" rx="1" fill="#2d1850" opacity="0.6" />
+        ))}
+        {/* 镜头安装口 */}
+        <circle cx="60" cy="40" r="16" fill="#1a0f30" />
+        <circle cx="60" cy="40" r="12" fill="#251650" />
+        <circle cx="60" cy="40" r="4" fill="#3d2066" />
+        {/* 绿色指示灯 */}
+        <circle cx="14" cy="10" r="3.5" fill="#00e676" />
+        <circle cx="14" cy="10" r="5" fill="none" stroke="#00e676" strokeWidth="0.8" opacity="0.4" />
+        {/* 接口区 */}
+        <rect x="42" y="4" width="20" height="8" rx="2" fill="#2d1850" />
+        <text x="45" y="66" textAnchor="middle" fill="#c0a0ff" style={{ fontSize: '7px', fontWeight: 600 }}>HIKVISION</text>
+      </>
+    );
+  }
+
+  // Basler — 灰黑扁平体、蓝色标识条
+  if (b.includes('basler') || b.includes('巴斯勒')) {
+    return (
+      <>
+        <rect x="0" y="6" width="90" height="60" rx="3" fill="#2a2a2a" />
+        <rect x="2" y="8" width="86" height="56" rx="2" fill="#3a3a3a" />
+        {/* 蓝色品牌条 */}
+        <rect x="0" y="6" width="90" height="6" rx="3" fill="#1976d2" />
+        {/* 镜头口 */}
+        <circle cx="45" cy="42" r="18" fill="#1a1a1a" />
+        <circle cx="45" cy="42" r="14" fill="#252525" />
+        <circle cx="45" cy="42" r="6" fill="#1a1a1a" />
+        {/* 散热鳍片 */}
+        {[18, 22, 26].map(yy => (
+          <rect key={yy} x="72" y={yy} width="14" height="2" rx="1" fill="#222" />
+        ))}
+        {/* 接口 */}
+        <rect x="5" y="52" width="16" height="10" rx="2" fill="#222" />
+        <text x="45" y="62" textAnchor="middle" fill="#64b5f6" style={{ fontSize: '7px', fontWeight: 600 }}>BASLER</text>
+      </>
+    );
+  }
+
+  // Daheng — 深灰窄体、红色LED
+  if (b.includes('daheng') || b.includes('大恒')) {
+    return (
+      <>
+        <rect x="10" y="0" width="70" height="72" rx="3" fill="#2e2e2e" />
+        <rect x="12" y="2" width="66" height="68" rx="2" fill="#383838" />
+        {/* 镜头口 */}
+        <circle cx="45" cy="40" r="16" fill="#1c1c1c" />
+        <circle cx="45" cy="40" r="11" fill="#282828" />
+        <circle cx="45" cy="40" r="4" fill="#1c1c1c" />
+        {/* 红色LED */}
+        <circle cx="22" cy="10" r="3" fill="#f44336" />
+        <circle cx="22" cy="10" r="4.5" fill="none" stroke="#f44336" strokeWidth="0.6" opacity="0.4" />
+        {/* 散热纹理 */}
+        {[16, 20, 24].map(yy => (
+          <rect key={yy} x="60" y={yy} width="14" height="1.5" rx="0.5" fill="#252525" />
+        ))}
+        <rect x="28" y="4" width="18" height="7" rx="2" fill="#252525" />
+        <text x="45" y="66" textAnchor="middle" fill="#aaa" style={{ fontSize: '7px', fontWeight: 500 }}>DAHENG</text>
+      </>
+    );
+  }
+
+  // Cognex — 银色紧凑体、橙色logo
+  if (b.includes('cognex') || b.includes('康耐视')) {
+    return (
+      <>
+        <rect x="5" y="4" width="80" height="64" rx="6" fill="#b0b0b0" />
+        <rect x="7" y="6" width="76" height="60" rx="5" fill="#c8c8c8" />
+        {/* 镜头区 */}
+        <rect x="20" y="16" width="50" height="40" rx="4" fill="#444" />
+        <circle cx="45" cy="38" r="14" fill="#333" />
+        <circle cx="45" cy="38" r="9" fill="#444" />
+        <circle cx="45" cy="38" r="3" fill="#333" />
+        {/* 橙色logo条 */}
+        <rect x="5" y="4" width="80" height="5" rx="3" fill="#ff6d00" />
+        {/* LED指示灯 */}
+        <circle cx="15" cy="14" r="2.5" fill="#4caf50" />
+        <circle cx="22" cy="14" r="2.5" fill="#ffeb3b" />
+        <text x="45" y="62" textAnchor="middle" fill="#ff6d00" style={{ fontSize: '7px', fontWeight: 700 }}>COGNEX</text>
+      </>
+    );
+  }
+
+  // Baumer — 黑色长方体、白色前面板
+  if (b.includes('baumer') || b.includes('堡盟')) {
+    return (
+      <>
+        <rect x="0" y="2" width="90" height="68" rx="3" fill="#1a1a1a" />
+        <rect x="2" y="4" width="86" height="64" rx="2" fill="#222" />
+        {/* 白色前面板 */}
+        <rect x="18" y="12" width="54" height="48" rx="3" fill="#e0e0e0" />
+        {/* 镜头口 */}
+        <circle cx="45" cy="38" r="16" fill="#333" />
+        <circle cx="45" cy="38" r="12" fill="#444" />
+        <circle cx="45" cy="38" r="5" fill="#333" />
+        {/* 接口 */}
+        <rect x="6" y="52" width="10" height="10" rx="1.5" fill="#333" />
+        <text x="45" y="66" textAnchor="middle" fill="#aaa" style={{ fontSize: '7px', fontWeight: 600 }}>BAUMER</text>
+      </>
+    );
+  }
+
+  // 默认
   return (
     <>
       <rect x="0" y="0" width="90" height="72" rx="6" fill="url(#cameraBody)" />
@@ -174,10 +287,32 @@ function CameraSVGShape({ hasImage, imageUrl }: { hasImage: boolean; imageUrl?: 
   );
 }
 
-function LensSVGShape({ hasImage, imageUrl }: { hasImage: boolean; imageUrl?: string | null }) {
+function LensSVGShape({ hasImage, imageUrl, brand }: { hasImage: boolean; imageUrl?: string | null; brand?: string }) {
   if (hasImage && imageUrl) {
     return <image href={imageUrl} x="0" y="0" width="96" height="48" preserveAspectRatio="xMidYMid meet" />;
   }
+  const b = (brand || '').toLowerCase();
+
+  // C-mount 风格（适用于大部分工业镜头）按品牌配色
+  if (b.includes('computar') || b.includes('kowa') || b.includes('fujinon')) {
+    const accent = b.includes('kowa') ? '#1565c0' : b.includes('fujinon') ? '#c62828' : '#424242';
+    return (
+      <>
+        <rect x="8" y="2" width="80" height="44" rx="22" fill="#2a2a2a" />
+        <rect x="10" y="4" width="76" height="40" rx="20" fill="#3a3a3a" />
+        {/* 对焦环纹理 */}
+        {[10, 14, 18, 22, 26, 30, 34].map(yy => (
+          <rect key={yy} x="14" y={yy} width="68" height="1" rx="0.5" fill="#2a2a2a" opacity="0.5" />
+        ))}
+        {/* 品牌色环 */}
+        <rect x="8" y="20" width="80" height="4" rx="2" fill={accent} opacity="0.8" />
+        <ellipse cx="48" cy="38" rx="20" ry="6" fill="#1a1a1a" />
+        <ellipse cx="48" cy="38" rx="14" ry="4" fill="#252525" />
+      </>
+    );
+  }
+
+  // 默认
   return (
     <>
       <rect x="8" y="0" width="80" height="48" rx="3" fill="url(#lensBody)" />
@@ -188,10 +323,54 @@ function LensSVGShape({ hasImage, imageUrl }: { hasImage: boolean; imageUrl?: st
   );
 }
 
-function LightSVGShape({ hasImage, imageUrl }: { hasImage: boolean; imageUrl?: string | null }) {
+function LightSVGShape({ hasImage, imageUrl, brand, lightType }: { hasImage: boolean; imageUrl?: string | null; brand?: string; lightType?: string }) {
   if (hasImage && imageUrl) {
     return <image href={imageUrl} x="0" y="0" width="160" height="32" preserveAspectRatio="xMidYMid meet" />;
   }
+  const b = (brand || '').toLowerCase();
+  const lt = (lightType || '').toLowerCase();
+
+  // 环形光源
+  if (lt.includes('环形') || lt.includes('ring')) {
+    return (
+      <>
+        <rect x="0" y="0" width="160" height="32" rx="4" fill="#3a3a3a" />
+        <ellipse cx="80" cy="16" rx="50" ry="12" fill="#2a2a2a" />
+        <ellipse cx="80" cy="16" rx="40" ry="8" fill="none" stroke="#ff1744" strokeWidth="2" opacity="0.8" />
+        <ellipse cx="80" cy="16" rx="30" ry="5" fill="#1a1a1a" />
+        <text x="80" y="30" textAnchor="middle" fill="#888" style={{ fontSize: '6px' }}>RING</text>
+      </>
+    );
+  }
+
+  // 条形光源
+  if (lt.includes('条形') || lt.includes('bar') || lt.includes('线形')) {
+    return (
+      <>
+        <rect x="0" y="6" width="160" height="20" rx="3" fill="#3a3a3a" />
+        <rect x="4" y="8" width="152" height="16" rx="2" fill="#2a2a2a" />
+        {/* LED 点阵 */}
+        {Array.from({ length: 16 }).map((_, i) => (
+          <circle key={i} cx={12 + i * 9} cy="16" r="2.5" fill="#ff1744" opacity="0.7" />
+        ))}
+        <text x="80" y="30" textAnchor="middle" fill="#888" style={{ fontSize: '6px' }}>BAR</text>
+      </>
+    );
+  }
+
+  // 面光源
+  if (lt.includes('面') || lt.includes('area') || lt.includes('back')) {
+    return (
+      <>
+        <rect x="10" y="0" width="140" height="32" rx="3" fill="#3a3a3a" />
+        <rect x="14" y="3" width="132" height="26" rx="2" fill="#fafafa" opacity="0.9" />
+        <rect x="18" y="6" width="124" height="20" rx="1" fill="#fff3e0" opacity="0.7" />
+        <text x="80" y="30" textAnchor="middle" fill="#888" style={{ fontSize: '6px' }}>AREA</text>
+      </>
+    );
+  }
+
+  // 默认
   return (
     <>
       <rect x="0" y="0" width="160" height="32" rx="4" fill="hsl(0, 0%, 45%)" />
