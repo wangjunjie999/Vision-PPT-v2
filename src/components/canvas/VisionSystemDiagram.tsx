@@ -535,11 +535,6 @@ export function VisionSystemDiagram({
           />
         )}
 
-        {/* ===== Mounting Bracket (follows camera) ===== */}
-        <g>
-          <rect x={camLensDrag.pos.x - 80} y={camLensDrag.pos.y + 140} width="160" height="10" rx="2" fill="hsl(0, 0%, 50%)" />
-          <rect x={camLensDrag.pos.x - 10} y={camLensDrag.pos.y + 133} width="20" height="24" rx="2" fill="hsl(0, 0%, 50%)" />
-        </g>
 
         {/* ===== Right annotation panel ===== */}
         {interactive ? (
