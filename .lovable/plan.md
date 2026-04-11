@@ -1,54 +1,65 @@
 
+## 修正光学方案图旋转方向仍然相反的问题
 
-## FOV 锥体随旋转移动 + 硬件图片外形适配
+### 问题定位
+当前 `src/components/canvas/VisionSystemDiagram.tsx` 里，FOV 的旋转坐标计算仍然和实际 SVG `rotate(${camRotation})` 的方向不一致，所以会出现：
+- 相机/镜头已经朝一个方向旋转
+- FOV 锥体、镜头出光口、标注延伸方向却朝相反方向偏转
 
-### 当前问题
+根因在于这几组公式的符号仍然是镜像的：
+- `rotatedLensLocalX / rotatedLensLocalY`
+- `fovDirX / fovDirY`
+- `fovPerpX / fovPerpY`
 
-1. **FOV 锥体不跟随旋转**：相机+镜头组旋转后，FOV 锥体仍然固定朝下（lines 363-377 使用的 `camCenterX` / `lensBottomY` 不受 `camRotation` 影响）
-2. **硬件外形已支持图片替换**：`CameraSVGShape` / `LensSVGShape` / `LightSVGShape` 已经在有 `front_view_url` 时用 `<image>` 替代 SVG 矢量图，这部分逻辑已就绪
-
-### 改动
-
+### 修改方案
 **文件**: `src/components/canvas/VisionSystemDiagram.tsx`
 
-**1. FOV 锥体跟随旋转**
+#### 1. 统一为与画面实际旋转一致的坐标公式
+把镜头出光口的局部偏移旋转改成与当前 SVG 组旋转同方向的计算：
 
-当前 FOV 起点是 `(camCenterX, lensBottomY)`，终点是 `(camCenterX ± fovOffsetX, productY)`。旋转后这些点不变导致锥体不动。
-
-修改方式：将 `camRotation` 应用到 FOV 锥体的起点和方向计算中：
-- 镜头出光口位置 = 以相机中心为原点，旋转 `camRotation` 度后的偏移位置
-- FOV 两条边线方向 = 原始向下方向 + `camRotation` 旋转
-- FOV 终点延伸到产品所在 Y 坐标（或按旋转后的方向延伸固定长度）
-
-具体计算：
-```
-// 旋转中心 = camLensDrag.pos
-// 镜头底部相对于旋转中心的偏移 = (0, 105)
-// 旋转后的实际镜头底部位置:
-const rotRad = camRotation * Math.PI / 180;
-const lensExitX = camCenterX + Math.sin(rotRad) * 105;
-const lensExitY = camTopY + Math.cos(rotRad) * 105;
-// FOV 边线方向也旋转 camRotation 度
+```ts
+const rotatedLensLocalX = localLensX * Math.cos(rotRad) - localLensY * Math.sin(rotRad);
+const rotatedLensLocalY = localLensX * Math.sin(rotRad) + localLensY * Math.cos(rotRad);
 ```
 
-**2. 工作距离和视野标注线跟随**
+对于当前 `localLensX = 0, localLensY = 55`，等价于：
+```ts
+const rotatedLensLocalX = -55 * Math.sin(rotRad);
+const rotatedLensLocalY =  55 * Math.cos(rotRad);
+```
 
-工作距离标注线（lines 394-404）和视野宽度标注线（lines 406-415）也需要根据旋转后的镜头出光口位置重新计算，确保标注始终指向正确位置。
+#### 2. 同步修正 FOV 主方向向量
+将 FOV 朝向改为和镜头朝向一致：
 
-**3. 连接虚线跟随**
+```ts
+const fovDirX = -Math.sin(rotRad);
+const fovDirY =  Math.cos(rotRad);
+```
 
-右侧标注面板的连接虚线（lines 418-422）已经使用 `camCenterX` / `lightCenterX` 等动态坐标，旋转后需要用旋转后的实际中心点。
+#### 3. 同步修正 FOV 宽度的垂直方向向量
+保证锥体两侧展开方向也不再镜像：
 
-### 不需要改动的部分
+```ts
+const fovPerpX = Math.cos(rotRad);
+const fovPerpY = Math.sin(rotRad);
+```
 
-- 硬件图片替换逻辑（已有 `CameraSVGShape` 等组件，上传 `front_view_url` 后自动显示）
-- 拖拽和旋转手柄（已实现）
-- 右侧信息面板数据（已动态计算）
+### 连带生效的部分
+因为下面这些都依赖上述变量，修正后会一起恢复正确：
+- FOV 锥体 polygon
+- 两条 FOV 边线
+- FOV 角度圆弧与角度文字
+- 工作距离标注线
+- 视野宽度标注线
+- 镜头连到右侧说明卡片的虚线锚点
 
-### 影响范围
+### 预期结果
+修复后应表现为：
+- 相机顺时针旋转，FOV 也顺时针偏转
+- 相机逆时针旋转，FOV 也逆时针偏转
+- 锥体起点始终贴合镜头出光口
+- 标注线不会再出现“本体往左，FOV 往右”的反向问题
 
-- 仅 `VisionSystemDiagram.tsx` 一个文件
-- FOV 锥体绘制逻辑（约 15 行重写）
-- 工作距离/视野宽度标注（约 20 行调整）
-- 连接虚线坐标（约 5 行调整）
-
+### 改动范围
+- 仅 `src/components/canvas/VisionSystemDiagram.tsx`
+- 主要是 3 组旋转公式的符号修正，属于小范围定向修复
