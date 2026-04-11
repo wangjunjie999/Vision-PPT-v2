@@ -278,7 +278,7 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
             images,
             latestAsset.id,
             'workstation',
-            getPreferredDisplayMode(latestAsset as ProductAsset)
+            getPreferredDisplayMode(latestAsset as unknown as ProductAsset)
           );
         }
       }
