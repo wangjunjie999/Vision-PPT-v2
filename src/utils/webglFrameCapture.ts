@@ -27,7 +27,7 @@ export function flipWebGLPixelsToImageData(
   height: number
 ): ImageData {
   const out = flipWebGLRowsToTopLeft(pixels, width, height);
-  return new ImageData(new Uint8ClampedArray(out.buffer), width, height);
+  return new ImageData(new Uint8ClampedArray(out.buffer as ArrayBuffer), width, height);
 }
 
 /** True if readback likely succeeded: any pixel with non-zero alpha (incl. pure black RGB). */

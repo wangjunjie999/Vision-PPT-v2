@@ -34,7 +34,7 @@ vi.mock('@/utils/productViewer', async (importOriginal) => {
     const actual = await importOriginal<typeof import('@/utils/productViewer')>();
     return {
         ...actual,
-        validateAnnotationSnapshot: (...args: any[]) => mocks.validateSnapshot(...args),
+        validateAnnotationSnapshot: (url: string) => mocks.validateSnapshot(url),
     };
 });
 
@@ -168,7 +168,7 @@ describe('ProductViewerCanvas', () => {
             imageUrls: ['https://example.com/fallback.png'],
             assetId: 'asset-2',
             scope: 'workstation',
-            preferredDisplayMode: 'image' as const,
+            preferredDisplayMode: 'auto' as const,
         };
         mocks.viewerHandle.getStatus.mockReturnValue('ready');
         mocks.viewerHandle.canTakeScreenshot.mockReturnValue(true);
