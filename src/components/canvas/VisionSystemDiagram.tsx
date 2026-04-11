@@ -661,7 +661,7 @@ export function VisionSystemDiagram({
                   >
                     <button className="relative w-full h-full cursor-pointer group bg-transparent border-0 p-0">
                       <svg width="90" height="85" viewBox="0 0 90 85">
-                        <CameraSVGShape hasImage={!!camera?.front_view_url} imageUrl={camera?.front_view_url} />
+                        <CameraSVGShape hasImage={!!camera?.front_view_url} imageUrl={camera?.front_view_url} brand={camera?.brand} model={camera?.model} />
                         <rect x="32" y="72" width="26" height="13" fill="hsl(0, 0%, 22%)" />
                       </svg>
                       {!hasCamera && (
@@ -675,7 +675,7 @@ export function VisionSystemDiagram({
               </foreignObject>
             ) : (
               <g>
-                <CameraSVGShape hasImage={!!camera?.front_view_url} imageUrl={camera?.front_view_url} />
+                <CameraSVGShape hasImage={!!camera?.front_view_url} imageUrl={camera?.front_view_url} brand={camera?.brand} model={camera?.model} />
                 <rect x="32" y="72" width="26" height="13" fill="hsl(0, 0%, 22%)" />
               </g>
             )}
@@ -692,7 +692,7 @@ export function VisionSystemDiagram({
                   >
                     <button className="relative w-full h-full cursor-pointer group bg-transparent border-0 p-0">
                       <svg width="96" height="48" viewBox="0 0 96 48">
-                        <LensSVGShape hasImage={!!lens?.front_view_url} imageUrl={lens?.front_view_url} />
+                        <LensSVGShape hasImage={!!lens?.front_view_url} imageUrl={lens?.front_view_url} brand={lens?.brand} />
                       </svg>
                       {!hasLens && (
                         <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded">
@@ -704,7 +704,7 @@ export function VisionSystemDiagram({
                 </div>
               </foreignObject>
             ) : (
-              <LensSVGShape hasImage={!!lens?.front_view_url} imageUrl={lens?.front_view_url} />
+              <LensSVGShape hasImage={!!lens?.front_view_url} imageUrl={lens?.front_view_url} brand={lens?.brand} />
             )}
           </g>
         </g>
@@ -733,7 +733,7 @@ export function VisionSystemDiagram({
                 >
                   <button className="relative w-full h-full cursor-pointer group bg-transparent border-0 p-0">
                     <svg width="160" height="32" viewBox="0 0 160 32">
-                      <LightSVGShape hasImage={!!light?.front_view_url} imageUrl={light?.front_view_url} />
+                      <LightSVGShape hasImage={!!light?.front_view_url} imageUrl={light?.front_view_url} brand={light?.brand} lightType={light?.type} />
                     </svg>
                     {!hasLight && (
                       <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded">
@@ -745,7 +745,7 @@ export function VisionSystemDiagram({
               </div>
             </foreignObject>
           ) : (
-            <LightSVGShape hasImage={!!light?.front_view_url} imageUrl={light?.front_view_url} />
+            <LightSVGShape hasImage={!!light?.front_view_url} imageUrl={light?.front_view_url} brand={light?.brand} lightType={light?.type} />
           )}
         </g>
 
