@@ -488,6 +488,89 @@ export function HardwareResourceManager({ type }: Props) {
                 </p>
               </div>
             )}
+
+            {/* Front View Upload - cameras, lenses, lights */}
+            {(type === 'cameras' || type === 'lenses' || type === 'lights') && (
+              <div className="space-y-2">
+                <Label>正视图</Label>
+                <div className="flex items-center gap-2">
+                  {frontViewUrl ? (
+                    <>
+                      <img src={frontViewUrl} alt="正视图" className="w-12 h-12 object-cover rounded border" />
+                      <Button variant="outline" size="sm" onClick={() => setFrontViewUrl(null)}>移除</Button>
+                    </>
+                  ) : (
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setFrontViewUploading(true);
+                          try {
+                            const path = `${type}/front-view/${Date.now()}-${file.name}`;
+                            const { error } = await supabase.storage.from('hardware-images').upload(path, file);
+                            if (error) { toast.error('上传失败'); return; }
+                            const { data: urlData } = supabase.storage.from('hardware-images').getPublicUrl(path);
+                            setFrontViewUrl(urlData.publicUrl);
+                          } finally {
+                            setFrontViewUploading(false);
+                          }
+                        }}
+                      />
+                      <Button variant="outline" size="sm" asChild disabled={frontViewUploading}>
+                        <span>{frontViewUploading ? '上传中...' : '上传正视图'}</span>
+                      </Button>
+                    </label>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">用于光学方案图中显示硬件外观</p>
+              </div>
+            )}
+
+            {/* Top View Upload - lights only */}
+            {type === 'lights' && (
+              <div className="space-y-2">
+                <Label>俯视图</Label>
+                <div className="flex items-center gap-2">
+                  {topViewUrl ? (
+                    <>
+                      <img src={topViewUrl} alt="俯视图" className="w-12 h-12 object-cover rounded border" />
+                      <Button variant="outline" size="sm" onClick={() => setTopViewUrl(null)}>移除</Button>
+                    </>
+                  ) : (
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setTopViewUploading(true);
+                          try {
+                            const path = `lights/top-view/${Date.now()}-${file.name}`;
+                            const { error } = await supabase.storage.from('hardware-images').upload(path, file);
+                            if (error) { toast.error('上传失败'); return; }
+                            const { data: urlData } = supabase.storage.from('hardware-images').getPublicUrl(path);
+                            setTopViewUrl(urlData.publicUrl);
+                          } finally {
+                            setTopViewUploading(false);
+                          }
+                        }}
+                      />
+                      <Button variant="outline" size="sm" asChild disabled={topViewUploading}>
+                        <span>{topViewUploading ? '上传中...' : '上传俯视图'}</span>
+                      </Button>
+                    </label>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">光源旋转后使用俯视图展示</p>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <Label>启用</Label>
               <Switch
