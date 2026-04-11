@@ -1,3 +1,4 @@
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
@@ -26,14 +27,14 @@ const mocks = vi.hoisted(() => ({
         canTakeScreenshot: vi.fn<() => boolean>(),
         getStatus: vi.fn<() => 'ready' | 'loading' | 'unsupported'>(),
     },
-    validateSnapshot: vi.fn<() => Promise<boolean>>(),
+    validateSnapshot: vi.fn<(url: string) => Promise<boolean>>(),
 }));
 
 vi.mock('@/utils/productViewer', async (importOriginal) => {
     const actual = await importOriginal<typeof import('@/utils/productViewer')>();
     return {
         ...actual,
-        validateAnnotationSnapshot: (...args: unknown[]) => mocks.validateSnapshot(...args),
+        validateAnnotationSnapshot: (url: string) => mocks.validateSnapshot(url),
     };
 });
 
@@ -167,7 +168,7 @@ describe('ProductViewerCanvas', () => {
             imageUrls: ['https://example.com/fallback.png'],
             assetId: 'asset-2',
             scope: 'workstation',
-            preferredDisplayMode: 'image',
+            preferredDisplayMode: 'auto' as const,
         };
         mocks.viewerHandle.getStatus.mockReturnValue('ready');
         mocks.viewerHandle.canTakeScreenshot.mockReturnValue(true);

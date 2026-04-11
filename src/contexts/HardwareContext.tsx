@@ -14,6 +14,7 @@ export interface Camera {
   tags: string[];
   image_url: string | null;
   model_3d_url: string | null;
+  front_view_url: string | null;
   enabled: boolean;
   created_at: string;
   updated_at: string;
@@ -29,6 +30,7 @@ export interface Lens {
   compatible_cameras: string[];
   tags: string[];
   image_url: string | null;
+  front_view_url: string | null;
   enabled: boolean;
   created_at: string;
   updated_at: string;
@@ -44,6 +46,8 @@ export interface Light {
   tags: string[];
   recommended_cameras: string[];
   image_url: string | null;
+  front_view_url: string | null;
+  top_view_url: string | null;
   enabled: boolean;
   created_at: string;
   updated_at: string;

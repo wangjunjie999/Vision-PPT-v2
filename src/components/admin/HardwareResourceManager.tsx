@@ -104,6 +104,10 @@ export function HardwareResourceManager({ type }: Props) {
   const [saving, setSaving] = useState(false);
   const [glbUrl, setGlbUrl] = useState<string | null>(null);
   const [glbUploading, setGlbUploading] = useState(false);
+  const [frontViewUrl, setFrontViewUrl] = useState<string | null>(null);
+  const [frontViewUploading, setFrontViewUploading] = useState(false);
+  const [topViewUrl, setTopViewUrl] = useState<string | null>(null);
+  const [topViewUploading, setTopViewUploading] = useState(false);
 
   const config = typeConfig[type];
   const Icon = config.icon;
@@ -143,6 +147,8 @@ export function HardwareResourceManager({ type }: Props) {
     setFormData({ enabled: true, tags: [] });
     setImageUrl(null);
     setGlbUrl(null);
+    setFrontViewUrl(null);
+    setTopViewUrl(null);
     setEditDialogOpen(true);
   };
 
@@ -151,6 +157,8 @@ export function HardwareResourceManager({ type }: Props) {
     setFormData({ ...item });
     setImageUrl(item.image_url);
     setGlbUrl((item as any).model_3d_url || null);
+    setFrontViewUrl((item as any).front_view_url || null);
+    setTopViewUrl((item as any).top_view_url || null);
     setEditDialogOpen(true);
   };
 
@@ -191,6 +199,14 @@ export function HardwareResourceManager({ type }: Props) {
       // Add model_3d_url for cameras
       if (type === 'cameras') {
         data.model_3d_url = glbUrl;
+        data.front_view_url = frontViewUrl;
+      }
+      if (type === 'lenses') {
+        data.front_view_url = frontViewUrl;
+      }
+      if (type === 'lights') {
+        data.front_view_url = frontViewUrl;
+        data.top_view_url = topViewUrl;
       }
 
       if (selectedItem) {
@@ -472,6 +488,89 @@ export function HardwareResourceManager({ type }: Props) {
                 </p>
               </div>
             )}
+
+            {/* Front View Upload - cameras, lenses, lights */}
+            {(type === 'cameras' || type === 'lenses' || type === 'lights') && (
+              <div className="space-y-2">
+                <Label>正视图</Label>
+                <div className="flex items-center gap-2">
+                  {frontViewUrl ? (
+                    <>
+                      <img src={frontViewUrl} alt="正视图" className="w-12 h-12 object-cover rounded border" />
+                      <Button variant="outline" size="sm" onClick={() => setFrontViewUrl(null)}>移除</Button>
+                    </>
+                  ) : (
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setFrontViewUploading(true);
+                          try {
+                            const path = `${type}/front-view/${Date.now()}-${file.name}`;
+                            const { error } = await supabase.storage.from('hardware-images').upload(path, file);
+                            if (error) { toast.error('上传失败'); return; }
+                            const { data: urlData } = supabase.storage.from('hardware-images').getPublicUrl(path);
+                            setFrontViewUrl(urlData.publicUrl);
+                          } finally {
+                            setFrontViewUploading(false);
+                          }
+                        }}
+                      />
+                      <Button variant="outline" size="sm" asChild disabled={frontViewUploading}>
+                        <span>{frontViewUploading ? '上传中...' : '上传正视图'}</span>
+                      </Button>
+                    </label>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">用于光学方案图中显示硬件外观</p>
+              </div>
+            )}
+
+            {/* Top View Upload - lights only */}
+            {type === 'lights' && (
+              <div className="space-y-2">
+                <Label>俯视图</Label>
+                <div className="flex items-center gap-2">
+                  {topViewUrl ? (
+                    <>
+                      <img src={topViewUrl} alt="俯视图" className="w-12 h-12 object-cover rounded border" />
+                      <Button variant="outline" size="sm" onClick={() => setTopViewUrl(null)}>移除</Button>
+                    </>
+                  ) : (
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setTopViewUploading(true);
+                          try {
+                            const path = `lights/top-view/${Date.now()}-${file.name}`;
+                            const { error } = await supabase.storage.from('hardware-images').upload(path, file);
+                            if (error) { toast.error('上传失败'); return; }
+                            const { data: urlData } = supabase.storage.from('hardware-images').getPublicUrl(path);
+                            setTopViewUrl(urlData.publicUrl);
+                          } finally {
+                            setTopViewUploading(false);
+                          }
+                        }}
+                      />
+                      <Button variant="outline" size="sm" asChild disabled={topViewUploading}>
+                        <span>{topViewUploading ? '上传中...' : '上传俯视图'}</span>
+                      </Button>
+                    </label>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">光源旋转后使用俯视图展示</p>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <Label>启用</Label>
               <Switch

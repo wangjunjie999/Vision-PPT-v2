@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error("Extract template styles error:", error);
-    return json({ error: `提取错误: ${error.message}` }, 500);
+    return json({ error: `提取错误: ${(error as Error).message}` }, 500);
   }
 });
 
