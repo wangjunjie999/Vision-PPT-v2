@@ -27,7 +27,7 @@ const mocks = vi.hoisted(() => ({
         canTakeScreenshot: vi.fn<() => boolean>(),
         getStatus: vi.fn<() => 'ready' | 'loading' | 'unsupported'>(),
     },
-    validateSnapshot: vi.fn<() => Promise<boolean>>(),
+    validateSnapshot: vi.fn<(url: string) => Promise<boolean>>(),
 }));
 
 vi.mock('@/utils/productViewer', async (importOriginal) => {
