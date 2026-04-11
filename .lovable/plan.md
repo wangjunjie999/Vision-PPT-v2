@@ -1,65 +1,43 @@
 
-## 修正光学方案图旋转方向仍然相反的问题
 
-### 问题定位
-当前 `src/components/canvas/VisionSystemDiagram.tsx` 里，FOV 的旋转坐标计算仍然和实际 SVG `rotate(${camRotation})` 的方向不一致，所以会出现：
-- 相机/镜头已经朝一个方向旋转
-- FOV 锥体、镜头出光口、标注延伸方向却朝相反方向偏转
+## 根据相机品牌/型号定制正视图 SVG 外形
 
-根因在于这几组公式的符号仍然是镜像的：
-- `rotatedLensLocalX / rotatedLensLocalY`
-- `fovDirX / fovDirY`
-- `fovPerpX / fovPerpY`
+### 当前状态
+`CameraSVGShape` 组件只接收 `hasImage` 和 `imageUrl`，没有上传图片时所有相机都显示同一个紫色矩形 + "Cam" 文字。用户希望即使没有上传正视图，不同品牌/型号的相机也能在图中呈现贴近真实外形的区别。
 
-### 修改方案
+### 改动方案
+
 **文件**: `src/components/canvas/VisionSystemDiagram.tsx`
 
-#### 1. 统一为与画面实际旋转一致的坐标公式
-把镜头出光口的局部偏移旋转改成与当前 SVG 组旋转同方向的计算：
-
+#### 1. 扩展 `CameraSVGShape` 接口
+传入 `brand` 和 `model` 信息：
 ```ts
-const rotatedLensLocalX = localLensX * Math.cos(rotRad) - localLensY * Math.sin(rotRad);
-const rotatedLensLocalY = localLensX * Math.sin(rotRad) + localLensY * Math.cos(rotRad);
+function CameraSVGShape({ hasImage, imageUrl, brand, model }: {
+  hasImage: boolean; imageUrl?: string | null;
+  brand?: string; model?: string;
+})
 ```
 
-对于当前 `localLensX = 0, localLensY = 55`，等价于：
-```ts
-const rotatedLensLocalX = -55 * Math.sin(rotRad);
-const rotatedLensLocalY =  55 * Math.cos(rotRad);
-```
+#### 2. 为主流工业相机品牌创建差异化 SVG 外形
+根据 `brand` 渲染不同外轮廓和配色，涵盖常见品牌：
 
-#### 2. 同步修正 FOV 主方向向量
-将 FOV 朝向改为和镜头朝向一致：
+- **海康 (Hikvision)** — 紫色方体、绿色指示灯、前面板散热格栅
+- **巴斯勒 (Basler)** — 灰黑扁平体、圆形镜头口、蓝色标识条
+- **大恒 (Daheng)** — 深灰窄体、红色LED指示灯
+- **康耐视 (Cognex)** — 银色紧凑体、橙色logo标识
+- **堡盟 (Baumer)** — 黑色长方体、白色前面板
+- **通用默认** — 保留当前样式作为未匹配品牌的回退
 
-```ts
-const fovDirX = -Math.sin(rotRad);
-const fovDirY =  Math.cos(rotRad);
-```
+每个品牌外形包含：机身轮廓（圆角/直角）、镜头安装面、指示灯、品牌文字标识，尺寸比例尽量贴近真实产品。
 
-#### 3. 同步修正 FOV 宽度的垂直方向向量
-保证锥体两侧展开方向也不再镜像：
+#### 3. 同样扩展 `LensSVGShape` 和 `LightSVGShape`
+传入品牌信息，为不同品牌的镜头和光源也提供差异化外形。
 
-```ts
-const fovPerpX = Math.cos(rotRad);
-const fovPerpY = Math.sin(rotRad);
-```
+#### 4. 调用处传入品牌数据
+在两处渲染 `CameraSVGShape` 的地方（交互模式和静态模式）补充 `brand={camera?.brand}` `model={camera?.model}`。
 
-### 连带生效的部分
-因为下面这些都依赖上述变量，修正后会一起恢复正确：
-- FOV 锥体 polygon
-- 两条 FOV 边线
-- FOV 角度圆弧与角度文字
-- 工作距离标注线
-- 视野宽度标注线
-- 镜头连到右侧说明卡片的虚线锚点
+### 影响范围
+- 仅 `VisionSystemDiagram.tsx` 一个文件
+- 新增品牌判断逻辑和对应 SVG 图形约 120 行
+- 不影响已上传正视图的情况（有图片时仍优先显示图片）
 
-### 预期结果
-修复后应表现为：
-- 相机顺时针旋转，FOV 也顺时针偏转
-- 相机逆时针旋转，FOV 也逆时针偏转
-- 锥体起点始终贴合镜头出光口
-- 标注线不会再出现“本体往左，FOV 往右”的反向问题
-
-### 改动范围
-- 仅 `src/components/canvas/VisionSystemDiagram.tsx`
-- 主要是 3 组旋转公式的符号修正，属于小范围定向修复
