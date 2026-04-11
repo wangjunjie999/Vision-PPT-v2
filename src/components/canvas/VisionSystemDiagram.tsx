@@ -287,32 +287,100 @@ function CameraSVGShape({ hasImage, imageUrl, brand, model }: { hasImage: boolea
   );
 }
 
-function LensSVGShape({ hasImage, imageUrl, brand }: { hasImage: boolean; imageUrl?: string | null; brand?: string }) {
+function LensSVGShape({ hasImage, imageUrl, brand, model }: { hasImage: boolean; imageUrl?: string | null; brand?: string; model?: string }) {
   if (hasImage && imageUrl) {
     return <image href={imageUrl} x="0" y="0" width="96" height="48" preserveAspectRatio="xMidYMid meet" />;
   }
   const b = (brand || '').toLowerCase();
 
-  // C-mount 风格（适用于大部分工业镜头）按品牌配色
-  if (b.includes('computar') || b.includes('kowa') || b.includes('fujinon')) {
-    const accent = b.includes('kowa') ? '#1565c0' : b.includes('fujinon') ? '#c62828' : '#424242';
+  // Computar — 黑色哑光镜筒，银色对焦环，白色品牌字
+  if (b.includes('computar')) {
     return (
       <>
-        <rect x="8" y="2" width="80" height="44" rx="22" fill="#2a2a2a" />
-        <rect x="10" y="4" width="76" height="40" rx="20" fill="#3a3a3a" />
-        {/* 对焦环纹理 */}
-        {[10, 14, 18, 22, 26, 30, 34].map(yy => (
-          <rect key={yy} x="14" y={yy} width="68" height="1" rx="0.5" fill="#2a2a2a" opacity="0.5" />
+        <rect x="6" y="2" width="84" height="44" rx="22" fill="#1a1a1a" />
+        <rect x="8" y="4" width="80" height="40" rx="20" fill="#2d2d2d" />
+        {[12, 16, 20, 24, 28, 32].map(yy => (
+          <rect key={yy} x="12" y={yy} width="72" height="0.8" rx="0.4" fill="#1a1a1a" opacity="0.6" />
         ))}
-        {/* 品牌色环 */}
-        <rect x="8" y="20" width="80" height="4" rx="2" fill={accent} opacity="0.8" />
-        <ellipse cx="48" cy="38" rx="20" ry="6" fill="#1a1a1a" />
-        <ellipse cx="48" cy="38" rx="14" ry="4" fill="#252525" />
+        <rect x="6" y="18" width="84" height="5" rx="2.5" fill="#b0b0b0" opacity="0.5" />
+        <rect x="6" y="30" width="84" height="3" rx="1.5" fill="#b0b0b0" opacity="0.35" />
+        <ellipse cx="48" cy="40" rx="18" ry="5" fill="#111" />
+        <ellipse cx="48" cy="40" rx="12" ry="3" fill="#1a1a3a" />
+        <text x="48" y="11" textAnchor="middle" fill="#ccc" style={{ fontSize: '5px', fontFamily: 'monospace' }}>COMPUTAR</text>
       </>
     );
   }
 
-  // 默认
+  // Kowa — 深灰色镜筒，蓝色标识环，精细纹理
+  if (b.includes('kowa')) {
+    return (
+      <>
+        <rect x="6" y="1" width="84" height="46" rx="23" fill="#252525" />
+        <rect x="8" y="3" width="80" height="42" rx="21" fill="#353535" />
+        {[10, 14, 18, 22, 26, 30, 34].map(yy => (
+          <rect key={yy} x="14" y={yy} width="68" height="1" rx="0.5" fill="#252525" opacity="0.5" />
+        ))}
+        <rect x="6" y="13" width="84" height="4" rx="2" fill="#1565c0" opacity="0.85" />
+        <rect x="6" y="32" width="84" height="3" rx="1.5" fill="#1565c0" opacity="0.5" />
+        <ellipse cx="48" cy="40" rx="20" ry="6" fill="#1a1a1a" />
+        <ellipse cx="48" cy="40" rx="14" ry="4" fill="#222244" />
+        <text x="48" y="9" textAnchor="middle" fill="#90caf9" style={{ fontSize: '5.5px', fontWeight: 'bold' }}>KOWA</text>
+      </>
+    );
+  }
+
+  // Fujinon — 银灰色金属镜筒，红色品牌环
+  if (b.includes('fujinon') || b.includes('fujifilm')) {
+    return (
+      <>
+        <rect x="6" y="2" width="84" height="44" rx="22" fill="#555" />
+        <rect x="8" y="4" width="80" height="40" rx="20" fill="#6a6a6a" />
+        {[11, 15, 19, 23, 27, 31].map(yy => (
+          <rect key={yy} x="14" y={yy} width="68" height="1.2" rx="0.6" fill="#555" opacity="0.5" />
+        ))}
+        <rect x="6" y="19" width="84" height="4" rx="2" fill="#c62828" opacity="0.85" />
+        <ellipse cx="48" cy="39" rx="19" ry="5.5" fill="#3a3a3a" />
+        <ellipse cx="48" cy="39" rx="13" ry="3.5" fill="#2a2a3a" />
+        <text x="48" y="10" textAnchor="middle" fill="#ef9a9a" style={{ fontSize: '5px', fontWeight: 'bold' }}>FUJINON</text>
+      </>
+    );
+  }
+
+  // VS Technology — 黑色镜筒，金色品牌环
+  if (b.includes('vs tech') || b.includes('vst')) {
+    return (
+      <>
+        <rect x="6" y="2" width="84" height="44" rx="22" fill="#1c1c1c" />
+        <rect x="8" y="4" width="80" height="40" rx="20" fill="#2e2e2e" />
+        {[12, 16, 20, 24, 28, 32].map(yy => (
+          <rect key={yy} x="12" y={yy} width="72" height="0.8" rx="0.4" fill="#1c1c1c" opacity="0.5" />
+        ))}
+        <rect x="6" y="17" width="84" height="4" rx="2" fill="#c9a84c" opacity="0.8" />
+        <ellipse cx="48" cy="40" rx="18" ry="5" fill="#111" />
+        <ellipse cx="48" cy="40" rx="12" ry="3" fill="#1a1a2a" />
+        <text x="48" y="10" textAnchor="middle" fill="#e8c07a" style={{ fontSize: '5px', fontWeight: 'bold' }}>VS TECH</text>
+      </>
+    );
+  }
+
+  // Tamron — 深灰黑镜筒，白色纹理环
+  if (b.includes('tamron')) {
+    return (
+      <>
+        <rect x="6" y="2" width="84" height="44" rx="22" fill="#222" />
+        <rect x="8" y="4" width="80" height="40" rx="20" fill="#333" />
+        {[12, 16, 20, 24, 28, 32].map(yy => (
+          <rect key={yy} x="12" y={yy} width="72" height="1" rx="0.5" fill="#222" opacity="0.5" />
+        ))}
+        <rect x="6" y="20" width="84" height="3" rx="1.5" fill="#e0e0e0" opacity="0.4" />
+        <ellipse cx="48" cy="40" rx="18" ry="5" fill="#111" />
+        <ellipse cx="48" cy="40" rx="12" ry="3" fill="#1a1a2a" />
+        <text x="48" y="10" textAnchor="middle" fill="#bbb" style={{ fontSize: '5px' }}>TAMRON</text>
+      </>
+    );
+  }
+
+  // 默认镜头
   return (
     <>
       <rect x="8" y="0" width="80" height="48" rx="3" fill="url(#lensBody)" />
@@ -330,47 +398,145 @@ function LightSVGShape({ hasImage, imageUrl, brand, lightType }: { hasImage: boo
   const b = (brand || '').toLowerCase();
   const lt = (lightType || '').toLowerCase();
 
-  // 环形光源
+  // ── 环形光源 ──
   if (lt.includes('环形') || lt.includes('ring')) {
+    // OPT — 绿色调
+    if (b.includes('opt') || b.includes('奥普特')) {
+      return (
+        <>
+          <rect x="20" y="0" width="120" height="32" rx="16" fill="#2a2a2a" />
+          <ellipse cx="80" cy="16" rx="48" ry="14" fill="#222" />
+          <ellipse cx="80" cy="16" rx="38" ry="10" fill="none" stroke="#4caf50" strokeWidth="2.5" opacity="0.9" />
+          <ellipse cx="80" cy="16" rx="28" ry="6" fill="#1a1a1a" />
+          <text x="80" y="30" textAnchor="middle" fill="#81c784" style={{ fontSize: '5px', fontWeight: 'bold' }}>OPT RING</text>
+        </>
+      );
+    }
+    // CCS — 蓝白色调
+    if (b.includes('ccs')) {
+      return (
+        <>
+          <rect x="20" y="0" width="120" height="32" rx="16" fill="#e8eaf6" />
+          <ellipse cx="80" cy="16" rx="48" ry="14" fill="#c5cae9" />
+          <ellipse cx="80" cy="16" rx="38" ry="10" fill="none" stroke="#1565c0" strokeWidth="2.5" opacity="0.9" />
+          <ellipse cx="80" cy="16" rx="28" ry="6" fill="#e8eaf6" />
+          <text x="80" y="30" textAnchor="middle" fill="#1565c0" style={{ fontSize: '5px', fontWeight: 'bold' }}>CCS RING</text>
+        </>
+      );
+    }
+    // 默认环形
     return (
       <>
-        <rect x="0" y="0" width="160" height="32" rx="4" fill="#3a3a3a" />
-        <ellipse cx="80" cy="16" rx="50" ry="12" fill="#2a2a2a" />
-        <ellipse cx="80" cy="16" rx="40" ry="8" fill="none" stroke="#ff1744" strokeWidth="2" opacity="0.8" />
-        <ellipse cx="80" cy="16" rx="30" ry="5" fill="#1a1a1a" />
-        <text x="80" y="30" textAnchor="middle" fill="#888" style={{ fontSize: '6px' }}>RING</text>
+        <rect x="20" y="0" width="120" height="32" rx="16" fill="#3a3a3a" />
+        <ellipse cx="80" cy="16" rx="48" ry="14" fill="#2a2a2a" />
+        <ellipse cx="80" cy="16" rx="38" ry="10" fill="none" stroke="#ff1744" strokeWidth="2" opacity="0.8" />
+        <ellipse cx="80" cy="16" rx="28" ry="6" fill="#1a1a1a" />
+        <text x="80" y="30" textAnchor="middle" fill="#888" style={{ fontSize: '5px' }}>RING</text>
       </>
     );
   }
 
-  // 条形光源
+  // ── 条形光源 ──
   if (lt.includes('条形') || lt.includes('bar') || lt.includes('线形')) {
+    // OPT
+    if (b.includes('opt') || b.includes('奥普特')) {
+      return (
+        <>
+          <rect x="0" y="4" width="160" height="24" rx="4" fill="#2a2a2a" />
+          <rect x="3" y="6" width="154" height="20" rx="3" fill="#333" />
+          {Array.from({ length: 18 }).map((_, i) => (
+            <circle key={i} cx={10 + i * 8} cy="16" r="2.2" fill="#4caf50" opacity="0.8" />
+          ))}
+          <text x="80" y="30" textAnchor="middle" fill="#81c784" style={{ fontSize: '5px', fontWeight: 'bold' }}>OPT BAR</text>
+        </>
+      );
+    }
+    // CCS
+    if (b.includes('ccs')) {
+      return (
+        <>
+          <rect x="0" y="4" width="160" height="24" rx="4" fill="#e0e0e0" />
+          <rect x="3" y="6" width="154" height="20" rx="3" fill="#f5f5f5" />
+          {Array.from({ length: 18 }).map((_, i) => (
+            <circle key={i} cx={10 + i * 8} cy="16" r="2.2" fill="#1565c0" opacity="0.7" />
+          ))}
+          <text x="80" y="30" textAnchor="middle" fill="#1565c0" style={{ fontSize: '5px', fontWeight: 'bold' }}>CCS BAR</text>
+        </>
+      );
+    }
+    // 默认条形
     return (
       <>
-        <rect x="0" y="6" width="160" height="20" rx="3" fill="#3a3a3a" />
-        <rect x="4" y="8" width="152" height="16" rx="2" fill="#2a2a2a" />
-        {/* LED 点阵 */}
+        <rect x="0" y="4" width="160" height="24" rx="3" fill="#3a3a3a" />
+        <rect x="3" y="6" width="154" height="20" rx="2" fill="#2a2a2a" />
         {Array.from({ length: 16 }).map((_, i) => (
           <circle key={i} cx={12 + i * 9} cy="16" r="2.5" fill="#ff1744" opacity="0.7" />
         ))}
-        <text x="80" y="30" textAnchor="middle" fill="#888" style={{ fontSize: '6px' }}>BAR</text>
+        <text x="80" y="30" textAnchor="middle" fill="#888" style={{ fontSize: '5px' }}>BAR</text>
       </>
     );
   }
 
-  // 面光源
+  // ── 面光源/背光 ──
   if (lt.includes('面') || lt.includes('area') || lt.includes('back')) {
+    if (b.includes('opt') || b.includes('奥普特')) {
+      return (
+        <>
+          <rect x="10" y="0" width="140" height="32" rx="3" fill="#2a2a2a" />
+          <rect x="14" y="3" width="132" height="26" rx="2" fill="#e8f5e9" opacity="0.9" />
+          <rect x="18" y="6" width="124" height="20" rx="1" fill="#c8e6c9" opacity="0.7" />
+          <text x="80" y="30" textAnchor="middle" fill="#4caf50" style={{ fontSize: '5px', fontWeight: 'bold' }}>OPT AREA</text>
+        </>
+      );
+    }
+    if (b.includes('ccs')) {
+      return (
+        <>
+          <rect x="10" y="0" width="140" height="32" rx="3" fill="#e0e0e0" />
+          <rect x="14" y="3" width="132" height="26" rx="2" fill="#e3f2fd" opacity="0.9" />
+          <rect x="18" y="6" width="124" height="20" rx="1" fill="#bbdefb" opacity="0.7" />
+          <text x="80" y="30" textAnchor="middle" fill="#1565c0" style={{ fontSize: '5px', fontWeight: 'bold' }}>CCS AREA</text>
+        </>
+      );
+    }
     return (
       <>
         <rect x="10" y="0" width="140" height="32" rx="3" fill="#3a3a3a" />
         <rect x="14" y="3" width="132" height="26" rx="2" fill="#fafafa" opacity="0.9" />
         <rect x="18" y="6" width="124" height="20" rx="1" fill="#fff3e0" opacity="0.7" />
-        <text x="80" y="30" textAnchor="middle" fill="#888" style={{ fontSize: '6px' }}>AREA</text>
+        <text x="80" y="30" textAnchor="middle" fill="#888" style={{ fontSize: '5px' }}>AREA</text>
       </>
     );
   }
 
-  // 默认
+  // ── 同轴光源 ──
+  if (lt.includes('同轴') || lt.includes('coax')) {
+    return (
+      <>
+        <rect x="30" y="0" width="100" height="32" rx="4" fill="#3a3a3a" />
+        <rect x="34" y="3" width="92" height="26" rx="3" fill="#2a2a2a" />
+        <rect x="60" y="5" width="40" height="22" rx="2" fill="#444" />
+        <circle cx="80" cy="16" r="8" fill="none" stroke={b.includes('opt') ? '#4caf50' : b.includes('ccs') ? '#1565c0' : '#ff1744'} strokeWidth="1.5" opacity="0.8" />
+        <circle cx="80" cy="16" r="4" fill={b.includes('opt') ? '#4caf50' : b.includes('ccs') ? '#1565c0' : '#ff1744'} opacity="0.3" />
+        <text x="80" y="30" textAnchor="middle" fill="#888" style={{ fontSize: '5px' }}>COAX</text>
+      </>
+    );
+  }
+
+  // ── 圆顶光源 ──
+  if (lt.includes('穹顶') || lt.includes('dome') || lt.includes('圆顶')) {
+    return (
+      <>
+        <path d="M30,32 Q30,2 80,0 Q130,2 130,32 Z" fill="#3a3a3a" />
+        <path d="M34,30 Q34,6 80,4 Q126,6 126,30 Z" fill="#2a2a2a" />
+        <ellipse cx="80" cy="30" rx="50" ry="4" fill="#444" />
+        <circle cx="80" cy="16" r="10" fill="none" stroke={b.includes('opt') ? '#4caf50' : '#ff1744'} strokeWidth="1" opacity="0.5" />
+        <text x="80" y="28" textAnchor="middle" fill="#888" style={{ fontSize: '5px' }}>DOME</text>
+      </>
+    );
+  }
+
+  // 默认光源
   return (
     <>
       <rect x="0" y="0" width="160" height="32" rx="4" fill="hsl(0, 0%, 45%)" />
