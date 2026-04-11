@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ViewType, UserRole } from '@/types';
+import type { ProductViewerDisplayMode } from '@/utils/productViewer';
 
 // Note: All data CRUD has been moved to DataContext (projects/workstations/layouts/modules)
 // and HardwareContext (cameras/lenses/lights/controllers).
@@ -17,35 +18,45 @@ interface Store {
   isGeneratingPPT: boolean;
   pptProgress: number;
   pptImageQuality: 'standard' | 'high' | 'ultra';
-  
+
   // Annotation mode
   annotationMode: boolean;
   annotationSnapshot: string | null;
-  annotationSnapshotIsObjectUrl: boolean;
   annotationAssetId: string | null;
   annotationScope: 'workstation' | 'module';
   annotationWorkstationId: string | null;
   annotationExistingData: { annotations: Array<{ id: string; type: string; x: number; y: number; number?: number; name: string; category: string; description: string; width?: number; height?: number; radius?: number }>; remark: string | null; recordId: string } | null;
-  
+
   // AI Form Fill from chat
   pendingAIFill: { targetType: 'project' | 'workstation' | 'module'; targetId: string; fields: Record<string, string> } | null;
   setPendingAIFill: (fill: { targetType: 'project' | 'workstation' | 'module'; targetId: string; fields: Record<string, string> } | null) => void;
-  
+
   enterAnnotationMode: (snapshot: string, assetId: string, scope: 'workstation' | 'module', workstationId?: string, existingData?: { annotations: any[]; remark: string | null; recordId: string }) => void;
+  /** Leaves 3D viewer and opens annotation UI in one update (avoids one frame with neither viewer nor annotation). */
+  transitionViewerToAnnotation: (snapshot: string, assetId: string, scope: 'workstation' | 'module', workstationId?: string, existingData?: { annotations: any[]; remark: string | null; recordId: string }) => void;
   exitAnnotationMode: () => void;
-  
-  // Atomic switch from viewer to annotation (prevents objectURL revocation race)
-  switchViewerToAnnotation: (snapshot: string, isObjectUrl: boolean, assetId: string, scope: 'workstation' | 'module', workstationId?: string) => void;
-  
+
   // Viewer mode (3D/image in central canvas)
   viewerMode: boolean;
-  viewerAssetData: { modelUrl: string | null; imageUrls: string[]; assetId: string; scope: 'workstation' | 'module' } | null;
-  enterViewerMode: (modelUrl: string | null, imageUrls: string[], assetId: string, scope: 'workstation' | 'module') => void;
+  viewerAssetData: {
+    modelUrl: string | null;
+    imageUrls: string[];
+    assetId: string;
+    scope: 'workstation' | 'module';
+    preferredDisplayMode: ProductViewerDisplayMode;
+  } | null;
+  enterViewerMode: (
+    modelUrl: string | null,
+    imageUrls: string[],
+    assetId: string,
+    scope: 'workstation' | 'module',
+    preferredDisplayMode?: ProductViewerDisplayMode
+  ) => void;
   exitViewerMode: () => void;
-  
+
   // Quality mapping helper
   getPixelRatio: () => number;
-  
+
   // Actions
   setCurrentRole: (role: UserRole) => void;
   selectProject: (id: string | null) => void;
@@ -53,7 +64,7 @@ interface Store {
   selectModule: (id: string | null) => void;
   setCurrentView: (view: ViewType) => void;
   setPPTImageQuality: (quality: 'standard' | 'high' | 'ultra') => void;
-  
+
   // PPT Generation
   startPPTGeneration: () => void;
   updatePPTProgress: (progress: number) => void;
@@ -72,77 +83,57 @@ export const useAppStore = create<Store>()(
       isGeneratingPPT: false,
       pptProgress: 0,
       pptImageQuality: 'high',
-      
+
       // Annotation mode
       annotationMode: false,
       annotationSnapshot: null,
-      annotationSnapshotIsObjectUrl: false,
       annotationAssetId: null,
       annotationScope: 'workstation',
       annotationWorkstationId: null,
       annotationExistingData: null,
-      
+
       // AI Form Fill
       pendingAIFill: null,
       setPendingAIFill: (fill) => set({ pendingAIFill: fill }),
-      
+
       enterAnnotationMode: (snapshot, assetId, scope, workstationId, existingData) => set({
         annotationMode: true,
         annotationSnapshot: snapshot,
-        annotationSnapshotIsObjectUrl: false,
         annotationAssetId: assetId,
         annotationScope: scope,
         annotationWorkstationId: workstationId || null,
         annotationExistingData: existingData || null,
       }),
-      exitAnnotationMode: () => {
-        const state = get();
-        // Revoke objectURL if we own it
-        if (state.annotationSnapshotIsObjectUrl && state.annotationSnapshot) {
-          URL.revokeObjectURL(state.annotationSnapshot);
-        }
-        set({
-          annotationMode: false,
-          annotationSnapshot: null,
-          annotationSnapshotIsObjectUrl: false,
-          annotationAssetId: null,
-          annotationWorkstationId: null,
-          annotationExistingData: null,
-        });
-      },
+      transitionViewerToAnnotation: (snapshot, assetId, scope, workstationId, existingData) => set({
+        viewerMode: false,
+        viewerAssetData: null,
+        annotationMode: true,
+        annotationSnapshot: snapshot,
+        annotationAssetId: assetId,
+        annotationScope: scope,
+        annotationWorkstationId: workstationId || null,
+        annotationExistingData: existingData || null,
+      }),
+      exitAnnotationMode: () => set({
+        annotationMode: false,
+        annotationSnapshot: null,
+        annotationAssetId: null,
+        annotationWorkstationId: null,
+        annotationExistingData: null,
+      }),
 
-      // Atomic switch: viewer → annotation without unmount race
-      switchViewerToAnnotation: (snapshot, isObjectUrl, assetId, scope, workstationId) => {
-        const state = get();
-        // Revoke previous annotation objectURL if any
-        if (state.annotationSnapshotIsObjectUrl && state.annotationSnapshot) {
-          URL.revokeObjectURL(state.annotationSnapshot);
-        }
-        set({
-          viewerMode: false,
-          viewerAssetData: null,
-          annotationMode: true,
-          annotationSnapshot: snapshot,
-          annotationSnapshotIsObjectUrl: isObjectUrl,
-          annotationAssetId: assetId,
-          annotationScope: scope,
-          annotationWorkstationId: workstationId || null,
-          annotationExistingData: null,
-        });
-      },
-      
       // Viewer mode
       viewerMode: false,
       viewerAssetData: null,
-      enterViewerMode: (modelUrl, imageUrls, assetId, scope) => set({
+      enterViewerMode: (modelUrl, imageUrls, assetId, scope, preferredDisplayMode = 'auto') => set({
         viewerMode: true,
-        viewerAssetData: { modelUrl, imageUrls, assetId, scope },
+        viewerAssetData: { modelUrl, imageUrls, assetId, scope, preferredDisplayMode },
       }),
       exitViewerMode: () => set({
         viewerMode: false,
         viewerAssetData: null,
       }),
-      
+
       // Quality mapping helper
       getPixelRatio: () => {
         const quality = get().pptImageQuality;
@@ -153,28 +144,28 @@ export const useAppStore = create<Store>()(
           default: return 2;
         }
       },
-      
+
       // Actions
       setCurrentRole: (role) => set({ currentRole: role }),
-      
-      selectProject: (id) => set({ 
-        selectedProjectId: id, 
-        selectedWorkstationId: null, 
-        selectedModuleId: null 
+
+      selectProject: (id) => set({
+        selectedProjectId: id,
+        selectedWorkstationId: null,
+        selectedModuleId: null
       }),
-      
-      selectWorkstation: (id) => set({ 
-        selectedWorkstationId: id, 
+
+      selectWorkstation: (id) => set({
+        selectedWorkstationId: id,
         selectedModuleId: null,
         currentView: 'front'
       }),
-      
+
       selectModule: (id) => set({ selectedModuleId: id }),
-      
+
       setCurrentView: (view) => set({ currentView: view }),
-      
+
       setPPTImageQuality: (quality) => set({ pptImageQuality: quality }),
-      
+
       // PPT Generation
       startPPTGeneration: () => set({ isGeneratingPPT: true, pptProgress: 0 }),
       updatePPTProgress: (progress) => set({ pptProgress: progress }),
@@ -182,22 +173,15 @@ export const useAppStore = create<Store>()(
     }),
     {
       name: 'vision-config-storage',
-      partialize: (state) => {
-        const {
-          annotationMode,
-          annotationSnapshot,
-          annotationSnapshotIsObjectUrl,
-          annotationAssetId,
-          annotationScope,
-          annotationWorkstationId,
-          annotationExistingData,
-          viewerMode,
-          viewerAssetData,
-          pendingAIFill,
-          ...rest
-        } = state;
-        return rest;
-      },
+      partialize: (state) => ({
+        currentRole: state.currentRole,
+        selectedProjectId: state.selectedProjectId,
+        selectedWorkstationId: state.selectedWorkstationId,
+        selectedModuleId: state.selectedModuleId,
+        currentView: state.currentView,
+        pptImageQuality: state.pptImageQuality,
+        pendingAIFill: state.pendingAIFill,
+      }),
     }
   )
 );

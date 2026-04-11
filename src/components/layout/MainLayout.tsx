@@ -251,7 +251,7 @@ export function MainLayout() {
                 defaultSize={54} 
                 minSize={30}
               >
-                <main className="h-full flex flex-col overflow-hidden">
+                <main className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                   <CanvasArea />
                 </main>
               </ResizablePanel>

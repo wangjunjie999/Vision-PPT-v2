@@ -204,9 +204,9 @@ export function VisionSystemDiagram({
   const interactiveClass = interactive ? "cursor-pointer hover:opacity-80 transition-opacity" : "";
 
   return (
-    <div className={cn("relative w-full h-full min-h-[700px]", className)} style={{ backgroundColor: '#ffffff', contain: 'layout style paint', ...(interactive ? { willChange: 'transform' } : {}) }}>
+    <div className={cn("relative w-full h-full min-h-[500px]", className)} style={{ backgroundColor: '#ffffff', contain: 'layout style paint', ...(interactive ? { willChange: 'transform' } : {}) }}>
       <svg 
-        viewBox="0 0 800 750"
+        viewBox="0 0 800 540"
         className="w-full h-full"
         preserveAspectRatio="xMidYMid meet"
         shapeRendering="geometricPrecision"
@@ -545,70 +545,6 @@ export function VisionSystemDiagram({
             <rect x="120" y="8" width="32" height="16" rx="2" fill="hsl(0, 80%, 50%)" />
           </g>
         )}
-
-        {/* ===== Controller Element ===== */}
-        {hasController && (interactive ? (
-          <foreignObject x="370" y="385" width="140" height="80">
-            <div className="w-full h-full" style={{ transform: 'translateZ(0)' }}>
-              <HardwareSelectPopover
-                type="controller"
-                items={controllers}
-                selectedId={controller?.id || null}
-                onSelect={onControllerSelect || (() => {})}
-                disabled={!onControllerSelect}
-              >
-                <div className="relative w-full h-full cursor-pointer group">
-                  <svg width="140" height="80" viewBox="0 0 140 80">
-                    <rect x="0" y="5" width="140" height="70" rx="3" fill="hsl(220, 15%, 25%)" />
-                    <rect x="4" y="9" width="132" height="62" rx="2" fill="hsl(220, 15%, 20%)" />
-                    <rect x="8" y="13" width="124" height="54" rx="2" fill="hsl(220, 15%, 15%)" />
-                    <circle cx="20" cy="28" r="5" fill="hsl(220, 10%, 30%)" />
-                    <circle cx="20" cy="28" r="3" fill="hsl(120, 70%, 50%)" />
-                    <rect x="32" y="20" width="45" height="12" rx="1" fill="hsl(220, 10%, 25%)" />
-                    <circle cx="85" cy="26" r="2" fill="hsl(220, 80%, 50%)" />
-                    <circle cx="93" cy="26" r="2" fill="hsl(40, 80%, 50%)" />
-                    <g fill="hsl(220, 10%, 10%)">
-                      <rect x="105" y="18" width="22" height="2" rx="1" />
-                      <rect x="105" y="23" width="22" height="2" rx="1" />
-                      <rect x="105" y="28" width="22" height="2" rx="1" />
-                      <rect x="105" y="33" width="22" height="2" rx="1" />
-                    </g>
-                    <rect x="16" y="50" width="10" height="5" rx="1" fill="hsl(0, 0%, 15%)" stroke="hsl(0, 0%, 40%)" strokeWidth="0.5" />
-                    <rect x="30" y="50" width="10" height="5" rx="1" fill="hsl(0, 0%, 15%)" stroke="hsl(0, 0%, 40%)" strokeWidth="0.5" />
-                    <rect x="46" y="49" width="16" height="7" rx="1" fill="hsl(0, 0%, 15%)" stroke="hsl(220, 80%, 50%)" strokeWidth="0.5" />
-                    <text x="100" y="58" textAnchor="middle" fill="#ffffff" style={{ fontSize: '9px', fontWeight: 500 }}>IPC</text>
-                  </svg>
-                  {onControllerSelect && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                      <span className="text-primary-foreground text-[10px]">✎</span>
-                    </div>
-                  )}
-                </div>
-              </HardwareSelectPopover>
-            </div>
-          </foreignObject>
-        ) : (
-          <g transform="translate(370, 385)">
-            <rect x="0" y="5" width="140" height="70" rx="3" fill="hsl(220, 15%, 25%)" />
-            <rect x="4" y="9" width="132" height="62" rx="2" fill="hsl(220, 15%, 20%)" />
-            <rect x="8" y="13" width="124" height="54" rx="2" fill="hsl(220, 15%, 15%)" />
-            <circle cx="20" cy="28" r="5" fill="hsl(220, 10%, 30%)" />
-            <circle cx="20" cy="28" r="3" fill="hsl(120, 70%, 50%)" />
-            <rect x="32" y="20" width="45" height="12" rx="1" fill="hsl(220, 10%, 25%)" />
-            <circle cx="85" cy="26" r="2" fill="hsl(220, 80%, 50%)" />
-            <circle cx="93" cy="26" r="2" fill="hsl(40, 80%, 50%)" />
-            <g fill="hsl(220, 10%, 10%)">
-              <rect x="105" y="18" width="22" height="2" rx="1" />
-              <rect x="105" y="23" width="22" height="2" rx="1" />
-              <rect x="105" y="28" width="22" height="2" rx="1" />
-              <rect x="105" y="33" width="22" height="2" rx="1" />
-            </g>
-            <rect x="16" y="50" width="10" height="5" rx="1" fill="hsl(0, 0%, 15%)" stroke="hsl(0, 0%, 40%)" strokeWidth="0.5" />
-            <rect x="30" y="50" width="10" height="5" rx="1" fill="hsl(0, 0%, 15%)" stroke="hsl(0, 0%, 40%)" strokeWidth="0.5" />
-            <rect x="46" y="49" width="16" height="7" rx="1" fill="hsl(0, 0%, 15%)" stroke="hsl(220, 80%, 50%)" strokeWidth="0.5" />
-            <text x="100" y="58" textAnchor="middle" fill="#ffffff" style={{ fontSize: '9px', fontWeight: 500 }}>IPC</text>
-          </g>
-        ))}
 
         {/* Annotations panel - pure SVG for export, foreignObject for interactive */}
         {interactive ? (

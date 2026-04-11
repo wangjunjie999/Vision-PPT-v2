@@ -364,7 +364,7 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
 
             {/* Off-screen render area */}
             <div 
-              style={{ position: 'absolute', left: '-20000px', top: '-20000px', width: 1200, height: 1000, pointerEvents: 'none', overflow: 'hidden' }}
+              style={{ position: 'absolute', left: '-20000px', top: '-20000px', width: 1200, height: 700, pointerEvents: 'none', overflow: 'hidden' }}
               aria-hidden="true"
             >
               {currentRenderWorkstation && (
@@ -381,7 +381,7 @@ export function BatchImageSaveButton({ projectId }: BatchImageSaveButtonProps) {
 
               {currentRenderModule && currentModuleData && (
                 <div ref={schematicRef}>
-                  <div className="vision-diagram-container" style={{ width: '1000px', height: '1000px', backgroundColor: '#ffffff' }}>
+                  <div className="vision-diagram-container" style={{ width: '1000px', height: '680px', backgroundColor: '#ffffff' }}>
                     <VisionSystemDiagram
                       camera={cameras.find(c => c.id === currentModuleData.selected_camera) || null}
                       lens={lenses.find(l => l.id === currentModuleData.selected_lens) || null}

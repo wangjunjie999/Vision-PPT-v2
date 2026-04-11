@@ -37,6 +37,7 @@ import { cn } from '@/lib/utils';
 import { Product3DViewer } from './Product3DViewer';
 import { AnnotationCanvas, Annotation } from './AnnotationCanvas';
 import { useAppStore } from '@/store/useAppStore';
+import type { ProductViewerDisplayMode } from '@/utils/productViewer';
 
 interface ProductAsset {
   id: string;
@@ -71,6 +72,12 @@ interface AnnotationRecord {
 interface ModuleAnnotationPanelProps {
   moduleId: string;
   workstationId: string;
+}
+
+function getPreferredDisplayMode(asset: ProductAsset): ProductViewerDisplayMode {
+  if (asset.source_type === 'image' || asset.source_type === 'reference') return 'image';
+  if (asset.source_type === 'model') return 'model';
+  return 'auto';
 }
 
 export function ModuleAnnotationPanel({ moduleId, workstationId }: ModuleAnnotationPanelProps) {
@@ -225,7 +232,7 @@ export function ModuleAnnotationPanel({ moduleId, workstationId }: ModuleAnnotat
 
       await loadData();
       toast.success('图片上传成功');
-      
+
       // Auto enter viewer mode after upload
       const { data: latestAsset } = await supabase
         .from('product_assets')
@@ -240,7 +247,8 @@ export function ModuleAnnotationPanel({ moduleId, workstationId }: ModuleAnnotat
             latestAsset.model_file_url,
             images,
             latestAsset.id,
-            'module'
+            'module',
+            getPreferredDisplayMode(latestAsset as ProductAsset)
           );
         }
       }
@@ -288,7 +296,7 @@ export function ModuleAnnotationPanel({ moduleId, workstationId }: ModuleAnnotat
   // Reference workstation annotation
   const handleReferenceAnnotation = async (record: AnnotationRecord) => {
     if (!user) return;
-    
+
     setSaving(true);
     try {
       // Create module asset if not exists
@@ -545,17 +553,13 @@ export function ModuleAnnotationPanel({ moduleId, workstationId }: ModuleAnnotat
                     size="sm"
                     variant="outline"
                     onClick={() => {
-                      const images = [
-                        ...(moduleAsset?.preview_images || []),
-                        ...(workstationAsset?.preview_images || []),
-                      ];
-                      const assetId = moduleAsset?.id || workstationAsset?.id;
-                      if (assetId) {
+                      if (displayAsset) {
                         useAppStore.getState().enterViewerMode(
                           displayAsset.model_file_url,
-                          images,
-                          assetId,
-                          'module'
+                          displayAsset.preview_images || [],
+                          displayAsset.id,
+                          'module',
+                          getPreferredDisplayMode(displayAsset)
                         );
                       }
                     }}

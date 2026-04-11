@@ -424,7 +424,7 @@ export function ModuleSchematic() {
             left: '-20000px',
             top: '-20000px',
             width: '1200px',
-            height: '1100px',
+            height: '700px',
             overflow: 'hidden',
             pointerEvents: 'none',
           }}

@@ -45,9 +45,9 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Product3DViewer } from './Product3DViewer';
 import { AnnotationCanvas, Annotation } from './AnnotationCanvas';
 import { useAppStore } from '@/store/useAppStore';
+import { getSupportedProductModelHint, type ProductViewerDisplayMode } from '@/utils/productViewer';
 
 interface ProductModelItem {
   name: string;
@@ -95,6 +95,12 @@ interface ProductAnnotationPanelProps {
   workstationId: string;
 }
 
+function getPreferredDisplayMode(asset: ProductAsset): ProductViewerDisplayMode {
+  if (asset.source_type === 'image') return 'image';
+  if (asset.source_type === 'model') return 'model';
+  return 'auto';
+}
+
 export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanelProps) {
   const { user } = useAuth();
   const [asset, setAsset] = useState<ProductAsset | null>(null);
@@ -104,14 +110,13 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
   const [currentSnapshot, setCurrentSnapshot] = useState<string | null>(null);
   const [currentAnnotations, setCurrentAnnotations] = useState<Annotation[]>([]);
   const [isAnnotating, setIsAnnotating] = useState(false);
-  const [viewerRef, setViewerRef] = useState<{ takeScreenshot: () => string | null } | null>(null);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveRemark, setSaveRemark] = useState('');
   const [saving, setSaving] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<AnnotationRecord | null>(null);
   const [defaultRecordId, setDefaultRecordId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('viewer');
-  
+
   // Product info state
   const [detectionMethod, setDetectionMethod] = useState('');
   const [productModels, setProductModels] = useState<ProductModelItem[]>([]);
@@ -143,7 +148,7 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
       if (assetError) throw assetError;
 
       if (assetData) {
-        const previewImages = Array.isArray(assetData.preview_images) 
+        const previewImages = Array.isArray(assetData.preview_images)
           ? assetData.preview_images as string[]
           : [];
         const productModels = Array.isArray(assetData.product_models)
@@ -152,8 +157,8 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
         const detectionRequirements = Array.isArray(assetData.detection_requirements)
           ? assetData.detection_requirements as unknown as DetectionRequirementItem[]
           : [];
-        setAsset({ 
-          ...assetData, 
+        setAsset({
+          ...assetData,
           preview_images: previewImages,
           product_models: productModels,
           detection_requirements: detectionRequirements,
@@ -167,7 +172,7 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
           .order('version', { ascending: false });
 
         if (annotError) throw annotError;
-        
+
         const records = (annotData || []).map(a => ({
           ...a,
           annotations_json: a.annotations_json as unknown as Annotation[],
@@ -203,11 +208,11 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
     setUploading(true);
     try {
       const file = files[0];
-      const isModel = file.name.match(/\.(glb|gltf|obj|fbx)$/i);
+      const isModel = file.name.match(/\.(glb|gltf)$/i);
       const isImage = file.name.match(/\.(jpg|jpeg|png|webp)$/i);
 
       if (!isModel && !isImage) {
-        toast.error('不支持的文件格式，请上传3D模型(glb/gltf)或图片');
+        toast.error(`不支持的文件格式，请上传 3D 模型(GLB/GLTF)或图片`);
         return;
       }
 
@@ -256,7 +261,7 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
 
       await loadData();
       toast.success('文件上传成功');
-      
+
       // Auto enter viewer mode after upload
       // Need to re-fetch to get latest asset data
       const { data: latestAsset } = await supabase
@@ -272,7 +277,8 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
             latestAsset.model_file_url,
             images,
             latestAsset.id,
-            'workstation'
+            'workstation',
+            getPreferredDisplayMode(latestAsset as ProductAsset)
           );
         }
       }
@@ -282,36 +288,6 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
     } finally {
       setUploading(false);
       event.target.value = '';
-    }
-  };
-
-  // Take screenshot from 3D viewer and enter annotation mode
-  const handleTakeScreenshot = () => {
-    if (!asset) {
-      toast.error('请先上传产品素材');
-      return;
-    }
-
-    let dataUrl: string | null = null;
-
-    if (viewerRef) {
-      try {
-        dataUrl = viewerRef.takeScreenshot();
-      } catch (e) {
-        console.warn('Screenshot failed:', e);
-      }
-    }
-
-    // Fallback: use image URL directly
-    if (!dataUrl && asset.preview_images?.length > 0) {
-      dataUrl = asset.preview_images[0];
-    }
-
-    if (dataUrl) {
-      useAppStore.getState().enterAnnotationMode(dataUrl, asset.id, 'workstation', workstationId);
-      toast.success('已进入标注模式');
-    } else {
-      toast.error('截图失败，请确保已上传素材');
     }
   };
 
@@ -334,8 +310,8 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
       const snapshotUrl = urlData.publicUrl;
 
       // Calculate next version
-      const nextVersion = annotations.length > 0 
-        ? Math.max(...annotations.map(a => a.version)) + 1 
+      const nextVersion = annotations.length > 0
+        ? Math.max(...annotations.map(a => a.version)) + 1
         : 1;
 
       // Insert annotation record
@@ -458,7 +434,7 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
                 <label className="flex-1">
                   <input
                     type="file"
-                    accept=".glb,.gltf,.obj,.jpg,.jpeg,.png,.webp"
+                    accept=".glb,.gltf,.jpg,.jpeg,.png,.webp"
                     onChange={handleFileUpload}
                     className="hidden"
                     disabled={uploading}
@@ -485,6 +461,7 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
                   更新于 {new Date(asset.updated_at).toLocaleString('zh-CN')}
                 </div>
               )}
+              <p className="text-xs text-muted-foreground">{getSupportedProductModelHint()}</p>
             </div>
 
             {/* 3D Viewer */}
@@ -514,7 +491,8 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
                           asset.model_file_url,
                           asset.preview_images || [],
                           asset.id,
-                          'workstation'
+                          'workstation',
+                          getPreferredDisplayMode(asset)
                         );
                       }
                     }}
@@ -699,7 +677,7 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
                         }
                         return;
                       }
-                      
+
                       setSavingInfo(true);
                       try {
                         const { error } = await supabase
@@ -711,7 +689,7 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
                             updated_at: new Date().toISOString(),
                           })
                           .eq('id', asset.id);
-                        
+
                         if (error) throw error;
                         await loadData();
                         toast.success('产品信息已保存');

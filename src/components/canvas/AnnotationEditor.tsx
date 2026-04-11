@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { renderAnnotationsToCanvas } from '@/utils/annotationRenderer';
+import { isUsableAnnotationSnapshot } from '@/utils/productViewer';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,7 +55,7 @@ export function AnnotationEditor() {
   const [saveRemark, setSaveRemark] = useState('');
   const [saving, setSaving] = useState(false);
   const [readOnly, setReadOnly] = useState(false);
-  
+
   // Sequential edit mode
   const [sequentialMode, setSequentialMode] = useState(false);
   const [currentEditIndex, setCurrentEditIndex] = useState(0);
@@ -62,18 +63,28 @@ export function AnnotationEditor() {
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [imageTransform, setImageTransform] = useState<ImageTransform>({ rotation: 0, flipH: false, flipV: false });
 
-  // Load existing data if viewing a record
-  useState(() => {
+  // Sync editor state whenever a new annotation session starts.
+  useEffect(() => {
     if (annotationExistingData) {
       setAnnotations(annotationExistingData.annotations as Annotation[]);
       setSaveRemark(annotationExistingData.remark || '');
       setReadOnly(true);
+    } else {
+      setAnnotations([]);
+      setSaveRemark('');
+      setReadOnly(false);
     }
-  });
+
+    setSequentialMode(false);
+    setCurrentEditIndex(0);
+    setEditingAnnotations([]);
+    setHighlightId(null);
+    setImageTransform({ rotation: 0, flipH: false, flipV: false });
+  }, [annotationSnapshot, annotationExistingData]);
 
   const handleStartSave = useCallback(() => {
     if (annotations.length === 0) return;
-    
+
     // Check for unnamed annotations
     const unnamed = annotations.filter(a => !a.name);
     if (unnamed.length > 0) {
@@ -200,12 +211,23 @@ export function AnnotationEditor() {
     );
   }
 
+  if (!isUsableAnnotationSnapshot(annotationSnapshot)) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground">
+        <div className="text-center space-y-2 px-4">
+          <p>截图数据无效，无法加载 2D 标注底图</p>
+          <p className="text-xs break-all max-w-full">{String(annotationSnapshot)}</p>
+        </div>
+      </div>
+    );
+  }
+
   const currentEditAnnotation = sequentialMode ? editingAnnotations[currentEditIndex] : null;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full min-h-0 flex-col">
       {/* Top toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b bg-card/50">
+      <div className="flex shrink-0 items-center justify-between px-4 py-2 border-b bg-card/50">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={exitAnnotationMode} className="gap-1">
             <ArrowLeft className="h-4 w-4" />
@@ -245,8 +267,8 @@ export function AnnotationEditor() {
       </div>
 
       {/* Canvas area */}
-      <div className="flex-1 p-4 overflow-hidden relative">
-        <div className="h-full">
+      <div className="relative min-h-0 flex-1 overflow-hidden p-4">
+        <div className="h-full min-h-0">
           <AnnotationCanvas
             imageUrl={annotationSnapshot}
             annotations={sequentialMode ? editingAnnotations : annotations}

@@ -49,7 +49,9 @@ export function CanvasArea() {
     return (
       <ErrorBoundary fallbackTitle="产品查看器加载失败">
         <Suspense fallback={<CanvasLoading />}>
-          <ProductViewerCanvas />
+          <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            <ProductViewerCanvas />
+          </div>
         </Suspense>
       </ErrorBoundary>
     );
@@ -60,7 +62,9 @@ export function CanvasArea() {
     return (
       <ErrorBoundary fallbackTitle="标注编辑器加载失败">
         <Suspense fallback={<CanvasLoading />}>
-          <AnnotationEditor />
+          <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            <AnnotationEditor />
+          </div>
         </Suspense>
       </ErrorBoundary>
     );
