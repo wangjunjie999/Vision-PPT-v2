@@ -22,6 +22,7 @@ import {
   COMPANY_NAME_ZH,
   COMPANY_NAME_EN,
   FONTS,
+  MASTER_SLIDE_SUBTITLE,
   createHeadingShadow,
   getWorkstationCode,
   getModuleDisplayName,
@@ -686,6 +687,8 @@ export async function generatePPTX(
     objects: [], // All header/footer elements are part of the background image
   });
 
+  const st = MASTER_SLIDE_SUBTITLE;
+
   let progress = 5;
   onProgress(progress, isZh ? '初始化生成器...' : 'Initializing generator...', isZh ? '开始PPT生成' : 'Starting PPT generation');
 
@@ -743,8 +746,9 @@ export async function generatePPTX(
     shadow: createHeadingShadow(),
   });
   descSlide.addText(isZh ? '项目基本信息' : 'Project Information', {
-    x: 0, y: 0.52, w: '100%', h: 0.22,
-    fontSize: 10, fontFace: FONTS.body, color: COLORS.white, align: 'center', valign: 'middle',
+    x: 0, y: st.y, w: '100%', h: st.h,
+    fontSize: st.fontSize, fontFace: st.fontFace, color: st.color, align: st.align, valign: st.valign,
+    bold: st.bold, italic: st.italic,
   });
 
   // Project basic info table
@@ -836,8 +840,9 @@ export async function generatePPTX(
   });
 
   revisionSlide.addText(isZh ? '变更表' : 'Change Log', {
-    x: 0, y: 0.52, w: '100%', h: 0.22,
-    fontSize: 10, fontFace: FONTS.body, color: COLORS.white, align: 'center', valign: 'middle',
+    x: 0, y: st.y, w: '100%', h: st.h,
+    fontSize: st.fontSize, fontFace: st.fontFace, color: st.color, align: st.align, valign: st.valign,
+    bold: st.bold, italic: st.italic,
   });
 
   // Table title row
@@ -1063,8 +1068,9 @@ export async function generatePPTX(
     shadow: createHeadingShadow(),
   });
   hwSlide.addText(isZh ? '设备清单' : 'Equipment List', {
-    x: 0, y: 0.52, w: '100%', h: 0.22,
-    fontSize: 10, fontFace: FONTS.body, color: COLORS.white, align: 'center', valign: 'middle',
+    x: 0, y: st.y, w: '100%', h: st.h,
+    fontSize: st.fontSize, fontFace: st.fontFace, color: st.color, align: st.align, valign: st.valign,
+    bold: st.bold, italic: st.italic,
   });
 
   // Aggregate hardware by brand+model across all modules

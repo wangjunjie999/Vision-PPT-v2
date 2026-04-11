@@ -24,6 +24,7 @@ import {
   TRIGGER_LABELS,
   PROCESS_STAGE_LABELS,
   FONTS,
+  MASTER_SLIDE_SUBTITLE,
   createHeadingShadow,
 } from './slideLabels';
 import { 
@@ -128,24 +129,25 @@ function addSlideTitle(
     bold: false, italic: false,
   });
 
+  const st = MASTER_SLIDE_SUBTITLE;
   if (splitSubtitles) {
     // Split subtitle text (no rect, bg image has the blue bar)
     slide.addText(splitSubtitles.left, {
-      x: 0, y: 0.55, w: '50%', h: 0.22,
-      fontSize: 16, fontFace: FONTS.body, color: COLORS.white, align: 'center', valign: 'middle',
-      bold: false, italic: false,
+      x: 0, y: st.y, w: '50%', h: st.h,
+      fontSize: st.fontSize, fontFace: st.fontFace, color: st.color, align: st.align, valign: st.valign,
+      bold: st.bold, italic: st.italic,
     });
     slide.addText(splitSubtitles.right, {
-      x: '50%', y: 0.55, w: '50%', h: 0.22,
-      fontSize: 16, fontFace: FONTS.body, color: COLORS.white, align: 'center', valign: 'middle',
-      bold: false, italic: false,
+      x: '50%', y: st.y, w: '50%', h: st.h,
+      fontSize: st.fontSize, fontFace: st.fontFace, color: st.color, align: st.align, valign: st.valign,
+      bold: st.bold, italic: st.italic,
     });
   } else {
     // Single subtitle text (no rect, bg image has the blue bar)
     slide.addText(subtitle, {
-      x: 0, y: 0.55, w: '100%', h: 0.22,
-      fontSize: 16, fontFace: FONTS.body, color: COLORS.white, align: 'center', valign: 'middle',
-      bold: false, italic: false,
+      x: 0, y: st.y, w: '100%', h: st.h,
+      fontSize: st.fontSize, fontFace: st.fontFace, color: st.color, align: st.align, valign: st.valign,
+      bold: st.bold, italic: st.italic,
     });
   }
 }

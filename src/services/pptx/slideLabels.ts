@@ -65,6 +65,22 @@ export const FONTS = {
   body: 'Microsoft YaHei',
 };
 
+/**
+ * MASTER_SLIDE 浅色横条上的白字副标题（叠在 public/ppt-covers/tech-shine-bg.png 上）。
+ * 若与背景条带未对齐，仅调整 y / h。
+ */
+export const MASTER_SLIDE_SUBTITLE = {
+  y: 0.55,
+  h: 0.22,
+  fontSize: 15,
+  fontFace: FONTS.body,
+  color: COLORS.white,
+  align: 'center' as const,
+  valign: 'middle' as const,
+  bold: false,
+  italic: false,
+} as const;
+
 // Heading shadow effect for primary titles
 // IMPORTANT: Use factory function to avoid PptxGenJS mutating shared object
 export const createHeadingShadow = () => ({
