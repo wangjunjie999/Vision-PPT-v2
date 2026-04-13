@@ -365,6 +365,7 @@ export function ModuleSchematic() {
               style={{ minHeight: '500px' }}
             >
               <VisionSystemDiagram
+                key={module.id}
                 camera={selectedCamera || null}
                 lens={selectedLens || null}
                 light={selectedLight || null}
@@ -430,6 +431,7 @@ export function ModuleSchematic() {
           }}
         >
           <VisionSystemDiagram
+            key={`export-${module.id}`}
             camera={selectedCamera || null}
             lens={selectedLens || null}
             light={selectedLight || null}
