@@ -126,7 +126,7 @@ function addSlideTitle(
   slide.addText(`${ctx.wsCode} ${ctx.wsName}`, {
     x: 0.4, y: 0.14, w: 7.5, h: 0.38,
     fontSize: 16, fontFace: FONTS.body, color: COLORS.primary,
-    bold: false, italic: false,
+    bold: true, italic: false,
   });
 
   const st = MASTER_SLIDE_SUBTITLE;
