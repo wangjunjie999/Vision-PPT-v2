@@ -1,43 +1,27 @@
 
 
-## 根据相机品牌/型号定制正视图 SVG 外形
+## 修复：切换功能模块时光学方案图布局互相影响
 
-### 当前状态
-`CameraSVGShape` 组件只接收 `hasImage` 和 `imageUrl`，没有上传图片时所有相机都显示同一个紫色矩形 + "Cam" 文字。用户希望即使没有上传正视图，不同品牌/型号的相机也能在图中呈现贴近真实外形的区别。
+### 问题原因
 
-### 改动方案
+`VisionSystemDiagram` 组件内部的拖拽位置（`camLensDrag`、`lightDrag`）和旋转角度（`camRotation`、`lightRotation`）都是用 `useState` 存储的，且没有绑定到具体的模块 ID。当用户在不同功能模块之间切换时，React 复用了同一个组件实例，导致上一个模块中拖拽/旋转的状态"泄漏"到其他模块。
+
+### 修复方案
 
 **文件**: `src/components/canvas/VisionSystemDiagram.tsx`
 
-#### 1. 扩展 `CameraSVGShape` 接口
-传入 `brand` 和 `model` 信息：
-```ts
-function CameraSVGShape({ hasImage, imageUrl, brand, model }: {
-  hasImage: boolean; imageUrl?: string | null;
-  brand?: string; model?: string;
-})
-```
+1. **新增 `moduleId` prop**，用于标识当前模块
+2. **用 `key={moduleId}` 包裹或在 props 变化时重置状态**：当 `moduleId` 变化时，将拖拽位置和旋转角度重置为初始默认值
 
-#### 2. 为主流工业相机品牌创建差异化 SVG 外形
-根据 `brand` 渲染不同外轮廓和配色，涵盖常见品牌：
+**文件**: `src/components/canvas/ModuleSchematic.tsx`
 
-- **海康 (Hikvision)** — 紫色方体、绿色指示灯、前面板散热格栅
-- **巴斯勒 (Basler)** — 灰黑扁平体、圆形镜头口、蓝色标识条
-- **大恒 (Daheng)** — 深灰窄体、红色LED指示灯
-- **康耐视 (Cognex)** — 银色紧凑体、橙色logo标识
-- **堡盟 (Baumer)** — 黑色长方体、白色前面板
-- **通用默认** — 保留当前样式作为未匹配品牌的回退
+3. 在两处渲染 `VisionSystemDiagram` 的地方传入 `moduleId={selectedModuleId}`
 
-每个品牌外形包含：机身轮廓（圆角/直角）、镜头安装面、指示灯、品牌文字标识，尺寸比例尽量贴近真实产品。
+### 具体做法
 
-#### 3. 同样扩展 `LensSVGShape` 和 `LightSVGShape`
-传入品牌信息，为不同品牌的镜头和光源也提供差异化外形。
-
-#### 4. 调用处传入品牌数据
-在两处渲染 `CameraSVGShape` 的地方（交互模式和静态模式）补充 `brand={camera?.brand}` `model={camera?.model}`。
+最简洁的方案是在 `ModuleSchematic` 中给 `VisionSystemDiagram` 加上 `key={module?.id}`，这样切换模块时 React 会销毁旧实例并创建新实例，所有内部状态自然重置为默认值。无需修改 `VisionSystemDiagram` 内部代码。
 
 ### 影响范围
-- 仅 `VisionSystemDiagram.tsx` 一个文件
-- 新增品牌判断逻辑和对应 SVG 图形约 120 行
-- 不影响已上传正视图的情况（有图片时仍优先显示图片）
+- `ModuleSchematic.tsx`：两处 `<VisionSystemDiagram` 各加一个 `key` prop
+- 不影响任何其他功能
 
