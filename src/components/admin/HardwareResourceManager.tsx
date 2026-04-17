@@ -29,6 +29,8 @@ import { useCameras, useLenses, useLights, useControllers, Camera as CameraType,
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { uploadGLBFile, deleteGLBFile } from '@/utils/glbUpload';
+import { validateImageFile } from '@/utils/fileValidation';
+import { processHardwareImageForUpload } from '@/utils/processHardwareImage';
 
 interface Props {
   type: 'cameras' | 'lenses' | 'lights' | 'controllers';
@@ -510,13 +512,25 @@ export function HardwareResourceManager({ type }: Props) {
                           if (!file) return;
                           setFrontViewUploading(true);
                           try {
-                            const path = `${type}/front-view/${Date.now()}-${file.name}`;
-                            const { error } = await supabase.storage.from('hardware-images').upload(path, file);
+                            const isValid = await validateImageFile(file, {
+                              maxSizeMB: 5,
+                              allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+                              allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+                              checkMagicBytes: true,
+                            });
+                            if (!isValid) return;
+                            const uploadFile = await processHardwareImageForUpload(file);
+                            const fileExt = uploadFile.name.split('.').pop() || 'png';
+                            const path = `${type}/front-view/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+                            const { error } = await supabase.storage.from('hardware-images').upload(path, uploadFile, {
+                              contentType: uploadFile.type || 'image/png',
+                            });
                             if (error) { toast.error('上传失败'); return; }
                             const { data: urlData } = supabase.storage.from('hardware-images').getPublicUrl(path);
                             setFrontViewUrl(urlData.publicUrl);
                           } finally {
                             setFrontViewUploading(false);
+                            e.target.value = '';
                           }
                         }}
                       />
@@ -551,13 +565,25 @@ export function HardwareResourceManager({ type }: Props) {
                           if (!file) return;
                           setTopViewUploading(true);
                           try {
-                            const path = `lights/top-view/${Date.now()}-${file.name}`;
-                            const { error } = await supabase.storage.from('hardware-images').upload(path, file);
+                            const isValid = await validateImageFile(file, {
+                              maxSizeMB: 5,
+                              allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+                              allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+                              checkMagicBytes: true,
+                            });
+                            if (!isValid) return;
+                            const uploadFile = await processHardwareImageForUpload(file);
+                            const fileExt = uploadFile.name.split('.').pop() || 'png';
+                            const path = `lights/top-view/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+                            const { error } = await supabase.storage.from('hardware-images').upload(path, uploadFile, {
+                              contentType: uploadFile.type || 'image/png',
+                            });
                             if (error) { toast.error('上传失败'); return; }
                             const { data: urlData } = supabase.storage.from('hardware-images').getPublicUrl(path);
                             setTopViewUrl(urlData.publicUrl);
                           } finally {
                             setTopViewUploading(false);
+                            e.target.value = '';
                           }
                         }}
                       />

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useHardware } from '@/contexts/HardwareContext';
+import { quickCycleTimeCheck, checkLensCameraMatch, checkSensorCompatibility, parseFNumber } from '@/utils/visionCalcEngine';
 
 export interface ValidationIssue {
   severity: 'error' | 'warning' | 'info';
@@ -46,16 +47,15 @@ export function useConfigValidation(projectId: string | null) {
         });
       }
 
-      // Check: cycle time
+      // Check: cycle time (delegates to shared utility)
       if (ws.cycle_time) {
-        const totalProcessingTime = wsModules.reduce((acc, m) => {
-          return acc + ((m as any).processing_time_limit || 0);
-        }, 0);
-        if (totalProcessingTime > 0 && totalProcessingTime > Number(ws.cycle_time) * 1000) {
+        const processingTimes = wsModules.map(m => m.processing_time_limit || 0);
+        const ctCheck = quickCycleTimeCheck(Number(ws.cycle_time), processingTimes);
+        if (ctCheck.totalMs > 0 && !ctCheck.ok) {
           result.push({
             severity: 'error',
             category: 'timing',
-            message: `工位「${ws.name}」模块处理时间 (${totalProcessingTime}ms) 超过节拍 (${ws.cycle_time}s)`,
+            message: `工位「${ws.name}」模块处理时间 (${ctCheck.totalMs}ms) 超过节拍 (${ws.cycle_time}s)`,
             workstationId: ws.id,
             fix: '优化模块处理时间或增大节拍',
           });
@@ -64,8 +64,8 @@ export function useConfigValidation(projectId: string | null) {
 
       // Check hardware compatibility per module
       for (const mod of wsModules) {
-        const selectedCameraModel = (mod as any).selected_camera;
-        const selectedLensModel = (mod as any).selected_lens;
+        const selectedCameraModel = mod.selected_camera;
+        const selectedLensModel = mod.selected_lens;
 
         if (selectedCameraModel && selectedLensModel) {
           const camera = cameras.find(c => `${c.brand} ${c.model}` === selectedCameraModel);
@@ -82,6 +82,68 @@ export function useConfigValidation(projectId: string | null) {
                 moduleId: mod.id,
                 fix: '更换兼容的镜头或相机',
               });
+            }
+          }
+        }
+
+        // Check: lens resolving power vs camera
+        if (selectedCameraModel && selectedLensModel) {
+          const camera = cameras.find(c => `${c.brand} ${c.model}` === selectedCameraModel);
+          const lens = lenses.find(l => `${l.brand} ${l.model}` === selectedLensModel);
+          if (camera && lens && camera.sensor_size && lens.aperture) {
+            const fNum = parseFNumber(lens.aperture);
+            const resParsed = camera.resolution?.match(/(\d+)\s*[x×*]\s*(\d+)/i);
+            if (fNum && resParsed) {
+              const match = checkLensCameraMatch({
+                sensorSize: camera.sensor_size,
+                cameraResolutionWidth: parseInt(resParsed[1]),
+                fNumber: fNum,
+                lensResolvingPower: lens.resolving_power ?? undefined,
+              });
+              if (match && match.status === 'lens_insufficient') {
+                result.push({
+                  severity: 'warning',
+                  category: 'hardware',
+                  message: `模块「${mod.name}」的镜头 ${lens.model} 分辨力不足(${match.lensResolvingLpMm} lp/mm)，低于相机奈奎斯特频率(${match.cameraNyquistLpMm} lp/mm)`,
+                  workstationId: ws.id,
+                  moduleId: mod.id,
+                  fix: match.suggestion || '建议更换更高分辨力的镜头',
+                });
+              }
+            }
+          }
+        }
+
+        // Check: sensor compatibility / tunnel effect
+        if (selectedCameraModel && selectedLensModel) {
+          const camera = cameras.find(c => `${c.brand} ${c.model}` === selectedCameraModel);
+          const lens = lenses.find(l => `${l.brand} ${l.model}` === selectedLensModel);
+          if (camera && lens && camera.sensor_size && lens.mount) {
+            const sensorResult = checkSensorCompatibility({
+              sensorSize: camera.sensor_size,
+              lensMount: lens.mount,
+              lensMaxSensorSize: lens.max_sensor_size ?? undefined,
+            });
+            for (const item of sensorResult.items) {
+              if (item.severity === 'error') {
+                result.push({
+                  severity: 'error',
+                  category: 'hardware',
+                  message: `模块「${mod.name}」${item.message}`,
+                  workstationId: ws.id,
+                  moduleId: mod.id,
+                  fix: item.detail,
+                });
+              } else if (item.severity === 'warning') {
+                result.push({
+                  severity: 'warning',
+                  category: 'hardware',
+                  message: `模块「${mod.name}」${item.message}`,
+                  workstationId: ws.id,
+                  moduleId: mod.id,
+                  fix: item.detail,
+                });
+              }
             }
           }
         }

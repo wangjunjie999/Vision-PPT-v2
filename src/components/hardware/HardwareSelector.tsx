@@ -20,6 +20,7 @@ interface HardwareItem {
   interface?: string;
   sensor_size?: string;
   frame_rate?: number;
+  shutter_type?: string | null;
   // Lens specific
   focal_length?: string;
   aperture?: string;
@@ -41,6 +42,7 @@ interface HardwareSelectorProps {
   selectedId: string;
   onSelect: (id: string) => void;
   recommendation?: string;
+  warningIds?: Record<string, string>;
   className?: string;
 }
 
@@ -56,6 +58,7 @@ const typeConfig = {
       { label: '接口', value: item.interface },
       { label: '传感器', value: item.sensor_size },
       { label: '帧率', value: item.frame_rate ? `${item.frame_rate}fps` : undefined },
+      { label: '快门', value: item.shutter_type || undefined },
     ],
   },
   lens: {
@@ -106,6 +109,7 @@ function HardwareSelectorComponent({
   selectedId,
   onSelect,
   recommendation,
+  warningIds,
   className,
 }: HardwareSelectorProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -444,9 +448,14 @@ function HardwareSelectorComponent({
                           {/* Info */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-sm truncate">
+                              <span className={cn("font-semibold text-sm truncate", warningIds?.[item.id] && "text-amber-700 dark:text-amber-300")}>
                                 {item.brand} {item.model}
                               </span>
+                              {warningIds?.[item.id] && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500 text-amber-600 dark:text-amber-400 shrink-0">
+                                  {warningIds[item.id]}
+                                </Badge>
+                              )}
                             </div>
                             <div className="text-xs text-muted-foreground mt-0.5">
                               {config.getSubtitle(item)}

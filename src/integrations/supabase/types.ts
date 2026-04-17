@@ -145,6 +145,7 @@ export type Database = {
           model_3d_url: string | null
           resolution: string
           sensor_size: string
+          shutter_type: string | null
           tags: string[] | null
           updated_at: string
         }
@@ -161,6 +162,7 @@ export type Database = {
           model_3d_url?: string | null
           resolution: string
           sensor_size: string
+          shutter_type?: string | null
           tags?: string[] | null
           updated_at?: string
         }
@@ -177,6 +179,7 @@ export type Database = {
           model_3d_url?: string | null
           resolution?: string
           sensor_size?: string
+          shutter_type?: string | null
           tags?: string[] | null
           updated_at?: string
         }
@@ -458,8 +461,10 @@ export type Database = {
           front_view_url: string | null
           id: string
           image_url: string | null
+          max_sensor_size: string | null
           model: string
           mount: string
+          resolving_power: number | null
           tags: string[] | null
           updated_at: string
         }
@@ -473,8 +478,10 @@ export type Database = {
           front_view_url?: string | null
           id?: string
           image_url?: string | null
+          max_sensor_size?: string | null
           model: string
           mount: string
+          resolving_power?: number | null
           tags?: string[] | null
           updated_at?: string
         }
@@ -488,8 +495,10 @@ export type Database = {
           front_view_url?: string | null
           id?: string
           image_url?: string | null
+          max_sensor_size?: string | null
           model?: string
           mount?: string
+          resolving_power?: number | null
           tags?: string[] | null
           updated_at?: string
         }

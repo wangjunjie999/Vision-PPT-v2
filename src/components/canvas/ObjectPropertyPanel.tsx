@@ -83,12 +83,22 @@ function GLBUploadField({ currentUrl, onUpdate }: { currentUrl?: string; onUpdat
       )}
       <input
         type="file"
-        accept=".glb"
+        accept=".glb,.gltf"
         className="absolute inset-0 opacity-0 cursor-pointer"
         disabled={uploading}
         onChange={async (e) => {
           const file = e.target.files?.[0];
           if (!file) return;
+          const cadExts = /\.(sldprt|sldasm|step|stp|iges|igs|x_t|x_b|sat|catpart|catproduct|prt|asm)$/i;
+          if (cadExts.test(file.name)) {
+            const ext = file.name.split('.').pop()?.toUpperCase() || '';
+            toast.error(`${ext} 是 CAD 格式，请先转换为 GLB 后再上传。`, { duration: 8000 });
+            return;
+          }
+          if (!/\.(glb|gltf)$/i.test(file.name)) {
+            toast.error('仅支持 GLB / GLTF 格式');
+            return;
+          }
           setUploading(true);
           try {
             const { uploadGLBFile } = await import('@/utils/glbUpload');
@@ -97,6 +107,9 @@ function GLBUploadField({ currentUrl, onUpdate }: { currentUrl?: string; onUpdat
               onUpdate(url);
               toast.success('3D 模型已更新');
             }
+          } catch (err) {
+            console.error('GLB upload error:', err);
+            toast.error('上传失败');
           } finally {
             setUploading(false);
           }
@@ -191,11 +204,17 @@ export function ObjectPropertyPanel({
     const num = parseFloat(value) || 0;
     setLocalValues(prev => ({ ...prev, [axis]: num }));
     
+    const posUpdate: Record<string, number> = {};
     if (axis === 'x') {
-      onUpdate(object.id, { x: canvasCenter.x + num * scale });
+      posUpdate.x = canvasCenter.x + num * scale;
+      if (currentView === 'front' || currentView === 'top') posUpdate.posX = num;
+      else if (currentView === 'side') posUpdate.posY = num;
     } else {
-      onUpdate(object.id, { y: canvasCenter.y - num * scale }); // Invert Y
+      posUpdate.y = canvasCenter.y - num * scale;
+      if (currentView === 'front' || currentView === 'side') posUpdate.posZ = num;
+      else if (currentView === 'top') posUpdate.posY = num;
     }
+    onUpdate(object.id, posUpdate);
   };
 
   const handleNudge = (direction: 'up' | 'down' | 'left' | 'right', amount: number = 1) => {

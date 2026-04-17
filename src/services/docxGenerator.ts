@@ -76,6 +76,10 @@ interface LayoutData {
   front_view_image_url?: string | null;
   side_view_image_url?: string | null;
   top_view_image_url?: string | null;
+  isometric_view_image_url?: string | null;
+  primary_view?: string | null;
+  auxiliary_view?: string | null;
+  layout_description?: string | null;
   width?: number | null;
   height?: number | null;
   depth?: number | null;
@@ -101,6 +105,7 @@ interface ModuleData {
   ocr_config?: Record<string, unknown> | null;
   deep_learning_config?: Record<string, unknown> | null;
   measurement_config?: Record<string, unknown> | null;
+  lighting_photos?: Array<{ url: string; remark?: string }> | null;
 }
 
 // Product asset and annotation data
@@ -545,14 +550,35 @@ export async function generateDOCX(
         ));
       }
       
-      // Layout view images
+      // Layout view images - respect primary_view / auxiliary_view
       if (includeImages) {
-        const viewImages: { url: string | null | undefined; label: string }[] = [
-          { url: layout.front_view_image_url, label: isZh ? '正视图' : 'Front View' },
-          { url: layout.side_view_image_url, label: isZh ? '侧视图' : 'Side View' },
-          { url: layout.top_view_image_url, label: isZh ? '俯视图' : 'Top View' },
-        ];
-        
+        const VIEW_LABELS: Record<string, { zh: string; en: string }> = {
+          front: { zh: '正视图', en: 'Front View' },
+          side: { zh: '侧视图', en: 'Side View' },
+          top: { zh: '俯视图', en: 'Top View' },
+          isometric: { zh: '等轴测图', en: 'Isometric View' },
+        };
+
+        const primaryView = layout.primary_view || 'front';
+        const auxiliaryView = layout.auxiliary_view || 'side';
+
+        const getViewUrl = (view: string): string | null | undefined =>
+          (layout as Record<string, unknown>)[`${view}_view_image_url`] as string | null | undefined;
+
+        const viewImages: { url: string | null | undefined; label: string }[] = [];
+
+        const primaryUrl = getViewUrl(primaryView);
+        if (primaryUrl) {
+          const vl = VIEW_LABELS[primaryView]?.[isZh ? 'zh' : 'en'] || primaryView;
+          viewImages.push({ url: primaryUrl, label: `${isZh ? '主视图' : 'Primary'} - ${vl}` });
+        }
+
+        const auxiliaryUrl = getViewUrl(auxiliaryView);
+        if (auxiliaryUrl && auxiliaryView !== primaryView) {
+          const vl = VIEW_LABELS[auxiliaryView]?.[isZh ? 'zh' : 'en'] || auxiliaryView;
+          viewImages.push({ url: auxiliaryUrl, label: `${isZh ? '辅视图' : 'Auxiliary'} - ${vl}` });
+        }
+
         for (const viewImg of viewImages) {
           if (viewImg.url) {
             const imgParagraphs = await createImageParagraph(viewImg.url, viewImg.label, 450, 300);
@@ -669,6 +695,21 @@ export async function generateDOCX(
       }
     }
 
+    // Lighting photos
+    const lightingPhotos = Array.isArray(mod.lighting_photos) ? mod.lighting_photos : [];
+    if (includeImages && lightingPhotos.length > 0) {
+      sections.push(createHeading(isZh ? '打光照片' : 'Lighting Photos', HeadingLevel.HEADING_3));
+      for (const photo of lightingPhotos) {
+        if (photo.url) {
+          const caption = photo.remark || (isZh ? '打光效果' : 'Lighting Effect');
+          const imgParagraphs = await createImageParagraph(photo.url, caption, 400, 300);
+          for (const p of imgParagraphs) {
+            if (p) sections.push(p);
+          }
+        }
+      }
+    }
+
     // Module product annotations
     if (includeImages && productAssets && productAnnotations) {
       const modAssets = productAssets.filter(a => a.module_id === mod.id && a.scope_type === 'module');
@@ -739,11 +780,13 @@ export async function generateDOCX(
         sections.push(createLabelValue(isZh ? '视野大小' : 'Field of View', `${config.measurementFieldOfView}mm`));
       }
       if (config.measurementItems && Array.isArray(config.measurementItems)) {
-        const items = config.measurementItems as Array<{ name: string; nominal: number; upperTol: number; lowerTol: number; unit: string }>;
-        items.forEach((item, i) => {
+        (config.measurementItems as Array<Record<string, unknown>>).forEach((item: any, i: number) => {
+          const upper = item.upperTol ?? item.upperTolerance ?? 0;
+          const lower = item.lowerTol ?? item.lowerTolerance ?? 0;
+          const nominal = item.nominal ?? item.nominalValue ?? 0;
           sections.push(createLabelValue(
             `${isZh ? '测量项' : 'Item'} ${i + 1}`,
-            `${item.name}: ${item.nominal} (+${item.upperTol}/-${item.lowerTol}) ${item.unit || 'mm'}`
+            `${item.name}: ${nominal} (+${upper}/-${lower}) ${item.unit || 'mm'}`
           ));
         });
       }

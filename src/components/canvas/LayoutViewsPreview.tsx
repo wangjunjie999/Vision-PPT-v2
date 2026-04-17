@@ -36,7 +36,7 @@ export function LayoutViewsPreview({ workstationId, className, onOpenCanvas }: L
   const isometricUrl: string | null = layout?.isometric_view_image_url || null;
   const primaryUrl = viewUrl(primaryView);
   const auxiliaryUrl = viewUrl(auxiliaryView);
-  const allSaved = !!primaryUrl && !!auxiliaryUrl;
+  const allSaved = !!primaryUrl && !!auxiliaryUrl && !!isometricUrl;
   const noneSaved = !primaryUrl && !auxiliaryUrl && !isometricUrl;
   
   const wsCode = (workstation as any)?.code || '';

@@ -151,36 +151,51 @@ export async function validateImageFile(
   return true;
 }
 
+const CAD_EXTENSIONS = ['sldprt', 'sldasm', 'step', 'stp', 'iges', 'igs', 'x_t', 'x_b', 'sat', 'catpart', 'catproduct', 'prt', 'asm'];
+
 /**
- * Validates 3D model files
+ * Check if a filename has a CAD extension that needs conversion to GLB
+ */
+export function isCADFile(fileName: string): boolean {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  return CAD_EXTENSIONS.includes(ext);
+}
+
+/**
+ * Validates 3D model files.
+ * Recognises CAD formats (SolidWorks, STEP, IGES, …) and prompts conversion.
  */
 export async function validate3DModelFile(
   file: File,
   maxSizeMB: number = 50
 ): Promise<boolean> {
-  const allowedExtensions = ['glb', 'gltf', 'obj', 'fbx'];
+  const allowedExtensions = ['glb', 'gltf'];
   const allowedMimeTypes = [
     'model/gltf-binary',
     'model/gltf+json',
     'application/octet-stream',
   ];
 
-  // Check extension
-  if (!validateExtension(file.name, allowedExtensions)) {
-    toast.error(`仅支持 ${allowedExtensions.join(', ').toUpperCase()} 格式`);
+  if (isCADFile(file.name)) {
+    const ext = file.name.split('.').pop()?.toUpperCase() || '';
+    toast.error(
+      `${ext} 是 CAD 原始格式，浏览器无法直接加载。请先使用 SolidWorks / FreeCAD / Blender 等工具将模型转换为 GLB 格式后再上传。`,
+      { duration: 8000 }
+    );
     return false;
   }
 
-  // Check file size
+  if (!validateExtension(file.name, allowedExtensions)) {
+    toast.error('仅支持 GLB / GLTF 格式的3D模型文件。如有 SolidWorks 等 CAD 文件，请先转换为 GLB。');
+    return false;
+  }
+
   if (!validateFileSize(file.size, maxSizeMB)) {
     toast.error(`模型文件大小不能超过 ${maxSizeMB}MB`);
     return false;
   }
 
-  // For 3D models, we check MIME type but are more lenient
-  // since browsers often report application/octet-stream
   if (file.type && !allowedMimeTypes.includes(file.type) && !file.type.startsWith('model/')) {
-    // Just warn, don't reject - server will validate
     console.warn('Unusual MIME type for 3D model:', file.type);
   }
 

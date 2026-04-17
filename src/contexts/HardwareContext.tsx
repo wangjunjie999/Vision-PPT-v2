@@ -11,6 +11,7 @@ export interface Camera {
   frame_rate: number;
   interface: string;
   sensor_size: string;
+  shutter_type?: string | null;
   tags: string[];
   image_url: string | null;
   model_3d_url: string | null;
@@ -32,6 +33,8 @@ export interface Lens {
   image_url: string | null;
   front_view_url: string | null;
   enabled: boolean;
+  resolving_power?: number | null;
+  max_sensor_size?: string | null;
   created_at: string;
   updated_at: string;
 }

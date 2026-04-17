@@ -360,6 +360,9 @@ export interface ModuleFormState {
   dlClassCount: string;
   dlFieldOfView: string;
   
+  // Precision strategy
+  redundancyStrategy: string;
+  
   // Other config
   purposeDescription: string;
   inputDescription: string;
@@ -545,6 +548,8 @@ export const getDefaultFormState = (): ModuleFormState => ({
   dlRoiCount: '1',
   dlClassCount: '',
   dlFieldOfView: '',
+  
+  redundancyStrategy: 'standard',
   
   purposeDescription: '',
   inputDescription: '',

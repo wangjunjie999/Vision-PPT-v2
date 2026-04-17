@@ -211,22 +211,42 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
       const isModel = file.name.match(/\.(glb|gltf)$/i);
       const isImage = file.name.match(/\.(jpg|jpeg|png|webp)$/i);
 
-      if (!isModel && !isImage) {
-        toast.error(`不支持的文件格式，请上传 3D 模型(GLB/GLTF)或图片`);
+      const cadExts = /\.(sldprt|sldasm|step|stp|iges|igs|x_t|x_b|sat|catpart|catproduct|prt|asm)$/i;
+      if (cadExts.test(file.name)) {
+        const ext = file.name.split('.').pop()?.toUpperCase() || '';
+        toast.error(
+          `${ext} 是 CAD 原始格式，浏览器无法直接加载。请先将模型转换为 GLB 格式后再上传。`,
+          { duration: 8000 }
+        );
         return;
       }
 
-      // Upload to storage
-      const bucket = 'product-models';
-      const path = `${workstationId}/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(path, file);
+      if (!isModel && !isImage) {
+        toast.error('不支持的文件格式，请上传 3D 模型(GLB/GLTF)或图片');
+        return;
+      }
 
-      if (uploadError) throw uploadError;
+      // GLB: use same bucket + policies as hardware center (3d-models via uploadGLBFile).
+      // GLTF + images: keep product-models direct upload.
+      let fileUrl: string;
+      const isGlb = /\.glb$/i.test(file.name);
+      if (isModel && isGlb) {
+        const { uploadGLBFile } = await import('@/utils/glbUpload');
+        const url = await uploadGLBFile(file, 'workstation-product');
+        if (!url) return;
+        fileUrl = url;
+      } else {
+        const bucket = 'product-models';
+        const path = `${workstationId}/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from(bucket)
+          .upload(path, file);
 
-      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
-      const fileUrl = urlData.publicUrl;
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
+        fileUrl = urlData.publicUrl;
+      }
 
       // Create or update asset
       if (asset) {
@@ -284,7 +304,8 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
       }
     } catch (error) {
       console.error('Upload failed:', error);
-      toast.error('上传失败');
+      const msg = error instanceof Error ? error.message : String(error);
+      toast.error(msg ? `上传失败: ${msg}` : '上传失败');
     } finally {
       setUploading(false);
       event.target.value = '';
@@ -346,7 +367,15 @@ export function ProductAnnotationPanel({ workstationId }: ProductAnnotationPanel
   // Set record as default for PPT
   const handleSetDefault = async (recordId: string) => {
     setDefaultRecordId(recordId);
-    toast.success('已设为PPT默认使用');
+    setAnnotations(prev => {
+      const idx = prev.findIndex(a => a.id === recordId);
+      if (idx <= 0) return prev;
+      const copy = [...prev];
+      const [target] = copy.splice(idx, 1);
+      copy.unshift(target);
+      return copy;
+    });
+    toast.success('已标记为首选（PPT将包含所有标注记录）');
   };
 
   // Delete annotation record

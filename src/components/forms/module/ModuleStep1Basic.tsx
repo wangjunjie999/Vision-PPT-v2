@@ -74,6 +74,27 @@ export function ModuleStep1Basic({ form, setForm }: ModuleStep1BasicProps) {
           />
         </div>
       </div>
+
+      {(form.triggerType === 'encoder' || form.triggerType === 'continuous') && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">线体速度 (mm/s)</Label>
+            <Input
+              type="number"
+              value={form.lineSpeed}
+              onChange={e => setForm(p => ({ ...p, lineSpeed: e.target.value }))}
+              placeholder="500"
+              className="h-9"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-muted-foreground">飞拍提示</Label>
+            <div className="h-9 flex items-center text-xs text-muted-foreground px-2 border rounded-md bg-muted/30">
+              {form.lineSpeed ? `速度 ${form.lineSpeed} mm/s，详见成像参数步骤` : '填入速度后可自动计算飞拍参数'}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

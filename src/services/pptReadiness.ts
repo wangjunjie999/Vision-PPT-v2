@@ -37,14 +37,6 @@ export interface PPTReadinessResult {
   };
 }
 
-// 关键必填字段定义（final模式缺失则阻断）
-const REQUIRED_PROJECT_FIELDS = ['code', 'name', 'customer'];
-const REQUIRED_PROJECT_LABELS: Record<string, string> = {
-  code: '项目编号',
-  name: '项目名称',
-  customer: '客户名称',
-};
-
 interface CheckInput {
   projects: DbProject[];
   workstations: DbWorkstation[];
@@ -61,7 +53,8 @@ interface CheckInput {
  * @returns 就绪状态检查结果
  */
 export function checkPPTReadiness(input: CheckInput): PPTReadinessResult {
-  const { projects, workstations, layouts, modules, selectedProjectId } = input;
+  const { projects, workstations, layouts, modules, selectedProjectId, mode = 'draft' } = input;
+  const isFinal = mode === 'final';
   
   const missing: MissingItem[] = [];
   const warnings: WarningItem[] = [];
@@ -218,7 +211,6 @@ export function checkPPTReadiness(input: CheckInput): PPTReadinessResult {
   
   // 6. 检查模块示意图和成像参数
   let missingSchematicImages = 0;
-  let missingImagingParams = 0;
   projectModules.forEach(mod => {
     const schematicUrl = (mod as any).schematic_image_url;
     if (!schematicUrl) {
@@ -228,7 +220,7 @@ export function checkPPTReadiness(input: CheckInput): PPTReadinessResult {
         id: mod.id,
         name: mod.name,
         missing: ['视觉系统示意图'],
-        required: true,
+        required: isFinal,
         actionType: 'selectModule',
         targetId: mod.id,
       });
@@ -243,7 +235,6 @@ export function checkPPTReadiness(input: CheckInput): PPTReadinessResult {
       if (!config.resolutionPerPixel) missingImaging.push('像素精度');
       
       if (missingImaging.length > 0) {
-        missingImagingParams++;
         warnings.push({
           level: 'module',
           id: mod.id,
@@ -272,13 +263,62 @@ export function checkPPTReadiness(input: CheckInput): PPTReadinessResult {
     });
   }
   
-  // 8. 交付版检查条件
+  // 8. final模式额外检查：布局视图和硬件必须完整
+  if (isFinal) {
+    projectWorkstations.forEach(ws => {
+      const layout = layouts.find(l => l.workstation_id === ws.id);
+      if (layout) {
+        const primaryView = (layout as any).primary_view || 'front';
+        const primaryUrl = (layout as any)?.[`${primaryView}_view_image_url`];
+        if (!primaryUrl) {
+          missing.push({
+            level: 'workstation',
+            id: ws.id,
+            name: ws.name,
+            missing: ['主视图布局图（交付版必须）'],
+            required: true,
+            actionType: 'selectWorkstation',
+            targetId: ws.id,
+          });
+        }
+
+        const selectedCams = layout.selected_cameras as Array<{ id: string }> | null;
+        const selectedLens = layout.selected_lenses as Array<{ id: string }> | null;
+        if (!selectedCams || selectedCams.length === 0) {
+          missing.push({
+            level: 'workstation',
+            id: ws.id,
+            name: ws.name,
+            missing: ['相机配置（交付版必须）'],
+            required: true,
+            actionType: 'selectWorkstation',
+            targetId: ws.id,
+          });
+        }
+        if (!selectedLens || selectedLens.length === 0) {
+          missing.push({
+            level: 'workstation',
+            id: ws.id,
+            name: ws.name,
+            missing: ['镜头配置（交付版必须）'],
+            required: true,
+            actionType: 'selectWorkstation',
+            targetId: ws.id,
+          });
+        }
+      }
+    });
+  }
+
+  // 9. 交付版检查条件
+  const hasBlockingMissing = isFinal && missing.some(m => m.required);
   const finalReady = 
     draftReady &&
     missingSchematicImages === 0 &&
-    projectModules.length > 0; // 至少需要一个模块（或明确允许无模块策略）
+    projectModules.length > 0 &&
+    !hasBlockingMissing;
   
-  // 9. 如果没有模块，添加警告
+  // 10. 如果没有模块，添加警告
   if (projectModules.length === 0 && projectWorkstations.length > 0) {
     warnings.push({
       level: 'project',
@@ -288,7 +328,7 @@ export function checkPPTReadiness(input: CheckInput): PPTReadinessResult {
     });
   }
   
-  // 10. 检查模块关键参数缺失（警告级别）
+  // 11. 检查模块关键参数缺失（警告级别）
   projectModules.forEach(mod => {
     const modWarnings: string[] = [];
     

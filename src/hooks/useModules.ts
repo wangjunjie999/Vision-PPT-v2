@@ -26,6 +26,7 @@ export function useModules(workstationId?: string) {
       const { data, error } = await query;
 
       if (error) throw error;
+      setError(null);
       setModules(data || []);
     } catch (err) {
       setError(err as Error);

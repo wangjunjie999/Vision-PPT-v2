@@ -403,6 +403,7 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
       front: layout?.front_view_saved || false,
       side: layout?.side_view_saved || false,
       top: layout?.top_view_saved || false,
+      isometric: !!(layout as any).isometric_view_saved,
     });
   }, [layout]);
 
@@ -921,7 +922,8 @@ export function DraggableLayoutCanvas({ workstationId }: DraggableLayoutCanvasPr
         const canvasPos = project3DTo2D(posX, 100, AUTO_ARRANGE_CONFIG.mechanismDefaultZ, currentView);
         return { ...mech, posX, posY: 100, posZ: AUTO_ARRANGE_CONFIG.mechanismDefaultZ, x: canvasPos.x, y: canvasPos.y };
       });
-      return [...arrangedCameras, ...arrangedMechs];
+      const others = prev.filter(o => o.type !== 'camera' && o.type !== 'mechanism');
+      return [...arrangedCameras, ...arrangedMechs, ...others];
     });
     toast.success('已自动排布对象');
   }, [project3DTo2D, currentView]);

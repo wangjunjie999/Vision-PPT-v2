@@ -8,6 +8,7 @@ import {
   generateBasicInfoAndRequirementsSlide,
   generateProductSchematicSlide,
   generateLayoutAndOpticalSlide,
+  generateMechanicalThreeViewSlide,
   generateModuleOpticalSlide,
   generateLightingPhotosSlide,
   generateBOMSlide,
@@ -355,7 +356,7 @@ function getMeasurementParams(config: Record<string, unknown>, isZh: boolean): T
   // Measurement items
   if (config.measurementItems && Array.isArray(config.measurementItems) && config.measurementItems.length > 0) {
     rows.push(row([isZh ? '【测量项目】' : '[Measurement Items]', '']));
-    (config.measurementItems as Array<{ name: string; dimType: string; nominal: number; upperTol: number; lowerTol: number; unit: string }>).forEach((item, idx) => {
+    (config.measurementItems as Array<Record<string, unknown>>).forEach((item: any, idx: number) => {
       const dimTypeLabels: Record<string, string> = {
         length: isZh ? '长度' : 'Length',
         diameter: isZh ? '直径' : 'Diameter',
@@ -364,9 +365,12 @@ function getMeasurementParams(config: Record<string, unknown>, isZh: boolean): T
         distance: isZh ? '距离' : 'Distance',
         gap: isZh ? '间隙' : 'Gap',
       };
+      const dimType = item.dimType ?? item.type ?? '';
+      const upper = item.upperTol ?? item.upperTolerance ?? 0;
+      const lower = item.lowerTol ?? item.lowerTolerance ?? 0;
       rows.push(row([
         `${idx + 1}. ${item.name || (isZh ? '测量项' : 'Item')}`,
-        `${dimTypeLabels[item.dimType] || item.dimType}: ${item.nominal} (+${item.upperTol}/-${item.lowerTol}) ${item.unit || 'mm'}`
+        `${dimTypeLabels[dimType] || dimType}: ${item.nominal ?? item.nominalValue ?? 0} (+${upper}/-${lower}) ${item.unit || 'mm'}`
       ]));
     });
   }
@@ -654,13 +658,14 @@ export async function generatePPTX(
   const pptxgen = (await import('pptxgenjs')).default;
   const pptx = new pptxgen();
   const isZh = options.language === 'zh';
+  const isDraft = options.mode === 'draft';
 
   // Use hardcoded corporate colors directly
   const activeColors = { ...COLORS };
 
   // Set presentation properties
   pptx.author = project.responsible || 'Vision System';
-  pptx.title = `${project.name} - ${isZh ? '视觉系统方案' : 'Vision System Proposal'}`;
+  pptx.title = `${project.name} - ${isZh ? '视觉系统方案' : 'Vision System Proposal'}${isDraft ? ' [DRAFT]' : ''}`;
   pptx.subject = isZh ? '机器视觉系统技术方案' : 'Machine Vision System Technical Proposal';
   pptx.company = isZh ? COMPANY_NAME_ZH : COMPANY_NAME_EN;
 
@@ -691,6 +696,17 @@ export async function generatePPTX(
 
   let progress = 5;
   onProgress(progress, isZh ? '初始化生成器...' : 'Initializing generator...', isZh ? '开始PPT生成' : 'Starting PPT generation');
+
+  // Preload all images in batches before slide generation
+  const allImageUrls = collectAllImageUrls(layouts, modules, annotations, productAssets, hardware);
+  if (allImageUrls.length > 0) {
+    const batchSize = options.quality === 'ultra' ? 10 : options.quality === 'high' ? 12 : 15;
+    onProgress(6, isZh ? '预加载图片资源...' : 'Preloading images...', isZh ? `预加载 ${allImageUrls.length} 张图片` : `Preloading ${allImageUrls.length} images`);
+    await preloadImagesInBatches(allImageUrls, batchSize, (loaded, total) => {
+      const imgProgress = 6 + Math.round((loaded / total) * 2);
+      onProgress(imgProgress, isZh ? `预加载图片 ${loaded}/${total}` : `Preloading images ${loaded}/${total}`, '');
+    });
+  }
 
   // ========== SLIDE 1: Cover - Full image, no modifications ==========
   progress = 8;
@@ -921,7 +937,11 @@ export async function generatePPTX(
     const wsModules = modules.filter(m => m.workstation_id === ws.id);
     const wsCode = getWorkstationCode(project.code, i);
     
-    const wsAnnotations = annotations?.filter(a => a.scope_type === 'workstation' && a.workstation_id === ws.id) || [];
+    const wsModuleIds = new Set(wsModules.map(m => m.id));
+    const wsAnnotations = annotations?.filter(a =>
+      (a.scope_type === 'workstation' && a.workstation_id === ws.id) ||
+      (a.scope_type === 'module' && a.module_id && wsModuleIds.has(a.module_id))
+    ) || [];
     const wsProductAsset = productAssets?.find(a => a.scope_type === 'workstation' && a.workstation_id === ws.id);
 
     const wsBaseProgress = 20 + i * progressPerWs;
@@ -1025,26 +1045,57 @@ export async function generatePPTX(
     // b. 产品截图标注 (Product Schematic - variable pages)
     step++;
     onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '产品示意图' : 'Product'}`, `[SLIDE:${ws.name}:b] ${isZh ? '产品示意图' : 'Product schematic'}`);
-    await generateProductSchematicSlide(ctx, slideData);
+    if (isDraft) {
+      const draftProductSlide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
+      draftProductSlide.addText(isZh ? '[草稿] 产品示意图 - 省略' : '[DRAFT] Product Schematic - Skipped', {
+        x: 1, y: 2, w: 8, h: 1, fontSize: 18, fontFace: FONTS.body, color: COLORS.secondary, align: 'center',
+      });
+    } else {
+      await generateProductSchematicSlide(ctx, slideData);
+    }
     
     // c. 机械布局 (主辅视图 + 布局说明)
     step++;
     onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '机械布局' : 'Mechanical Layout'}`, `[SLIDE:${ws.name}:c] ${isZh ? '机械布局' : 'Mechanical Layout'}`);
-    await generateLayoutAndOpticalSlide(ctx, slideData);
+    if (isDraft) {
+      const draftLayoutSlide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
+      draftLayoutSlide.addText(isZh ? '[草稿] 机械布局 - 省略' : '[DRAFT] Mechanical Layout - Skipped', {
+        x: 1, y: 2, w: 8, h: 1, fontSize: 18, fontFace: FONTS.body, color: COLORS.secondary, align: 'center',
+      });
+    } else {
+      await generateLayoutAndOpticalSlide(ctx, slideData);
+    }
+
+    // c2. 机械三视图 (when all three views are available)
+    const hasAllThreeViews = wsLayout?.front_view_image_url && wsLayout?.side_view_image_url && wsLayout?.top_view_image_url;
+    if (hasAllThreeViews) {
+      step++;
+      onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '三视图' : 'Three Views'}`, `[SLIDE:${ws.name}:c2] ${isZh ? '机械三视图' : 'Three Views'}`);
+      if (!isDraft) {
+        await generateMechanicalThreeViewSlide(ctx, slideData);
+      }
+    }
     
     // d. 光学方案 × N + 打光照片 (Each module's optical followed by its lighting photos)
     for (let mi = 0; mi < wsModules.length; mi++) {
       step++;
       const modName = wsModules[mi].name;
       onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '光学方案' : 'Optical'}: ${modName}`, `[SLIDE:${ws.name}:d${mi + 1}] ${isZh ? '光学方案' : 'Optical'}: ${modName}`);
-      await generateModuleOpticalSlide(ctx, slideData, mi);
+      if (isDraft) {
+        const draftOpticalSlide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
+        draftOpticalSlide.addText(`${isZh ? '[草稿] 光学方案' : '[DRAFT] Optical'}: ${modName}`, {
+          x: 1, y: 2, w: 8, h: 1, fontSize: 18, fontFace: FONTS.body, color: COLORS.secondary, align: 'center',
+        });
+      } else {
+        await generateModuleOpticalSlide(ctx, slideData, mi);
 
-      // 紧跟该模块的打光照片
-      const photos = (wsModules[mi] as any).lighting_photos || [];
-      if (photos.length > 0) {
-        step++;
-        onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '打光照片' : 'Lighting'}: ${modName}`, `[SLIDE:${ws.name}:e${mi + 1}] ${isZh ? '打光照片' : 'Lighting photos'}: ${modName}`);
-        await generateLightingPhotosSlide(ctx, slideData, mi);
+        // 紧跟该模块的打光照片
+        const photos = (wsModules[mi] as any).lighting_photos || [];
+        if (photos.length > 0) {
+          step++;
+          onProgress(wsBaseProgress + stepIncrement * step, `${ws.name} - ${isZh ? '打光照片' : 'Lighting'}: ${modName}`, `[SLIDE:${ws.name}:e${mi + 1}] ${isZh ? '打光照片' : 'Lighting photos'}: ${modName}`);
+          await generateLightingPhotosSlide(ctx, slideData, mi);
+        }
       }
     }
 

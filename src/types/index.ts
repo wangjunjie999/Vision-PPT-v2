@@ -35,6 +35,7 @@ export interface Camera {
   frameRate: number;
   interface: string;
   sensorSize: string;
+  shutterType?: string;
   tags: string[];
   imageUrl?: string;
   enabled: boolean;
@@ -51,6 +52,8 @@ export interface Lens {
   tags: string[];
   imageUrl?: string;
   enabled: boolean;
+  resolvingPower?: number;
+  maxSensorSize?: string;
 }
 
 export interface LightSource {

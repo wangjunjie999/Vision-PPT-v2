@@ -137,6 +137,7 @@ interface ModuleData {
   ocr_config?: Record<string, unknown> | null;
   deep_learning_config?: Record<string, unknown> | null;
   measurement_config?: Record<string, unknown> | null;
+  lighting_photos?: Array<{ url: string; remark?: string }> | null;
 }
 
 // ==================== HARDWARE ID TO NAME HELPER ====================
@@ -1326,14 +1327,20 @@ export async function generatePDF(
                 ? ['项目名称', '类型', '标称值', '上公差', '下公差', '单位']
                 : ['Name', 'Type', 'Nominal', 'Upper', 'Lower', 'Unit'];
               
-              const measRows = measConfig.measurementItems.map((item: any) => [
-                item.name || '—',
-                MEAS_DIM_TYPE_LABELS[item.type]?.[isZh ? 'zh' : 'en'] || item.type || '—',
-                item.nominal?.toString() || '—',
-                item.upperTolerance?.toString() || '—',
-                item.lowerTolerance?.toString() || '—',
-                item.unit || 'mm',
-              ]);
+              const measRows = measConfig.measurementItems.map((item: any) => {
+                const dimType = item.dimType ?? item.type ?? '';
+                const upper = item.upperTol ?? item.upperTolerance ?? '';
+                const lower = item.lowerTol ?? item.lowerTolerance ?? '';
+                const nominal = item.nominal ?? item.nominalValue ?? '';
+                return [
+                  item.name || '—',
+                  MEAS_DIM_TYPE_LABELS[dimType]?.[isZh ? 'zh' : 'en'] || dimType || '—',
+                  nominal?.toString() || '—',
+                  upper?.toString() || '—',
+                  lower?.toString() || '—',
+                  item.unit || 'mm',
+                ];
+              });
               
               helper.addTable(measHeaders, measRows, [35, 25, 25, 25, 25, 20]);
             }
@@ -1433,6 +1440,22 @@ export async function generatePDF(
           helper.y += 12;
           const added = await helper.addImage(mod.schematic_image_url, isZh ? '视觉系统示意图' : 'Vision System Schematic', 130, 85);
           if (added) totalImages++;
+        }
+
+        // 打光照片
+        const lightingPhotos = Array.isArray(mod.lighting_photos) ? mod.lighting_photos : [];
+        if (includeImages && lightingPhotos.length > 0) {
+          helper.addNewPageIfNeeded(100);
+          helper.addSpace(3);
+          helper.addTextImage(isZh ? '【打光照片】' : '【Lighting Photos】', margin + 5, 12, 'bold', '#2d3748');
+          helper.y += 12;
+          for (const photo of lightingPhotos) {
+            if (photo.url) {
+              const caption = photo.remark || (isZh ? '打光效果' : 'Lighting Effect');
+              const added = await helper.addImage(photo.url, caption, 120, 80);
+              if (added) totalImages++;
+            }
+          }
         }
 
         // 模块级别的产品标注

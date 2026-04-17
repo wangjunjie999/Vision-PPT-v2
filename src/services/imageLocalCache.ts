@@ -62,18 +62,27 @@ class ImageLocalCacheService {
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
+        const tx = (event.target as IDBOpenDBRequest).transaction!;
 
-        // 删除旧版 store（如果存在）
-        if (db.objectStoreNames.contains(STORE_NAME)) {
-          db.deleteObjectStore(STORE_NAME);
+        let store: IDBObjectStore;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          store = db.createObjectStore(STORE_NAME, { keyPath: 'key' });
+        } else {
+          store = tx.objectStore(STORE_NAME);
         }
 
-        // 创建新 store
-        const store = db.createObjectStore(STORE_NAME, { keyPath: 'key' });
-        store.createIndex('type', 'type', { unique: false });
-        store.createIndex('relatedId', 'relatedId', { unique: false });
-        store.createIndex('expiresAt', 'expiresAt', { unique: false });
-        store.createIndex('url', 'url', { unique: false });
+        const requiredIndexes: Array<{ name: string; keyPath: string; options: IDBIndexParameters }> = [
+          { name: 'type', keyPath: 'type', options: { unique: false } },
+          { name: 'relatedId', keyPath: 'relatedId', options: { unique: false } },
+          { name: 'expiresAt', keyPath: 'expiresAt', options: { unique: false } },
+          { name: 'url', keyPath: 'url', options: { unique: false } },
+        ];
+
+        for (const idx of requiredIndexes) {
+          if (!store.indexNames.contains(idx.name)) {
+            store.createIndex(idx.name, idx.keyPath, idx.options);
+          }
+        }
       };
     });
 

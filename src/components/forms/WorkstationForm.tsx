@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle, Settings2, ImageIcon } from 'lucide-react';
+import { AlertTriangle, Settings2, ImageIcon, Timer, CheckCircle2, XCircle } from 'lucide-react';
+import { calculateCycleTime } from '@/utils/visionCalcEngine';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
@@ -96,13 +97,18 @@ export function WorkstationForm() {
     updateWorkstation, 
     layouts, 
     upsertLayout,
-    getLayoutByWorkstation 
+    getLayoutByWorkstation,
+    getWorkstationModules,
   } = useData();
   
   const { controllers } = useControllers();
   
   const workstation = workstations.find(ws => ws.id === selectedWorkstationId);
   const layout = getLayoutByWorkstation(selectedWorkstationId || '');
+  const wsModules = useMemo(
+    () => selectedWorkstationId ? getWorkstationModules(selectedWorkstationId) : [],
+    [selectedWorkstationId, getWorkstationModules]
+  );
 
   const [saving, setSaving] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -671,6 +677,96 @@ export function WorkstationForm() {
           maxLength={500}
         />
       </div>
+
+      {/* Cycle Time Analysis Card */}
+      {wsForm.cycleTime && wsModules.length > 0 && (() => {
+        const processingTimes = wsModules.map((m: any) => m.processing_time_limit || 0);
+        const maxExposureUs = Math.max(
+          ...wsModules.map((m: any) => {
+            const exp = m.extra_fields?.exposure || m.exposure;
+            if (!exp) return 0;
+            const s = String(exp).toLowerCase();
+            if (s.includes('ms')) return parseFloat(s) * 1000;
+            return parseFloat(s) || 0;
+          }),
+          0
+        );
+        const firstCam = layout && Array.isArray((layout as any).selected_cameras) && (layout as any).selected_cameras[0];
+        const camFrameRate = firstCam?.frame_rate || 0;
+
+        const ctResult = calculateCycleTime({
+          targetCycleTimeS: parseFloat(wsForm.cycleTime) || 0,
+          processingTimesMs: processingTimes,
+          shotCount: parseInt(wsForm.shot_count) || 1,
+          exposureTimeUs: maxExposureUs > 0 ? maxExposureUs : undefined,
+          cameraFrameRate: camFrameRate > 0 ? camFrameRate : undefined,
+        });
+        return (
+          <div className="p-3 rounded-lg border border-border/50 bg-muted/30 space-y-2">
+            <div className="flex items-center gap-2">
+              <Timer className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">节拍分析</span>
+              {ctResult.isFeasible ? (
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary ml-auto" />
+              ) : (
+                <XCircle className="h-3.5 w-3.5 text-destructive ml-auto" />
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <span className="text-muted-foreground">目标:</span>{' '}
+                <span className="font-mono">{ctResult.targetMs}ms</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">预估耗时:</span>{' '}
+                <span className="font-mono">{ctResult.totalEffectiveMs}ms</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">裕量:</span>{' '}
+                <span className={cn('font-mono', ctResult.marginMs < 0 ? 'text-destructive' : 'text-primary')}>
+                  {ctResult.marginMs > 0 ? '+' : ''}{ctResult.marginMs}ms ({ctResult.marginPercent}%)
+                </span>
+              </div>
+            </div>
+            {ctResult.phases.length > 0 && (
+              <>
+                <div className="text-xs text-muted-foreground">
+                  瓶颈: <span className="font-medium text-foreground">{ctResult.bottleneck}</span>
+                  {' · '}
+                  产能: <span className="font-mono">{ctResult.actualThroughputPerHour}</span> 件/时
+                  {ctResult.actualThroughputPerHour !== ctResult.throughputPerHour && (
+                    <span className="text-muted-foreground"> (目标 {ctResult.throughputPerHour})</span>
+                  )}
+                </div>
+                <div className="space-y-1 pt-1 border-t border-border/30">
+                  {ctResult.phases.map((phase, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-[11px]">
+                      <span className={cn(
+                        'w-28 truncate shrink-0',
+                        phase.name === ctResult.bottleneck ? 'font-medium text-foreground' : 'text-muted-foreground'
+                      )}>
+                        {phase.name}
+                      </span>
+                      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={cn(
+                            'h-full rounded-full transition-all',
+                            phase.name === ctResult.bottleneck ? 'bg-amber-500' : 'bg-primary/60'
+                          )}
+                          style={{ width: `${Math.max(phase.percent || 0, 2)}%` }}
+                        />
+                      </div>
+                      <span className="font-mono w-16 text-right shrink-0 text-muted-foreground">
+                        {phase.durationMs}ms
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        );
+      })()}
       
       <div className="space-y-1.5">
         <Label className="text-xs font-medium">备注</Label>

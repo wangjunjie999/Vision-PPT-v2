@@ -8,6 +8,8 @@ import { HardwareSelector } from '@/components/hardware/HardwareSelector';
 import { Button } from '@/components/ui/button';
 import { Copy } from 'lucide-react';
 import { toast } from 'sonner';
+import { useMemo } from 'react';
+import { parseShutterType } from '@/utils/visionCalcEngine';
 
 interface ModuleStep4OutputProps {
   form: ModuleFormState;
@@ -49,6 +51,22 @@ export function ModuleStep4Output({
     }));
     toast.success('已套用工位硬件配置');
   };
+
+  const isFlyingShot = form.triggerType === 'encoder' || form.triggerType === 'continuous';
+
+  const cameraWarningIds = useMemo(() => {
+    if (!isFlyingShot) return undefined;
+    const warnings: Record<string, string> = {};
+    cameras.forEach((cam: any) => {
+      const st = parseShutterType(cam.shutter_type, cam.tags);
+      if (st === 'rolling') {
+        warnings[cam.id] = '卷帘快门';
+      } else if (st === 'unknown') {
+        warnings[cam.id] = '快门未知';
+      }
+    });
+    return Object.keys(warnings).length > 0 ? warnings : undefined;
+  }, [cameras, isFlyingShot]);
 
   return (
     <div className="space-y-6">
@@ -194,6 +212,7 @@ export function ModuleStep4Output({
             items={cameras}
             selectedId={form.selectedCamera}
             onSelect={(id) => setForm(p => ({ ...p, selectedCamera: id }))}
+            warningIds={cameraWarningIds}
           />
           <HardwareSelector
             type="lens"

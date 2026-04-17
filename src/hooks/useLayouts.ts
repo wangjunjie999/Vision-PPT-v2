@@ -25,6 +25,7 @@ export function useLayouts(workstationId?: string) {
       const { data, error } = await query;
 
       if (error) throw error;
+      setError(null);
       setLayouts(data || []);
     } catch (err) {
       setError(err as Error);

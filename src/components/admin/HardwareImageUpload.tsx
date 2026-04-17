@@ -4,6 +4,7 @@ import { Upload, Loader2, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { validateImageFile } from '@/utils/fileValidation';
+import { processHardwareImageForUpload } from '@/utils/processHardwareImage';
 
 interface ImageUploadProps {
   currentUrl: string | null;
@@ -43,14 +44,16 @@ export function HardwareImageUpload({
     setUploading(true);
 
     try {
-      const fileExt = file.name.split('.').pop();
+      const uploadFile = await processHardwareImageForUpload(file);
+      const fileExt = uploadFile.name.split('.').pop() || 'png';
       const fileName = `${type}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
       const { data, error } = await supabase.storage
         .from('hardware-images')
-        .upload(fileName, file, {
+        .upload(fileName, uploadFile, {
           cacheControl: '3600',
           upsert: false,
+          contentType: uploadFile.type || 'image/png',
         });
 
       if (error) throw error;

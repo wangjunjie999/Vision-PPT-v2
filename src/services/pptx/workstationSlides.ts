@@ -499,7 +499,7 @@ export function generateTechnicalRequirementsSlide(
     const typeLabel = MODULE_TYPE_LABELS[mod.type]?.[ctx.isZh ? 'zh' : 'en'] || mod.type;
     // Include module description if available
     const modDesc = mod.description ? ` - ${mod.description.slice(0, 30)}...` : '';
-    detectionItems.push(row([typeLabel, mod.name + (modDesc ? '' : '')]));
+    detectionItems.push(row([typeLabel, mod.name + modDesc]));
     
     // Add specific config details based on module type
     const cfg = (mod.defect_config || mod.measurement_config || mod.positioning_config || mod.ocr_config || mod.deep_learning_config) as Record<string, unknown> | null;
@@ -773,23 +773,6 @@ export async function generateLayoutAndOpticalSlide(
   }
 }
 
-// Keep old functions as exports for backward compatibility but mark deprecated
-/** @deprecated Use generateLayoutAndOpticalSlide instead */
-export async function generateThreeViewSlide(
-  ctx: SlideContext,
-  data: WorkstationSlideData
-): Promise<void> {
-  return generateLayoutAndOpticalSlide(ctx, data);
-}
-
-/** @deprecated Use generateLayoutAndOpticalSlide instead */
-export async function generateDiagramSlide(
-  ctx: SlideContext,
-  data: WorkstationSlideData
-): Promise<void> {
-  // No-op: merged into generateLayoutAndOpticalSlide
-}
-
 /**
  * Slide 6: Motion / Detection Method (运动/检测方式)
  */
@@ -978,30 +961,41 @@ export function generateOpticalSolutionSlide(
     fill: { color: COLORS.white },
   });
 
-  // Working distance
-  slide.addText(ctx.isZh ? '【工作距离(±范围)】' : '[Working Distance (±Range)]', {
+  // Working distance & extended optical params
+  slide.addText(ctx.isZh ? '【工作距离/倍率/景深】' : '[WD/Magnification/DOF]', {
     x: 5, y: 3.0, w: 4.5, h: 0.25,
     fontSize: 10, fontFace: FONTS.body, color: COLORS.primary, bold: true,
   });
 
   const wdRows: TableRow[] = [];
   modules.forEach(mod => {
+    const extra = (mod as any).extra_fields as Record<string, unknown> | null;
     const cfg = (mod.defect_config || mod.measurement_config || mod.positioning_config) as Record<string, unknown> | null;
-    if (cfg?.workingDistance) {
-      wdRows.push(row([mod.name, `${cfg.workingDistance} mm`]));
-    }
+    const wd = extra?.workingDistance || cfg?.workingDistance || '-';
+    const mag = extra?.magnification ? Number(extra.magnification).toFixed(4) + '×' : '-';
+    const dof = extra?.depthOfField ? extra.depthOfField + ' mm' : '-';
+    wdRows.push(row([mod.name, `${wd} mm`, mag, dof]));
   });
   if (wdRows.length === 0) {
-    wdRows.push(row([ctx.isZh ? '待定' : 'TBD', '-']));
+    wdRows.push(row([ctx.isZh ? '待定' : 'TBD', '-', '-', '-']));
   }
 
-  slide.addTable(wdRows.slice(0, 4), {
-    x: 5, y: 3.3, w: 4.5, h: Math.min(wdRows.length * 0.28 + 0.1, 1),
+  const wdHeader: TableRow = row([
+    ctx.isZh ? '模块' : 'Module',
+    ctx.isZh ? '工作距离' : 'WD',
+    ctx.isZh ? '倍率' : 'Mag.',
+    ctx.isZh ? '景深' : 'DOF',
+  ]);
+
+  slide.addTable([wdHeader, ...wdRows.slice(0, 4)], {
+    x: 5, y: 3.3, w: 4.5, h: Math.min((wdRows.length + 1) * 0.28 + 0.1, 1.5),
     fontFace: FONTS.body,
-    fontSize: 9,
-    colW: [2.5, 2],
+    fontSize: 8,
+    colW: [1.5, 1, 1, 1],
     border: { pt: 0.5, color: COLORS.border },
     fill: { color: COLORS.white },
+    valign: 'middle',
+    align: 'center',
   });
 }
 

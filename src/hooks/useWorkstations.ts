@@ -26,6 +26,7 @@ export function useWorkstations(projectId?: string) {
       const { data, error } = await query;
 
       if (error) throw error;
+      setError(null);
       setWorkstations(data || []);
     } catch (err) {
       setError(err as Error);

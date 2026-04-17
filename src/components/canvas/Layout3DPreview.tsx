@@ -1105,19 +1105,20 @@ function DefaultMechanismModel({ w, h, d, selected, xray }: { w: number; h: numb
 
 // --- GLB Model Renderer (isolated instances via useRef) ---
 function GLBModelRenderer({ url, w, h, d }: { url: string; w: number; h: number; d: number }) {
-  const { scene } = useGLTF(url);
+  useGLTF.preload(url);
+  const { scene } = useGLTF(url, undefined, undefined, (loader) => {
+    loader.setCrossOrigin('anonymous');
+  });
   const groupRef = useRef<THREE.Group>(null);
 
-  // Clone scene into a dedicated group each time scene/dimensions change
   useEffect(() => {
     if (!groupRef.current) return;
-    // Clear old children
     while (groupRef.current.children.length) {
-      groupRef.current.remove(groupRef.current.children[0]);
+      const child = groupRef.current.children[0];
+      groupRef.current.remove(child);
     }
     const cloned = scene.clone(true);
 
-    // Auto-scale to fit target dimensions
     const box = new THREE.Box3().setFromObject(cloned);
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
