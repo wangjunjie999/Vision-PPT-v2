@@ -65,21 +65,69 @@ const VIEW_PRESETS = {
   top: { position: [0, 8, 0] as [number, number, number], name: '俯视' },
 };
 
-function Model({ url, onLoaded }: { url: string; onLoaded?: () => void }) {
+function Model({
+  url,
+  onLoaded,
+  tintHex,
+  renderMode,
+}: {
+  url: string;
+  onLoaded?: () => void;
+  tintHex: string | null;
+  renderMode: RenderMode;
+}) {
   const { scene: gltfScene } = useGLTF(url, true, true, (loader) => {
     loader.setCrossOrigin('anonymous');
   });
   const clonedScene = useMemo(() => gltfScene.clone(true), [gltfScene]);
   const modelRef = useRef<THREE.Group>(null);
 
+  // Clone materials so we can mutate without touching cached GLTF
   useEffect(() => {
     clonedScene.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.castShadow = true;
         child.receiveShadow = true;
+        if (Array.isArray(child.material)) {
+          child.material = child.material.map((m) => m.clone());
+        } else if (child.material) {
+          child.material = (child.material as THREE.Material).clone();
+        }
       }
     });
   }, [clonedScene]);
+
+  // Apply tint + render mode whenever they change
+  useEffect(() => {
+    clonedScene.traverse((child) => {
+      if (!(child instanceof THREE.Mesh)) return;
+      const mats = Array.isArray(child.material) ? child.material : [child.material];
+      mats.forEach((mat) => {
+        if (!mat) return;
+        const anyMat = mat as THREE.MeshStandardMaterial & {
+          color?: THREE.Color;
+          map?: THREE.Texture | null;
+          wireframe?: boolean;
+          transparent?: boolean;
+          opacity?: number;
+          needsUpdate?: boolean;
+        };
+        if (tintHex && anyMat.color) {
+          anyMat.color.set(tintHex);
+          if ('map' in anyMat) anyMat.map = null;
+        }
+        if ('wireframe' in anyMat) anyMat.wireframe = renderMode === 'wireframe';
+        if (renderMode === 'translucent') {
+          anyMat.transparent = true;
+          anyMat.opacity = 0.5;
+        } else {
+          anyMat.transparent = false;
+          anyMat.opacity = 1;
+        }
+        anyMat.needsUpdate = true;
+      });
+    });
+  }, [clonedScene, tintHex, renderMode]);
 
   useEffect(() => {
     if (!modelRef.current) return;
