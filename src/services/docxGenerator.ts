@@ -563,7 +563,7 @@ export async function generateDOCX(
         const auxiliaryView = layout.auxiliary_view || 'side';
 
         const getViewUrl = (view: string): string | null | undefined =>
-          (layout as Record<string, unknown>)[`${view}_view_image_url`] as string | null | undefined;
+          (layout as unknown as Record<string, unknown>)[`${view}_view_image_url`] as string | null | undefined;
 
         const viewImages: { url: string | null | undefined; label: string }[] = [];
 
