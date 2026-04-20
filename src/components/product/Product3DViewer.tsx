@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useCallback, Suspense, useMemo, type Mutab
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, Center, Html, PerspectiveCamera, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import { SkeletonUtils } from 'three-stdlib';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
@@ -79,41 +80,20 @@ function Model({
   const { scene: gltfScene } = useGLTF(url, true, true, (loader) => {
     loader.setCrossOrigin('anonymous');
   });
-  const clonedScene = useMemo(() => gltfScene.clone(true), [gltfScene]);
   const modelRef = useRef<THREE.Group>(null);
-  // Store original color/map per cloned material so we can restore on tint reset
-  const originalsRef = useRef<WeakMap<THREE.Material, { color?: THREE.Color; map?: THREE.Texture | null }>>(new WeakMap());
 
-  // Deep-clone materials ONCE so mutations don't pollute cached GLTF, and snapshot originals
-  useEffect(() => {
-    clonedScene.traverse((child) => {
+  // Rebuild a fresh display scene from a clean baseline whenever appearance changes.
+  // This avoids accumulated state pollution from repeated incremental material mutations.
+  const displayScene = useMemo(() => {
+    const fresh = SkeletonUtils.clone(gltfScene) as THREE.Object3D;
+    fresh.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return;
       child.castShadow = true;
       child.receiveShadow = true;
-      const cloneOne = (mat: THREE.Material) => {
-        const cloned = mat.clone();
-        const anyMat = cloned as THREE.Material & { color?: THREE.Color; map?: THREE.Texture | null };
-        originalsRef.current.set(cloned, {
-          color: anyMat.color ? anyMat.color.clone() : undefined,
-          map: 'map' in anyMat ? anyMat.map ?? null : null,
-        });
-        return cloned;
-      };
-      if (Array.isArray(child.material)) {
-        child.material = child.material.map(cloneOne);
-      } else if (child.material) {
-        child.material = cloneOne(child.material);
-      }
-    });
-  }, [clonedScene]);
 
-  // Apply tint + render mode whenever they change (always restore from originals first)
-  useEffect(() => {
-    clonedScene.traverse((child) => {
-      if (!(child instanceof THREE.Mesh)) return;
-      const mats = Array.isArray(child.material) ? child.material : [child.material];
-      mats.forEach((mat) => {
-        if (!mat) return;
+      const applyToMaterial = (origMat: THREE.Material): THREE.Material => {
+        // Deep-clone material so we never touch the cached GLTF material
+        const mat = origMat.clone();
         const anyMat = mat as THREE.Material & {
           color?: THREE.Color;
           map?: THREE.Texture | null;
@@ -122,28 +102,46 @@ function Model({
           opacity?: number;
           needsUpdate?: boolean;
         };
-        const orig = originalsRef.current.get(mat);
-        // Always restore baseline first
-        if (orig?.color && anyMat.color) anyMat.color.copy(orig.color);
-        if ('map' in anyMat) anyMat.map = orig?.map ?? null;
 
-        // Apply tint on top of baseline
+        // Tint: override color and drop the base color map so tint is visible
         if (tintHex && anyMat.color) {
-          anyMat.color.set(tintHex);
+          anyMat.color = new THREE.Color(tintHex);
           if ('map' in anyMat) anyMat.map = null;
         }
-        if ('wireframe' in anyMat) anyMat.wireframe = renderMode === 'wireframe';
+
+        // Render mode
+        if ('wireframe' in anyMat) {
+          anyMat.wireframe = renderMode === 'wireframe';
+        }
         if (renderMode === 'translucent') {
           anyMat.transparent = true;
           anyMat.opacity = 0.5;
-        } else {
-          anyMat.transparent = false;
-          anyMat.opacity = 1;
+          anyMat.depthWrite = false as unknown as never;
         }
+
         anyMat.needsUpdate = true;
-      });
+        return mat;
+      };
+
+      if (Array.isArray(child.material)) {
+        child.material = child.material.map(applyToMaterial);
+      } else if (child.material) {
+        child.material = applyToMaterial(child.material);
+      }
     });
-  }, [clonedScene, tintHex, renderMode]);
+    return fresh;
+  }, [gltfScene, tintHex, renderMode]);
+
+  // Dispose previously cloned materials when displayScene changes / unmounts
+  useEffect(() => {
+    return () => {
+      displayScene.traverse((child) => {
+        if (!(child instanceof THREE.Mesh)) return;
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach((m) => m && m.dispose());
+      });
+    };
+  }, [displayScene]);
 
   useEffect(() => {
     if (!modelRef.current) return;
@@ -158,11 +156,11 @@ function Model({
     modelRef.current.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
     modelRef.current.updateMatrixWorld(true);
     onLoaded?.();
-  }, [clonedScene, onLoaded]);
+  }, [displayScene, onLoaded]);
 
   return (
     <group ref={modelRef}>
-      <primitive object={clonedScene} />
+      <primitive object={displayScene} />
     </group>
   );
 }
