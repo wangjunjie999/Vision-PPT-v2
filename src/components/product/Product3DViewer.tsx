@@ -413,6 +413,12 @@ export function Product3DViewer({
   const [modelMounted, setModelMounted] = useState(false);
   const [modelLoaded, setModelLoaded] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [tintKey, setTintKey] = useState<string>('original');
+  const [renderMode, setRenderMode] = useState<RenderMode>('solid');
+  const [backgroundKey, setBackgroundKey] = useState<BackgroundKey>('light');
+
+  const tintHex = TINT_PRESETS.find((t) => t.key === tintKey)?.hex ?? null;
+  const backgroundHex = BACKGROUND_PRESETS[backgroundKey].hex;
 
   const hasModel = !!modelUrl;
   const hasImages = imageUrls.length > 0;
