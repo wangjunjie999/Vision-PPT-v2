@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useCallback, Suspense, useMemo, type Mutab
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, Center, Html, PerspectiveCamera, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import { SkeletonUtils } from 'three-stdlib';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
