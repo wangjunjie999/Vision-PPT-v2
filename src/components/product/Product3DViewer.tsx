@@ -31,8 +31,32 @@ interface Product3DViewerProps {
   preferredDisplayMode?: ProductViewerDisplayMode;
 }
 
-const SCENE_BACKGROUND_HEX = '#f3f4f6';
 const MODEL_TARGET_SIZE = 4;
+
+const BACKGROUND_PRESETS = {
+  light: { hex: '#f3f4f6', name: '浅灰' },
+  white: { hex: '#ffffff', name: '白' },
+  dark: { hex: '#1f2937', name: '深灰' },
+  black: { hex: '#000000', name: '黑' },
+} as const;
+type BackgroundKey = keyof typeof BACKGROUND_PRESETS;
+
+const TINT_PRESETS: { key: string; hex: string | null; name: string }[] = [
+  { key: 'original', hex: null, name: '原色' },
+  { key: 'red', hex: '#ef4444', name: '红' },
+  { key: 'amber', hex: '#f59e0b', name: '橙' },
+  { key: 'green', hex: '#10b981', name: '绿' },
+  { key: 'cyan', hex: '#06b6d4', name: '青' },
+  { key: 'blue', hex: '#3b82f6', name: '蓝' },
+  { key: 'gray', hex: '#9ca3af', name: '灰' },
+];
+
+type RenderMode = 'solid' | 'translucent' | 'wireframe';
+const RENDER_MODE_PRESETS: { key: RenderMode; name: string }[] = [
+  { key: 'solid', name: '实体' },
+  { key: 'translucent', name: '半透' },
+  { key: 'wireframe', name: '线框' },
+];
 
 const VIEW_PRESETS = {
   isometric: { position: [5, 5, 5] as [number, number, number], name: '等轴测' },
@@ -41,21 +65,69 @@ const VIEW_PRESETS = {
   top: { position: [0, 8, 0] as [number, number, number], name: '俯视' },
 };
 
-function Model({ url, onLoaded }: { url: string; onLoaded?: () => void }) {
+function Model({
+  url,
+  onLoaded,
+  tintHex,
+  renderMode,
+}: {
+  url: string;
+  onLoaded?: () => void;
+  tintHex: string | null;
+  renderMode: RenderMode;
+}) {
   const { scene: gltfScene } = useGLTF(url, true, true, (loader) => {
     loader.setCrossOrigin('anonymous');
   });
   const clonedScene = useMemo(() => gltfScene.clone(true), [gltfScene]);
   const modelRef = useRef<THREE.Group>(null);
 
+  // Clone materials so we can mutate without touching cached GLTF
   useEffect(() => {
     clonedScene.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.castShadow = true;
         child.receiveShadow = true;
+        if (Array.isArray(child.material)) {
+          child.material = child.material.map((m) => m.clone());
+        } else if (child.material) {
+          child.material = (child.material as THREE.Material).clone();
+        }
       }
     });
   }, [clonedScene]);
+
+  // Apply tint + render mode whenever they change
+  useEffect(() => {
+    clonedScene.traverse((child) => {
+      if (!(child instanceof THREE.Mesh)) return;
+      const mats = Array.isArray(child.material) ? child.material : [child.material];
+      mats.forEach((mat) => {
+        if (!mat) return;
+        const anyMat = mat as THREE.MeshStandardMaterial & {
+          color?: THREE.Color;
+          map?: THREE.Texture | null;
+          wireframe?: boolean;
+          transparent?: boolean;
+          opacity?: number;
+          needsUpdate?: boolean;
+        };
+        if (tintHex && anyMat.color) {
+          anyMat.color.set(tintHex);
+          if ('map' in anyMat) anyMat.map = null;
+        }
+        if ('wireframe' in anyMat) anyMat.wireframe = renderMode === 'wireframe';
+        if (renderMode === 'translucent') {
+          anyMat.transparent = true;
+          anyMat.opacity = 0.5;
+        } else {
+          anyMat.transparent = false;
+          anyMat.opacity = 1;
+        }
+        anyMat.needsUpdate = true;
+      });
+    });
+  }, [clonedScene, tintHex, renderMode]);
 
   useEffect(() => {
     if (!modelRef.current) return;
@@ -242,6 +314,15 @@ function LoadingFallback() {
   );
 }
 
+function BackgroundSync({ hex }: { hex: string }) {
+  const { gl, scene } = useThree();
+  useEffect(() => {
+    gl.setClearColor(hex, 1);
+    scene.background = new THREE.Color(hex);
+  }, [gl, scene, hex]);
+  return null;
+}
+
 type CanvasInnerProps = {
   viewPreset: keyof typeof VIEW_PRESETS | null;
   isModelMode: boolean;
@@ -254,6 +335,9 @@ type CanvasInnerProps = {
   setModelMounted: (v: boolean) => void;
   setModelLoaded: () => void;
   registerScreenshot: (fn: () => Promise<string | null>) => void;
+  tintHex: string | null;
+  renderMode: RenderMode;
+  backgroundHex: string;
 };
 
 function ProductViewerCanvasInner({
@@ -268,11 +352,15 @@ function ProductViewerCanvasInner({
   setModelMounted,
   setModelLoaded,
   registerScreenshot,
+  tintHex,
+  renderMode,
+  backgroundHex,
 }: CanvasInnerProps) {
   const controlsRef = useRef<any>(null);
 
   return (
     <>
+      <BackgroundSync hex={backgroundHex} />
       <PerspectiveCamera makeDefault position={[5, 5, 5]} fov={50} />
       <CameraController viewPreset={viewPreset} controlsRef={controlsRef} />
 
@@ -288,6 +376,8 @@ function ProductViewerCanvasInner({
           <Model
             url={modelUrl}
             onLoaded={() => setModelMounted(true)}
+            tintHex={tintHex}
+            renderMode={renderMode}
           />
         )}
         {!hasModel && hasImages && (
@@ -306,8 +396,6 @@ function ProductViewerCanvasInner({
       />
 
       <ScreenshotHelper onReady={registerScreenshot} controlsRef={controlsRef} />
-
-      
     </>
   );
 }
@@ -325,6 +413,12 @@ export function Product3DViewer({
   const [modelMounted, setModelMounted] = useState(false);
   const [modelLoaded, setModelLoaded] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [tintKey, setTintKey] = useState<string>('original');
+  const [renderMode, setRenderMode] = useState<RenderMode>('solid');
+  const [backgroundKey, setBackgroundKey] = useState<BackgroundKey>('light');
+
+  const tintHex = TINT_PRESETS.find((t) => t.key === tintKey)?.hex ?? null;
+  const backgroundHex = BACKGROUND_PRESETS[backgroundKey].hex;
 
   const hasModel = !!modelUrl;
   const hasImages = imageUrls.length > 0;
@@ -444,18 +538,75 @@ export function Product3DViewer({
 
   return (
     <div className={fillContainer ? 'h-full w-full flex flex-col' : 'space-y-2'}>
-      <div className={cn('flex gap-1 justify-center', fillContainer ? 'py-2 shrink-0' : '')}>
-        {(Object.keys(VIEW_PRESETS) as (keyof typeof VIEW_PRESETS)[]).map((key) => (
-          <Button
-            key={key}
-            variant={viewPreset === key ? 'default' : 'outline'}
-            size="sm"
-            className="text-xs h-7 px-2"
-            onClick={() => setViewPreset(key)}
-          >
-            {VIEW_PRESETS[key].name}
-          </Button>
-        ))}
+      <div className={cn('flex flex-col gap-1.5', fillContainer ? 'py-2 px-2 shrink-0' : '')}>
+        {/* Row 1: View presets */}
+        <div className="flex gap-1 justify-center flex-wrap">
+          {(Object.keys(VIEW_PRESETS) as (keyof typeof VIEW_PRESETS)[]).map((key) => (
+            <Button
+              key={key}
+              variant={viewPreset === key ? 'default' : 'outline'}
+              size="sm"
+              className="text-xs h-7 px-2"
+              onClick={() => setViewPreset(key)}
+            >
+              {VIEW_PRESETS[key].name}
+            </Button>
+          ))}
+        </div>
+
+        {/* Row 2: Appearance controls (only meaningful for 3D model mode) */}
+        {isModelMode && hasSupportedModel && (
+          <div className="flex gap-3 justify-center flex-wrap items-center text-xs">
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">背景</span>
+              {(Object.keys(BACKGROUND_PRESETS) as BackgroundKey[]).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setBackgroundKey(key)}
+                  title={BACKGROUND_PRESETS[key].name}
+                  className={cn(
+                    'h-5 w-5 rounded border transition-all',
+                    backgroundKey === key ? 'ring-2 ring-primary ring-offset-1' : 'border-border'
+                  )}
+                  style={{ background: BACKGROUND_PRESETS[key].hex }}
+                />
+              ))}
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">染色</span>
+              {TINT_PRESETS.map((preset) => (
+                <button
+                  key={preset.key}
+                  type="button"
+                  onClick={() => setTintKey(preset.key)}
+                  title={preset.name}
+                  className={cn(
+                    'h-5 w-5 rounded border transition-all flex items-center justify-center',
+                    tintKey === preset.key ? 'ring-2 ring-primary ring-offset-1' : 'border-border'
+                  )}
+                  style={{ background: preset.hex ?? 'transparent' }}
+                >
+                  {!preset.hex && <span className="text-[9px] text-muted-foreground">原</span>}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">模式</span>
+              {RENDER_MODE_PRESETS.map((m) => (
+                <Button
+                  key={m.key}
+                  variant={renderMode === m.key ? 'default' : 'outline'}
+                  size="sm"
+                  className="text-xs h-6 px-2"
+                  onClick={() => setRenderMode(m.key)}
+                >
+                  {m.name}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div
@@ -469,8 +620,8 @@ export function Product3DViewer({
           shadows
           dpr={Math.min(window.devicePixelRatio || 1, 2)}
           onCreated={({ gl, scene }) => {
-            gl.setClearColor(SCENE_BACKGROUND_HEX, 1);
-            scene.background = new THREE.Color(SCENE_BACKGROUND_HEX);
+            gl.setClearColor(backgroundHex, 1);
+            scene.background = new THREE.Color(backgroundHex);
           }}
         >
           <ProductViewerCanvasInner
@@ -485,6 +636,9 @@ export function Product3DViewer({
             setModelMounted={setModelMounted}
             setModelLoaded={markModelLoaded}
             registerScreenshot={registerScreenshot}
+            tintHex={tintHex}
+            renderMode={renderMode}
+            backgroundHex={backgroundHex}
           />
         </Canvas>
 
