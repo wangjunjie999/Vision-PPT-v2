@@ -314,6 +314,15 @@ function LoadingFallback() {
   );
 }
 
+function BackgroundSync({ hex }: { hex: string }) {
+  const { gl, scene } = useThree();
+  useEffect(() => {
+    gl.setClearColor(hex, 1);
+    scene.background = new THREE.Color(hex);
+  }, [gl, scene, hex]);
+  return null;
+}
+
 type CanvasInnerProps = {
   viewPreset: keyof typeof VIEW_PRESETS | null;
   isModelMode: boolean;
@@ -326,6 +335,9 @@ type CanvasInnerProps = {
   setModelMounted: (v: boolean) => void;
   setModelLoaded: () => void;
   registerScreenshot: (fn: () => Promise<string | null>) => void;
+  tintHex: string | null;
+  renderMode: RenderMode;
+  backgroundHex: string;
 };
 
 function ProductViewerCanvasInner({
@@ -340,11 +352,15 @@ function ProductViewerCanvasInner({
   setModelMounted,
   setModelLoaded,
   registerScreenshot,
+  tintHex,
+  renderMode,
+  backgroundHex,
 }: CanvasInnerProps) {
   const controlsRef = useRef<any>(null);
 
   return (
     <>
+      <BackgroundSync hex={backgroundHex} />
       <PerspectiveCamera makeDefault position={[5, 5, 5]} fov={50} />
       <CameraController viewPreset={viewPreset} controlsRef={controlsRef} />
 
@@ -360,6 +376,8 @@ function ProductViewerCanvasInner({
           <Model
             url={modelUrl}
             onLoaded={() => setModelMounted(true)}
+            tintHex={tintHex}
+            renderMode={renderMode}
           />
         )}
         {!hasModel && hasImages && (
@@ -378,8 +396,6 @@ function ProductViewerCanvasInner({
       />
 
       <ScreenshotHelper onReady={registerScreenshot} controlsRef={controlsRef} />
-
-      
     </>
   );
 }
