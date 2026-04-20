@@ -538,18 +538,75 @@ export function Product3DViewer({
 
   return (
     <div className={fillContainer ? 'h-full w-full flex flex-col' : 'space-y-2'}>
-      <div className={cn('flex gap-1 justify-center', fillContainer ? 'py-2 shrink-0' : '')}>
-        {(Object.keys(VIEW_PRESETS) as (keyof typeof VIEW_PRESETS)[]).map((key) => (
-          <Button
-            key={key}
-            variant={viewPreset === key ? 'default' : 'outline'}
-            size="sm"
-            className="text-xs h-7 px-2"
-            onClick={() => setViewPreset(key)}
-          >
-            {VIEW_PRESETS[key].name}
-          </Button>
-        ))}
+      <div className={cn('flex flex-col gap-1.5', fillContainer ? 'py-2 px-2 shrink-0' : '')}>
+        {/* Row 1: View presets */}
+        <div className="flex gap-1 justify-center flex-wrap">
+          {(Object.keys(VIEW_PRESETS) as (keyof typeof VIEW_PRESETS)[]).map((key) => (
+            <Button
+              key={key}
+              variant={viewPreset === key ? 'default' : 'outline'}
+              size="sm"
+              className="text-xs h-7 px-2"
+              onClick={() => setViewPreset(key)}
+            >
+              {VIEW_PRESETS[key].name}
+            </Button>
+          ))}
+        </div>
+
+        {/* Row 2: Appearance controls (only meaningful for 3D model mode) */}
+        {isModelMode && hasSupportedModel && (
+          <div className="flex gap-3 justify-center flex-wrap items-center text-xs">
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">背景</span>
+              {(Object.keys(BACKGROUND_PRESETS) as BackgroundKey[]).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setBackgroundKey(key)}
+                  title={BACKGROUND_PRESETS[key].name}
+                  className={cn(
+                    'h-5 w-5 rounded border transition-all',
+                    backgroundKey === key ? 'ring-2 ring-primary ring-offset-1' : 'border-border'
+                  )}
+                  style={{ background: BACKGROUND_PRESETS[key].hex }}
+                />
+              ))}
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">染色</span>
+              {TINT_PRESETS.map((preset) => (
+                <button
+                  key={preset.key}
+                  type="button"
+                  onClick={() => setTintKey(preset.key)}
+                  title={preset.name}
+                  className={cn(
+                    'h-5 w-5 rounded border transition-all flex items-center justify-center',
+                    tintKey === preset.key ? 'ring-2 ring-primary ring-offset-1' : 'border-border'
+                  )}
+                  style={{ background: preset.hex ?? 'transparent' }}
+                >
+                  {!preset.hex && <span className="text-[9px] text-muted-foreground">原</span>}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">模式</span>
+              {RENDER_MODE_PRESETS.map((m) => (
+                <Button
+                  key={m.key}
+                  variant={renderMode === m.key ? 'default' : 'outline'}
+                  size="sm"
+                  className="text-xs h-6 px-2"
+                  onClick={() => setRenderMode(m.key)}
+                >
+                  {m.name}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div
@@ -563,8 +620,8 @@ export function Product3DViewer({
           shadows
           dpr={Math.min(window.devicePixelRatio || 1, 2)}
           onCreated={({ gl, scene }) => {
-            gl.setClearColor(SCENE_BACKGROUND_HEX, 1);
-            scene.background = new THREE.Color(SCENE_BACKGROUND_HEX);
+            gl.setClearColor(backgroundHex, 1);
+            scene.background = new THREE.Color(backgroundHex);
           }}
         >
           <ProductViewerCanvasInner
@@ -579,6 +636,9 @@ export function Product3DViewer({
             setModelMounted={setModelMounted}
             setModelLoaded={markModelLoaded}
             registerScreenshot={registerScreenshot}
+            tintHex={tintHex}
+            renderMode={renderMode}
+            backgroundHex={backgroundHex}
           />
         </Canvas>
 
