@@ -31,8 +31,32 @@ interface Product3DViewerProps {
   preferredDisplayMode?: ProductViewerDisplayMode;
 }
 
-const SCENE_BACKGROUND_HEX = '#f3f4f6';
 const MODEL_TARGET_SIZE = 4;
+
+const BACKGROUND_PRESETS = {
+  light: { hex: '#f3f4f6', name: '浅灰' },
+  white: { hex: '#ffffff', name: '白' },
+  dark: { hex: '#1f2937', name: '深灰' },
+  black: { hex: '#000000', name: '黑' },
+} as const;
+type BackgroundKey = keyof typeof BACKGROUND_PRESETS;
+
+const TINT_PRESETS: { key: string; hex: string | null; name: string }[] = [
+  { key: 'original', hex: null, name: '原色' },
+  { key: 'red', hex: '#ef4444', name: '红' },
+  { key: 'amber', hex: '#f59e0b', name: '橙' },
+  { key: 'green', hex: '#10b981', name: '绿' },
+  { key: 'cyan', hex: '#06b6d4', name: '青' },
+  { key: 'blue', hex: '#3b82f6', name: '蓝' },
+  { key: 'gray', hex: '#9ca3af', name: '灰' },
+];
+
+type RenderMode = 'solid' | 'translucent' | 'wireframe';
+const RENDER_MODE_PRESETS: { key: RenderMode; name: string }[] = [
+  { key: 'solid', name: '实体' },
+  { key: 'translucent', name: '半透' },
+  { key: 'wireframe', name: '线框' },
+];
 
 const VIEW_PRESETS = {
   isometric: { position: [5, 5, 5] as [number, number, number], name: '等轴测' },
