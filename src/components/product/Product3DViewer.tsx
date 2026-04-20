@@ -81,30 +81,40 @@ function Model({
   });
   const clonedScene = useMemo(() => gltfScene.clone(true), [gltfScene]);
   const modelRef = useRef<THREE.Group>(null);
+  // Store original color/map per cloned material so we can restore on tint reset
+  const originalsRef = useRef<WeakMap<THREE.Material, { color?: THREE.Color; map?: THREE.Texture | null }>>(new WeakMap());
 
-  // Clone materials so we can mutate without touching cached GLTF
+  // Deep-clone materials ONCE so mutations don't pollute cached GLTF, and snapshot originals
   useEffect(() => {
     clonedScene.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-        if (Array.isArray(child.material)) {
-          child.material = child.material.map((m) => m.clone());
-        } else if (child.material) {
-          child.material = (child.material as THREE.Material).clone();
-        }
+      if (!(child instanceof THREE.Mesh)) return;
+      child.castShadow = true;
+      child.receiveShadow = true;
+      const cloneOne = (mat: THREE.Material) => {
+        const cloned = mat.clone();
+        const anyMat = cloned as THREE.Material & { color?: THREE.Color; map?: THREE.Texture | null };
+        originalsRef.current.set(cloned, {
+          color: anyMat.color ? anyMat.color.clone() : undefined,
+          map: 'map' in anyMat ? anyMat.map ?? null : null,
+        });
+        return cloned;
+      };
+      if (Array.isArray(child.material)) {
+        child.material = child.material.map(cloneOne);
+      } else if (child.material) {
+        child.material = cloneOne(child.material);
       }
     });
   }, [clonedScene]);
 
-  // Apply tint + render mode whenever they change
+  // Apply tint + render mode whenever they change (always restore from originals first)
   useEffect(() => {
     clonedScene.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return;
       const mats = Array.isArray(child.material) ? child.material : [child.material];
       mats.forEach((mat) => {
         if (!mat) return;
-        const anyMat = mat as THREE.MeshStandardMaterial & {
+        const anyMat = mat as THREE.Material & {
           color?: THREE.Color;
           map?: THREE.Texture | null;
           wireframe?: boolean;
@@ -112,6 +122,12 @@ function Model({
           opacity?: number;
           needsUpdate?: boolean;
         };
+        const orig = originalsRef.current.get(mat);
+        // Always restore baseline first
+        if (orig?.color && anyMat.color) anyMat.color.copy(orig.color);
+        if ('map' in anyMat) anyMat.map = orig?.map ?? null;
+
+        // Apply tint on top of baseline
         if (tintHex && anyMat.color) {
           anyMat.color.set(tintHex);
           if ('map' in anyMat) anyMat.map = null;
